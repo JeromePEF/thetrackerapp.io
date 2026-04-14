@@ -230,7 +230,6 @@ function buildLiveUsageCounters(rows) {
   const onlineWindowMs = 15 * 60 * 1000;
   const onlineUsers = new Set();
   let workoutsLogged = 0;
-  let minutesRan = 0;
 
   rows.forEach((row) => {
     if (!hasWorkoutActivity(row)) {
@@ -246,21 +245,11 @@ function buildLiveUsageCounters(rows) {
     ) {
       onlineUsers.add(row.username);
     }
-
-    if (!isRunningRow(row)) {
-      return;
-    }
-
-    const minutes = row.valueNumeric !== null ? row.valueNumeric : row.scoreD !== null ? row.scoreD : 0;
-    if (minutes > 0) {
-      minutesRan += minutes;
-    }
   });
 
   return {
     usersOnline: onlineUsers.size,
     workoutsLogged,
-    minutesRan: Math.round(minutesRan),
   };
 }
 
@@ -771,10 +760,6 @@ export async function fetchLiveMetrics() {
     workoutsLogged: {
       value: Number(metrics.workoutsLogged?.value || 0),
       sheetUrl: metrics.workoutsLogged?.sheetUrl || "",
-    },
-    minutesRan: {
-      value: Number(metrics.minutesRan?.value || 0),
-      sheetUrl: metrics.minutesRan?.sheetUrl || "",
     },
     caloriesTracked: {
       value: Number(metrics.caloriesTracked?.value || 0),

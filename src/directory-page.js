@@ -185,6 +185,11 @@ function pickTags(source) {
   return tags.slice(0, 5);
 }
 
+function useMetric() {
+  const locale = Intl.NumberFormat().resolvedOptions().locale;
+  return locale !== "en-US" && locale !== "en-GB";
+}
+
 function buildMetrics(source, type) {
   const runMetricMap = [
     ["members", ["membersCount", "memberCount", "activeMembers", "runners"]],
@@ -210,8 +215,22 @@ function buildMetrics(source, type) {
     }
 
     const numeric = asNumber(value);
-    const rendered = numeric === null ? value : new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 }).format(numeric);
-    metrics.push(`${rendered} ${label}`);
+    let rendered;
+    let finalLabel = label;
+
+    if (label === "weekly mi") {
+      if (useMetric()) {
+        rendered = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 }).format((numeric || 0) * 1.60934);
+        finalLabel = "weekly km";
+      } else {
+        rendered = numeric === null ? value : new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 }).format(numeric);
+        finalLabel = "weekly mi";
+      }
+    } else {
+      rendered = numeric === null ? value : new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 }).format(numeric);
+    }
+
+    metrics.push(`${rendered} ${finalLabel}`);
   }
 
   return metrics.slice(0, 4);

@@ -93,14 +93,12 @@ const els = {
   usersWeekCount: document.getElementById("usersWeekCount"),
   usersOnlineCount: document.getElementById("usersOnlineCount"),
   workoutsLoggedCount: document.getElementById("workoutsLoggedCount"),
-  minutesRanCount: document.getElementById("minutesRanCount"),
   caloriesTrackedCount: document.getElementById("caloriesTrackedCount"),
   gallonsDrankCount: document.getElementById("gallonsDrankCount"),
   usersTodayLink: document.getElementById("usersTodayLink"),
   usersWeekLink: document.getElementById("usersWeekLink"),
   usersOnlineLink: document.getElementById("usersOnlineLink"),
   workoutsLoggedLink: document.getElementById("workoutsLoggedLink"),
-  minutesRanLink: document.getElementById("minutesRanLink"),
   caloriesTrackedLink: document.getElementById("caloriesTrackedLink"),
   gallonsDrankLink: document.getElementById("gallonsDrankLink"),
   leaderboardList: document.getElementById("leaderboardList"),
@@ -583,7 +581,6 @@ function applyLiveMetricsResponse(liveMetrics) {
   setCounterValue(els.usersWeekCount, liveMetrics.totalUsersThisWeek?.value);
   setCounterValue(els.usersOnlineCount, liveMetrics.usersOnline?.value);
   setCounterValue(els.workoutsLoggedCount, liveMetrics.workoutsLogged?.value);
-  setCounterValue(els.minutesRanCount, liveMetrics.minutesRan?.value);
   setCounterValue(els.caloriesTrackedCount, liveMetrics.caloriesTracked?.value);
   setCounterValue(els.gallonsDrankCount, liveMetrics.gallonsDrank?.value);
 
@@ -591,7 +588,6 @@ function applyLiveMetricsResponse(liveMetrics) {
   setStatsLink(els.usersWeekLink, liveMetrics.totalUsersThisWeek?.sheetUrl, master);
   setStatsLink(els.usersOnlineLink, liveMetrics.usersOnline?.sheetUrl, master);
   setStatsLink(els.workoutsLoggedLink, liveMetrics.workoutsLogged?.sheetUrl, master);
-  setStatsLink(els.minutesRanLink, liveMetrics.minutesRan?.sheetUrl, master);
   setStatsLink(els.caloriesTrackedLink, liveMetrics.caloriesTracked?.sheetUrl, master);
   setStatsLink(els.gallonsDrankLink, liveMetrics.gallonsDrank?.sheetUrl, master);
 }
@@ -606,6 +602,20 @@ function formatDecimal(value, fractionDigits = 1) {
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits,
   }).format(numeric);
+}
+
+function useMetric() {
+  const locale = Intl.NumberFormat().resolvedOptions().locale;
+  // US and UK (mostly) use miles for road distance.
+  return locale !== "en-US" && locale !== "en-GB";
+}
+
+function formatDistance(miles) {
+  if (useMetric()) {
+    const km = miles * 1.60934;
+    return `${formatDecimal(km)} km`;
+  }
+  return `${formatDecimal(miles)} mi`;
 }
 
 function toNumber(value) {
@@ -731,7 +741,7 @@ function renderStepsTape() {
       return `<li class="steps-tape-row">
         <span class="steps-tape-row-user">${escapeHtml(event.name)}</span>
         <span class="steps-tape-row-delta">+${formatNumber(event.delta)} steps</span>
-        <span class="steps-tape-row-meta">${formatNumber(event.total)} total steps • ${formatDecimal(milesForUser)} mi</span>
+        <span class="steps-tape-row-meta">${formatNumber(event.total)} total steps • ${formatDistance(milesForUser)}</span>
       </li>`;
     })
     .join("");
@@ -751,7 +761,7 @@ function applyPebbleStepsTapePayload(pebblePayload) {
   const totalMiles = payloadTotalMiles > 0 ? payloadTotalMiles : totalSteps / STEPS_PER_MILE;
 
   els.stepsTapeTotalSteps.textContent = formatNumber(totalSteps);
-  els.stepsTapeTotalMiles.textContent = formatDecimal(totalMiles);
+  els.stepsTapeTotalMiles.textContent = formatDistance(totalMiles);
 
   const apiEvents = Array.isArray(pebblePayload?.stepEvents) ? pebblePayload.stepEvents : [];
   const derivedEvents = deriveStepTapeDeltasFromTopRows(stepsTop);
@@ -1030,7 +1040,6 @@ async function loadLeaderboard() {
       setCounterValue(els.usersWeekCount, payload.usersThisWeek);
       setCounterValue(els.usersOnlineCount, payload.usersOnline);
       setCounterValue(els.workoutsLoggedCount, payload.workoutsLogged);
-      setCounterValue(els.minutesRanCount, payload.minutesRan);
       setCounterValue(els.caloriesTrackedCount, 0);
       setCounterValue(els.gallonsDrankCount, 0);
     }
@@ -1053,7 +1062,6 @@ async function loadLeaderboard() {
     setLiveWorkoutEvents([]);
     setCounterValue(els.usersOnlineCount, 0);
     setCounterValue(els.workoutsLoggedCount, 0);
-    setCounterValue(els.minutesRanCount, 0);
     setCounterValue(els.caloriesTrackedCount, 0);
     setCounterValue(els.gallonsDrankCount, 0);
     setStepsTapeVisibility(false);
