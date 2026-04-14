@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Run Clubs | The Tracker App</title>
+    <meta
+      name="description"
+      content="Discover top run clubs by city, view run club leaderboards, and join local workout groups through The Tracker App."
+    />
+    <link rel="canonical" href="https://thetrackerapp.io/run-clubs" />
+    <link rel="stylesheet" href="directory.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body data-directory-type="run-clubs">
+    <div class="page-shell">
+      <header class="top-nav">
+        <p class="brand">The Tracker App</p>
+        <nav class="nav-links" aria-label="Primary">
+          <a href="/">Home</a>
+          <a href="/run-clubs" aria-current="page">Run Clubs</a>
+          <a href="/personal-trainers">Personal Trainers</a>
+          <a href="/workout-resources">Workout Resources</a>
+          <a href="https://api.thetrackerapp.io/login" target="_blank" rel="noreferrer">Login</a>
+        </nav>
+      </header>
+
+      <main>
+        <section class="hero">
+          <h1 id="pageTitle">Run Clubs</h1>
+          <p id="pageKicker">Find run clubs by city and explore local group performance.</p>
+          <div class="controls">
+            <input id="cityFilter" type="search" placeholder="Find run club by city" autocomplete="off" />
+            <p id="resultCount" class="result-count" aria-live="polite"></p>
+          </div>
+          <p id="pageState" class="page-state" role="status" aria-live="polite"></p>
+        </section>
+
+        <section id="cardsGrid" class="cards-grid" aria-label="Run club cards"></section>
+      </main>
+    </div>
+
+    <script type="module" src="/src/directory-page.js"></script>
+  </body>
+</html>

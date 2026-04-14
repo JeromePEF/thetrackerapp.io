@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Personal Trainers | The Tracker App</title>
+    <meta
+      name="description"
+      content="Find personal trainers by city, compare coaching specialties, and join trainer-led workout groups in The Tracker App."
+    />
+    <link rel="canonical" href="https://thetrackerapp.io/personal-trainers" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <script type="module" crossorigin src="/assets/google-analytics-COtTPxjS.js"></script>
+    <script type="module" crossorigin src="/assets/directory-page-C9EZoAP-.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/directory-page-fQZrCg1p.css">
+  </head>
+  <body data-directory-type="personal-trainers">
+    <div class="page-shell">
+      <header class="top-nav">
+        <p class="brand">The Tracker App</p>
+        <nav class="nav-links" aria-label="Primary">
+          <a href="/">Home</a>
+          <a href="/run-clubs">Run Clubs</a>
+          <a href="/personal-trainers" aria-current="page">Personal Trainers</a>
+          <a href="/workout-resources">Workout Resources</a>
+          <a href="https://api.thetrackerapp.io/login" target="_blank" rel="noreferrer">Login</a>
+        </nav>
+      </header>
+
+      <main>
+        <section class="hero">
+          <h1 id="pageTitle">Personal Trainers</h1>
+          <p id="pageKicker">Find coaches by city, specialty, and training style.</p>
+          <div class="controls">
+            <input id="cityFilter" type="search" placeholder="Find trainer by city" autocomplete="off" />
+            <p id="resultCount" class="result-count" aria-live="polite"></p>
+          </div>
+          <p id="pageState" class="page-state" role="status" aria-live="polite"></p>
+        </section>
+
+        <section id="cardsGrid" class="cards-grid" aria-label="Personal trainer cards"></section>
+      </main>
+    </div>
+
+  </body>
+</html>

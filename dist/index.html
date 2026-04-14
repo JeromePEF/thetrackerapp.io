@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The Tracker App | Track Workouts and Nutrition</title>
+    <meta
+      name="description"
+      content="Track workouts and nutrition with live progress, hydration tracking, and Pebble leaderboards."
+    />
+    <meta name="theme-color" content="#000000" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <link rel="canonical" href="https://thetrackerapp.io/" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32x32.png" sizes="32x32" type="image/png" />
+    <link rel="icon" href="/favicon-16x16.png" sizes="16x16" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="The Tracker App | Track Workouts and Nutrition" />
+    <meta
+      property="og:description"
+      content="Track workouts and nutrition with live progress, hydration tracking, and Pebble leaderboards."
+    />
+    <meta property="og:url" content="https://thetrackerapp.io/" />
+    <meta property="og:site_name" content="The Tracker App" />
+    <meta property="og:image" content="https://thetrackerapp.io/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="The Tracker App for tracking workouts and nutrition" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="The Tracker App | Track Workouts and Nutrition" />
+    <meta
+      name="twitter:description"
+      content="Track workouts and nutrition with live progress, hydration tracking, and Pebble leaderboards."
+    />
+    <meta name="twitter:image" content="https://thetrackerapp.io/og-image.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <script type="module" crossorigin src="/assets/main-Drtbj4s0.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/google-analytics-COtTPxjS.js">
+    <link rel="stylesheet" crossorigin href="/assets/main-Dq3BfFlq.css">
+  </head>
+  <body>
+    <div id="appShell">
+      <header class="site-header">
+        <div class="container header-row">
+          <nav class="app-links" aria-label="App downloads">
+            <a href="https://api.thetrackerapp.io/downloads/pebble" target="_blank" rel="noreferrer">Pebble App</a>
+            <a href="https://api.thetrackerapp.io/downloads/mac" target="_blank" rel="noreferrer">Mac Apps</a>
+            <a href="/workout-resources">Workout Resources</a>
+            <a id="runClubsNavLink" href="https://thetrackerapp.io/run-clubs" target="_blank" rel="noreferrer" hidden>Run Clubs</a>
+            <a id="personalTrainersNavLink" href="https://thetrackerapp.io/personal-trainers" target="_blank" rel="noreferrer" hidden>Personal Trainers</a>
+          </nav>
+          <div class="header-stats" aria-label="Usage counters">
+            <p>
+              Users using today:
+              <a
+                id="usersTodayLink"
+                class="stats-value-link"
+                href="https://docs.google.com/spreadsheets/d/1KkN-k6penAZXVkK9g_wNYdSbk8_ekw13iWcj4R84FcY/edit"
+                target="_blank"
+                rel="noreferrer"
+              ><strong id="usersTodayCount">0</strong></a>
+            </p>
+            <p>
+              Total users this week:
+              <a
+                id="usersWeekLink"
+                class="stats-value-link"
+                href="https://docs.google.com/spreadsheets/d/1KkN-k6penAZXVkK9g_wNYdSbk8_ekw13iWcj4R84FcY/edit"
+                target="_blank"
+                rel="noreferrer"
+              ><strong id="usersWeekCount">0</strong></a>
+            </p>
+            <p>
+              Workouts logged:
+              <a
+                id="workoutsLoggedLink"
+                class="stats-value-link"
+                href="https://docs.google.com/spreadsheets/d/1KkN-k6penAZXVkK9g_wNYdSbk8_ekw13iWcj4R84FcY/edit"
+                target="_blank"
+                rel="noreferrer"
+              ><strong id="workoutsLoggedCount">0</strong></a>
+            </p>
+            <p>
+              Minutes ran:
+              <a
+                id="minutesRanLink"
+                class="stats-value-link"
+                href="https://docs.google.com/spreadsheets/d/1KkN-k6penAZXVkK9g_wNYdSbk8_ekw13iWcj4R84FcY/edit"
+                target="_blank"
+                rel="noreferrer"
+              ><strong id="minutesRanCount">0</strong></a>
+            </p>
+            <p>
+              Calories tracked:
+              <a
+                id="caloriesTrackedLink"
+                class="stats-value-link"
+                href="https://docs.google.com/spreadsheets/d/1KkN-k6penAZXVkK9g_wNYdSbk8_ekw13iWcj4R84FcY/edit"
+                target="_blank"
+                rel="noreferrer"
+              ><strong id="caloriesTrackedCount">0</strong></a>
+            </p>
+            <p>
+              Gallons drank:
+              <a
+                id="gallonsDrankLink"
+                class="stats-value-link"
+                href="https://docs.google.com/spreadsheets/d/1KkN-k6penAZXVkK9g_wNYdSbk8_ekw13iWcj4R84FcY/edit"
+                target="_blank"
+                rel="noreferrer"
+              ><strong id="gallonsDrankCount">0</strong></a>
+            </p>
+          </div>
+          <a class="login-link" href="https://api.thetrackerapp.io/login" target="_blank" rel="noreferrer">Login</a>
+        </div>
+      </header>
+
+      <main class="container hero-layout" id="main-content">
+        <aside class="leaderboard-panel" aria-label="Workout leaderboard">
+          <section class="leaderboard-section">
+            <h2>Workout Leaderboard</h2>
+            <p class="panel-kicker" aria-hidden="true"></p>
+            <p class="live-indicator"><span class="live-dot" aria-hidden="true"></span>LIVE</p>
+            <ol id="leaderboardList" class="leaderboard-list"></ol>
+            <p id="leaderboardState" class="panel-state" role="status" aria-live="polite"></p>
+          </section>
+
+          <section class="leaderboard-section">
+            <h3 class="sub-leaderboard-title">Workout Groups Leaderboard</h3>
+            <ol id="groupLeaderboardList" class="leaderboard-list group-leaderboard-list"></ol>
+            <p id="groupLeaderboardState" class="panel-state" role="status" aria-live="polite"></p>
+          </section>
+
+          <section class="leaderboard-section">
+            <h3 class="sub-leaderboard-title">Longest Consistent Workout Streaks</h3>
+            <ol id="streakLeaderboardList" class="leaderboard-list streak-leaderboard-list"></ol>
+            <p id="streakLeaderboardState" class="panel-state" role="status" aria-live="polite"></p>
+          </section>
+
+          <section class="leaderboard-section">
+            <h3 class="sub-leaderboard-title">Pebble Live Leaderboard</h3>
+            <h4 class="micro-leaderboard-title">Top Calorie Burners</h4>
+            <ol id="pebbleCaloriesList" class="leaderboard-list pebble-leaderboard-list"></ol>
+            <h4 class="micro-leaderboard-title">Top Workouts</h4>
+            <ol id="pebbleWorkoutsList" class="leaderboard-list pebble-leaderboard-list"></ol>
+            <h4 class="micro-leaderboard-title">Top Steps</h4>
+            <ol id="pebbleStepsList" class="leaderboard-list pebble-leaderboard-list"></ol>
+            <p id="pebbleLeaderboardState" class="panel-state" role="status" aria-live="polite"></p>
+          </section>
+
+          <a class="group-join-button" href="https://api.thetrackerapp.io/groups/join" target="_blank" rel="noreferrer">Join a Workout Group</a>
+        </aside>
+
+        <section class="hero-panel">
+          <div class="service-zone">
+            <div class="service-preview">
+              <div class="service-shell" id="serviceShell">
+                <div id="serviceCarousel" class="service-carousel" role="listbox" aria-label="Swipe to choose service"></div>
+              </div>
+              <p id="serviceCarouselLabel" class="service-carousel-label">iMessage selected</p>
+              <p class="service-carousel-hint">Swipe the icons left or right to change service.</p>
+            </div>
+          </div>
+
+          <form id="signupForm" class="signup-form" novalidate>
+            <p class="form-intro">Select an app, enter your info, then submit onboarding.</p>
+            <p class="form-flow" aria-hidden="true">1. Select App  2. Enter Info  3. Submit</p>
+            <div class="input-grid">
+              <label for="serviceSelect">
+                Service
+                <select id="serviceSelect" name="serviceSelect" aria-label="Select service"></select>
+                <small class="field-help">Choose where onboarding messages should be sent.</small>
+              </label>
+
+              <label id="serviceIdentityLabel" for="serviceIdentityInput">
+                <span id="serviceIdentityText">Phone Number</span>
+                <input id="serviceIdentityInput" name="serviceIdentity" type="text" autocomplete="off" placeholder="(555) 555-5555" />
+                <small id="serviceIdentityHelp" class="field-help">Required for the selected service.</small>
+              </label>
+
+              <label for="emailInput">
+                Email (optional)
+                <input id="emailInput" name="email" type="email" autocomplete="email" placeholder="you@example.com" />
+                <small class="field-help">Add email for receipts and account recovery.</small>
+              </label>
+            </div>
+
+            <label id="consentWrap" class="consent-row" for="consentCheckbox">
+              <input id="consentCheckbox" name="consentCheckbox" type="checkbox" />
+              I consent to receive onboarding text messages and agree to 10DLC/A2P messaging terms.
+            </label>
+
+            <div class="cta-row">
+              <button type="submit">Submit Onboarding</button>
+            </div>
+            <p id="signupStatus" class="form-status" role="status" aria-live="polite"></p>
+          </form>
+        </section>
+
+        <aside id="stepsCounterPanel" class="steps-tape-panel" aria-label="Realtime step counter activity" hidden>
+          <section class="steps-tape-card">
+            <h3>Step Counter</h3>
+            <p class="steps-tape-sources">Sourced from Pebble, Fitbit, Garmin, and Oura Ring (Pebble recommended + Oura).</p>
+            <p class="steps-tape-live"><span class="live-dot" aria-hidden="true"></span>LIVE</p>
+
+            <div class="steps-tape-totals" aria-label="All-time step totals">
+              <p>
+                Total Steps (All-time)
+                <strong id="stepsTapeTotalSteps">0</strong>
+              </p>
+              <p>
+                Total Miles (All-time)
+                <strong id="stepsTapeTotalMiles">0.0</strong>
+              </p>
+            </div>
+
+            <div class="steps-tape-orderbook-wrap">
+              <div class="steps-footprints" aria-hidden="true">
+                <span>👣</span>
+                <span>👣</span>
+                <span>👣</span>
+                <span>👣</span>
+              </div>
+              <ol id="stepsTapeList" class="steps-tape-list"></ol>
+            </div>
+
+            <p id="stepsTapeState" class="panel-state" role="status" aria-live="polite"></p>
+          </section>
+        </aside>
+      </main>
+
+      <footer class="site-footer">
+        <div class="container footer-row">
+          <a href="mailto:support@thetrackerapp.io">Contact Us</a>
+          <a href="/workout-resources">Workout Resources</a>
+          <a href="https://thetrackerapp.io/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>
+          <a href="https://thetrackerapp.io/terms" target="_blank" rel="noreferrer">Terms</a>
+          <a href="https://api.thetrackerapp.io/affiliate/signup" target="_blank" rel="noreferrer">Affiliate Signup</a>
+        </div>
+      </footer>
+    </div>
+    <aside id="liveWorkoutToast" class="live-workout-toast" aria-live="polite" hidden>
+      <p class="live-workout-toast-kicker">Live Activity</p>
+      <p id="liveWorkoutToastMessage" class="live-workout-toast-message"></p>
+    </aside>
+
+  </body>
+</html>
