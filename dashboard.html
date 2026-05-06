@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard | The Tracker App</title>
+    <meta
+      name="description"
+      content="The Tracker App dashboard for stats, exports, goals, billing, settings, and integrations."
+    />
+    <link rel="canonical" href="https://dashboard.thetrackerapp.io/dashboard" />
+    <link rel="icon" href="/favicon.svg?v=3" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3" sizes="180x180" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="auth-pages.css" />
+  </head>
+  <body>
+    <div class="dashboard-shell">
+      <header class="auth-top-nav">
+        <p class="auth-brand">The Tracker App</p>
+        <nav class="auth-links" aria-label="Primary">
+          <a href="https://thetrackerapp.io/">Home</a>
+          <a href="https://thetrackerapp.io/workout-resources">Workout Resources</a>
+          <a href="https://thetrackerapp.io/login?next=https%3A%2F%2Fdashboard.thetrackerapp.io%2Fdashboard%3Fview%3Daccount">Login</a>
+        </nav>
+      </header>
+
+      <main class="dashboard-layout">
+        <aside class="dashboard-sidebar" aria-label="Dashboard sections">
+          <h1>Dashboard</h1>
+          <nav>
+            <a id="navAccount" class="is-active" href="#accountInfoCard">ACCOUNT</a>
+            <a href="#">STATS</a>
+            <a href="#">EXPORT</a>
+            <a href="#">GOALS</a>
+            <a href="#">BILLING</a>
+            <a href="#">SETTINGS</a>
+            <a href="#">INTEGRATE</a>
+          </nav>
+          <p class="sidebar-note">Current service rollout: iMessage, SMS, Telegram. Full channel support remains on the roadmap.</p>
+        </aside>
+
+        <section class="dashboard-content" aria-label="Dashboard overview">
+          <article id="accountInfoCard" class="dashboard-card">
+            <h2>Account Info</h2>
+            <p><strong>Account ID:</strong> <span id="accountIdValue">-</span></p>
+            <p><strong>Contact:</strong> <span id="accountContactValue">-</span></p>
+            <p><strong>Sign-in Method:</strong> <span id="accountMethodValue">-</span></p>
+            <p><strong>Last Login:</strong> <span id="accountLoginAtValue">-</span></p>
+          </article>
+          <article class="dashboard-card">
+            <h2>Stats</h2>
+            <p>Weekly activity, workout consistency, hydration, and nutrition trends.</p>
+          </article>
+          <article class="dashboard-card">
+            <h2>Export</h2>
+            <p>Export workout history as CSV, JSON, or plain text for archiving and analysis.</p>
+          </article>
+          <article class="dashboard-card">
+            <h2>Goals</h2>
+            <p>Set performance targets, body metric goals, and completion checkpoints.</p>
+          </article>
+          <article class="dashboard-card">
+            <h2>Billing</h2>
+            <p>Manage subscription plans, invoices, and payment methods.</p>
+          </article>
+          <article class="dashboard-card">
+            <h2>Settings</h2>
+            <p>Configure account, notification preferences, and privacy defaults.</p>
+          </article>
+          <article class="dashboard-card">
+            <h2>Integrate</h2>
+            <p>Connect supported channels and devices, with additional providers planned on the roadmap.</p>
+          </article>
+        </section>
+      </main>
+    </div>
+    <script type="module" src="/src/dashboard.js"></script>
+  </body>
+</html>
