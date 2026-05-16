@@ -1,0 +1,54 @@
+Google Metrics Setup (Copy/Paste)
+
+1) Re-auth ADC with all required scopes (single line):
+gcloud auth application-default login --scopes=https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/analytics.readonly,https://www.googleapis.com/auth/adsense.readonly,https://www.googleapis.com/auth/adwords
+
+2) Re-auth gcloud user session:
+gcloud auth login
+
+3) Set active project (replace if needed):
+gcloud config set project generalautomations-sites
+
+4) What to enable in Billing Export (Google Cloud Console -> Billing -> Billing export):
+- Enable: Standard usage cost
+- Enable: Detailed usage cost
+- Enable: Pricing
+- Optional: Committed Use Discounts Export (only needed if you want CUD breakdowns)
+
+Recommended:
+- Use one BigQuery dataset for these exports (same region).
+- Wait for first export rows (can take time after enabling).
+
+5) Put billing export table in .env.google-metrics:
+GCP_BILLING_EXPORT_TABLE=your-project.your_dataset.gcp_billing_export_v1_xxxxx_xxxxxx_xxxxx
+
+6) Run scripts:
+bun run "/Users/rd/thetrackerapp.io/scripts/gcp-gemini-billing.mjs" --days 30
+bun run "/Users/rd/thetrackerapp.io/scripts/google-metrics.mjs" --days 30
+
+Table not showing yet? Check/poll:
+bq ls generalautomations-sites:automation_logs
+
+Poll every 60s for billing export tables:
+while true; do date; bq ls generalautomations-sites:automation_logs | egrep 'gcp_billing_export_v1_|gcp_billing_export_resource_v1_' || true; sleep 60; done
+
+Check Billing Pricing transfer status:
+bq --location=us-central1 ls --transfer_config --project_id=generalautomations-sites
+bq --location=us-central1 ls --transfer_run projects/861802256120/locations/us-central1/transferConfigs/01FC2B-A9D024-E861A7
+
+7) If Google Ads metrics are needed, also set in .env.google-metrics:
+GOOGLE_ADS_CUSTOMER_ID=1234567890
+GOOGLE_ADS_DEVELOPER_TOKEN=your_developer_token
+
+8) If GA4 auto-discovery still fails, set one:
+GA4_PROPERTY_ID=123456789
+# or
+GA4_MEASUREMENT_ID=G-XXXXXXXXXX
+
+9) Billing monitor commands:
+npm run billing:monitor
+npm run billing:monitor -- --daily-alert-usd 15 --mtd-alert-usd 250 --fail-on-alert
+
+10) Budget guardrail commands:
+npm run billing:budget
+npm run billing:budget -- --create --monthly-usd 300 --display-name "Truist Cost Guard"

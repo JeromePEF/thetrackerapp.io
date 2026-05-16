@@ -6,7 +6,7 @@
     <title>Login | The Tracker App</title>
     <meta
       name="description"
-      content="Log in with email, phone, or username to request a one-time code for The Tracker App."
+      content="Log in with the phone number on your account. If needed, recover access with the confirmed email on file."
     />
     <link rel="canonical" href="https://thetrackerapp.io/login" />
     <link rel="icon" href="/favicon.svg?v=3" type="image/svg+xml" />
@@ -19,8 +19,67 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="auth-pages.css" />
+    <script>
+      // If already logged in, skip the login page and go straight to the dashboard
+      // (or the ?next= destination, if one was requested). Synchronous so there's
+      // no flash of the login form.
+      (function () {
+        try {
+          var flag = window.localStorage.getItem("tracker.authenticated") === "true";
+          var rawUser = window.localStorage.getItem("tracker.auth.user");
+          var rawSession = window.localStorage.getItem("tracker.auth.session");
+          var user = null;
+          var session = null;
+          try { user = rawUser ? JSON.parse(rawUser) : null; } catch (e) { user = null; }
+          try { session = rawSession ? JSON.parse(rawSession) : null; } catch (e) { session = null; }
+          var hasUser = user && (user.accountId || user.email || user.username);
+          var sessionToken = session && String(session.token || "").trim();
+          var sessionExpiresAt = session && String(session.expiresAt || "").trim();
+          if (!flag || !hasUser || !sessionToken) return;
+
+          function encodeAuthPayload(value) {
+            try {
+              var json = JSON.stringify(value);
+              var utf8 = new TextEncoder().encode(json);
+              var binary = "";
+              for (var index = 0; index < utf8.length; index += 1) {
+                binary += String.fromCharCode(utf8[index]);
+              }
+              return btoa(binary);
+            } catch (e) {
+              return "";
+            }
+          }
+
+          var params = new URLSearchParams(window.location.search);
+          var requestedNext = params.get("next") || "";
+          var DASHBOARD_ORIGIN = "https://dashboard.thetrackerapp.io";
+          var destination = new URL(DASHBOARD_ORIGIN + "/dashboard");
+          if (requestedNext) {
+            try {
+              var url = new URL(requestedNext, window.location.origin);
+              if (url.origin === DASHBOARD_ORIGIN) {
+                destination = url;
+              }
+            } catch (e) { /* fall through to default destination */ }
+          }
+
+          var encodedAuth = encodeAuthPayload(user);
+          if (encodedAuth) {
+            destination.searchParams.set("auth_payload", encodedAuth);
+          }
+          destination.searchParams.set("session_token", sessionToken);
+          if (sessionExpiresAt) {
+            destination.searchParams.set("session_expires_at", sessionExpiresAt);
+          }
+          window.location.replace(destination.toString());
+        } catch (e) {
+          // ignore; show the login form
+        }
+      })();
+    </script>
   </head>
-  <body>
+  <body class="login-page">
     <div class="auth-shell">
       <header class="auth-top-nav">
         <p class="auth-brand">The Tracker App</p>
@@ -33,47 +92,40 @@
 
       <main class="auth-main">
         <section class="auth-card request-card" aria-labelledby="loginHeading">
-          <p class="auth-kicker">Account Access</p>
-          <h1 id="loginHeading">Log in to The Tracker App</h1>
-          <p class="auth-subtle">Enter your email, phone, or username to request a one-time code.</p>
-          <p class="auth-subtle">Forgot password uses this same flow.</p>
+          <h1 id="loginHeading">Log in or sign up</h1>
+          <p id="credentialSummary" class="auth-channel-summary">
+            Use the phone number, iMessage email, or Telegram username on your account. We will use the right delivery
+            route based on what you enter.
+          </p>
 
           <form id="requestCodeForm" class="auth-form" novalidate>
-            <fieldset>
-              <legend>Login Options</legend>
-              <div class="method-grid">
-                <label>
-                  <input type="radio" name="loginMethod" value="email" checked />
-                  Email
-                </label>
-                <label>
-                  <input type="radio" name="loginMethod" value="phone" />
-                  Phone
-                </label>
-                <label>
-                  <input type="radio" name="loginMethod" value="username" />
-                  Username
-                </label>
+            <label for="credentialInput" class="auth-field">
+              <span id="credentialFieldLabel" class="auth-field-label">Phone, iMessage email, or Telegram username</span>
+              <div id="credentialShell" class="auth-input-shell">
+                <span id="credentialIcon" class="auth-input-icon" aria-hidden="true">
+                  <img id="credentialIconImage" src="" alt="" hidden />
+                  <span id="credentialIconEmoji">📱</span>
+                </span>
+                <input
+                  id="credentialInput"
+                  name="credential"
+                  type="text"
+                  placeholder="+1 555-555-5555, yourname@icloud.com, or @fierylion"
+                  autocomplete="off"
+                  autocapitalize="none"
+                  spellcheck="false"
+                  required
+                />
               </div>
-            </fieldset>
-
-            <label for="credentialInput">
-              <span id="credentialLabel">Email</span>
-              <input
-                id="credentialInput"
-                name="credential"
-                type="email"
-                placeholder="you@example.com"
-                autocomplete="email"
-                autocapitalize="none"
-                spellcheck="false"
-                required
-              />
+              <span id="credentialHint" class="auth-input-hint">Examples: +1 555-555-5555, yourname@icloud.com, or @fierylion.</span>
             </label>
 
             <div class="auth-actions is-stack">
               <button type="submit" id="requestCodeButton" class="btn-primary">Continue</button>
             </div>
+            <button type="button" id="recoveryToggleButton" class="auth-inline-button">
+              Trouble logging in? Use email instead.
+            </button>
             <p id="requestStatus" class="auth-status" role="status" aria-live="polite"></p>
           </form>
         </section>

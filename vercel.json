@@ -1,3 +1,35 @@
 {
-  "cleanUrls": true
+  "cleanUrls": true,
+  "redirects": [
+    {
+      "source": "/affiliate/dashboard",
+      "destination": "https://dashboard.thetrackerapp.io/dashboard?view=affiliate",
+      "permanent": false
+    },
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "dashboard.thetrackerapp.io"
+        }
+      ],
+      "destination": "/dashboard",
+      "permanent": false
+    },
+    {
+      "source": "/affiliate/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "dashboard.thetrackerapp.io"
+        }
+      ],
+      "destination": "/dashboard?view=affiliate",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
+    { "source": "/dashboard-endpoints", "destination": "/api/dashboard-endpoints" }
+  ]
 }

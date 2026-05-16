@@ -576,6 +576,6 @@ async function init() {
   }
 }
 
-init();
 inject();
 initGoogleAnalytics();
+init();

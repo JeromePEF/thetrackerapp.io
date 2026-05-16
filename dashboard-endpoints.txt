@@ -1,0 +1,275 @@
+# Dashboard Endpoint Map — editable source
+#
+# Edit this file. The /dashboard-endpoints page renders it.
+# Format: `== TAB ==` starts a section. Lines starting with `-` are list items.
+# Lines starting with `:` are key/value rows. Blank lines separate blocks.
+
+
+== SHARED ==
+Hydration call that fires once on dashboard boot. Populates Account, Goals,
+Billing, Sheet, and Personal Trainer state in a single roundtrip.
+
+GET /api/portal?contact=<canonical>
+  Auth: Authorization: Bearer <session_token> (optional today, accepted)
+  Triggered by: src/dashboard.js → loadBackendUserSnapshot()
+  Also re-called by: loadBillingOverview, finalizeBillingFromRedirect
+
+  Backend returns (verified on fierylion):
+    : contact              : "fierylion"
+    : profile.username     : "fierylion"
+    : profile.primaryEmail : "user@example.com"
+    : profile.primaryPhone : "7373686293"
+    : profile.googleSheetUrl : "https://docs.google.com/spreadsheets/d/.../edit"
+    : profile.googleSheetId  : "1NKt..."
+    : profile.stripeCustomerId : "cus_..."
+    : profile.stripeSubscriptionStatus : "active"
+    : profile.stripePlanKey  : "monthly"
+    : profile.stripeCancelAtPeriodEnd : false
+    : profile.stripeCurrentPeriodEnd  : "2026-06-10T..."
+    : membership.status    : "active"
+    : membership.plan      : "monthly"
+    : membership.planName  : "monthly"
+    : membership.nextBillingDate : "6/10/2026"
+    : billing.status       : "active"
+    : billing.plan         : "monthly"
+    : stripeBillingUrl     : "https://billing.stripe.com/p/session/..." (inline, fresh)
+    : billingPortalUrl     : same
+    : trainerCanonical     : "" (empty unless attached)
+    : clientCanonicals     : []
+    : affiliate            : null OR { code, ... }
+    : referredBy           : null OR "<affiliateCode>"
+
+  FE consumes via:
+    - normalizeBackendSnapshot() → state.backendSnapshot
+    - applySnapshotToState() → state.userSheetUrl, persistAuthFromSnapshot
+    - renderAccountInfo(), renderSheetLink(), renderGoals(), renderBodyMeasures()
+
+
+== ACCOUNT ==
+What it shows: account identity row (email, username, age, account ID, canonical,
+auth method, contact, last login).
+
+Endpoints called:
+  - GET /api/portal?contact=<canonical>          (via SHARED hydration)
+
+Fields rendered from /api/portal:
+  : Email        : account.primaryEmail || profile.primaryEmail
+  : Username     : account.username || profile.username
+  : Age          : account.age || profile.age
+  : Account ID   : root.accountId (fallback to auth payload accountId)
+  : Canonical    : root.canonical || profile.contact
+  : Contact      : maskedCredential from session
+  : Last Login   : tracker.auth.user.loginAt (local)
+
+No POSTs on this tab today.
+
+
+== STATS ==
+What it shows: workouts logged, calories tracked, gallons drank for selected
+range (Today/Week/Month/Year/AllTime/Custom). Trend charts. Leaderboard rank.
+Milestones toggle.
+
+Endpoints called:
+  - GET /api/stats/range?contact=<c>&range=<r>&from=<d>&to=<d>
+      Fallbacks tried in order:
+        /api/stats/range, /api/dashboard/stats/range, ${API_BASE}/api/stats/range
+      Triggered by: loadRange(rangeId) on range button click + on boot for "today"
+
+  - GET /api/leaderboard/rank?contact=<c>
+      Fallbacks: /api/stats/rank, ${API_BASE}/api/leaderboard/rank
+      Triggered by: loadLeaderboardRank()
+
+  - GET /api/milestones?contact=<c>
+      Fallbacks: /api/account/milestones, ${API_BASE}/api/milestones
+      Triggered by: loadMilestones() on boot + on Milestones toggle
+
+  - GET /api/body-measures?contact=<c>
+      Fallbacks: /api/account/body-measures, ${API_BASE}/api/body-measures
+      Triggered by: loadBodyMeasuresAndRender() on boot
+
+Expected response shape for /api/stats/range:
+  : workoutsLogged   : { value, sheetUrl } OR number
+  : caloriesTracked  : { value, sheetUrl } OR number
+  : gallonsDrank     : { value, sheetUrl } OR number
+  : usersUsingToday  : optional
+  : history          : optional array used to compute other ranges client-side
+  : masterLogSheetUrl: optional fallback for sheet URL
+
+Expected response shape for /api/leaderboard/rank:
+  : rank             : number
+  : sheetUrl         : optional
+
+
+== EXPORT ==
+What it shows: Export buttons (CSV / JSON). Client-only — packages state into a
+download.
+
+Endpoints called: NONE (purely client-side from state.metricsByRange + state.goals).
+
+If you want this to pull a richer export from the server:
+  POTENTIAL ENDPOINT (not yet wired):
+    GET /api/account/export?contact=<c>&format=csv|json
+    Should return: complete history of workouts/nutrition/water + goal snapshots.
+
+
+== GOALS ==
+What it shows: weight goal, body-fat goal, weekly workout plan, popular plan
+templates, affiliate link box (or "Become an affiliate" CTA when not enrolled).
+
+Endpoints called:
+  - GET /api/portal?contact=<c>            (via SHARED hydration; populates goal initial values)
+  - POST /api/account/goals
+      Fallbacks: ${API_BASE}/api/account/goals
+      Triggered by: Save Goals button → wireGoals() handler
+      Body sent: { weightGoal, bodyFatGoal, workoutPlan, selectedPlanDays }
+      Expected response: { ok: true } (FE just toasts success)
+
+  - GET /api/affiliate/status (with email or session)
+      Triggered by: loadAffiliateProfile() on dashboard boot
+      Used to decide: show real affiliate link vs "Become an affiliate" CTA
+
+Local storage:
+  : tracker.dashboard.goals : last-saved goals object (offline fallback)
+
+
+== BILLING ==
+What it shows: current status, plan, "Manage Billing in Stripe" link, action
+buttons (Refresh / Checkout / Cancel / Resume), cancel-at-period-end notice.
+
+Endpoints called:
+  - GET /api/portal?contact=<c>            (via SHARED hydration; sets status, plan, portal URL)
+
+  - POST /api/stripe/checkout-session
+      Fallbacks: /api/stripe/checkout-session, /api/stripe/checkout, /api/billing/checkout-session
+      Triggered by: "Start Monthly Checkout" → startStripeCheckout()
+      Body: { contact, plan: "monthly", successUrl, cancelUrl }
+      Expected response: { ok, url, checkoutSessionId, priceId, customerId, ... }
+
+  - GET /api/stripe/checkout-complete?session_id=<id>
+      Fallbacks: relative + ${API_BASE} prefixed
+      Triggered by: finalizeBillingFromRedirect() on dashboard load when ?billing=success
+      Expected response: confirms subscription, returns updated portal payload
+
+  - POST /api/billing/cancel
+      Fallbacks: /api/stripe/subscription/cancel, /api/stripe/cancel
+      Triggered by: Cancel Subscription button → runBillingAction("cancel")
+      Body: { action: "cancel", contact }
+      Expected response: { ok, cancelAtPeriodEnd: true, currentPeriodEnd, subscriptionStatus, portal }
+
+  - POST /api/billing/resume
+      Fallbacks: /api/stripe/subscription/resume
+      Triggered by: Resume Subscription button (only visible when cancelAtPeriodEnd === true)
+      Body: { action: "resume", contact }
+      Expected response: { ok, cancelAtPeriodEnd: false, currentPeriodEnd, subscriptionStatus, portal }
+
+  - POST /api/stripe/portal-session (optional second hop)
+      Fallback: /api/billing/portal-session
+      Only used if /api/portal didn't return stripeBillingUrl inline. Today it does, so this is a backup path.
+      Expected response: { ok, url, billingPortalUrl, stripeBillingUrl, customerId, portal }
+
+Button visibility rules (set by applyBillingPayload):
+  : hasActiveSub        : status in {active, trialing, past_due}
+  : scheduledForCancel  : cancelAtPeriodEnd === true && hasActiveSub
+  : Start Monthly Checkout : visible when !hasActiveSub
+  : Cancel Subscription : visible when hasActiveSub && !scheduledForCancel
+  : Resume Subscription : visible when scheduledForCancel
+  : Manage Billing link : visible when stripeBillingUrl/billingPortalUrl/etc present
+
+
+== INTEGRATE ==
+What it shows: connect cards for OpenClaw, Hermes, Google Fit. Each has a
+"Connect" button.
+
+Endpoints called:
+  - POST /api/integrations/connect
+      Fallbacks: relative + ${API_BASE}/api/integrations/connect
+      Triggered by: per-card Connect button → wireIntegrations()
+      Body: { provider: "openclaw" | "hermes" | "googlefit" }
+      Expected response: { ok: true, ... } OR { ok: false, error }
+      Today: returns 404 → FE shows "integration endpoint unavailable" toast.
+
+POTENTIAL ENDPOINTS TO ADD (backend gap):
+  POST /api/integrations/connect   → returns OAuth URL or completes link
+  GET  /api/integrations/status?contact=<c>  → lists which providers are linked
+
+
+== AI ==
+What it shows: chat sessions list, message history, input box, "Ask AI" button.
+
+Endpoints called:
+  - POST one of: /api/ai/chat, /api/ai/fitness, /api/gemini/fitness
+      Fallbacks tried in order (relative + ${API_BASE} prefixed)
+      Triggered by: aiChatForm submit, "Ask AI" button → wireAi()
+      Body: { contact, message, history, sessionId }
+      Expected response: { ok, reply, sessionId } OR { ok, message: { content } }
+
+Local storage:
+  : tracker.dashboard.ai.sessions : array of chat session objects (offline persistence)
+
+
+== SHEET ==
+What it shows: link to the user's personal Google Sheet (workout log mirror).
+
+Endpoints called:
+  - GET /api/portal?contact=<c>           (via SHARED hydration; profile.googleSheetUrl)
+
+No POSTs. If sheetUrl is empty, displays "No sheet link found in account yet."
+
+POTENTIAL ENDPOINTS TO ADD (backend gap):
+  POST /api/sheet/regenerate?contact=<c>  → re-creates the user's sheet and returns new URL
+  POST /api/sheet/share?contact=<c>       → invites a coach/email to view the sheet
+
+
+== PERSONAL TRAINER ==  (tab hidden unless user has trainer attached)
+What it shows: "Status: Attached", "Coach: <name>".
+
+Endpoints called:
+  - GET /api/portal?contact=<c>           (via SHARED hydration; profile.trainerCanonical)
+
+Tab visibility:
+  : navPersonalTrainer hidden : when user.hasPersonalTrainer is falsy
+
+
+== AFFILIATE ==  (tab hidden unless user has affiliate profile)
+What it shows: referral link + copy, click/signup/conversion counts,
+calculated/held/sent earnings, Stripe Connect button, link to full affiliate
+dashboard at /affiliate/dashboard.
+
+Endpoints called:
+  - GET /api/affiliate/status?email=<e>
+      Triggered by: loadAffiliateProfile() on dashboard boot
+      Expected: { ok, affiliate, referrals, history, stats } OR { ok: false }
+
+  - POST /api/affiliate/connect
+      Triggered by: Connect Stripe button → handleAffiliateConnectClick()
+      Body: { email, returnUrl, refreshUrl }
+      Expected: { ok, onboardingUrl }
+
+Tab visibility:
+  : navAffiliate hidden : when affiliate profile lookup fails or returns !found
+  : affiliateBoxGoalsCta / affiliateBoxBillingCta : visible only when no profile
+
+
+== BACKEND PUNCH LIST (referenced above) ==
+Endpoints the FE wants but the backend hasn't shipped yet:
+
+  - GET  /r/:code                       → 302 to / with ref cookie set
+  - POST /api/integrations/connect      → currently 404
+  - GET  /api/integrations/status       → not implemented
+  - GET  /api/account/export            → richer server-side export (optional)
+  - POST /api/sheet/regenerate          → not implemented (optional)
+  - POST /api/sheet/share               → not implemented (optional)
+  - Stripe Connect "account.updated" webhook → flip affiliate.stripeAccountStatus on payouts_enabled
+
+Endpoints the FE already calls and assumes work:
+  - GET  /api/portal                    ✓ live
+  - POST /api/auth/login-code/request   ✓ live (iCloud only until GMAIL_REFRESH_TOKEN regen)
+  - POST /api/auth/login-code/verify    ✓ live
+  - POST /api/onboarding                ✓ live
+  - POST /api/affiliate/signup          ✓ live
+  - GET  /api/affiliate/status          ✓ live
+  - POST /api/affiliate/connect         ✓ live
+  - POST /api/stripe/checkout-session   ✓ live
+  - POST /api/billing/cancel            ✓ live
+  - POST /api/billing/resume            ✓ live
+  - POST /api/stripe/portal-session     ✓ live

@@ -4,9 +4,11 @@ import { requestLoginCode, verifyLoginCode } from "./api.js";
 
 const AUTH_FLAG_KEY = "tracker.authenticated";
 const AUTH_USER_KEY = "tracker.auth.user";
+const AUTH_SESSION_KEY = "tracker.auth.session";
 const AUTH_PENDING_KEY = "tracker.auth.pending";
+const DASHBOARD_ORIGIN = "https://dashboard.thetrackerapp.io";
 const DASHBOARD_HOME_URL = "https://dashboard.thetrackerapp.io/dashboard";
-const DASHBOARD_ACCOUNT_VIEW_URL = `${DASHBOARD_HOME_URL}?view=account`;
+const DASHBOARD_STATS_VIEW_URL = `${DASHBOARD_HOME_URL}?view=stats`;
 const DEFAULT_CODE_LENGTH = 8;
 
 const els = {
@@ -69,6 +71,9 @@ function loadPendingAuth() {
 
     return {
       method: String(parsed.method || "").trim(),
+      provider: String(parsed.provider || "").trim(),
+      deliveryChannel: String(parsed.deliveryChannel || "").trim(),
+      recovery: Boolean(parsed.recovery),
       identifier: String(parsed.identifier || "").trim(),
       displayValue: String(parsed.displayValue || "").trim(),
       requestedTarget: String(parsed.requestedTarget || parsed.displayValue || "").trim(),
@@ -77,6 +82,7 @@ function loadPendingAuth() {
       expiresAt: parsed.expiresAt ? String(parsed.expiresAt) : null,
       requestedAt: parsed.requestedAt ? String(parsed.requestedAt) : new Date().toISOString(),
       sessionLabel: String(parsed.sessionLabel || "Current device").trim(),
+      next: String(parsed.next || "").trim() || null,
     };
   } catch {
     return null;
@@ -150,8 +156,57 @@ function fallbackAccountId(identifier) {
   return `TRK-${String(hash).padStart(6, "0")}`;
 }
 
-function resolveLoginNextDestination() {
-  return DASHBOARD_ACCOUNT_VIEW_URL;
+function normalizeNextDestination(rawValue) {
+  const raw = String(rawValue || "").trim();
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const url = new URL(raw, window.location.origin);
+    if (url.origin !== DASHBOARD_ORIGIN) {
+      return null;
+    }
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+function encodeAuthPayload(value) {
+  try {
+    const json = JSON.stringify(value);
+    const utf8 = new TextEncoder().encode(json);
+    let binary = "";
+    utf8.forEach((byte) => {
+      binary += String.fromCharCode(byte);
+    });
+    return btoa(binary);
+  } catch {
+    return "";
+  }
+}
+
+function resolveLoginNextDestination(verifyBody, authUser) {
+  const preferred = normalizeNextDestination(pendingAuth?.next || "");
+  const targetUrl = new URL(preferred || DASHBOARD_STATS_VIEW_URL);
+  const sessionToken = String(verifyBody?.sessionToken || verifyBody?.session_token || "").trim();
+  const sessionExpiresAt = String(verifyBody?.sessionExpiresAt || verifyBody?.session_expires_at || "").trim();
+  const encodedAuth = encodeAuthPayload(authUser);
+
+  if (sessionToken) {
+    targetUrl.searchParams.set("session_token", sessionToken);
+  }
+
+  if (sessionExpiresAt) {
+    targetUrl.searchParams.set("session_expires_at", sessionExpiresAt);
+  }
+
+  if (encodedAuth) {
+    targetUrl.searchParams.set("auth_payload", encodedAuth);
+  }
+
+  return targetUrl.toString();
 }
 
 function createAuthUser(verifyBody) {
@@ -162,6 +217,15 @@ function createAuthUser(verifyBody) {
     credential: pendingAuth?.identifier || "",
     maskedCredential: pendingAuth?.displayValue || pendingAuth?.requestedTarget || "",
     accountId: String(account?.accountId || account?.id || fallbackAccountId(pendingAuth?.identifier || "")),
+    canonical: String(account?.canonical || "").trim(),
+    username: String(account?.username || "").trim(),
+    email: String(account?.email || account?.primaryEmail || "").trim(),
+    age: String(account?.age || account?.profile?.age || "").trim(),
+    billingStatus: String(account?.billingStatus || account?.subscriptionStatus || "").trim(),
+    sheetUrl: String(account?.sheetUrl || account?.googleSheetUrl || "").trim(),
+    affiliateCode: String(account?.affiliateCode || account?.referralCode || "").trim(),
+    hasPersonalTrainer: Boolean(account?.hasPersonalTrainer || account?.personalTrainerAttached || account?.trainerAttached),
+    personalTrainerName: String(account?.personalTrainerName || account?.trainerName || "").trim(),
     loginAt: new Date().toISOString(),
   };
 }
@@ -208,10 +272,22 @@ async function handleVerifyCode(event) {
   try {
     const response = await verifyLoginCode(payload);
     const body = response?.body && typeof response.body === "object" ? response.body : response;
+    const authUser = createAuthUser(body);
+    const sessionToken = String(body?.sessionToken || body?.session_token || "").trim();
+    const sessionExpiresAt = String(body?.sessionExpiresAt || body?.session_expires_at || "").trim();
 
     try {
       window.localStorage.setItem(AUTH_FLAG_KEY, "true");
-      window.localStorage.setItem(AUTH_USER_KEY, JSON.stringify(createAuthUser(body)));
+      window.localStorage.setItem(AUTH_USER_KEY, JSON.stringify(authUser));
+      if (sessionToken) {
+        window.localStorage.setItem(
+          AUTH_SESSION_KEY,
+          JSON.stringify({
+            token: sessionToken,
+            expiresAt: sessionExpiresAt || null,
+          }),
+        );
+      }
     } catch {
       // Ignore storage failures and continue redirect.
     }
@@ -220,7 +296,7 @@ async function handleVerifyCode(event) {
     setStatus("Code verified. Redirecting to your dashboard...", "is-success");
 
     window.setTimeout(() => {
-      window.location.href = resolveLoginNextDestination();
+      window.location.href = resolveLoginNextDestination(body, authUser);
     }, 300);
   } catch (error) {
     setStatus(String(error?.message || "Unable to verify code."), "is-error");
@@ -253,6 +329,34 @@ function normalizeRequestMetadata(responsePayload) {
   };
 }
 
+function buildResendPayload(auth) {
+  const payload = {
+    method: auth.method,
+    identifier: auth.identifier,
+    requestId: auth.requestId,
+    request_id: auth.requestId,
+    resend: true,
+    provider: auth.provider || undefined,
+    deliveryChannel: auth.deliveryChannel || undefined,
+    recovery: Boolean(auth.recovery),
+  };
+
+  if (auth.method === "phone") {
+    const digits = String(auth.identifier || "").replace(/\D+/g, "");
+    const normalizedPhone =
+      digits.length === 10 ? `+1${digits}` : digits.length === 11 && digits.startsWith("1") ? `+${digits}` : auth.identifier;
+    payload.contact = normalizedPhone || undefined;
+    payload.phone = normalizedPhone || undefined;
+    payload.phoneDigits = digits || undefined;
+  } else if (auth.method === "email") {
+    payload.email = auth.identifier || undefined;
+  } else if (auth.method === "username") {
+    payload.username = auth.identifier || undefined;
+  }
+
+  return payload;
+}
+
 async function handleResendCode() {
   if (!pendingAuth) {
     setStatus("Missing login request. Start again from login.", "is-error");
@@ -262,13 +366,7 @@ async function handleResendCode() {
   setLoading(true);
   setStatus("Requesting new code...", "");
 
-  const payload = {
-    method: pendingAuth.method,
-    identifier: pendingAuth.identifier,
-    requestId: pendingAuth.requestId,
-    request_id: pendingAuth.requestId,
-    resend: true,
-  };
+  const payload = buildResendPayload(pendingAuth);
 
   try {
     const response = await requestLoginCode(payload);
@@ -329,6 +427,7 @@ function hydratePendingAuth() {
 
   const params = new URLSearchParams(window.location.search);
   const queryRequestId = String(params.get("request_id") || "").trim();
+  const queryNext = normalizeNextDestination(params.get("next"));
 
   if (!pendingAuth) {
     setStatus("No active login request found. Start from login.", "is-error");
@@ -342,9 +441,13 @@ function hydratePendingAuth() {
 
   if (queryRequestId && !pendingAuth.requestId) {
     pendingAuth.requestId = queryRequestId;
-    savePendingAuth(pendingAuth);
   }
 
+  if (queryNext) {
+    pendingAuth.next = queryNext;
+  }
+
+  savePendingAuth(pendingAuth);
   renderPendingAuth();
   return true;
 }

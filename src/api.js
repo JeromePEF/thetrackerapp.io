@@ -25,9 +25,12 @@ const SITE_STRENGTH_SHEET_NAME = "Site Strength";
 const SITE_CALISTHENICS_SHEET_NAME = "Site Calisthenics";
 const TOP_STREAKS_SHEET_NAME = "Top Streaks";
 const DASHBOARD_SHEET_CACHE_TTL_MS = 5 * 60 * 1000;
+const POST_TIMEOUT_MS = 12000;
 const LOCAL_SIGNUP_PROXY_ENDPOINT = "/api/signup-proxy";
 const LOCAL_LOGIN_CODE_REQUEST_ENDPOINT = "/api/login-code-request";
 const LOCAL_LOGIN_CODE_VERIFY_ENDPOINT = "/api/login-code-verify";
+const LOCAL_BACKEND_PROXY_ENDPOINT = "/api/backend-proxy";
+const PUBLIC_LEADERBOARD_ENDPOINT = "/api/public-leaderboard";
 const LOGIN_CODE_REQUEST_ENDPOINTS = ["/api/auth/login-code/request", "/api/auth/code/request", "/api/login-code/request"];
 const LOGIN_CODE_VERIFY_ENDPOINTS = ["/api/auth/login-code/verify", "/api/auth/code/verify", "/api/login-code/verify"];
 
@@ -1757,6 +1760,43 @@ export async function fetchLiveStreakAlert() {
   }
 }
 
+export async function fetchPublicLeaderboardSnapshot() {
+  const response = await fetch(PUBLIC_LEADERBOARD_ENDPOINT, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+  });
+
+  let body = null;
+  try {
+    body = await response.json();
+  } catch {
+    body = null;
+  }
+
+  if (!response.ok || body?.ok === false) {
+    throw new Error(body?.error || `Public leaderboard failed (${response.status})`);
+  }
+
+  return {
+    entries: Array.isArray(body?.entries) ? body.entries : [],
+    groupEntries: Array.isArray(body?.groupEntries) ? body.groupEntries : [],
+    streakEntries: Array.isArray(body?.streakEntries) ? body.streakEntries : [],
+    streakLiveMessage: typeof body?.streakLiveMessage === "string" ? body.streakLiveMessage : "",
+    liveEvents: Array.isArray(body?.liveEvents) ? body.liveEvents : [],
+    pebble: body?.pebble && typeof body.pebble === "object" ? body.pebble : {},
+    usersToday: coerceFiniteNumber(body?.usersToday) ?? 0,
+    usersThisWeek: coerceFiniteNumber(body?.usersThisWeek) ?? 0,
+    usersOnline: coerceFiniteNumber(body?.usersOnline) ?? 0,
+    workoutsLogged: coerceFiniteNumber(body?.workoutsLogged) ?? 0,
+    caloriesTracked: coerceFiniteNumber(body?.caloriesTracked) ?? 0,
+    gallonsDrank: coerceFiniteNumber(body?.gallonsDrank) ?? 0,
+    directories: body?.directories && typeof body.directories === "object" ? body.directories : {},
+    generatedAt: typeof body?.generatedAt === "string" ? body.generatedAt : "",
+    source: typeof body?.source === "string" ? body.source : "",
+    sourceVersion: typeof body?.sourceVersion === "string" ? body.sourceVersion : "",
+  };
+}
+
 function normalizePebbleEntry(entry) {
   const username = normalizeName(entry?.username, "");
   const contact = normalizeName(entry?.contact, "") || normalizeName(entry?.name, "");
@@ -2041,13 +2081,27 @@ export async function fetchPebbleLeaderboard() {
 }
 
 async function postJson(endpoint, payload) {
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), POST_TIMEOUT_MS);
+  let response = null;
+
+  try {
+    response = await fetch(`${API_BASE}${endpoint}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new Error("Request timed out. Please try again.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
 
   let body = null;
 
@@ -2066,13 +2120,27 @@ async function postJson(endpoint, payload) {
 }
 
 async function postJsonSameOrigin(endpoint, payload) {
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), POST_TIMEOUT_MS);
+  let response = null;
+
+  try {
+    response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new Error("Request timed out. Please try again.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
 
   let body = null;
 
@@ -2218,6 +2286,31 @@ async function tryEndpointsWithPayloads(endpoints, payloads) {
   }
 
   throw lastError || new Error("Request failed.");
+}
+
+function summarizeAuthError(error, fallback = "Request failed.") {
+  const raw = String(error?.message || fallback || "Request failed.").trim();
+  if (!raw) {
+    return "Request failed.";
+  }
+
+  if (/<!doctype html|<html[\s>]/i.test(raw)) {
+    const titleMatch = /<title[^>]*>([^<]+)<\/title>/i.exec(raw);
+    if (/bad gateway|error code 502/i.test(raw)) {
+      return "502 Bad Gateway from api.thetrackerapp.io";
+    }
+    return titleMatch?.[1]?.trim() || "Upstream service returned HTML error page.";
+  }
+
+  if (/load failed|failed to fetch|networkerror|network request failed/i.test(raw)) {
+    return "Network connection to backend failed.";
+  }
+
+  if (raw.length > 220) {
+    return `${raw.slice(0, 220)}...`;
+  }
+
+  return raw;
 }
 
 export async function fetchUsageStats() {
@@ -2442,23 +2535,342 @@ export async function submitSignup(payload) {
 }
 
 export async function requestLoginCode(payload) {
+  let proxyError = null;
   try {
     return await postJsonSameOrigin(LOCAL_LOGIN_CODE_REQUEST_ENDPOINT, payload);
-  } catch {
+  } catch (error) {
+    proxyError = error;
     // Fall back to direct backend endpoints below.
   }
 
-  return await tryEndpointsWithPayloads(LOGIN_CODE_REQUEST_ENDPOINTS, [payload]);
+  let backendError = null;
+  try {
+    return await tryEndpointsWithPayloads(LOGIN_CODE_REQUEST_ENDPOINTS, [payload]);
+  } catch (error) {
+    backendError = error;
+  }
+
+  const proxyMessage = summarizeAuthError(proxyError, "Proxy unavailable.");
+  const backendMessage = summarizeAuthError(backendError, "Backend unavailable.");
+  throw new Error(`Login code request failed. Proxy: ${proxyMessage}. Backend: ${backendMessage}.`);
 }
 
 export async function verifyLoginCode(payload) {
+  let proxyError = null;
   try {
     return await postJsonSameOrigin(LOCAL_LOGIN_CODE_VERIFY_ENDPOINT, payload);
-  } catch {
+  } catch (error) {
+    proxyError = error;
     // Fall back to direct backend endpoints below.
   }
 
-  return await tryEndpointsWithPayloads(LOGIN_CODE_VERIFY_ENDPOINTS, [payload]);
+  let backendError = null;
+  try {
+    return await tryEndpointsWithPayloads(LOGIN_CODE_VERIFY_ENDPOINTS, [payload]);
+  } catch (error) {
+    backendError = error;
+  }
+
+  const proxyMessage = summarizeAuthError(proxyError, "Proxy unavailable.");
+  const backendMessage = summarizeAuthError(backendError, "Backend unavailable.");
+  throw new Error(`Login code verification failed. Proxy: ${proxyMessage}. Backend: ${backendMessage}.`);
+}
+
+function readAuthSession() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const raw = window.localStorage.getItem("tracker.auth.session");
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw);
+    const token = String(parsed?.token || "").trim();
+    return token ? { token, expiresAt: parsed?.expiresAt || null } : null;
+  } catch {
+    return null;
+  }
+}
+
+function authHeaders() {
+  const session = readAuthSession();
+  return session ? { Authorization: `Bearer ${session.token}` } : {};
+}
+
+function readAuthUserRecord() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const raw = window.localStorage.getItem("tracker.auth.user");
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function isMaskedValue(value) {
+  return /[*•]/.test(String(value || ""));
+}
+
+function normalizePhoneIdentity(value) {
+  const raw = String(value || "").trim();
+  if (!raw || isMaskedValue(raw)) {
+    return "";
+  }
+
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length === 10) {
+    return `+1${digits}`;
+  }
+  if (digits.length === 11 && digits.startsWith("1")) {
+    return `+${digits}`;
+  }
+  if (digits.length >= 10 && digits.length <= 15) {
+    return raw.startsWith("+") ? raw : `+${digits}`;
+  }
+  return "";
+}
+
+function pruneEmptyFields(record) {
+  const clean = {};
+  Object.entries(record || {}).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === "") {
+      return;
+    }
+    clean[key] = value;
+  });
+  return clean;
+}
+
+export function readStoredAffiliateIdentity() {
+  const parsed = readAuthUserRecord();
+  if (!parsed) {
+    return {};
+  }
+
+  const email = String(parsed?.email || parsed?.primaryEmail || "").trim().toLowerCase();
+  const username = String(parsed?.username || "").trim();
+  const accountId = String(parsed?.accountId || parsed?.id || "").trim();
+  const canonical = String(parsed?.canonical || "").trim();
+
+  const contactCandidates = [
+    parsed?.contact,
+    parsed?.phone,
+    parsed?.credential,
+    parsed?.identifier,
+    parsed?.canonical,
+  ];
+
+  let contact = "";
+  let phone = "";
+
+  for (const candidate of contactCandidates) {
+    const normalized = String(candidate || "").trim();
+    if (!normalized || isMaskedValue(normalized)) {
+      continue;
+    }
+    if (!contact) {
+      contact = normalized;
+    }
+    if (!phone) {
+      phone = normalizePhoneIdentity(normalized);
+    }
+  }
+
+  if (!contact) {
+    contact = phone || email || username || accountId || canonical || "";
+  }
+
+  return pruneEmptyFields({
+    email,
+    username,
+    accountId,
+    canonical,
+    contact,
+    phone,
+  });
+}
+
+function normalizeAffiliateIdentityInput(input) {
+  if (typeof input !== "string") {
+    return { ...(input || {}) };
+  }
+
+  const trimmed = input.trim();
+  if (!trimmed) {
+    return {};
+  }
+  if (trimmed.includes("@")) {
+    return { email: trimmed.toLowerCase(), contact: trimmed };
+  }
+
+  const phone = normalizePhoneIdentity(trimmed);
+  if (phone) {
+    return { contact: trimmed, phone };
+  }
+
+  return { username: trimmed, contact: trimmed };
+}
+
+function buildAuthedProxyUrl(endpoint, params) {
+  const upstreamUrl = new URL(`${API_BASE}${endpoint}`);
+  if (params && typeof params === "object") {
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === undefined || value === null || value === "") {
+        return;
+      }
+      upstreamUrl.searchParams.set(key, String(value));
+    });
+  }
+
+  const target = `${upstreamUrl.pathname}${upstreamUrl.search}`;
+  if (typeof window === "undefined") {
+    return `${API_BASE}${target}`;
+  }
+
+  const proxyUrl = new URL(LOCAL_BACKEND_PROXY_ENDPOINT, window.location.origin);
+  proxyUrl.searchParams.set("target", target);
+  return proxyUrl.toString();
+}
+
+async function getJsonAuthed(endpoint, params) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), POST_TIMEOUT_MS);
+  let response = null;
+
+  try {
+    response = await fetch(buildAuthedProxyUrl(endpoint, params), {
+      method: "GET",
+      headers: { Accept: "application/json", ...authHeaders() },
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new Error("Request timed out. Please try again.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+
+  let body = null;
+  try {
+    body = await response.json();
+  } catch {
+    body = null;
+  }
+
+  if (!response.ok) {
+    const message = body?.error || body?.message || `Request failed (${response.status})`;
+    throw new Error(message);
+  }
+
+  if (body && typeof body === "object" && "ok" in body && !body.ok) {
+    throw new Error(body.error || body.message || `Request failed (${response.status})`);
+  }
+
+  return { endpoint, body };
+}
+
+async function postJsonAuthed(endpoint, payload) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), POST_TIMEOUT_MS);
+  let response = null;
+
+  try {
+    response = await fetch(buildAuthedProxyUrl(endpoint), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...authHeaders(),
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new Error("Request timed out. Please try again.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+
+  let body = null;
+  try {
+    body = await response.json();
+  } catch {
+    body = null;
+  }
+
+  if (!response.ok) {
+    const message = body?.error || body?.message || `Request failed (${response.status})`;
+    throw new Error(message);
+  }
+
+  return { endpoint, body };
+}
+
+function withFallbackAffiliateIdentity(input) {
+  const base = normalizeAffiliateIdentityInput(input);
+  const storedIdentity = readStoredAffiliateIdentity();
+  const merged = { ...base };
+
+  Object.entries(storedIdentity).forEach(([key, value]) => {
+    if (merged[key] === undefined || merged[key] === null || merged[key] === "") {
+      merged[key] = value;
+    }
+  });
+
+  if (!merged.contact) {
+    merged.contact =
+      merged.phone ||
+      merged.email ||
+      merged.username ||
+      merged.accountId ||
+      merged.canonical ||
+      "";
+  }
+
+  return pruneEmptyFields(merged);
+}
+
+export async function affiliateSignup(payload) {
+  const merged = withFallbackAffiliateIdentity(payload);
+  const result = await postJsonAuthed("/api/affiliate/signup", merged);
+  return result.body;
+}
+
+export async function affiliateStatus(identity) {
+  const params = withFallbackAffiliateIdentity(identity);
+  const result = await getJsonAuthed("/api/affiliate/status", params);
+  return result.body;
+}
+
+export async function affiliateHistory(identity) {
+  const params = withFallbackAffiliateIdentity(identity);
+  const result = await getJsonAuthed("/api/affiliate/history", params);
+  return result.body;
+}
+
+export async function affiliateConnect(payload) {
+  const merged = withFallbackAffiliateIdentity(payload);
+  const result = await postJsonAuthed("/api/affiliate/connect", merged);
+  return result.body;
+}
+
+export async function affiliateAgreement(payload) {
+  const merged = withFallbackAffiliateIdentity(payload);
+  const result = await postJsonAuthed("/api/affiliate/agreement", merged);
+  return result.body;
 }
 
 export { API_BASE };

@@ -1,0 +1,66 @@
+Billing Spend Monitoring Setup (Programmatic)
+
+Project: generalautomations-sites
+Billing account: 01FC2B-A9D024-E861A7
+
+1) Quick status check (export health + spend + alerts)
+
+npm run billing:monitor
+npm run billing:overview
+
+2) Tighten thresholds (example)
+
+npm run billing:monitor -- --daily-alert-usd 15 --mtd-alert-usd 250 --fail-on-alert
+
+- Exit code 2 means critical threshold exceeded.
+- Exit code 0 means no critical alert.
+
+3) Create budget guardrail (monthly)
+
+npm run billing:budget -- --create --monthly-usd 300 --display-name "Truist Cost Guard"
+
+4) List current budgets
+
+npm run billing:budget
+
+5) macOS schedule every 15 min (launchd)
+
+Create file:
+~/Library/LaunchAgents/io.thetrackerapp.billing-monitor.plist
+
+Use this content (edit paths only if needed):
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>io.thetrackerapp.billing-monitor</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>-lc</string>
+    <string>cd /Users/rd/thetrackerapp.io && npm run billing:monitor -- --daily-alert-usd 15 --mtd-alert-usd 250 --fail-on-alert >> /Users/rd/thetrackerapp.io/metrics/billing-monitor.log 2>&1</string>
+  </array>
+  <key>StartInterval</key>
+  <integer>900</integer>
+  <key>RunAtLoad</key>
+  <true/>
+</dict>
+</plist>
+
+Load it:
+launchctl load ~/Library/LaunchAgents/io.thetrackerapp.billing-monitor.plist
+
+Check status:
+launchctl list | grep io.thetrackerapp.billing-monitor
+
+a) If usage export table has 0 rows:
+- Billing monitor will warn: USAGE_EXPORT_EMPTY.
+- You must enable in Cloud Billing Export:
+  - Standard usage cost
+  - Detailed usage cost
+- Pricing export alone is not enough for spend monitoring.
+
+b) If script says Cloud Billing API/Budget API disabled:
+- Wait a few minutes after enabling APIs for propagation, then rerun.

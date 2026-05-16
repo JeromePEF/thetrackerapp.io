@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Logout | The Tracker App</title>
+    <meta name="robots" content="noindex" />
+    <script>
+      (function () {
+        var HOME_URL = "https://thetrackerapp.io/";
+        var allowedOrigin = "https://thetrackerapp.io";
+        var destination = HOME_URL;
+
+        try {
+          [
+            "tracker.authenticated",
+            "tracker.auth.user",
+            "tracker.auth.session",
+            "tracker.auth.pending",
+            "tracker.affiliate.email",
+          ].forEach(function (key) {
+            window.localStorage.removeItem(key);
+          });
+        } catch (e) {
+          // Ignore storage failures and keep redirecting.
+        }
+
+        try {
+          var params = new URLSearchParams(window.location.search);
+          var next = String(params.get("next") || "").trim();
+          if (next) {
+            var url = new URL(next, HOME_URL);
+            if (url.origin === allowedOrigin) {
+              destination = url.toString();
+            }
+          }
+        } catch (e) {
+          // Fall back to the homepage.
+        }
+
+        window.location.replace(destination);
+      })();
+    </script>
+  </head>
+  <body>
+    <p>Signing you out...</p>
+  </body>
+</html>

@@ -1,0 +1,68 @@
+Google Site Tracker Setup (GA4 + Optional Metrics Script)
+
+Use this to replicate the same tracker setup on another site.
+
+1) Create GA4 property + web stream
+- Go to Google Analytics -> Admin -> Create Property.
+- Create a Web stream for the new domain.
+- Copy Measurement ID (format: G-XXXXXXXXXX).
+
+2) Frontend env var
+- In the target site, set:
+  VITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX
+- For local dev:
+  cp .env.example .env
+  # then set VITE_GA_MEASUREMENT_ID
+
+3) Add GA loader helper (if not already present)
+- Add a file like src/google-analytics.js that:
+  - reads import.meta.env.VITE_GA_MEASUREMENT_ID
+  - injects https://www.googletagmanager.com/gtag/js?id=<MEASUREMENT_ID>
+  - calls gtag('config', measurementId, { anonymize_ip: true, transport_type: 'beacon' })
+
+4) Initialize on every page entry
+- In each page entry file (for example src/main.js), call:
+  initGoogleAnalytics();
+- If using Vercel analytics too, keep both:
+  inject();
+  initGoogleAnalytics();
+
+5) Deploy
+- Add VITE_GA_MEASUREMENT_ID to hosting environment variables (Vercel/Netlify/etc).
+- Redeploy.
+
+6) Verify tracking is live
+- Open site in browser and navigate a few pages.
+- In GA4 -> Realtime, confirm active users/page views appear.
+- Optional browser check:
+  - DevTools Network: look for requests to googletagmanager.com and g/collect.
+
+7) Optional: Reuse this repo's comprehensive metrics script
+- Copy these files to the new project:
+  - scripts/google-metrics.mjs
+  - scripts/gcp-gemini-billing.mjs (optional, only for cloud billing/Gemini cost split)
+  - .env.google-metrics.example
+- Create .env.google-metrics and set at least:
+  GA4_PROPERTY_ID=<numeric_property_id>
+  # or GA4_MEASUREMENT_ID=G-XXXXXXXXXX
+
+8) Required OAuth scopes for metrics script (comma-separated)
+https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/analytics.readonly,https://www.googleapis.com/auth/adsense.readonly,https://www.googleapis.com/auth/adwords
+
+9) Auth command for local ADC
+- Run exactly:
+  gcloud auth application-default login --scopes=https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/analytics.readonly,https://www.googleapis.com/auth/adsense.readonly,https://www.googleapis.com/auth/adwords
+
+10) Run script examples
+- GA4 summary only (default):
+  bun run "./scripts/google-metrics.mjs" --days 30
+- Full sources (GA4 + AdSense + Google Ads):
+  bun run "./scripts/google-metrics.mjs" --full --days 30
+
+11) If GA4 summary says property cannot be resolved
+- Set GA4_PROPERTY_ID explicitly in .env.google-metrics.
+- Ensure the authenticated identity has Viewer/Analyst access to that GA4 property.
+
+12) If AdSense/Google Ads fail with scope/auth errors
+- Re-run ADC login with the full scopes above.
+- If your Google Workspace blocks sensitive OAuth scopes, use a service account path or org-approved OAuth client.

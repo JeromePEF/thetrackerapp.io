@@ -6,12 +6,29 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "metrics:google": "node scripts/google-metrics.mjs",
+    "metrics:google:help": "node scripts/google-metrics.mjs --help",
+    "metrics:ga4:summary": "node scripts/google-metrics.mjs --ga4-summary-only",
+    "ga4:sites": "node scripts/ga4-manage-sites.mjs",
+    "ga4:sites:help": "node scripts/ga4-manage-sites.mjs --help",
+    "billing:monitor": "node scripts/gcp-billing-monitor.mjs",
+    "billing:monitor:help": "node scripts/gcp-billing-monitor.mjs --help",
+    "billing:overview": "node scripts/gcp-cost-overview.mjs",
+    "billing:overview:help": "node scripts/gcp-cost-overview.mjs --help",
+    "billing:budget": "node scripts/gcp-billing-budget.mjs",
+    "billing:budget:help": "node scripts/gcp-billing-budget.mjs --help",
+    "billing:gemini": "node scripts/gcp-gemini-billing.mjs",
+    "billing:gemini:help": "node scripts/gcp-gemini-billing.mjs --help"
   },
   "devDependencies": {
     "vite": "latest"
   },
   "dependencies": {
-    "@vercel/analytics": "^2.0.1"
+    "@google-cloud/bigquery": "^8.1.1",
+    "@vercel/analytics": "^2.0.1",
+    "dotenv": "^17.4.2",
+    "google-auth-library": "^10.6.2",
+    "googleapis": "^171.4.0"
   }
 }

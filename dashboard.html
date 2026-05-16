@@ -6,7 +6,7 @@
     <title>Dashboard | The Tracker App</title>
     <meta
       name="description"
-      content="The Tracker App dashboard for stats, exports, goals, billing, settings, and integrations."
+      content="The Tracker App dashboard for stats, exports, goals, billing, integrations, AI, and sheet sync."
     />
     <link rel="canonical" href="https://dashboard.thetrackerapp.io/dashboard" />
     <link rel="icon" href="/favicon.svg?v=3" type="image/svg+xml" />
@@ -19,64 +19,569 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="auth-pages.css" />
+    <link rel="stylesheet" href="affiliate.css" />
+    <script>
+      // Synchronous auth gate. Runs before body parses so unauthenticated users
+      // never see dashboard markup. dashboard.js does the same check + URL param
+      // hydration after this — this is the no-flash guard.
+      (function () {
+        try {
+          var params = new URLSearchParams(window.location.search);
+          if (params.get("auth_payload") || params.get("session_token")) {
+            return; // Fresh login redirect; let dashboard.js hydrate the session.
+          }
+          var flag = window.localStorage.getItem("tracker.authenticated") === "true";
+          var rawUser = window.localStorage.getItem("tracker.auth.user");
+          var user = null;
+          try { user = rawUser ? JSON.parse(rawUser) : null; } catch (e) { user = null; }
+          var hasUser = user && (user.accountId || user.email || user.username);
+          if (flag && hasUser) {
+            return;
+          }
+        } catch (e) {
+          // fall through to redirect
+        }
+        var next = encodeURIComponent(window.location.href);
+        window.location.replace("https://thetrackerapp.io/login?next=" + next);
+      })();
+    </script>
   </head>
-  <body>
+  <body class="dashboard-page">
     <div class="dashboard-shell">
       <header class="auth-top-nav">
         <p class="auth-brand">The Tracker App</p>
         <nav class="auth-links" aria-label="Primary">
           <a href="https://thetrackerapp.io/">Home</a>
-          <a href="https://thetrackerapp.io/workout-resources">Workout Resources</a>
-          <a href="https://thetrackerapp.io/login?next=https%3A%2F%2Fdashboard.thetrackerapp.io%2Fdashboard%3Fview%3Daccount">Login</a>
+          <a href="#" id="dashboardLogoutLink" class="auth-links-logout">Logout</a>
         </nav>
       </header>
 
       <main class="dashboard-layout">
         <aside class="dashboard-sidebar" aria-label="Dashboard sections">
           <h1>Dashboard</h1>
-          <nav>
-            <a id="navAccount" class="is-active" href="#accountInfoCard">ACCOUNT</a>
-            <a href="#">STATS</a>
-            <a href="#">EXPORT</a>
-            <a href="#">GOALS</a>
-            <a href="#">BILLING</a>
-            <a href="#">SETTINGS</a>
-            <a href="#">INTEGRATE</a>
+          <nav id="dashboardNav">
+            <button id="navAccount" type="button" class="dashboard-tab" data-tab="account">ACCOUNT</button>
+            <button id="navStats" type="button" class="dashboard-tab is-active" data-tab="stats">STATS</button>
+            <button type="button" class="dashboard-tab" data-tab="export">EXPORT</button>
+            <button id="navGoals" type="button" class="dashboard-tab" data-tab="goals" hidden>GOALS/PLAN</button>
+            <button type="button" class="dashboard-tab" data-tab="billing">BILLING</button>
+            <button id="navIntegrate" type="button" class="dashboard-tab" data-tab="integrate" hidden>INTEGRATE</button>
+            <button type="button" class="dashboard-tab" data-tab="ai">AI</button>
+            <button type="button" class="dashboard-tab" data-tab="sheet">SHEET</button>
+            <button id="navAffiliate" type="button" class="dashboard-tab" data-tab="affiliate">AFFILIATE</button>
+            <button id="navPersonalTrainer" type="button" class="dashboard-tab" data-tab="personal-trainer" hidden>PERSONAL TRAINER</button>
           </nav>
-          <p class="sidebar-note">Current service rollout: iMessage, SMS, Telegram. Full channel support remains on the roadmap.</p>
         </aside>
 
-        <section class="dashboard-content" aria-label="Dashboard overview">
-          <article id="accountInfoCard" class="dashboard-card">
-            <h2>Account Info</h2>
-            <p><strong>Account ID:</strong> <span id="accountIdValue">-</span></p>
-            <p><strong>Contact:</strong> <span id="accountContactValue">-</span></p>
-            <p><strong>Sign-in Method:</strong> <span id="accountMethodValue">-</span></p>
-            <p><strong>Last Login:</strong> <span id="accountLoginAtValue">-</span></p>
+        <section class="dashboard-content" aria-label="Dashboard views">
+          <article id="tabStats" class="dashboard-panel is-active" data-tab-panel="stats">
+            <header class="panel-head">
+              <h2>Stats</h2>
+              <p>Workouts, nutrition, water, and body measure trends.</p>
+            </header>
+
+            <section class="stats-toolbar" aria-label="Stats range controls">
+              <div class="stats-range-preset" role="group" aria-label="Preset ranges">
+                <button type="button" class="stats-range-btn is-active" data-range="today">D</button>
+                <button type="button" class="stats-range-btn" data-range="week">W</button>
+                <button type="button" class="stats-range-btn" data-range="month">M</button>
+                <button type="button" class="stats-range-btn" data-range="year">Y</button>
+                <button type="button" class="stats-range-btn" data-range="all">AT</button>
+              </div>
+              <div class="stats-range-custom">
+                <label>
+                  From
+                  <input id="statsFromDate" type="date" />
+                </label>
+                <label>
+                  To
+                  <input id="statsToDate" type="date" />
+                </label>
+                <button id="applyCustomRangeButton" type="button" class="btn-secondary">Apply Range</button>
+              </div>
+              <p id="statsRangeStatus" class="stats-status" role="status" aria-live="polite"></p>
+            </section>
+
+            <section class="stats-kpis" aria-label="Stats summary">
+              <article class="stats-kpi">
+                <p class="kpi-label">Workouts</p>
+                <p id="statsWorkoutsValue" class="kpi-value">-</p>
+              </article>
+              <article class="stats-kpi">
+                <p class="kpi-label">Nutrition</p>
+                <p id="statsCaloriesValue" class="kpi-value">-</p>
+              </article>
+              <article class="stats-kpi">
+                <p class="kpi-label">Water (Gallons)</p>
+                <p id="statsGallonsValue" class="kpi-value">-</p>
+              </article>
+            </section>
+
+            <section class="stats-meta-row" aria-label="Leaderboard info">
+              <p><strong>Leaderboard Rank:</strong> <span id="leaderboardRankValue">-</span></p>
+              <a id="leaderboardLink" href="https://thetrackerapp.io/#leaderboard" target="_blank" rel="noopener noreferrer">Open Leaderboard</a>
+            </section>
+
+            <section class="milestones-toggle-card" aria-label="Milestones">
+              <div class="stats-trend-head">
+                <h3>Milestones / Achievements</h3>
+                <button id="toggleMilestonesButton" type="button" class="btn-secondary">Show Milestones</button>
+              </div>
+              <div id="milestonesSection" hidden>
+                <div id="milestonesList" class="milestones-list"></div>
+                <p id="milestonesStatus" class="stats-status" role="status" aria-live="polite"></p>
+              </div>
+            </section>
+
+            <section class="stats-grid" aria-label="Main stat charts">
+              <article class="stats-trend-card">
+                <div class="stats-trend-head">
+                  <h3>Workouts</h3>
+                  <p id="statsWindowLabel">Range: D</p>
+                </div>
+                <div id="chartWorkoutsRows" class="trend-rows"></div>
+              </article>
+
+              <article class="stats-trend-card">
+                <div class="stats-trend-head">
+                  <h3>Nutrition</h3>
+                  <p>Calories tracked</p>
+                </div>
+                <div id="chartNutritionRows" class="trend-rows"></div>
+              </article>
+
+              <article class="stats-trend-card">
+                <div class="stats-trend-head">
+                  <h3>Water</h3>
+                  <p>Gallons drank</p>
+                </div>
+                <div id="chartWaterRows" class="trend-rows"></div>
+              </article>
+
+              <article class="stats-trend-card">
+                <div class="stats-trend-head">
+                  <h3>Combined + Body Measures</h3>
+                  <p>Relative trend over time</p>
+                </div>
+                <div id="chartCombinedRows" class="trend-rows"></div>
+                <div id="bodyMeasureRows" class="measure-rows"></div>
+              </article>
+            </section>
+
+            <section class="stats-heatmap-grid" aria-label="Activity heatmaps">
+              <article class="stats-trend-card">
+                <div class="stats-trend-head">
+                  <h3>Workout Heatmap</h3>
+                  <p>Last 12 weeks</p>
+                </div>
+                <div id="workoutHeatmap" class="heatmap-grid"></div>
+              </article>
+
+              <article class="stats-trend-card">
+                <div class="stats-trend-head">
+                  <h3>Nutrition Heatmap</h3>
+                  <p>Last 12 weeks</p>
+                </div>
+                <div id="nutritionHeatmap" class="heatmap-grid"></div>
+              </article>
+
+              <article class="stats-trend-card">
+                <div class="stats-trend-head">
+                  <h3>Water Heatmap</h3>
+                  <p>Last 12 weeks</p>
+                </div>
+                <div id="waterHeatmap" class="heatmap-grid"></div>
+              </article>
+            </section>
+
+            <p class="stats-meta">Generated: <span id="statsGeneratedAtValue">-</span></p>
+            <p class="stats-meta">Source: <a id="statsSheetLink" href="#" target="_blank" rel="noopener noreferrer">your sheet</a></p>
           </article>
-          <article class="dashboard-card">
-            <h2>Stats</h2>
-            <p>Weekly activity, workout consistency, hydration, and nutrition trends.</p>
+
+          <article id="tabAccount" class="dashboard-panel" data-tab-panel="account" hidden>
+            <header class="panel-head">
+              <h2>Account</h2>
+              <p>Account profile data from backend.</p>
+            </header>
+            <section class="account-edit-grid" aria-label="Editable account fields">
+              <article class="account-edit-card">
+                <label for="accountEmailInput">Email</label>
+                <div class="account-edit-row">
+                  <input id="accountEmailInput" type="email" placeholder="you@example.com" />
+                  <button id="saveAccountEmailButton" type="button" class="btn-primary">Save</button>
+                  <button id="verifyAccountEmailButton" type="button" class="btn-secondary" hidden>Verify Email</button>
+                  <span id="accountEmailSaved" class="account-save-check" hidden>✓ Updated</span>
+                </div>
+                <p id="accountEmailStatus" class="stats-status" role="status" aria-live="polite"></p>
+              </article>
+
+              <article class="account-edit-card">
+                <label for="accountUsernameInput">Username</label>
+                <div class="account-edit-row">
+                  <input id="accountUsernameInput" type="text" placeholder="username" />
+                  <button id="saveAccountUsernameButton" type="button" class="btn-primary">Save</button>
+                  <span id="accountUsernameSaved" class="account-save-check" hidden>✓ Updated</span>
+                </div>
+                <p id="accountUsernameStatus" class="stats-status" role="status" aria-live="polite"></p>
+              </article>
+
+              <article class="account-edit-card">
+                <label for="accountAgeInput">Age</label>
+                <div class="account-edit-row">
+                  <input id="accountAgeInput" type="number" inputmode="numeric" min="0" max="130" placeholder="Age" />
+                  <button id="saveAccountAgeButton" type="button" class="btn-primary">Save</button>
+                  <span id="accountAgeSaved" class="account-save-check" hidden>✓ Updated</span>
+                </div>
+                <p id="accountAgeStatus" class="stats-status" role="status" aria-live="polite"></p>
+              </article>
+            </section>
+
+            <section class="account-readonly-grid" aria-label="Account metadata">
+              <article class="account-readonly-item">
+                <p class="account-readonly-label">Account ID</p>
+                <p id="accountIdValue" class="account-readonly-value">-</p>
+              </article>
+              <article class="account-readonly-item">
+                <p class="account-readonly-label">Canonical</p>
+                <p id="accountCanonicalValue" class="account-readonly-value">-</p>
+              </article>
+              <article class="account-readonly-item">
+                <p class="account-readonly-label">Sign-in Method</p>
+                <p id="accountMethodValue" class="account-readonly-value">-</p>
+              </article>
+              <article class="account-readonly-item">
+                <p class="account-readonly-label">Contact</p>
+                <p id="accountContactValue" class="account-readonly-value">-</p>
+              </article>
+              <article class="account-readonly-item">
+                <p class="account-readonly-label">Last Login</p>
+                <p id="accountLoginAtValue" class="account-readonly-value">-</p>
+              </article>
+            </section>
           </article>
-          <article class="dashboard-card">
-            <h2>Export</h2>
-            <p>Export workout history as CSV, JSON, or plain text for archiving and analysis.</p>
+
+          <article id="tabExport" class="dashboard-panel" data-tab-panel="export" hidden>
+            <header class="panel-head">
+              <h2>Export</h2>
+              <p>Download account and stats data.</p>
+            </header>
+            <div class="panel-actions">
+              <button id="exportCsvButton" type="button" class="btn-primary">Export to CSV</button>
+              <button id="exportJsonButton" type="button" class="btn-secondary">Export to JSON</button>
+            </div>
+            <p id="exportStatus" class="stats-status" role="status" aria-live="polite"></p>
           </article>
-          <article class="dashboard-card">
-            <h2>Goals</h2>
-            <p>Set performance targets, body metric goals, and completion checkpoints.</p>
+
+          <article id="tabGoals" class="dashboard-panel" data-tab-panel="goals" hidden>
+            <header class="panel-head">
+              <h2>Goals</h2>
+              <p>Set body goals and workout plan.</p>
+            </header>
+            <div class="form-grid">
+              <label>
+                Body Weight Goal
+                <input id="goalWeightInput" type="text" placeholder="e.g. 165 lb" />
+              </label>
+              <label>
+                Body Fat Goal
+                <input id="goalBodyFatInput" type="text" placeholder="e.g. 18%" />
+              </label>
+            </div>
+
+            <section class="plans-section">
+              <div class="stats-trend-head">
+                <h3>Popular Workout Splits</h3>
+                <p>Choose from 7-day to 1-day plans or build your own.</p>
+              </div>
+              <div id="planDaysToggle" class="plan-days-toggle" role="group" aria-label="Workout day splits">
+                <button type="button" class="plan-day-btn is-active" data-days="7">7 Day</button>
+                <button type="button" class="plan-day-btn" data-days="6">6 Day</button>
+                <button type="button" class="plan-day-btn" data-days="5">5 Day</button>
+                <button type="button" class="plan-day-btn" data-days="4">4 Day</button>
+                <button type="button" class="plan-day-btn" data-days="3">3 Day</button>
+                <button type="button" class="plan-day-btn" data-days="2">2 Day</button>
+                <button type="button" class="plan-day-btn" data-days="1">1 Day</button>
+              </div>
+              <div id="popularPlansList" class="popular-plans-list"></div>
+              <p id="plansStatus" class="stats-status" role="status" aria-live="polite"></p>
+            </section>
+
+            <label>
+              Workout Plan
+              <textarea id="goalWorkoutPlanInput" rows="4" placeholder="Describe your weekly workout plan"></textarea>
+            </label>
+            <div class="panel-actions">
+              <button id="saveGoalsButton" type="button" class="btn-primary">Save Goals</button>
+            </div>
+            <p id="goalsStatus" class="stats-status" role="status" aria-live="polite"></p>
+
           </article>
-          <article class="dashboard-card">
-            <h2>Billing</h2>
-            <p>Manage subscription plans, invoices, and payment methods.</p>
+
+          <article id="tabBilling" class="dashboard-panel" data-tab-panel="billing" hidden>
+            <header class="panel-head">
+              <h2>Billing</h2>
+              <p>Manage subscription status and plan actions.</p>
+            </header>
+            <div class="panel-stack">
+              <p><strong>Current Status:</strong> <span id="billingStatusValue">-</span></p>
+              <p><strong>Current Plan:</strong> <span id="billingPlanValue">-</span></p>
+              <p><strong>Last Payment:</strong> <span id="billingLastPaymentValue">-</span></p>
+              <p><strong>Next Billing Date:</strong> <span id="billingNextBillingValue">-</span></p>
+              <p id="billingCancelNotice" class="stats-status is-error" hidden></p>
+            </div>
+            <div class="panel-actions">
+              <a
+                id="billingManageLink"
+                class="btn-primary"
+                href="#"
+                target="_blank"
+                rel="noopener noreferrer"
+                hidden
+                >Open Stripe Billing</a
+              >
+              <button id="billingYearlyButton" type="button" class="btn-primary" hidden>Start Monthly Checkout</button>
+              <button id="billingResumeButton" type="button" class="btn-primary" hidden>Resume Subscription</button>
+              <button id="billingCancelButton" type="button" class="btn-secondary" hidden>Cancel Subscription</button>
+            </div>
+            <p id="billingActionStatus" class="stats-status" role="status" aria-live="polite"></p>
           </article>
-          <article class="dashboard-card">
-            <h2>Settings</h2>
-            <p>Configure account, notification preferences, and privacy defaults.</p>
+
+          <article id="tabIntegrate" class="dashboard-panel" data-tab-panel="integrate" hidden>
+            <header class="panel-head">
+              <h2>Integrate</h2>
+              <p>Available integrations populated from backend.</p>
+            </header>
+            <div id="integrationCards" class="integration-grid"></div>
+            <p id="integrateStatus" class="stats-status" role="status" aria-live="polite"></p>
           </article>
-          <article class="dashboard-card">
-            <h2>Integrate</h2>
-            <p>Connect supported channels and devices, with additional providers planned on the roadmap.</p>
+
+          <article id="tabAi" class="dashboard-panel" data-tab-panel="ai" hidden>
+            <div class="ai-chat-shell ai-gemini-shell">
+              <section class="ai-session-rail" aria-label="AI chat sessions">
+                <div class="ai-session-rail-head">
+                  <div class="ai-brand-row">
+                    <span class="ai-menu-button" aria-hidden="true">☰</span>
+                    <div>
+                      <p class="ai-kicker">AI Coach</p>
+                      <h3>Conversation</h3>
+                    </div>
+                  </div>
+                  <div class="ai-meta-row">
+                    <button id="aiNewSessionButton" type="button" class="btn-secondary">New Chat</button>
+                    <span class="ai-plan-badge">PRO</span>
+                    <span id="aiUserAvatar" class="ai-user-avatar" aria-hidden="true">A</span>
+                  </div>
+                </div>
+                <div id="aiSessionsList" class="ai-sessions-list ai-sessions-strip"></div>
+              </section>
+              <section class="ai-chat-main" aria-label="AI chat thread">
+                <section id="aiEmptyState" class="ai-empty-state" hidden>
+                  <p class="ai-empty-kicker">Hi <span id="aiGreetingName">there</span></p>
+                  <h3>Where should we start?</h3>
+                  <div class="ai-quick-prompts ai-quick-prompts-stack">
+                    <button type="button" class="btn-secondary ai-prompt" data-prompt="Build me a workout plan for my current goal and available training days.">Build me a workout plan</button>
+                    <button type="button" class="btn-secondary ai-prompt" data-prompt="Review my current nutrition and tell me what to change this week.">Review my nutrition</button>
+                    <button type="button" class="btn-secondary ai-prompt" data-prompt="Use my stats to explain my current training trend and what I should focus on next.">Explain my current trend</button>
+                    <button type="button" class="btn-secondary ai-prompt" data-prompt="Help me plan my hydration and recovery for the rest of this week.">Boost my week</button>
+                    <button type="button" class="btn-secondary ai-prompt" data-prompt="Teach me how to improve my workout programming and body-composition results.">Help me learn</button>
+                  </div>
+                </section>
+                <div id="aiMessages" class="ai-messages" aria-live="polite"></div>
+                <form id="aiChatForm" class="ai-compose ai-gemini-compose">
+                  <div class="ai-compose-shell">
+                    <textarea id="aiQuestionInput" rows="3" placeholder="Enter a prompt for AI Coach"></textarea>
+                    <div class="ai-compose-actions">
+                      <div class="ai-compose-side">
+                        <span class="ai-compose-icon" aria-hidden="true">+</span>
+                        <span class="ai-compose-icon" aria-hidden="true">⋮</span>
+                      </div>
+                      <div class="ai-compose-side ai-compose-side-right">
+                        <span class="ai-compose-mode">Fast</span>
+                        <button id="askAiButton" type="submit" class="btn-primary">Send</button>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+              </section>
+            </div>
+            <p id="aiStatus" class="stats-status" role="status" aria-live="polite"></p>
+            <div id="aiResponseBox" class="ai-response" hidden></div>
+          </article>
+
+          <article id="tabSheet" class="dashboard-panel" data-tab-panel="sheet" hidden>
+            <header class="panel-head">
+              <h2>Sheet</h2>
+              <p>Open your connected Google Sheet database.</p>
+            </header>
+            <div class="panel-actions">
+              <a id="sheetDatabaseLink" class="btn-primary sheet-link" href="#" target="_blank" rel="noopener noreferrer">Open Sheet</a>
+            </div>
+            <p id="sheetStatus" class="stats-status" role="status" aria-live="polite"></p>
+          </article>
+
+          <article id="tabPersonalTrainer" class="dashboard-panel" data-tab-panel="personal-trainer" hidden>
+            <header class="panel-head"><h2>Personal Trainer</h2></header>
+            <p><strong>Status:</strong> <span id="personalTrainerStatusValue">Attached</span></p>
+            <p><strong>Coach:</strong> <span id="personalTrainerNameValue">-</span></p>
+          </article>
+
+          <article id="tabAffiliate" class="dashboard-panel" data-tab-panel="affiliate" hidden>
+            <header class="panel-head">
+              <h2>Affiliate</h2>
+              <p>Referral performance and Stripe Connect Express payouts.</p>
+            </header>
+
+            <section id="affiliateTabEmpty" class="affiliate-box" hidden>
+              <h3>Affiliate Program</h3>
+              <p>Earn commission for every paid subscriber you refer.</p>
+              <p class="affiliate-empty-billing">Current billing status: <strong id="affiliateTabBillingStatus">-</strong></p>
+              <p class="affiliate-form-note">Enter your legal details so we can send the affiliate agreement and unlock Stripe Connect once it is signed.</p>
+              <form id="affiliateApplyForm" class="affiliate-apply-form" novalidate>
+                <div class="form-grid affiliate-form-grid">
+                  <label class="affiliate-inline-field" for="affiliateFirstNameInput">
+                    <span>Legal first name</span>
+                    <input id="affiliateFirstNameInput" name="firstName" type="text" autocomplete="given-name" required />
+                  </label>
+                  <label class="affiliate-inline-field" for="affiliateLastNameInput">
+                    <span>Legal last name</span>
+                    <input id="affiliateLastNameInput" name="lastName" type="text" autocomplete="family-name" required />
+                  </label>
+                  <label class="affiliate-inline-field" for="affiliateEmailInput">
+                    <span>Email</span>
+                    <input id="affiliateEmailInput" name="email" type="email" autocomplete="email" required />
+                  </label>
+                  <label class="affiliate-inline-field" for="affiliateConfirmEmailInput">
+                    <span>Confirm email</span>
+                    <input id="affiliateConfirmEmailInput" name="confirmEmail" type="email" autocomplete="email" required />
+                  </label>
+                  <label class="affiliate-inline-field" for="affiliatePhoneInput">
+                    <span>Phone</span>
+                    <input id="affiliatePhoneInput" name="phone" type="tel" autocomplete="tel" inputmode="tel" required />
+                  </label>
+                </div>
+                <div class="panel-actions">
+                  <button id="affiliateApplyButton" type="submit" class="btn-primary">Become an affiliate</button>
+                  <span id="affiliateApplySuccess" class="account-save-check" hidden>✓ Applied</span>
+                  <button id="affiliateOpenBillingButton" type="button" class="btn-secondary">Open Billing Tab</button>
+                </div>
+              </form>
+              <p id="affiliateTabEmptyStatus" class="stats-status" role="status" aria-live="polite">
+                Once approved, this tab will show your referral metrics and Stripe onboarding state.
+              </p>
+            </section>
+
+            <div id="affiliateTabMetrics" hidden>
+            <section id="affiliateTabAgreementBox" class="affiliate-box" hidden>
+              <h3 id="affiliateAgreementHeading">Affiliate Agreement Required</h3>
+              <p id="affiliateAgreementMessage">We emailed your affiliate agreement. Sign it before connecting Stripe.</p>
+              <div class="form-grid affiliate-form-grid affiliate-agreement-grid">
+                <label class="affiliate-inline-field" for="affiliateAgreementEmailInput">
+                  <span>Agreement email</span>
+                  <input id="affiliateAgreementEmailInput" name="agreementEmail" type="email" autocomplete="email" />
+                </label>
+                <label class="affiliate-inline-field" for="affiliateAgreementConfirmEmailInput">
+                  <span>Confirm agreement email</span>
+                  <input id="affiliateAgreementConfirmEmailInput" name="agreementConfirmEmail" type="email" autocomplete="email" />
+                </label>
+              </div>
+              <p class="affiliate-form-note">We will send the affiliate agreement to the confirmed email above.</p>
+              <div class="panel-actions">
+                <a
+                  id="affiliateAgreementLink"
+                  class="btn-primary"
+                  href="#"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  hidden
+                >
+                  Open Agreement
+                </a>
+                <button id="affiliateAgreementResendButton" type="button" class="btn-secondary" hidden>
+                  Resend Agreement
+                </button>
+              </div>
+              <p id="affiliateAgreementStatus" class="stats-status" role="status" aria-live="polite"></p>
+            </section>
+
+            <section class="affiliate-box">
+              <h3>Your referral link</h3>
+              <p>Share this link. Every paid subscriber you refer earns you commission.</p>
+              <div class="affiliate-row">
+                <input id="affiliateTabLinkInput" type="text" readonly />
+                <button type="button" class="btn-primary affiliate-copy" data-copy-target="affiliateTabLinkInput">Copy</button>
+              </div>
+              <p class="affiliate-code-hint">Your code: <code id="affiliateTabCode">—</code></p>
+            </section>
+
+            <section class="affiliate-box">
+              <h3>Performance</h3>
+              <div class="affiliate-stat-grid">
+                <div class="affiliate-stat">
+                  <p class="affiliate-stat-label">Clicks</p>
+                  <p class="affiliate-stat-value" id="affiliateTabClicks">0</p>
+                </div>
+                <div class="affiliate-stat">
+                  <p class="affiliate-stat-label">Signups</p>
+                  <p class="affiliate-stat-value" id="affiliateTabSignups">0</p>
+                </div>
+                <div class="affiliate-stat">
+                  <p class="affiliate-stat-label">Conversions</p>
+                  <p class="affiliate-stat-value" id="affiliateTabConversions">0</p>
+                </div>
+              </div>
+            </section>
+
+            <section class="affiliate-box">
+              <h3>Earnings</h3>
+              <div class="affiliate-stat-grid">
+                <div class="affiliate-stat">
+                  <p class="affiliate-stat-label">Calculated</p>
+                  <p class="affiliate-stat-value" id="affiliateTabCalculated">$0.00</p>
+                </div>
+                <div class="affiliate-stat">
+                  <p class="affiliate-stat-label">Held</p>
+                  <p class="affiliate-stat-value" id="affiliateTabHeld">$0.00</p>
+                </div>
+                <div class="affiliate-stat">
+                  <p class="affiliate-stat-label">Sent</p>
+                  <p class="affiliate-stat-value" id="affiliateTabSent">$0.00</p>
+                </div>
+              </div>
+            </section>
+
+            <section class="affiliate-box">
+              <h3>Payouts</h3>
+              <p id="affiliateTabStripeStatus" class="stats-status">Connect Stripe to receive your earnings.</p>
+              <div class="panel-actions">
+                <button id="affiliateTabConnectButton" type="button" class="btn-primary">Connect Stripe</button>
+              </div>
+              <p id="affiliateTabConnectStatus" class="stats-status" role="status" aria-live="polite"></p>
+            </section>
+
+            <section class="affiliate-box">
+              <h3>Associated Signups</h3>
+              <p>Every signup currently tied to your affiliate code.</p>
+              <div class="affiliate-table-wrap">
+                <table class="affiliate-signups-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Signed Up</th>
+                      <th scope="col">Subscriber</th>
+                      <th scope="col">Contact</th>
+                      <th scope="col">Plan</th>
+                      <th scope="col">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="affiliateReferralsRows">
+                    <tr>
+                      <td colspan="5">No signups yet.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p id="affiliateReferralsStatus" class="stats-status" role="status" aria-live="polite" hidden>No signups yet.</p>
+            </section>
+            </div>
           </article>
         </section>
       </main>

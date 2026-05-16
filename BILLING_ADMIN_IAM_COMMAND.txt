@@ -1,0 +1,1 @@
+gcloud beta billing accounts add-iam-policy-binding 01FC2B-A9D024-E861A7 --member="serviceAccount:generalautomations-sites@appspot.gserviceaccount.com" --role="roles/billing.admin"

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Affiliate Signup | The Tracker App</title>
+    <meta
+      name="description"
+      content="Become an affiliate of The Tracker App. Earn commission for every paid subscriber you refer."
+    />
+    <link rel="canonical" href="https://thetrackerapp.io/affiliate/signup" />
+    <link rel="icon" href="/favicon.svg?v=3" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3" sizes="180x180" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../auth-pages.css" />
+    <link rel="stylesheet" href="../affiliate.css" />
+  </head>
+  <body>
+    <div class="auth-shell">
+      <header class="auth-top-nav">
+        <p class="auth-brand">The Tracker App</p>
+        <nav class="auth-links" aria-label="Primary">
+          <a href="/">Home</a>
+          <a href="/dashboard">Dashboard</a>
+          <a href="/login">Login</a>
+        </nav>
+      </header>
+
+      <main class="auth-main">
+        <section class="affiliate-loading" id="affiliateSignupLoading">
+          <p>Loading…</p>
+        </section>
+
+        <section class="auth-card affiliate-card" id="affiliateSignupCard" aria-labelledby="affiliateSignupHeading" hidden>
+          <p class="auth-kicker">Affiliate Program</p>
+          <h1 id="affiliateSignupHeading">Become an affiliate</h1>
+          <p class="auth-subtle">
+            Earn commission on every paid subscriber you refer. Confirm your name and we'll create your affiliate profile for this account.
+          </p>
+          <p class="auth-subtle" id="affiliateSignupIdentity"></p>
+
+          <form id="affiliateSignupForm" class="auth-form" novalidate>
+            <label for="affiliateName">
+              <span>Full name</span>
+              <input
+                id="affiliateName"
+                name="name"
+                type="text"
+                autocomplete="name"
+                required
+              />
+            </label>
+
+            <div class="auth-actions is-stack">
+              <button type="submit" id="affiliateSignupButton" class="btn-primary">Apply</button>
+            </div>
+            <p id="affiliateSignupStatus" class="auth-status" role="status" aria-live="polite"></p>
+          </form>
+        </section>
+
+        <section class="affiliate-empty" id="affiliateSignupExisting" hidden>
+          <h1>You're already an affiliate</h1>
+          <p class="auth-subtle">Looks like your account already has an affiliate profile.</p>
+          <div class="auth-actions is-stack">
+            <a class="btn-primary" href="/dashboard">Go to your dashboard</a>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="/src/affiliate-signup.js"></script>
+  </body>
+</html>

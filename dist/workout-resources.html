@@ -9,15 +9,20 @@
       content="Explore workout inspiration by muscle group with fast links to ExRx, JEFIT, Muscle & Strength, and MuscleWiki."
     />
     <link rel="canonical" href="https://thetrackerapp.io/workout-resources" />
+    <link rel="icon" href="/favicon.svg?v=3" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32x32.png?v=3" sizes="32x32" type="image/png" />
+    <link rel="icon" href="/favicon-16x16.png?v=3" sizes="16x16" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3" sizes="180x180" />
+    <link rel="manifest" href="/site.webmanifest" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
-    <script type="module" crossorigin src="/assets/workoutResources-BlT_x43c.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/google-analytics-COtTPxjS.js">
-    <link rel="stylesheet" crossorigin href="/assets/workoutResources-P0l6PMWK.css">
+    <script type="module" crossorigin src="/assets/workoutResources-DcpILtM1.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/google-analytics-D1ItWCpu.js">
+    <link rel="stylesheet" crossorigin href="/assets/workoutResources-BIo5u4le.css">
   </head>
   <body>
     <div class="page-shell">
@@ -25,9 +30,8 @@
         <p class="brand">The Tracker App</p>
         <nav class="nav-links" aria-label="Primary">
           <a href="/">Home</a>
-          <a href="/run-clubs">Run Clubs</a>
-          <a href="/personal-trainers">Personal Trainers</a>
           <a href="/workout-resources" aria-current="page">Workout Resources</a>
+          <a href="/login">Login</a>
         </nav>
       </header>
 
@@ -36,19 +40,51 @@
           <p class="kicker">Workout Inspiration</p>
           <h1>Workout Suggestions Reference Sources</h1>
           <p>
-            Pick a muscle group and instantly open the best external databases. This is integrated as a native workflow, not an embed.
+            Pick a muscle group and instantly open the best external databases. This includes an embedded body-map workflow.
           </p>
         </section>
 
-        <section class="selector-panel" aria-label="Muscle Group Selector">
-          <p class="selector-title">Choose a muscle group</p>
-          <div id="muscleGroupChips" class="chip-row"></div>
-          <p id="selectedSummary" class="selected-summary" role="status" aria-live="polite"></p>
-        </section>
+        <section class="embed-panel" aria-label="Embedded workout body map">
+          <h2 class="section-title">Choose a Muscle Group</h2>
+          <p class="embed-note">Use the hotspots to filter workout resources by muscle group.</p>
+          <div class="embed-shell">
+            <div id="bodyMapFigure" class="embed-figure">
+              <svg viewBox="0 0 220 420" role="img" aria-label="Body map front view">
+                <title>Body map front view</title>
+                <circle cx="110" cy="42" r="24" class="body-outline" />
+                <rect x="85" y="68" width="50" height="72" rx="20" class="body-outline" />
+                <rect x="66" y="84" width="20" height="84" rx="10" class="body-outline" />
+                <rect x="134" y="84" width="20" height="84" rx="10" class="body-outline" />
+                <rect x="88" y="140" width="44" height="40" rx="14" class="body-outline" />
+                <rect x="92" y="178" width="16" height="102" rx="8" class="body-outline" />
+                <rect x="112" y="178" width="16" height="102" rx="8" class="body-outline" />
 
-        <section>
-          <h2 class="section-title">Quick Source Links</h2>
-          <div id="sourceCards" class="source-grid"></div>
+                <rect x="90" y="84" width="40" height="30" rx="10" class="muscle-spot" data-muscle-key="chest" />
+                <rect x="90" y="114" width="40" height="26" rx="10" class="muscle-spot" data-muscle-key="core" />
+                <rect x="68" y="94" width="16" height="34" rx="8" class="muscle-spot" data-muscle-key="arms" />
+                <rect x="136" y="94" width="16" height="34" rx="8" class="muscle-spot" data-muscle-key="arms" />
+                <rect x="86" y="142" width="48" height="34" rx="12" class="muscle-spot" data-muscle-key="glutes" />
+                <rect x="92" y="182" width="16" height="70" rx="8" class="muscle-spot" data-muscle-key="legs" />
+                <rect x="112" y="182" width="16" height="70" rx="8" class="muscle-spot" data-muscle-key="legs" />
+                <rect x="88" y="74" width="44" height="8" rx="4" class="muscle-spot" data-muscle-key="shoulders" />
+              </svg>
+            </div>
+            <div id="bodyMapHotspots" class="embed-hotspots" aria-label="Body map quick targets">
+              <button type="button" class="bodymap-chip" data-muscle-key="chest">Chest</button>
+              <button type="button" class="bodymap-chip" data-muscle-key="back">Back</button>
+              <button type="button" class="bodymap-chip" data-muscle-key="legs">Legs</button>
+              <button type="button" class="bodymap-chip" data-muscle-key="shoulders">Shoulders</button>
+              <button type="button" class="bodymap-chip" data-muscle-key="arms">Arms</button>
+              <button type="button" class="bodymap-chip" data-muscle-key="core">Core</button>
+              <button type="button" class="bodymap-chip" data-muscle-key="glutes">Glutes</button>
+              <button type="button" class="bodymap-chip" data-muscle-key="full-body">Full Body</button>
+            </div>
+          </div>
+          <div class="selector-panel" aria-label="Muscle Group Selector">
+            <p class="selector-title">Quick Group Chips</p>
+            <div id="muscleGroupChips" class="chip-row"></div>
+          </div>
+          <p id="selectedSummary" class="selected-summary" role="status" aria-live="polite"></p>
         </section>
 
         <section>
@@ -56,30 +92,9 @@
           <div id="movementCards" class="movement-grid"></div>
         </section>
 
-        <section>
-          <h2 class="section-title">Reference Sources</h2>
-          <div class="source-list">
-            <article class="source-item">
-              <h3>ExRx Exercise Directory</h3>
-              <p>Broad exercise directory organized by body part and movement patterns.</p>
-              <a href="https://exrx.net/Lists/Directory" target="_blank" rel="noreferrer">Open ExRx</a>
-            </article>
-            <article class="source-item">
-              <h3>JEFIT Exercise Database</h3>
-              <p>Large searchable exercise library with categories and variations.</p>
-              <a href="https://www.jefit.com/exercises" target="_blank" rel="noreferrer">Open JEFIT</a>
-            </article>
-            <article class="source-item">
-              <h3>Muscle & Strength Exercise Database</h3>
-              <p>Good source for strength and bodybuilding exercise options by muscle group.</p>
-              <a href="https://www.muscleandstrength.com/exercises" target="_blank" rel="noreferrer">Open Muscle &amp; Strength</a>
-            </article>
-            <article class="source-item">
-              <h3>MuscleWiki</h3>
-              <p>Visual muscle-group-based exercise lookup for quick suggestions.</p>
-              <a href="https://musclewiki.com/" target="_blank" rel="noreferrer">Open MuscleWiki</a>
-            </article>
-          </div>
+        <section class="source-section">
+          <h2 class="section-title">Quick Source Links</h2>
+          <div id="sourceCards" class="source-grid"></div>
         </section>
       </main>
     </div>

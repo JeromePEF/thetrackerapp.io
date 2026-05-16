@@ -4,18 +4,45 @@ import { requestLoginCode } from "./api.js";
 
 const AUTH_PENDING_KEY = "tracker.auth.pending";
 const DEFAULT_CODE_LENGTH = 8;
+const DASHBOARD_ORIGIN = "https://dashboard.thetrackerapp.io";
+const APPLE_EMAIL_DOMAINS = new Set(["icloud.com", "me.com", "mac.com"]);
+const TELEGRAM_USERNAME_PATTERN = /^@?[a-zA-Z][a-zA-Z0-9_]{3,31}$/;
 
 const els = {
   requestCodeForm: document.getElementById("requestCodeForm"),
-  credentialLabel: document.getElementById("credentialLabel"),
   credentialInput: document.getElementById("credentialInput"),
+  credentialFieldLabel: document.getElementById("credentialFieldLabel"),
+  credentialSummary: document.getElementById("credentialSummary"),
+  credentialHint: document.getElementById("credentialHint"),
+  credentialIconImage: document.getElementById("credentialIconImage"),
+  credentialIconEmoji: document.getElementById("credentialIconEmoji"),
+  recoveryToggleButton: document.getElementById("recoveryToggleButton"),
   requestStatus: document.getElementById("requestStatus"),
   requestCodeButton: document.getElementById("requestCodeButton"),
 };
 
-function activeLoginMethod() {
-  return document.querySelector('input[name="loginMethod"]:checked')?.value || "email";
-}
+const METHOD_CONFIG = {
+  phone: {
+    fieldLabel: "Phone, iMessage email, or Telegram username",
+    inputMode: "text",
+    placeholder: "+1 555-555-5555, yourname@icloud.com, or @fierylion",
+    autocomplete: "off",
+    summary: "Use the phone number, iMessage email, or Telegram username on your account. We will use the right delivery route based on what you enter.",
+    hint: "Examples: +1 555-555-5555, yourname@icloud.com, or @fierylion.",
+    iconEmoji: "📱",
+  },
+  email: {
+    fieldLabel: "Account email",
+    inputMode: "email",
+    placeholder: "you@example.com",
+    autocomplete: "email",
+    summary: "Use the confirmed email on your account only if you no longer have access to your phone, iMessage address, or Telegram username.",
+    hint: "Enter the confirmed email tied to your account.",
+    iconEmoji: "📤",
+  },
+};
+
+let selectedMethod = "phone";
 
 function setStatus(message, type = "") {
   if (!els.requestStatus) {
@@ -29,85 +56,354 @@ function setStatus(message, type = "") {
   }
 }
 
-function syncCredentialInput() {
-  if (!els.credentialInput || !els.credentialLabel) {
-    return;
-  }
-
-  const method = activeLoginMethod();
-
-  if (method === "phone") {
-    els.credentialLabel.textContent = "Phone";
-    els.credentialInput.type = "tel";
-    els.credentialInput.placeholder = "(555) 555-5555";
-    els.credentialInput.autocomplete = "tel";
-    return;
-  }
-
-  if (method === "username") {
-    els.credentialLabel.textContent = "Username";
-    els.credentialInput.type = "text";
-    els.credentialInput.placeholder = "@username";
-    els.credentialInput.autocomplete = "username";
-    return;
-  }
-
-  els.credentialLabel.textContent = "Email";
-  els.credentialInput.type = "email";
-  els.credentialInput.placeholder = "you@example.com";
-  els.credentialInput.autocomplete = "email";
-}
-
 function validEmail(value) {
   return /^\S+@\S+\.\S+$/.test(value);
 }
 
-function validUsername(value) {
-  return /^[a-zA-Z0-9](?:[a-zA-Z0-9._-]{1,30}[a-zA-Z0-9])?$/.test(value);
+function emailDomain(value) {
+  const parts = String(value || "").trim().toLowerCase().split("@");
+  return parts.length === 2 ? parts[1] : "";
+}
+
+function isAppleMessageEmail(value) {
+  return validEmail(value) && APPLE_EMAIL_DOMAINS.has(emailDomain(value));
+}
+
+function normalizeTelegramUsername(value) {
+  return String(value || "").trim().replace(/^@+/, "");
+}
+
+function isTelegramUsername(value) {
+  const normalized = normalizeTelegramUsername(value);
+  return TELEGRAM_USERNAME_PATTERN.test(normalized);
+}
+
+function isPhoneLike(value) {
+  const raw = String(value || "").trim();
+  if (!raw || raw.includes("@") || /[a-zA-Z]/.test(raw)) {
+    return false;
+  }
+  return /^[+\-\(\)\s\d]+$/.test(raw) && /\d/.test(raw);
+}
+
+function normalizeE164FromDigits(digits) {
+  const clean = String(digits || "").replace(/\D+/g, "");
+  if (!clean) {
+    return "";
+  }
+
+  if (clean.length === 10) {
+    return `+1${clean}`;
+  }
+
+  if (clean.length === 11 && clean.startsWith("1")) {
+    return `+${clean}`;
+  }
+
+  return `+${clean}`;
+}
+
+function formatPhoneDisplay(value) {
+  const clean = String(value || "").replace(/\D+/g, "");
+  if (!clean) {
+    return "";
+  }
+
+  const hasCountryCode = clean.length === 11 && clean.startsWith("1");
+  const local = hasCountryCode ? clean.slice(1) : clean.slice(0, 10);
+
+  if (local.length <= 3) {
+    return hasCountryCode ? `+1 ${local}` : local;
+  }
+  if (local.length <= 6) {
+    const partial = `${local.slice(0, 3)}-${local.slice(3)}`;
+    return hasCountryCode ? `+1 ${partial}` : partial;
+  }
+
+  const formatted = `${local.slice(0, 3)}-${local.slice(3, 6)}-${local.slice(6, 10)}`;
+  return hasCountryCode ? `+1 ${formatted}` : formatted;
+}
+
+function primaryInputKind(rawValue) {
+  const value = String(rawValue || "").trim();
+  if (!value) {
+    return "phone";
+  }
+
+  if (isPhoneLike(value)) {
+    return "phone";
+  }
+
+  if (isAppleMessageEmail(value)) {
+    return "imessage_email";
+  }
+
+  if (validEmail(value)) {
+    return "unsupported_email";
+  }
+
+  if (isTelegramUsername(value)) {
+    return "telegram_username";
+  }
+
+  return "unknown";
+}
+
+function iconStateFor(kind) {
+  if (kind === "imessage_email") {
+    return { iconSrc: "/SVGS/IMessage_logo.svg", iconEmoji: "" };
+  }
+
+  if (kind === "telegram_username") {
+    return { iconSrc: "/SVGS/Telegram_logo.svg", iconEmoji: "" };
+  }
+
+  if (kind === "unsupported_email" || selectedMethod === "email") {
+    return { iconSrc: "", iconEmoji: "📤" };
+  }
+
+  return { iconSrc: "", iconEmoji: "📱" };
+}
+
+function primaryPresentation(rawValue) {
+  const kind = primaryInputKind(rawValue);
+
+  if (kind === "imessage_email") {
+    return {
+      fieldLabel: "iMessage email",
+      summary: "Enter the Apple email address on your account. We will send your code through iMessage.",
+      hint: "Example: yourname@icloud.com, yourname@me.com, or yourname@mac.com.",
+      placeholder: "yourname@icloud.com",
+      inputMode: "email",
+      autocomplete: "email",
+      ...iconStateFor(kind),
+    };
+  }
+
+  if (kind === "telegram_username") {
+    return {
+      fieldLabel: "Telegram username",
+      summary: "Enter the Telegram username on your account. We will use that to route your login code.",
+      hint: "Example: @fierylion",
+      placeholder: "@fierylion",
+      inputMode: "text",
+      autocomplete: "username",
+      ...iconStateFor(kind),
+    };
+  }
+
+  if (kind === "unsupported_email") {
+    return {
+      fieldLabel: "Primary login identifier",
+      summary: "The main login field accepts a phone number, an iMessage email, or a Telegram username.",
+      hint: "For a standard email address, use the recovery link below instead.",
+      placeholder: "+1 555-555-5555, yourname@icloud.com, or @fierylion",
+      inputMode: "text",
+      autocomplete: "off",
+      ...iconStateFor(kind),
+    };
+  }
+
+  return {
+    ...METHOD_CONFIG.phone,
+    ...iconStateFor(kind),
+  };
+}
+
+function currentPresentation() {
+  if (selectedMethod === "email") {
+    return {
+      ...METHOD_CONFIG.email,
+      ...iconStateFor("email"),
+    };
+  }
+
+  return primaryPresentation(els.credentialInput?.value || "");
+}
+
+function renderCredentialDecor() {
+  const config = currentPresentation();
+
+  if (els.credentialFieldLabel) {
+    els.credentialFieldLabel.textContent = config.fieldLabel;
+  }
+
+  if (els.credentialSummary) {
+    els.credentialSummary.textContent = config.summary;
+  }
+
+  if (els.credentialHint) {
+    els.credentialHint.textContent = config.hint;
+  }
+
+  if (els.credentialInput) {
+    els.credentialInput.placeholder = config.placeholder || "";
+    els.credentialInput.inputMode = config.inputMode || "text";
+    els.credentialInput.autocomplete = config.autocomplete || "off";
+  }
+
+  if (els.credentialIconImage && els.credentialIconEmoji) {
+    if (config.iconSrc) {
+      els.credentialIconImage.src = config.iconSrc;
+      els.credentialIconImage.hidden = false;
+      els.credentialIconEmoji.hidden = true;
+      els.credentialIconEmoji.textContent = "";
+    } else {
+      els.credentialIconImage.hidden = true;
+      els.credentialIconImage.removeAttribute("src");
+      els.credentialIconEmoji.hidden = false;
+      els.credentialIconEmoji.textContent = config.iconEmoji || "📤";
+    }
+  }
+}
+
+function applyCredentialInputMode(method = selectedMethod) {
+  const input = els.credentialInput;
+  if (!input) {
+    return;
+  }
+
+  input.type = "text";
+  if (method === "email") {
+    input.inputMode = METHOD_CONFIG.email.inputMode;
+    input.autocomplete = METHOD_CONFIG.email.autocomplete;
+    input.placeholder = METHOD_CONFIG.email.placeholder;
+    return;
+  }
+
+  input.inputMode = "text";
+  input.autocomplete = "off";
+  input.placeholder = METHOD_CONFIG.phone.placeholder;
+}
+
+function updateRecoveryToggle() {
+  if (!els.recoveryToggleButton) {
+    return;
+  }
+
+  els.recoveryToggleButton.textContent =
+    selectedMethod === "email" ? "Use phone, iMessage, or Telegram instead." : "Trouble logging in? Use email instead.";
+}
+
+function syncCredentialPresentation() {
+  renderCredentialDecor();
+  updateRecoveryToggle();
+}
+
+function setSelectedMethod(method, { preserveValue = false } = {}) {
+  if (!METHOD_CONFIG[method]) {
+    return;
+  }
+
+  selectedMethod = method;
+  applyCredentialInputMode(method);
+
+  if (els.credentialInput) {
+    if (!preserveValue) {
+      els.credentialInput.value = "";
+    }
+    if (method === "phone") {
+      applyPhoneFormatting(els.credentialInput);
+    }
+  }
+
+  syncCredentialPresentation();
+  setStatus("", "");
 }
 
 function normalizeIdentifier(method, rawValue) {
   const value = String(rawValue || "").trim();
 
   if (!value) {
-    return { ok: false, message: "Enter your login value first." };
+    return {
+      ok: false,
+      message:
+        method === "email"
+          ? "Enter the email on your account."
+          : "Enter the phone number, iMessage email, or Telegram username on your account.",
+    };
   }
 
-  if (method === "phone") {
+  if (method === "email") {
+    const email = value.toLowerCase();
+    if (!validEmail(email)) {
+      return { ok: false, message: "Enter a valid email address." };
+    }
+
+    return {
+      ok: true,
+      method: "email",
+      identifier: email,
+      email,
+      displayValue: email,
+      provider: "Email",
+      deliveryChannel: "email",
+      recovery: true,
+    };
+  }
+
+  const kind = primaryInputKind(value);
+
+  if (kind === "phone") {
     const digits = value.replace(/\D+/g, "");
-    if (digits.length < 7) {
-      return { ok: false, message: "Enter a valid phone number." };
+    const validUsNumber = digits.length === 10 || (digits.length === 11 && digits.startsWith("1"));
+    if (!validUsNumber) {
+      return { ok: false, message: "Enter a valid phone number. +1 is optional." };
     }
 
+    const e164 = normalizeE164FromDigits(digits);
     return {
       ok: true,
+      method: "phone",
       identifier: digits,
-      displayValue: value,
+      contact: e164,
+      phone: e164,
+      phoneDigits: digits,
+      displayValue: formatPhoneDisplay(e164) || value,
+      provider: "SMS",
+      deliveryChannel: "auto",
+      recovery: false,
     };
   }
 
-  if (method === "username") {
-    const username = value.replace(/^@/, "");
-    if (!validUsername(username)) {
-      return { ok: false, message: "Enter a valid username." };
-    }
-
+  if (kind === "imessage_email") {
+    const email = value.toLowerCase();
     return {
       ok: true,
-      identifier: username.toLowerCase(),
-      displayValue: `@${username}`,
+      method: "email",
+      identifier: email,
+      email,
+      displayValue: email,
+      provider: "iMessage",
+      deliveryChannel: "imessage",
+      recovery: false,
     };
   }
 
-  const email = value.toLowerCase();
-  if (!validEmail(email)) {
-    return { ok: false, message: "Enter a valid email address." };
+  if (kind === "telegram_username") {
+    const username = normalizeTelegramUsername(value).toLowerCase();
+    return {
+      ok: true,
+      method: "username",
+      identifier: username,
+      username,
+      displayValue: `@${username}`,
+      provider: "Telegram",
+      deliveryChannel: "telegram",
+      recovery: false,
+    };
+  }
+
+  if (kind === "unsupported_email") {
+    return {
+      ok: false,
+      message: "For a standard email address, use the recovery link below. The main field only accepts phone, iMessage email, or Telegram username.",
+    };
   }
 
   return {
-    ok: true,
-    identifier: email,
-    displayValue: email,
+    ok: false,
+    message: "Enter a phone number, an iMessage email, or a Telegram username.",
   };
 }
 
@@ -171,6 +467,28 @@ function setLoading(loading) {
   els.requestCodeButton.textContent = loading ? "Sending..." : "Continue";
 }
 
+function normalizeNextDestination(rawValue) {
+  const raw = String(rawValue || "").trim();
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const url = new URL(raw, window.location.origin);
+    if (url.origin !== DASHBOARD_ORIGIN) {
+      return null;
+    }
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+function getNextDestination() {
+  const params = new URLSearchParams(window.location.search);
+  return normalizeNextDestination(params.get("next"));
+}
+
 function authorizeUrlFromPending(pending) {
   const params = new URLSearchParams();
 
@@ -179,6 +497,9 @@ function authorizeUrlFromPending(pending) {
   }
 
   params.set("method", pending.method);
+  if (pending.next) {
+    params.set("next", pending.next);
+  }
 
   return `/authorize${params.toString() ? `?${params.toString()}` : ""}`;
 }
@@ -190,8 +511,7 @@ async function handleRequestCode(event) {
     return;
   }
 
-  const method = activeLoginMethod();
-  const normalized = normalizeIdentifier(method, els.credentialInput.value);
+  const normalized = normalizeIdentifier(selectedMethod, els.credentialInput.value);
 
   if (!normalized.ok) {
     setStatus(normalized.message, "is-error");
@@ -202,8 +522,16 @@ async function handleRequestCode(event) {
   setStatus("Requesting code...", "");
 
   const payload = {
-    method,
+    method: normalized.method,
     identifier: normalized.identifier,
+    contact: normalized.contact,
+    phone: normalized.phone,
+    phoneDigits: normalized.phoneDigits,
+    email: normalized.email,
+    username: normalized.username,
+    provider: normalized.provider,
+    deliveryChannel: normalized.deliveryChannel,
+    recovery: normalized.recovery,
     requestedAt: new Date().toISOString(),
     client: {
       userAgent: navigator.userAgent || null,
@@ -217,7 +545,10 @@ async function handleRequestCode(event) {
     const meta = extractRequestMetadata(response, normalized.displayValue);
 
     const pending = {
-      method,
+      method: normalized.method,
+      provider: normalized.provider || "",
+      deliveryChannel: normalized.deliveryChannel || "",
+      recovery: Boolean(normalized.recovery),
       identifier: normalized.identifier,
       displayValue: normalized.displayValue,
       requestedTarget: meta.requestedTarget,
@@ -227,6 +558,7 @@ async function handleRequestCode(event) {
       requestedAt: payload.requestedAt,
       sessionLabel: `${navigator.userAgentData?.platform || navigator.platform || "Unknown platform"} • ${navigator.language || "en-US"}`,
       backendResponse: meta.rawResponse,
+      next: getNextDestination(),
     };
 
     savePendingAuth(pending);
@@ -238,21 +570,151 @@ async function handleRequestCode(event) {
   }
 }
 
-function wireEvents() {
-  document.querySelectorAll('input[name="loginMethod"]').forEach((input) => {
-    input.addEventListener("change", () => {
-      syncCredentialInput();
-      setStatus("", "");
-    });
-  });
+function looksLikePhoneEntry(value) {
+  return selectedMethod === "phone" && primaryInputKind(value) === "phone";
+}
 
-  if (els.requestCodeForm) {
-    els.requestCodeForm.addEventListener("submit", handleRequestCode);
+function formatPhoneProgressive(digits) {
+  const clean = String(digits || "").replace(/\D+/g, "").slice(0, 11);
+  const hasCountryCode = clean.length > 10 && clean.startsWith("1");
+  const local = hasCountryCode ? clean.slice(1, 11) : clean.slice(0, 10);
+
+  if (!local) {
+    return hasCountryCode ? "+1" : "";
+  }
+  if (local.length <= 3) {
+    return hasCountryCode ? `+1 ${local}` : local;
+  }
+  if (local.length <= 6) {
+    const partial = `${local.slice(0, 3)}-${local.slice(3)}`;
+    return hasCountryCode ? `+1 ${partial}` : partial;
+  }
+
+  const formatted = `${local.slice(0, 3)}-${local.slice(3, 6)}-${local.slice(6, 10)}`;
+  return hasCountryCode ? `+1 ${formatted}` : formatted;
+}
+
+function applyPhoneFormatting(input) {
+  if (!input) {
+    return;
+  }
+
+  const value = input.value;
+  if (!looksLikePhoneEntry(value)) {
+    return;
+  }
+
+  const cursorPos = typeof input.selectionStart === "number" ? input.selectionStart : value.length;
+  const digitsBeforeCursor = value.slice(0, cursorPos).replace(/\D+/g, "").length;
+  const digits = value.replace(/\D+/g, "");
+  if (!digits) {
+    return;
+  }
+
+  const formatted = formatPhoneProgressive(digits);
+  if (formatted === value) {
+    return;
+  }
+
+  let newCursor = formatted.length;
+  let digitsSeen = 0;
+  for (let index = 0; index < formatted.length; index += 1) {
+    if (digitsSeen >= digitsBeforeCursor) {
+      newCursor = index;
+      break;
+    }
+    if (/\d/.test(formatted[index])) {
+      digitsSeen += 1;
+    }
+  }
+
+  input.value = formatted;
+  try {
+    input.setSelectionRange(newCursor, newCursor);
+  } catch {
+    // Ignore browser selection quirks.
   }
 }
 
+function detectPrefillMethod(rawValue) {
+  const value = String(rawValue || "").trim();
+  if (!value) {
+    return "phone";
+  }
+
+  if (validEmail(value) && !isAppleMessageEmail(value)) {
+    return "email";
+  }
+
+  return "phone";
+}
+
+function wireEvents() {
+  if (els.requestCodeForm) {
+    els.requestCodeForm.addEventListener("submit", handleRequestCode);
+  }
+
+  if (els.credentialInput) {
+    els.credentialInput.addEventListener("input", () => {
+      if (selectedMethod === "phone") {
+        applyPhoneFormatting(els.credentialInput);
+      }
+      syncCredentialPresentation();
+      setStatus("", "");
+    });
+  }
+
+  if (els.recoveryToggleButton) {
+    els.recoveryToggleButton.addEventListener("click", () => {
+      const nextMethod = selectedMethod === "email" ? "phone" : "email";
+      setSelectedMethod(nextMethod, { preserveValue: false });
+      els.credentialInput?.focus();
+    });
+  }
+}
+
+function prefillFromQuery() {
+  if (!els.credentialInput) {
+    return;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const email = String(params.get("email") || "").trim();
+  const phone = String(params.get("phone") || "").trim();
+  const identifier = String(params.get("identifier") || "").trim();
+
+  if (email) {
+    setSelectedMethod(isAppleMessageEmail(email) ? "phone" : "email", { preserveValue: false });
+    els.credentialInput.value = email;
+    syncCredentialPresentation();
+    return;
+  }
+
+  if (phone) {
+    setSelectedMethod("phone", { preserveValue: false });
+    els.credentialInput.value = phone;
+    applyPhoneFormatting(els.credentialInput);
+    syncCredentialPresentation();
+    return;
+  }
+
+  if (identifier) {
+    const method = detectPrefillMethod(identifier);
+    setSelectedMethod(method, { preserveValue: false });
+    els.credentialInput.value = identifier;
+    if (method === "phone") {
+      applyPhoneFormatting(els.credentialInput);
+    }
+    syncCredentialPresentation();
+    return;
+  }
+
+  setSelectedMethod("phone", { preserveValue: true });
+}
+
 function init() {
-  syncCredentialInput();
+  prefillFromQuery();
+  syncCredentialPresentation();
   wireEvents();
 }
 

@@ -1,6 +1,7 @@
-import { API_BASE, fetchLiveMetrics, fetchPebbleLeaderboard, fetchWorkoutLeaderboard, submitSignup } from "./api.js";
+import { API_BASE, fetchLiveMetrics, fetchPublicLeaderboardSnapshot, submitSignup } from "./api.js";
 import { inject } from "@vercel/analytics";
 import { initGoogleAnalytics } from "./google-analytics.js";
+import { attachRefToPayload, captureRefFromUrl } from "./affiliate-ref.js";
 
 const SERVICES = [
   {
@@ -18,45 +19,20 @@ const SERVICES = [
     identityKind: "phone",
   },
   {
-    id: "whatsapp",
-    label: "WhatsApp",
-    logo: "/SVGS/WhatsApp.svg",
-    provider: "WhatsApp",
-    identityKind: "phone",
-  },
-  {
     id: "telegram",
     label: "Telegram",
     logo: "/SVGS/Telegram_logo.svg",
     provider: "Telegram",
     identityKind: "username",
   },
-  {
-    id: "discord",
-    label: "Discord",
-    logo: "/SVGS/discord-icon-svgrepo-com.svg",
-    provider: "Discord",
-    identityKind: "username",
-  },
-  {
-    id: "groupme",
-    label: "GroupMe",
-    logo: "/SVGS/GroupMe_idFawIHcaz_1.svg",
-    provider: "GroupMe",
-    identityKind: "username",
-  },
-  {
-    id: "signal",
-    label: "Signal",
-    logo: "/SVGS/Signal-Logo-Ultramarine.svg",
-    provider: "Signal",
-    identityKind: "phone",
-  },
 ];
 
 const state = {
   serviceId: "imessage",
 };
+const AUTH_FLAG_KEY = "tracker.authenticated";
+const DASHBOARD_HOME_URL = "https://dashboard.thetrackerapp.io/dashboard";
+const DASHBOARD_HOST = "dashboard.thetrackerapp.io";
 
 const RUN_CLUB_ENDPOINTS = ["/api/run-clubs", "/api/clubs/run", "/api/clubs?type=run", "/run-clubs"];
 const PERSONAL_TRAINER_ENDPOINTS = ["/api/personal-trainers", "/api/trainers", "/api/coaches", "/personal-trainers"];
@@ -64,8 +40,12 @@ const RUN_CLUB_KEYS = ["runClubs", "clubs", "items", "results", "rows", "data"];
 const PERSONAL_TRAINER_KEYS = ["personalTrainers", "trainers", "coaches", "items", "results", "rows", "data"];
 const LIVE_LEADERBOARD_REFRESH_MS = 30000;
 const LIVE_PEBBLE_STEPS_REFRESH_MS = 5000;
+const LIVE_WORKOUT_TOAST_HIDE_MS = 4300;
+const LIVE_WORKOUT_TOAST_INTERVAL_MS = 5000;
+const LIVE_WORKOUT_TOAST_SNOOZE_MS = 5 * 60 * 1000;
 const STEPS_TAPE_MAX_ROWS = 20;
 const STEPS_PER_MILE = 2000;
+const UNIT_SYSTEM_STORAGE_KEY = "tracker.unitSystem";
 const DEV_SAMPLE_LIVE_EVENTS = [
   { name: "UN", exercise: "Bench Press", value: "1,315lb", streak: 100 },
   { name: "RB", exercise: "Run", value: "62 min", streak: 42 },
@@ -77,14 +57,16 @@ const DEV_SAMPLE_STEPS_TAPE_EVENTS = [
   { name: "RB", delta: 11, total: 20122, occurredAt: "2026-01-01T00:00:01.000Z" },
   { name: "KM", delta: 8, total: 18902, occurredAt: "2026-01-01T00:00:02.000Z" },
 ];
-
 const els = {
   appShell: document.getElementById("appShell"),
   mainContent: document.getElementById("main-content"),
+  headerStats: document.querySelector(".header-stats"),
   serviceShell: document.getElementById("serviceShell"),
   serviceSelect: document.getElementById("serviceSelect"),
   serviceCarousel: document.getElementById("serviceCarousel"),
   serviceCarouselLabel: document.getElementById("serviceCarouselLabel"),
+  loginLink: document.getElementById("loginLink"),
+  dashboardLink: document.getElementById("dashboardLink"),
   runClubsNavLink: document.getElementById("runClubsNavLink"),
   personalTrainersNavLink: document.getElementById("personalTrainersNavLink"),
   stepsCounterPanel: document.getElementById("stepsCounterPanel"),
@@ -105,12 +87,16 @@ const els = {
   leaderboardState: document.getElementById("leaderboardState"),
   groupLeaderboardList: document.getElementById("groupLeaderboardList"),
   groupLeaderboardState: document.getElementById("groupLeaderboardState"),
-  streakLeaderboardList: document.getElementById("streakLeaderboardList"),
-  streakLeaderboardState: document.getElementById("streakLeaderboardState"),
   pebbleCaloriesList: document.getElementById("pebbleCaloriesList"),
   pebbleWorkoutsList: document.getElementById("pebbleWorkoutsList"),
   pebbleStepsList: document.getElementById("pebbleStepsList"),
+  pebbleSleepList: document.getElementById("pebbleSleepList"),
+  pebbleMilesList: document.getElementById("pebbleMilesList"),
   pebbleLeaderboardState: document.getElementById("pebbleLeaderboardState"),
+  streakLeaderboardList: document.getElementById("streakLeaderboardList"),
+  streakLeaderboardState: document.getElementById("streakLeaderboardState"),
+  streakLiveCallout: document.getElementById("streakLiveCallout"),
+  unitToggleButton: document.getElementById("unitToggleButton"),
   stepsTapeTotalSteps: document.getElementById("stepsTapeTotalSteps"),
   stepsTapeTotalMiles: document.getElementById("stepsTapeTotalMiles"),
   stepsTapeList: document.getElementById("stepsTapeList"),
@@ -131,6 +117,8 @@ const els = {
 let fitFrame = 0;
 let liveWorkoutTicker = 0;
 let liveWorkoutHideTimer = 0;
+let liveWorkoutSnoozeUntil = 0;
+let liveWorkoutVisibilityFrame = 0;
 let leaderboardRefreshTicker = 0;
 let pebbleStepsRefreshTicker = 0;
 let ignoreCarouselClickUntil = 0;
@@ -138,6 +126,15 @@ let lastWheelChangeAt = 0;
 let leaderboardRequestInFlight = false;
 let pebbleStepsRequestInFlight = false;
 let hasLoadedLeaderboard = false;
+let hasLoadedUserMetrics = false;
+let hasLoadedActivityMetrics = false;
+let liveMetricsRequestToken = 0;
+let latestStrengthEntries = [];
+let latestCalisthenicsEntries = [];
+let latestPebblePayload = null;
+let latestStreakEntries = [];
+let latestStreakCallout = "";
+let activeUnitSystem = "imperial";
 
 const carouselGesture = {
   active: false,
@@ -155,6 +152,74 @@ const stepsTapeState = {
   previousTotals: new Map(),
   initialized: false,
 };
+
+const ACTIVITY_WINDOWS = ["week"];
+const ACTIVITY_WINDOW_LABELS = {
+  week: "Week",
+};
+
+let activeMetricsWindow = "week";
+
+function normalizeActivityWindow(windowValue) {
+  const normalized = String(windowValue || "week")
+    .trim()
+    .toLowerCase();
+
+  return ACTIVITY_WINDOWS.includes(normalized) ? normalized : "week";
+}
+
+function activityWindowLabel(windowValue) {
+  const normalized = normalizeActivityWindow(windowValue);
+  return ACTIVITY_WINDOW_LABELS[normalized] || ACTIVITY_WINDOW_LABELS.week;
+}
+
+function isAuthenticated() {
+  try {
+    return window.localStorage.getItem(AUTH_FLAG_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function syncAuthNavigation() {
+  const loggedIn = isAuthenticated();
+
+  if (els.dashboardLink) {
+    els.dashboardLink.hidden = true;
+    els.dashboardLink.href = DASHBOARD_HOME_URL;
+  }
+
+  if (els.loginLink) {
+    els.loginLink.textContent = loggedIn ? "Dashboard" : "Login";
+    els.loginLink.href = loggedIn ? DASHBOARD_HOME_URL : `/login?next=${encodeURIComponent(DASHBOARD_HOME_URL)}`;
+  }
+}
+
+function redirectDashboardHostHomeToDashboardPage() {
+  const path = window.location.pathname;
+  if (window.location.hostname !== DASHBOARD_HOST) {
+    return false;
+  }
+
+  if (path !== "/" && path !== "/index" && path !== "/index.html") {
+    return false;
+  }
+
+  window.location.replace(DASHBOARD_HOME_URL);
+  return true;
+}
+
+function syncHeaderStatsHint() {
+  if (!els.headerStats) {
+    return;
+  }
+
+  const label = activityWindowLabel(activeMetricsWindow).toUpperCase();
+  els.headerStats.setAttribute(
+    "data-window-hint",
+    `Current ${label}`,
+  );
+}
 
 function extractDiscoveryItems(payload, keys) {
   if (Array.isArray(payload)) {
@@ -246,10 +311,21 @@ async function updateDiscoveryNavVisibility() {
     return;
   }
 
-  const [hasRunClubs, hasPersonalTrainers] = await Promise.all([
-    hasDiscoveryRows(RUN_CLUB_ENDPOINTS, RUN_CLUB_KEYS),
-    hasDiscoveryRows(PERSONAL_TRAINER_ENDPOINTS, PERSONAL_TRAINER_KEYS),
-  ]);
+  let hasRunClubs = false;
+  let hasPersonalTrainers = false;
+
+  try {
+    const snapshot = await fetchPublicLeaderboardSnapshot();
+    hasRunClubs = toNumber(snapshot.directories?.runClubsCount) > 0;
+    hasPersonalTrainers = toNumber(snapshot.directories?.personalTrainersCount) > 0;
+  } catch {
+    const results = await Promise.all([
+      hasDiscoveryRows(RUN_CLUB_ENDPOINTS, RUN_CLUB_KEYS),
+      hasDiscoveryRows(PERSONAL_TRAINER_ENDPOINTS, PERSONAL_TRAINER_KEYS),
+    ]);
+    hasRunClubs = results[0];
+    hasPersonalTrainers = results[1];
+  }
 
   els.runClubsNavLink.hidden = !hasRunClubs;
   els.personalTrainersNavLink.hidden = !hasPersonalTrainers;
@@ -345,20 +421,138 @@ function hideLiveWorkoutToast() {
   els.liveWorkoutToast.classList.remove("is-visible");
 }
 
+function rectsOverlap(a, b, padding = 0) {
+  return !(
+    a.right < b.left - padding ||
+    a.left > b.right + padding ||
+    a.bottom < b.top - padding ||
+    a.top > b.bottom + padding
+  );
+}
+
+function measureToastRect(message) {
+  if (!els.liveWorkoutToast || !els.liveWorkoutToastMessage) {
+    return null;
+  }
+
+  const toast = els.liveWorkoutToast;
+  const toastMessage = els.liveWorkoutToastMessage;
+  const previousHidden = toast.hidden;
+  const wasVisible = toast.classList.contains("is-visible");
+  const previousVisibility = toast.style.visibility;
+  const previousText = toastMessage.textContent;
+
+  toast.hidden = false;
+  toastMessage.textContent = message;
+  toast.classList.add("is-visible");
+  toast.style.visibility = "hidden";
+
+  const measured = toast.getBoundingClientRect();
+  const rect = {
+    top: measured.top,
+    right: measured.right,
+    bottom: measured.bottom,
+    left: measured.left,
+    width: measured.width,
+    height: measured.height,
+  };
+
+  toast.style.visibility = previousVisibility;
+  if (!wasVisible) {
+    toast.classList.remove("is-visible");
+  }
+  toast.hidden = previousHidden;
+  toastMessage.textContent = previousText;
+
+  return rect;
+}
+
+function toastWouldCoverSignupFields(message) {
+  if (!els.signupForm) {
+    return false;
+  }
+
+  const toastRect = measureToastRect(message);
+  if (!toastRect) {
+    return false;
+  }
+
+  const fields = els.signupForm.querySelectorAll("input, select, textarea, button");
+  for (const field of fields) {
+    const rect = field.getBoundingClientRect();
+    const isVisible =
+      rect.width > 0 &&
+      rect.height > 0 &&
+      rect.bottom > 0 &&
+      rect.right > 0 &&
+      rect.top < window.innerHeight &&
+      rect.left < window.innerWidth;
+
+    if (!isVisible) {
+      continue;
+    }
+
+    if (rectsOverlap(toastRect, rect, 8)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function shouldSuppressLiveWorkoutToast(message) {
+  if (Date.now() < liveWorkoutSnoozeUntil) {
+    return true;
+  }
+
+  const activeElement = document.activeElement;
+  if (activeElement instanceof HTMLElement && activeElement.closest("#signupForm")) {
+    return true;
+  }
+
+  return toastWouldCoverSignupFields(message);
+}
+
+function evaluateLiveWorkoutToastVisibility() {
+  if (!els.liveWorkoutToast || !els.liveWorkoutToast.classList.contains("is-visible")) {
+    return;
+  }
+
+  const message = els.liveWorkoutToastMessage?.textContent || "";
+  if (shouldSuppressLiveWorkoutToast(message)) {
+    hideLiveWorkoutToast();
+  }
+}
+
+function scheduleLiveWorkoutToastVisibilityCheck() {
+  window.cancelAnimationFrame(liveWorkoutVisibilityFrame);
+  liveWorkoutVisibilityFrame = window.requestAnimationFrame(() => {
+    liveWorkoutVisibilityFrame = 0;
+    evaluateLiveWorkoutToastVisibility();
+  });
+}
+
 function showLiveWorkoutToast() {
   if (!els.liveWorkoutToast || !els.liveWorkoutToastMessage || !liveWorkoutState.events.length) {
     return;
   }
 
   const nextEvent = liveWorkoutState.events[liveWorkoutState.index];
+  const nextMessage = buildLiveWorkoutMessage(nextEvent);
+  if (shouldSuppressLiveWorkoutToast(nextMessage)) {
+    hideLiveWorkoutToast();
+    return;
+  }
+
   liveWorkoutState.index = (liveWorkoutState.index + 1) % liveWorkoutState.events.length;
 
   els.liveWorkoutToast.hidden = false;
-  els.liveWorkoutToastMessage.textContent = buildLiveWorkoutMessage(nextEvent);
+  els.liveWorkoutToastMessage.textContent = nextMessage;
   els.liveWorkoutToast.classList.add("is-visible");
 
   window.clearTimeout(liveWorkoutHideTimer);
-  liveWorkoutHideTimer = window.setTimeout(hideLiveWorkoutToast, 4300);
+  liveWorkoutHideTimer = window.setTimeout(hideLiveWorkoutToast, LIVE_WORKOUT_TOAST_HIDE_MS);
+  scheduleLiveWorkoutToastVisibilityCheck();
 }
 
 function setLiveWorkoutEvents(events) {
@@ -378,7 +572,7 @@ function setLiveWorkoutEvents(events) {
   }
 
   showLiveWorkoutToast();
-  liveWorkoutTicker = window.setInterval(showLiveWorkoutToast, 5000);
+  liveWorkoutTicker = window.setInterval(showLiveWorkoutToast, LIVE_WORKOUT_TOAST_INTERVAL_MS);
 }
 
 function serviceIndexById(serviceId) {
@@ -427,16 +621,47 @@ function syncServiceCarousel() {
   const total = SERVICES.length;
   const buttons = els.serviceCarousel.querySelectorAll(".service-carousel-item");
   const width = els.serviceCarousel.clientWidth || 640;
-  const xStep = Math.max(140, Math.min(220, Math.round(width * 0.26)));
+  const isCompactViewport = window.matchMedia("(max-width: 640px)").matches;
+  const minStep = isCompactViewport ? 88 : 140;
+  const maxStep = isCompactViewport ? 150 : 220;
+  const xStep = Math.max(minStep, Math.min(maxStep, Math.round(width * (isCompactViewport ? 0.22 : 0.26))));
 
   buttons.forEach((button, index) => {
     const offset = shortestCircularOffset(index, activeIndex, total);
     const distance = Math.abs(offset);
-    const scale = distance === 0 ? 1 : distance === 1 ? 0.82 : distance === 2 ? 0.66 : 0.54;
-    const opacity = distance === 0 ? 1 : distance === 1 ? 0.8 : distance === 2 ? 0.62 : 0.48;
-    const rotate = offset * -10;
+    const scale = isCompactViewport
+      ? distance === 0
+        ? 1
+        : distance === 1
+          ? 0.9
+          : distance === 2
+            ? 0.82
+            : 0.74
+      : distance === 0
+        ? 1
+        : distance === 1
+          ? 0.82
+          : distance === 2
+            ? 0.66
+            : 0.54;
+    const opacity = isCompactViewport
+      ? distance === 0
+        ? 1
+        : distance === 1
+          ? 0.9
+          : distance === 2
+            ? 0.78
+            : 0.64
+      : distance === 0
+        ? 1
+        : distance === 1
+          ? 0.8
+          : distance === 2
+            ? 0.62
+            : 0.48;
+    const rotate = offset * (isCompactViewport ? -5 : -10);
     const shiftX = offset * xStep;
-    const shiftY = distance * 14;
+    const shiftY = distance * (isCompactViewport ? 8 : 14);
 
     button.style.transform = `translate(-50%, -50%) translate(${shiftX}px, ${shiftY}px) scale(${scale}) rotate(${rotate}deg)`;
     button.style.opacity = String(opacity);
@@ -540,7 +765,52 @@ function handleCarouselWheel(event) {
   selectRelativeService(travel > 0 ? 1 : -1);
 }
 
+function setActiveMetricsWindow(windowValue) {
+  activeMetricsWindow = normalizeActivityWindow(windowValue);
+  syncHeaderStatsHint();
+}
+
+function nextActivityWindow(step) {
+  const currentIndex = ACTIVITY_WINDOWS.indexOf(normalizeActivityWindow(activeMetricsWindow));
+  const baseIndex = currentIndex >= 0 ? currentIndex : 0;
+  const nextIndex = (baseIndex + step + ACTIVITY_WINDOWS.length) % ACTIVITY_WINDOWS.length;
+  return ACTIVITY_WINDOWS[nextIndex];
+}
+
+function shouldIgnoreMetricsWindowHotkey(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  const tag = target.tagName.toLowerCase();
+  if (tag === "input" || tag === "textarea" || tag === "select" || target.isContentEditable) {
+    return true;
+  }
+
+  return Boolean(target.closest("#signupForm"));
+}
+
+function handleMetricsWindowKeydown(event) {
+  if (shouldIgnoreMetricsWindowHotkey(event)) {
+    return;
+  }
+
+  if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") {
+    return;
+  }
+
+  event.preventDefault();
+  const nextWindow = event.key === "ArrowRight" ? nextActivityWindow(1) : nextActivityWindow(-1);
+  setActiveMetricsWindow(nextWindow);
+  void refreshLiveMetricsCounters(nextWindow);
+}
+
 function setStatus(target, message, type = "") {
+  if (!target) {
+    return;
+  }
+
   target.textContent = message;
   target.classList.remove("success", "error");
 
@@ -549,6 +819,51 @@ function setStatus(target, message, type = "") {
   }
 
   requestViewportFit();
+}
+
+function splitLeaderboardLine(lineText) {
+  const text = String(lineText || "").trim();
+  if (!text) {
+    return null;
+  }
+
+  const separatorIndex = text.indexOf("|");
+  if (separatorIndex < 0) {
+    return {
+      left: text,
+      right: "",
+    };
+  }
+
+  return {
+    left: text.slice(0, separatorIndex).trim(),
+    right: text.slice(separatorIndex + 1).trim(),
+  };
+}
+
+function normalizeLeaderboardEntry(entry) {
+  const name = String(entry?.name || entry?.username || entry?.user || "User").trim() || "User";
+  const exercise = String(entry?.exercise || entry?.metric || entry?.label || "")
+    .trim()
+    .toUpperCase();
+
+  const rawEmoji = String(entry?.emoji || "").trim();
+  const emojiMatch = rawEmoji.match(/\p{Extended_Pictographic}/u);
+  const emoji = emojiMatch ? emojiMatch[0] : "";
+
+  const valueLabel = String(entry?.valueLabel || entry?.value || entry?.details || "").trim();
+  const score = Math.max(toNumber(entry?.score), 0);
+  const lineValue = valueLabel || (score > 0 ? formatNumber(score) : "-");
+  const rawLine = String(entry?.line || "").trim();
+  const line = rawLine || `${emoji ? `${emoji} ` : ""}${name} | ${lineValue}`;
+  const splitLine = splitLeaderboardLine(line);
+
+  return {
+    exercise,
+    name: splitLine?.left || `${emoji ? `${emoji} ` : ""}${name}`,
+    value: splitLine?.right || lineValue,
+    line,
+  };
 }
 
 function setStatsLink(linkEl, metricSheetUrl, masterSheetUrl) {
@@ -570,7 +885,15 @@ function setCounterValue(target, value) {
   target.textContent = formatNumber(value || 0);
 }
 
-function applyLiveMetricsResponse(liveMetrics) {
+function setCounterValueWithDecimals(target, value, fractionDigits = 1) {
+  if (!target) {
+    return;
+  }
+
+  target.textContent = formatDecimal(typeof value === "number" ? value : toNumber(value), fractionDigits);
+}
+
+function applyUserLiveMetrics(liveMetrics) {
   if (!liveMetrics) {
     return;
   }
@@ -580,13 +903,22 @@ function applyLiveMetricsResponse(liveMetrics) {
   setCounterValue(els.usersTodayCount, liveMetrics.usersUsingToday?.value);
   setCounterValue(els.usersWeekCount, liveMetrics.totalUsersThisWeek?.value);
   setCounterValue(els.usersOnlineCount, liveMetrics.usersOnline?.value);
-  setCounterValue(els.workoutsLoggedCount, liveMetrics.workoutsLogged?.value);
-  setCounterValue(els.caloriesTrackedCount, liveMetrics.caloriesTracked?.value);
-  setCounterValue(els.gallonsDrankCount, liveMetrics.gallonsDrank?.value);
-
   setStatsLink(els.usersTodayLink, liveMetrics.usersUsingToday?.sheetUrl, master);
   setStatsLink(els.usersWeekLink, liveMetrics.totalUsersThisWeek?.sheetUrl, master);
   setStatsLink(els.usersOnlineLink, liveMetrics.usersOnline?.sheetUrl, master);
+}
+
+function applyActivityLiveMetrics(liveMetrics) {
+  if (!liveMetrics) {
+    return;
+  }
+
+  const master = liveMetrics.masterLogSheetUrl || "";
+
+  setCounterValue(els.workoutsLoggedCount, liveMetrics.workoutsLogged?.value);
+  setCounterValue(els.caloriesTrackedCount, liveMetrics.caloriesTracked?.value);
+  setCounterValueWithDecimals(els.gallonsDrankCount, liveMetrics.gallonsDrank?.value, 1);
+
   setStatsLink(els.workoutsLoggedLink, liveMetrics.workoutsLogged?.sheetUrl, master);
   setStatsLink(els.caloriesTrackedLink, liveMetrics.caloriesTracked?.sheetUrl, master);
   setStatsLink(els.gallonsDrankLink, liveMetrics.gallonsDrank?.sheetUrl, master);
@@ -604,10 +936,81 @@ function formatDecimal(value, fractionDigits = 1) {
   }).format(numeric);
 }
 
+function defaultUnitSystemFromLocale() {
+  const locale = String(Intl.NumberFormat().resolvedOptions().locale || navigator.language || "")
+    .trim()
+    .toLowerCase();
+
+  if (locale.startsWith("en-us") || locale.startsWith("en-lr") || locale.startsWith("my")) {
+    return "imperial";
+  }
+
+  return "metric";
+}
+
+function storedUnitSystem() {
+  try {
+    const value = String(window.localStorage.getItem(UNIT_SYSTEM_STORAGE_KEY) || "")
+      .trim()
+      .toLowerCase();
+    return value === "metric" || value === "imperial" ? value : "";
+  } catch {
+    return "";
+  }
+}
+
+function setStoredUnitSystem(unitSystem) {
+  try {
+    window.localStorage.setItem(UNIT_SYSTEM_STORAGE_KEY, unitSystem);
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
 function useMetric() {
-  const locale = Intl.NumberFormat().resolvedOptions().locale;
-  // US and UK (mostly) use miles for road distance.
-  return locale !== "en-US" && locale !== "en-GB";
+  return activeUnitSystem === "metric";
+}
+
+function formatConvertedNumber(value) {
+  const rounded = Math.round(value * 10) / 10;
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: Number.isInteger(rounded) ? 0 : 1,
+    maximumFractionDigits: 1,
+  }).format(rounded);
+}
+
+function convertUnitValueLabel(rawValue) {
+  const text = String(rawValue || "").trim();
+  if (!text || text === "-" || text.toLowerCase().includes("no data")) {
+    return text;
+  }
+
+  return text.replace(/(\d[\d,]*(?:\.\d+)?)\s*(lb|lbs|kg|mi|mile|miles|km|kilometer|kilometers)\b/gi, (match, numberPart, unitPart) => {
+    const numeric = Number(String(numberPart || "").replace(/,/g, ""));
+    if (!Number.isFinite(numeric)) {
+      return match;
+    }
+
+    const unit = String(unitPart || "").toLowerCase();
+
+    if (useMetric() && (unit === "lb" || unit === "lbs")) {
+      return `${formatConvertedNumber(numeric * 0.45359237)} kg`;
+    }
+
+    if (!useMetric() && unit === "kg") {
+      return `${formatConvertedNumber(numeric * 2.2046226218)} lb`;
+    }
+
+    if (useMetric() && (unit === "mi" || unit === "mile" || unit === "miles")) {
+      return `${formatConvertedNumber(numeric * 1.60934)} km`;
+    }
+
+    if (!useMetric() && (unit === "km" || unit === "kilometer" || unit === "kilometers")) {
+      return `${formatConvertedNumber(numeric * 0.6213711922)} mi`;
+    }
+
+    return match;
+  });
 }
 
 function formatDistance(miles) {
@@ -616,6 +1019,66 @@ function formatDistance(miles) {
     return `${formatDecimal(km)} km`;
   }
   return `${formatDecimal(miles)} mi`;
+}
+
+function syncUnitToggleButtonLabel() {
+  if (!els.unitToggleButton) {
+    return;
+  }
+
+  const label = useMetric() ? "Metric" : "US";
+  els.unitToggleButton.textContent = label;
+  els.unitToggleButton.setAttribute(
+    "aria-label",
+    useMetric() ? "Switch to imperial units" : "Switch to metric units",
+  );
+}
+
+function applyUnitSystem(unitSystem, persist = true) {
+  activeUnitSystem = unitSystem === "metric" ? "metric" : "imperial";
+  syncUnitToggleButtonLabel();
+
+  if (persist) {
+    setStoredUnitSystem(activeUnitSystem);
+  }
+
+  renderLeaderboard(latestStrengthEntries);
+  renderGroupLeaderboard(latestCalisthenicsEntries);
+  renderStreakLeaderboard(latestStreakEntries);
+  renderStreakLiveCallout(latestStreakCallout);
+
+  if (latestPebblePayload) {
+    renderPebbleLeaderboard(latestPebblePayload);
+    applyPebbleStepsTapePayload(latestPebblePayload);
+  }
+}
+
+async function hydrateUnitSystemFromIp() {
+  if (storedUnitSystem()) {
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/unit-system", { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+
+    const body = await response.json().catch(() => null);
+    const unitSystem = String(body?.unitSystem || "")
+      .trim()
+      .toLowerCase();
+
+    if (unitSystem !== "metric" && unitSystem !== "imperial") {
+      return;
+    }
+
+    if (unitSystem !== activeUnitSystem) {
+      applyUnitSystem(unitSystem, false);
+    }
+  } catch {
+    // Keep locale default on network failure.
+  }
 }
 
 function toNumber(value) {
@@ -810,6 +1273,10 @@ function normalizeUsername(value) {
 function syncServiceInputRequirements() {
   const service = currentService();
   const input = els.serviceIdentityInput;
+  if (!input || !els.consentWrap || !els.consentCheckbox || !els.serviceIdentityText || !els.serviceIdentityHelp) {
+    return;
+  }
+
   const needsSmsConsent = service.identityKind === "phone";
 
   els.consentWrap.classList.toggle("is-inactive", !needsSmsConsent);
@@ -854,7 +1321,9 @@ function syncServiceInputRequirements() {
 
 function updateServiceVisual() {
   const service = currentService();
-  els.serviceSelect.value = service.id;
+  if (els.serviceSelect) {
+    els.serviceSelect.value = service.id;
+  }
   syncServiceCarousel();
 
   if (els.serviceCarouselLabel) {
@@ -865,6 +1334,10 @@ function updateServiceVisual() {
 }
 
 function renderServiceOptions() {
+  if (!els.serviceSelect) {
+    return;
+  }
+
   els.serviceSelect.innerHTML = SERVICES.map((service) => {
     const selected = service.id === state.serviceId ? "selected" : "";
     return `<option value="${service.id}" ${selected}>${service.label}</option>`;
@@ -872,18 +1345,25 @@ function renderServiceOptions() {
 }
 
 function renderLeaderboard(entries) {
+  latestStrengthEntries = Array.isArray(entries) ? entries : [];
+
   if (!entries.length) {
     els.leaderboardList.innerHTML = "";
-    els.leaderboardState.textContent = "No workout rows yet in this sheet.";
+    els.leaderboardState.textContent = "No strength rows yet.";
     return;
   }
 
   els.leaderboardList.innerHTML = entries
     .map((entry, index) => {
+      const normalized = normalizeLeaderboardEntry(entry);
+      const displayName = normalized.name || "No data";
+      const displayValue = convertUnitValueLabel(normalized.value || "-") || "-";
+      const displayExercise = normalized.exercise || "N/A";
       return `<li>
-        <span class="leaderboard-rank">#${index + 1}</span>
-        <span class="leaderboard-user">${entry.name}</span>
-        <span class="leaderboard-score">${formatNumber(entry.score)} workouts</span>
+        <span class="leaderboard-cell leaderboard-cell-rank leaderboard-rank">#${index + 1}</span>
+        <span class="leaderboard-cell leaderboard-cell-exercise leaderboard-user">${escapeHtml(displayExercise)}</span>
+        <span class="leaderboard-cell leaderboard-cell-name leaderboard-user">${escapeHtml(displayName)}</span>
+        <span class="leaderboard-cell leaderboard-cell-value leaderboard-score">${escapeHtml(displayValue)}</span>
       </li>`;
     })
     .join("");
@@ -893,18 +1373,25 @@ function renderLeaderboard(entries) {
 }
 
 function renderGroupLeaderboard(entries) {
+  latestCalisthenicsEntries = Array.isArray(entries) ? entries : [];
+
   if (!entries.length) {
     els.groupLeaderboardList.innerHTML = "";
-    els.groupLeaderboardState.textContent = "No group leaderboard rows yet.";
+    els.groupLeaderboardState.textContent = "No calisthenics rows yet.";
     return;
   }
 
   els.groupLeaderboardList.innerHTML = entries
     .map((entry, index) => {
+      const normalized = normalizeLeaderboardEntry(entry);
+      const displayName = normalized.name || "No data";
+      const displayValue = convertUnitValueLabel(normalized.value || "-") || "-";
+      const displayExercise = normalized.exercise || "N/A";
       return `<li>
-        <span class="leaderboard-rank">#${index + 1}</span>
-        <span class="leaderboard-user">${entry.name}</span>
-        <span class="leaderboard-score">${formatNumber(entry.score)} workouts</span>
+        <span class="leaderboard-cell leaderboard-cell-rank leaderboard-rank">#${index + 1}</span>
+        <span class="leaderboard-cell leaderboard-cell-exercise leaderboard-user">${escapeHtml(displayExercise)}</span>
+        <span class="leaderboard-cell leaderboard-cell-name leaderboard-user">${escapeHtml(displayName)}</span>
+        <span class="leaderboard-cell leaderboard-cell-value leaderboard-score">${escapeHtml(displayValue)}</span>
       </li>`;
     })
     .join("");
@@ -914,29 +1401,60 @@ function renderGroupLeaderboard(entries) {
 }
 
 function renderStreakLeaderboard(entries) {
+  latestStreakEntries = Array.isArray(entries) ? entries : [];
+
+  if (!els.streakLeaderboardList) {
+    return;
+  }
+
   if (!entries.length) {
     els.streakLeaderboardList.innerHTML = "";
-    els.streakLeaderboardState.textContent = "No streak data yet.";
+    setStatus(els.streakLeaderboardState, "No streak rows yet.", "");
     return;
   }
 
   els.streakLeaderboardList.innerHTML = entries
     .map((entry, index) => {
-      const dayLabel = entry.score === 1 ? "day" : "days";
+      const normalized = normalizeLeaderboardEntry(entry);
+      const displayName = normalized.name || "No data";
+      const displayValue = convertUnitValueLabel(normalized.value || "-") || "-";
       return `<li>
-        <span class="leaderboard-rank">#${index + 1}</span>
-        <span class="leaderboard-user">${entry.name}</span>
-        <span class="leaderboard-score">${formatNumber(entry.score)} ${dayLabel}</span>
+        <span class="streak-cell leaderboard-rank">#${index + 1}</span>
+        <span class="streak-cell streak-cell-name leaderboard-user">${escapeHtml(displayName)}</span>
+        <span class="streak-cell streak-cell-value leaderboard-score">${escapeHtml(displayValue)}</span>
       </li>`;
     })
     .join("");
 
-  els.streakLeaderboardState.textContent = "";
+  setStatus(els.streakLeaderboardState, "", "");
   requestViewportFit();
 }
 
-function renderPebbleMetricList(target, entries, unitLabel) {
+function renderStreakLiveCallout(message) {
+  latestStreakCallout = String(message || "").trim();
+
+  if (!els.streakLiveCallout) {
+    return;
+  }
+
+  els.streakLiveCallout.textContent = latestStreakCallout || "Waiting for live streak activity...";
+}
+
+function renderPebbleMetricList(target, entries, unitLabel, options = {}) {
+  if (!target) {
+    return;
+  }
+
+  const zeroFallback = Boolean(options.zeroFallback);
+
   if (!entries.length) {
+    if (zeroFallback) {
+      target.innerHTML = `<li><span class="leaderboard-rank">#1</span><span class="leaderboard-user">User</span><span class="leaderboard-score">0 ${escapeHtml(
+        unitLabel,
+      )}</span></li>`;
+      return;
+    }
+
     target.innerHTML = `<li><span class="leaderboard-user">No data</span><span class="leaderboard-score">-</span></li>`;
     return;
   }
@@ -944,19 +1462,26 @@ function renderPebbleMetricList(target, entries, unitLabel) {
   target.innerHTML = entries
     .map((entry, index) => {
       const unit = entry.unit || unitLabel;
+      const valueLabel = String(entry.valueLabel || "").trim();
+      const scoreLabelRaw = valueLabel || `${formatNumber(entry.score)} ${unit}`.trim();
+      const scoreLabel = convertUnitValueLabel(scoreLabelRaw) || scoreLabelRaw;
       return `<li>
         <span class="leaderboard-rank">#${index + 1}</span>
-        <span class="leaderboard-user">${entry.name}</span>
-        <span class="leaderboard-score">${formatNumber(entry.score)} ${unit}</span>
+        <span class="leaderboard-user">${escapeHtml(entry.name)}</span>
+        <span class="leaderboard-score">${escapeHtml(scoreLabel)}</span>
       </li>`;
     })
     .join("");
 }
 
 function renderPebbleLeaderboard(pebble) {
-  renderPebbleMetricList(els.pebbleCaloriesList, pebble?.caloriesTop || [], "cal");
-  renderPebbleMetricList(els.pebbleWorkoutsList, pebble?.workoutsTop || [], "sessions");
-  renderPebbleMetricList(els.pebbleStepsList, pebble?.stepsTop || [], "steps");
+  latestPebblePayload = pebble || null;
+
+  renderPebbleMetricList(els.pebbleCaloriesList, pebble?.caloriesTop || [], "cal", { zeroFallback: true });
+  renderPebbleMetricList(els.pebbleWorkoutsList, pebble?.workoutsTop || [], "sessions", { zeroFallback: true });
+  renderPebbleMetricList(els.pebbleStepsList, pebble?.stepsTop || [], "steps", { zeroFallback: true });
+  renderPebbleMetricList(els.pebbleSleepList, pebble?.sleepTop || [], "score");
+  renderPebbleMetricList(els.pebbleMilesList, pebble?.milesTop || [], "mi");
   els.pebbleLeaderboardState.textContent = "";
   requestViewportFit();
 }
@@ -1003,6 +1528,55 @@ function requestViewportFit() {
   fitFrame = window.requestAnimationFrame(fitAppToViewport);
 }
 
+async function refreshLiveMetricsCounters(windowValue = activeMetricsWindow) {
+  const requestedWindow = normalizeActivityWindow(windowValue);
+  const requestToken = ++liveMetricsRequestToken;
+
+  const todayPromise = fetchLiveMetrics("today");
+  const activityPromise = requestedWindow === "today" ? todayPromise : fetchLiveMetrics(requestedWindow);
+  const [todayResult, activityResult] = await Promise.allSettled([todayPromise, activityPromise]);
+
+  if (requestToken !== liveMetricsRequestToken) {
+    return {
+      stale: true,
+      hasUsers: false,
+      hasActivity: false,
+      error: null,
+    };
+  }
+
+  let hasUsers = false;
+  let hasActivity = false;
+  let firstError = null;
+
+  if (todayResult.status === "fulfilled") {
+    applyUserLiveMetrics(todayResult.value);
+    hasUsers = true;
+    hasLoadedUserMetrics = true;
+  } else {
+    firstError = todayResult.reason;
+  }
+
+  if (activityResult.status === "fulfilled") {
+    applyActivityLiveMetrics(activityResult.value);
+    hasActivity = true;
+    hasLoadedActivityMetrics = true;
+  } else if (requestedWindow !== "today" && todayResult.status === "fulfilled") {
+    applyActivityLiveMetrics(todayResult.value);
+    hasActivity = true;
+    hasLoadedActivityMetrics = true;
+  } else if (!firstError) {
+    firstError = activityResult.reason;
+  }
+
+  return {
+    stale: false,
+    hasUsers,
+    hasActivity,
+    error: firstError,
+  };
+}
+
 async function loadLeaderboard() {
   if (leaderboardRequestInFlight) {
     return;
@@ -1011,67 +1585,70 @@ async function loadLeaderboard() {
 
   if (!hasLoadedLeaderboard) {
     setStatus(els.leaderboardState, "Loading leaderboard...", "");
-    setStatus(els.groupLeaderboardState, "Loading groups leaderboard...", "");
-    setStatus(els.streakLeaderboardState, "Loading streak leaderboard...", "");
+    setStatus(els.groupLeaderboardState, "Loading calisthenics leaderboard...", "");
     setStatus(els.pebbleLeaderboardState, "Loading Pebble leaderboard...", "");
+    setStatus(els.streakLeaderboardState, "Loading streak leaderboard...", "");
   }
 
   try {
-    const [leaderboardResult, pebbleResult, liveMetricsResult] = await Promise.allSettled([
-      fetchWorkoutLeaderboard(),
-      fetchPebbleLeaderboard(),
-      fetchLiveMetrics(),
-    ]);
-
-    if (leaderboardResult.status !== "fulfilled") {
-      throw leaderboardResult.reason;
-    }
-
-    const payload = leaderboardResult.value;
+    const payload = await fetchPublicLeaderboardSnapshot();
     renderLeaderboard(payload.entries);
     renderGroupLeaderboard(payload.groupEntries || []);
     renderStreakLeaderboard(payload.streakEntries || []);
+    renderStreakLiveCallout(payload.streakLiveMessage || payload.streakEntries?.[0]?.message || "");
     setLiveWorkoutEvents(payload.liveEvents || []);
 
-    if (liveMetricsResult.status === "fulfilled") {
-      applyLiveMetricsResponse(liveMetricsResult.value);
-    } else {
+    if (!hasLoadedUserMetrics) {
       setCounterValue(els.usersTodayCount, payload.usersToday);
       setCounterValue(els.usersWeekCount, payload.usersThisWeek);
       setCounterValue(els.usersOnlineCount, payload.usersOnline);
-      setCounterValue(els.workoutsLoggedCount, payload.workoutsLogged);
-      setCounterValue(els.caloriesTrackedCount, 0);
-      setCounterValue(els.gallonsDrankCount, 0);
     }
 
-    if (pebbleResult.status === "fulfilled") {
-      renderPebbleLeaderboard(pebbleResult.value);
-      applyPebbleStepsTapePayload(pebbleResult.value);
-    } else {
-      renderPebbleLeaderboard(payload.pebble || {});
-      applyPebbleStepsTapePayload(payload.pebble || {});
+    if (!hasLoadedActivityMetrics) {
+      setCounterValue(els.workoutsLoggedCount, payload.workoutsLogged);
+      setCounterValue(els.caloriesTrackedCount, payload.caloriesTracked);
+      setCounterValueWithDecimals(els.gallonsDrankCount, payload.gallonsDrank, 1);
     }
+
+    renderPebbleLeaderboard(payload.pebble || {});
+    applyPebbleStepsTapePayload(payload.pebble || {});
     hasLoadedLeaderboard = true;
   } catch (error) {
+    latestStrengthEntries = [];
+    latestCalisthenicsEntries = [];
+    latestPebblePayload = null;
+    latestStreakEntries = [];
+    latestStreakCallout = "";
     els.leaderboardList.innerHTML = "";
     els.groupLeaderboardList.innerHTML = "";
-    els.streakLeaderboardList.innerHTML = "";
     els.pebbleCaloriesList.innerHTML = "";
     els.pebbleWorkoutsList.innerHTML = "";
     els.pebbleStepsList.innerHTML = "";
+    if (els.streakLeaderboardList) {
+      els.streakLeaderboardList.innerHTML = "";
+    }
+    if (els.streakLiveCallout) {
+      els.streakLiveCallout.textContent = "";
+    }
+    if (els.pebbleSleepList) {
+      els.pebbleSleepList.innerHTML = "";
+    }
+    if (els.pebbleMilesList) {
+      els.pebbleMilesList.innerHTML = "";
+    }
     setLiveWorkoutEvents([]);
     setCounterValue(els.usersOnlineCount, 0);
     setCounterValue(els.workoutsLoggedCount, 0);
     setCounterValue(els.caloriesTrackedCount, 0);
-    setCounterValue(els.gallonsDrankCount, 0);
+    setCounterValueWithDecimals(els.gallonsDrankCount, 0, 1);
     setStepsTapeVisibility(false);
     if (els.stepsTapeState) {
       els.stepsTapeState.textContent = `Step counter unavailable: ${error.message}`;
     }
     setStatus(els.leaderboardState, `Leaderboard unavailable: ${error.message}`, "error");
-    setStatus(els.groupLeaderboardState, `Groups unavailable: ${error.message}`, "error");
-    setStatus(els.streakLeaderboardState, `Streaks unavailable: ${error.message}`, "error");
+    setStatus(els.groupLeaderboardState, `Calisthenics unavailable: ${error.message}`, "error");
     setStatus(els.pebbleLeaderboardState, `Pebble leaderboard unavailable: ${error.message}`, "error");
+    setStatus(els.streakLeaderboardState, `Streak leaderboard unavailable: ${error.message}`, "error");
   } finally {
     leaderboardRequestInFlight = false;
   }
@@ -1097,9 +1674,9 @@ async function refreshPebbleStepTape() {
   pebbleStepsRequestInFlight = true;
 
   try {
-    const pebble = await fetchPebbleLeaderboard();
-    renderPebbleLeaderboard(pebble);
-    applyPebbleStepsTapePayload(pebble);
+    const snapshot = await fetchPublicLeaderboardSnapshot();
+    renderPebbleLeaderboard(snapshot.pebble || {});
+    applyPebbleStepsTapePayload(snapshot.pebble || {});
   } catch (error) {
     if (els.stepsTapeState && !stepsTapeState.events.length) {
       els.stepsTapeState.textContent = `Step counter unavailable: ${error.message}`;
@@ -1194,20 +1771,55 @@ async function handleSignup(event) {
   setStatus(els.signupStatus, "Submitting signup...", "");
 
   try {
-    await submitSignup(validation.payload);
+    await submitSignup(attachRefToPayload(validation.payload));
     setStatus(els.signupStatus, "Signup sent. Check your messages to continue onboarding.", "success");
   } catch (error) {
-    setStatus(els.signupStatus, error.message || "Signup request failed.", "error");
+    const rawMessage = String(error?.message || "").trim();
+    const isNetworkError = /load failed|failed to fetch|networkerror|network request failed/i.test(rawMessage);
+    const friendlyMessage = isNetworkError
+      ? "Network issue reaching onboarding service. Please try again in a few seconds."
+      : rawMessage || "Signup request failed.";
+    setStatus(els.signupStatus, friendlyMessage, "error");
   }
 }
 
 function wireEvents() {
-  els.serviceSelect.addEventListener("change", (event) => {
-    state.serviceId = event.target.value;
-    updateServiceVisual();
+  window.addEventListener("storage", (event) => {
+    if (event.key === AUTH_FLAG_KEY) {
+      syncAuthNavigation();
+    }
   });
 
-  els.signupForm.addEventListener("submit", handleSignup);
+  if (els.liveWorkoutToast) {
+    els.liveWorkoutToast.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      window.clearTimeout(liveWorkoutHideTimer);
+      hideLiveWorkoutToast();
+      liveWorkoutSnoozeUntil = Date.now() + LIVE_WORKOUT_TOAST_SNOOZE_MS;
+    });
+  }
+
+  window.addEventListener("scroll", scheduleLiveWorkoutToastVisibilityCheck, { passive: true });
+  window.addEventListener("resize", scheduleLiveWorkoutToastVisibilityCheck);
+  window.addEventListener("orientationchange", scheduleLiveWorkoutToastVisibilityCheck);
+  document.addEventListener("focusin", scheduleLiveWorkoutToastVisibilityCheck);
+  document.addEventListener("focusout", scheduleLiveWorkoutToastVisibilityCheck);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", scheduleLiveWorkoutToastVisibilityCheck);
+    window.visualViewport.addEventListener("scroll", scheduleLiveWorkoutToastVisibilityCheck);
+  }
+
+  if (els.serviceSelect) {
+    els.serviceSelect.addEventListener("change", (event) => {
+      state.serviceId = event.target.value;
+      updateServiceVisual();
+    });
+  }
+
+  if (els.signupForm) {
+    els.signupForm.addEventListener("submit", handleSignup);
+  }
 
   if (els.serviceCarousel) {
     els.serviceCarousel.addEventListener("click", handleCarouselClick);
@@ -1221,17 +1833,37 @@ function wireEvents() {
     els.serviceShell.addEventListener("pointerleave", handleCarouselPointerCancel);
     els.serviceShell.addEventListener("wheel", handleCarouselWheel, { passive: false });
   }
+
+  if (els.unitToggleButton) {
+    els.unitToggleButton.addEventListener("click", () => {
+      applyUnitSystem(useMetric() ? "imperial" : "metric");
+    });
+  }
+
 }
 
 function init() {
+  if (redirectDashboardHostHomeToDashboardPage()) {
+    return;
+  }
+
+  captureRefFromUrl();
+
+  activeUnitSystem = storedUnitSystem() || defaultUnitSystemFromLocale();
+  syncUnitToggleButtonLabel();
+  void hydrateUnitSystemFromIp();
+
   renderServiceOptions();
   renderServiceCarousel();
   updateServiceVisual();
+  syncAuthNavigation();
+  syncHeaderStatsHint();
   wireEvents();
 
   if (els.stepsTapeState) {
     els.stepsTapeState.textContent = "Loading live step counter...";
   }
+  renderStreakLiveCallout("");
   setStepsTapeVisibility(false);
   renderStepsTape();
 
@@ -1251,6 +1883,6 @@ function init() {
   requestViewportFit();
 }
 
-init();
 inject();
 initGoogleAnalytics();
+init();
