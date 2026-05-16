@@ -23,7 +23,7 @@ const SERVICES = [
     label: "Telegram",
     logo: "/SVGS/Telegram_logo.svg",
     provider: "Telegram",
-    identityKind: "username",
+    identityKind: "bot-link",
   },
 ];
 
@@ -103,10 +103,15 @@ const els = {
   stepsTapeState: document.getElementById("stepsTapeState"),
 
   signupForm: document.getElementById("signupForm"),
+  formIntro: document.querySelector(".signup-form .form-intro"),
+  formFlow: document.querySelector(".signup-form .form-flow"),
   serviceIdentityText: document.getElementById("serviceIdentityText"),
   serviceIdentityHelp: document.getElementById("serviceIdentityHelp"),
   serviceIdentityInput: document.getElementById("serviceIdentityInput"),
+  serviceIdentityLabel: document.getElementById("serviceIdentityLabel"),
+  telegramLinkBox: document.getElementById("telegramLinkBox"),
   emailInput: document.getElementById("emailInput"),
+  emailLabel: document.querySelector('label[for="emailInput"]'),
   consentWrap: document.getElementById("consentWrap"),
   consentCheckbox: document.getElementById("consentCheckbox"),
   signupStatus: document.getElementById("signupStatus"),
@@ -1277,15 +1282,46 @@ function syncServiceInputRequirements() {
     return;
   }
 
+  const isTelegram = service.identityKind === "bot-link";
   const needsSmsConsent = service.identityKind === "phone";
 
-  els.consentWrap.classList.toggle("is-inactive", !needsSmsConsent);
-  els.consentWrap.setAttribute("aria-hidden", needsSmsConsent ? "false" : "true");
-  els.consentCheckbox.required = needsSmsConsent;
-  els.consentCheckbox.disabled = !needsSmsConsent;
+  if (els.telegramLinkBox) {
+    els.telegramLinkBox.hidden = !isTelegram;
+  }
+  if (els.serviceIdentityLabel) {
+    els.serviceIdentityLabel.hidden = isTelegram;
+  }
+  if (els.emailLabel) {
+    els.emailLabel.hidden = isTelegram;
+  }
+  if (els.signupForm) {
+    const submitBtn = els.signupForm.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.hidden = isTelegram;
+    }
+  }
 
-  if (!needsSmsConsent) {
+  if (els.formIntro) {
+    els.formIntro.textContent = isTelegram
+      ? "To get started with Telegram, use the link below to message our bot."
+      : "Select an app, enter your info, then submit onboarding.";
+  }
+
+  if (els.formFlow) {
+    els.formFlow.hidden = isTelegram;
+  }
+
+  els.consentWrap.classList.toggle("is-inactive", !needsSmsConsent || isTelegram);
+  els.consentWrap.setAttribute("aria-hidden", needsSmsConsent && !isTelegram ? "false" : "true");
+  els.consentCheckbox.required = needsSmsConsent && !isTelegram;
+  els.consentCheckbox.disabled = !needsSmsConsent || isTelegram;
+
+  if (!needsSmsConsent || isTelegram) {
     els.consentCheckbox.checked = false;
+  }
+
+  if (isTelegram) {
+    return;
   }
 
   if (service.identityKind === "imessage-contact") {
@@ -1688,6 +1724,10 @@ async function refreshPebbleStepTape() {
 
 function validateForm() {
   const service = currentService();
+  if (service.identityKind === "bot-link") {
+    return { ok: true, payload: null, isBotLink: true };
+  }
+
   const identityRaw = els.serviceIdentityInput.value.trim();
   const email = els.emailInput.value.trim();
   const needsSmsConsent = service.identityKind === "phone";
@@ -1763,6 +1803,9 @@ async function handleSignup(event) {
   event.preventDefault();
 
   const validation = validateForm();
+  if (validation.isBotLink) {
+    return;
+  }
   if (!validation.ok) {
     setStatus(els.signupStatus, validation.message, "error");
     return;

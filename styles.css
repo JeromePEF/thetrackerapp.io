@@ -766,6 +766,38 @@ body {
   border-radius: 12px;
 }
 
+.telegram-link-box {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.25rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(56, 255, 211, 0.2);
+  border-radius: 10px;
+  padding: 0.8rem;
+  text-align: center;
+}
+
+.telegram-link-box p {
+  margin: 0;
+  font-size: 0.94rem;
+  font-weight: 600;
+  color: #e8f1ff;
+}
+
+.telegram-bot-link {
+  display: inline-block;
+  color: var(--accent);
+  font-family: "Orbitron", sans-serif;
+  font-weight: 700;
+  font-size: 1.15rem;
+  text-decoration: none;
+  padding: 0.3rem;
+}
+
+.telegram-bot-link:hover {
+  text-decoration: underline;
+}
+
 .input-grid {
   display: grid;
   gap: 0.82rem;
