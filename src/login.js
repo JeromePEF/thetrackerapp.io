@@ -5,7 +5,6 @@ import { requestLoginCode } from "./api.js";
 const AUTH_PENDING_KEY = "tracker.auth.pending";
 const DEFAULT_CODE_LENGTH = 8;
 const DASHBOARD_ORIGIN = "https://dashboard.thetrackerapp.io";
-const APPLE_EMAIL_DOMAINS = new Set(["icloud.com", "me.com", "mac.com"]);
 const TELEGRAM_USERNAME_PATTERN = /^@?[a-zA-Z][a-zA-Z0-9_]{3,31}$/;
 
 const els = {
@@ -58,15 +57,6 @@ function setStatus(message, type = "") {
 
 function validEmail(value) {
   return /^\S+@\S+\.\S+$/.test(value);
-}
-
-function emailDomain(value) {
-  const parts = String(value || "").trim().toLowerCase().split("@");
-  return parts.length === 2 ? parts[1] : "";
-}
-
-function isAppleMessageEmail(value) {
-  return validEmail(value) && APPLE_EMAIL_DOMAINS.has(emailDomain(value));
 }
 
 function normalizeTelegramUsername(value) {
@@ -134,12 +124,8 @@ function primaryInputKind(rawValue) {
     return "phone";
   }
 
-  if (isAppleMessageEmail(value)) {
-    return "imessage_email";
-  }
-
   if (validEmail(value)) {
-    return "unsupported_email";
+    return "imessage_email";
   }
 
   if (isTelegramUsername(value)) {
@@ -158,7 +144,7 @@ function iconStateFor(kind) {
     return { iconSrc: "/SVGS/Telegram_logo.svg", iconEmoji: "" };
   }
 
-  if (kind === "unsupported_email" || selectedMethod === "email") {
+  if (selectedMethod === "email") {
     return { iconSrc: "", iconEmoji: "📤" };
   }
 
@@ -171,8 +157,8 @@ function primaryPresentation(rawValue) {
   if (kind === "imessage_email") {
     return {
       fieldLabel: "iMessage email",
-      summary: "Enter the Apple email address on your account. We will send your code through iMessage.",
-      hint: "Example: yourname@icloud.com, yourname@me.com, or yourname@mac.com.",
+      summary: "Enter the email address tied to your iMessage account. We will send your code through iMessage.",
+      hint: "Example: yourname@icloud.com, yourname@me.com, or yourname@example.com.",
       placeholder: "yourname@icloud.com",
       inputMode: "email",
       autocomplete: "email",
@@ -188,18 +174,6 @@ function primaryPresentation(rawValue) {
       placeholder: "@fierylion",
       inputMode: "text",
       autocomplete: "username",
-      ...iconStateFor(kind),
-    };
-  }
-
-  if (kind === "unsupported_email") {
-    return {
-      fieldLabel: "Primary login identifier",
-      summary: "The main login field accepts a phone number, an iMessage email, or a Telegram username.",
-      hint: "For a standard email address, use the recovery link below instead.",
-      placeholder: "+1 555-555-5555, yourname@icloud.com, or @fierylion",
-      inputMode: "text",
-      autocomplete: "off",
       ...iconStateFor(kind),
     };
   }
@@ -391,13 +365,6 @@ function normalizeIdentifier(method, rawValue) {
       provider: "Telegram",
       deliveryChannel: "telegram",
       recovery: false,
-    };
-  }
-
-  if (kind === "unsupported_email") {
-    return {
-      ok: false,
-      message: "For a standard email address, use the recovery link below. The main field only accepts phone, iMessage email, or Telegram username.",
     };
   }
 
@@ -637,15 +604,6 @@ function applyPhoneFormatting(input) {
 }
 
 function detectPrefillMethod(rawValue) {
-  const value = String(rawValue || "").trim();
-  if (!value) {
-    return "phone";
-  }
-
-  if (validEmail(value) && !isAppleMessageEmail(value)) {
-    return "email";
-  }
-
   return "phone";
 }
 
@@ -684,7 +642,7 @@ function prefillFromQuery() {
   const identifier = String(params.get("identifier") || "").trim();
 
   if (email) {
-    setSelectedMethod(isAppleMessageEmail(email) ? "phone" : "email", { preserveValue: false });
+    setSelectedMethod("phone", { preserveValue: false });
     els.credentialInput.value = email;
     syncCredentialPresentation();
     return;
@@ -699,10 +657,9 @@ function prefillFromQuery() {
   }
 
   if (identifier) {
-    const method = detectPrefillMethod(identifier);
-    setSelectedMethod(method, { preserveValue: false });
+    setSelectedMethod("phone", { preserveValue: false });
     els.credentialInput.value = identifier;
-    if (method === "phone") {
+    if (primaryInputKind(identifier) === "phone") {
       applyPhoneFormatting(els.credentialInput);
     }
     syncCredentialPresentation();
