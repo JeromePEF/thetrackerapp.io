@@ -2411,7 +2411,6 @@ function showAffiliateCta() {
   state.affiliateHistoryLoadedKey = "";
   state.affiliateHistoryLoading = false;
   if (els.navAffiliate) els.navAffiliate.hidden = false;
-  if (els.affiliatePanel) els.affiliatePanel.hidden = false;
   if (els.affiliateTabMetrics) els.affiliateTabMetrics.hidden = true;
   if (els.affiliateTabEmpty) els.affiliateTabEmpty.hidden = false;
   if (els.affiliateApplyButton) els.affiliateApplyButton.disabled = false;
@@ -2422,22 +2421,14 @@ function showAffiliateCta() {
   renderAffiliateReferralTable(null);
   const emailGateMessage = syncAffiliateApplyAvailability();
 
-  const billingStatus = affiliateBillingStatusValue() || "Unknown";
-  if (els.affiliateTabBillingStatus) {
-    els.affiliateTabBillingStatus.textContent = billingStatus;
-  }
   if (els.affiliateTabEmptyStatus) {
     els.affiliateTabEmptyStatus.classList.remove("is-error", "is-success");
     if (emailGateMessage) {
       els.affiliateTabEmptyStatus.textContent = emailGateMessage;
       els.affiliateTabEmptyStatus.classList.add("is-error");
-    } else if (billingNeedsStripePortal(billingStatus) && resolveBillingPortalUrl()) {
-      els.affiliateTabEmptyStatus.textContent = `Billing status: ${billingStatus}. Finish billing in Stripe first, then enter your legal details and confirm your email so we can send the affiliate agreement.`;
     } else {
       els.affiliateTabEmptyStatus.textContent =
-        billingStatus && billingStatus !== "Unknown"
-          ? `Billing status: ${billingStatus}. Enter your legal details and confirm your email to receive the affiliate agreement. Stripe Connect will unlock here after it is signed.`
-          : "Enter your legal details and confirm your email to receive the affiliate agreement. Stripe Connect will unlock in this tab after it is signed.";
+        "Enter your legal details so we can send the affiliate agreement and unlock Stripe Connect once it is signed.";
     }
   }
 }
