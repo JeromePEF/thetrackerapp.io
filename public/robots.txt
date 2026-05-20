@@ -1,0 +1,13 @@
+# robots.txt for thetrackerapp.io
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://thetrackerapp.io/sitemap.xml
+
+# Disallow internal/utility pages
+Disallow: /logout
+Disallow: /authorize
+Disallow: /dashboard
+Disallow: /affiliate/dashboard
+Disallow: /affiliate/connect
