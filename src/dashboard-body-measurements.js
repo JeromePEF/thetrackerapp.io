@@ -309,14 +309,23 @@ function drawCharts(data, days) {
 }
 
 function drawMultiLineChart(ctx, canvas, data, metrics, days) {
-  const width = canvas.width;
-  const height = canvas.height;
-  const padding = { top: 20, right: 20, bottom: 30, left: 50 };
+  // Scale for high DPI displays
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+  
+  const width = rect.width;
+  const height = rect.height;
+  const padding = { top: 25, right: 60, bottom: 40, left: 60 };
 
-  ctx.clearRect(0, 0, width, height);
+  // Dark background like Grafana
+  ctx.fillStyle = "#0b0e11";
+  ctx.fillRect(0, 0, width, height);
 
-  // Draw grid
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+  // Draw grid lines (Grafana style - horizontal)
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
   ctx.lineWidth = 1;
 
   for (let i = 0; i <= 5; i++) {
@@ -325,6 +334,17 @@ function drawMultiLineChart(ctx, canvas, data, metrics, days) {
     ctx.moveTo(padding.left, y);
     ctx.lineTo(width - padding.right, y);
     ctx.stroke();
+  }
+
+  // Draw vertical grid lines
+  for (let i = 0; i <= 6; i++) {
+    const x = padding.left + ((width - padding.left - padding.right) * i) / 6;
+    ctx.beginPath();
+    ctx.setLineDash([2, 4]);
+    ctx.moveTo(x, padding.top);
+    ctx.lineTo(x, height - padding.bottom);
+    ctx.stroke();
+    ctx.setLineDash([]);
   }
 
   // Draw each metric line
@@ -347,33 +367,108 @@ function drawMultiLineChart(ctx, canvas, data, metrics, days) {
     const max = Math.max(...values);
     const range = max - min || 1;
 
-    // Draw line
-    ctx.strokeStyle = metric.color;
-    ctx.lineWidth = 2;
+    // Draw area fill (subtle gradient like Grafana)
+    const gradient = ctx.createLinearGradient(0, padding.top, 0, height - padding.bottom);
+    gradient.addColorStop(0, metric.color + "40");
+    gradient.addColorStop(1, metric.color + "05");
+
+    ctx.fillStyle = gradient;
     ctx.beginPath();
+    ctx.moveTo(padding.left, height - padding.bottom);
 
     filtered.forEach((point, i) => {
       const x = padding.left + ((width - padding.left - padding.right) * i) / (filtered.length - 1 || 1);
       const normalizedValue = (point.value - min) / range;
       const y = height - padding.bottom - normalizedValue * (height - padding.top - padding.bottom);
-
-      if (i === 0) {
-        ctx.moveTo(x, y);
-      } else {
-        ctx.lineTo(x, y);
-      }
+      ctx.lineTo(x, y);
     });
 
+    ctx.lineTo(padding.left + width - padding.left - padding.right, height - padding.bottom);
+    ctx.closePath();
+    ctx.fill();
+
+    // Draw smooth line (using bezier curves for Grafana-like smoothness)
+    ctx.strokeStyle = metric.color;
+    ctx.lineWidth = 2;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.beginPath();
+
+    const points = filtered.map((point, i) => {
+      const x = padding.left + ((width - padding.left - padding.right) * i) / (filtered.length - 1 || 1);
+      const normalizedValue = (point.value - min) / range;
+      const y = height - padding.bottom - normalizedValue * (height - padding.top - padding.bottom);
+      return { x, y };
+    });
+
+    // Draw smooth curve through points
+    if (points.length > 1) {
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) {
+        const prev = points[i - 1];
+        const curr = points[i];
+        const cpx = (prev.x + curr.x) / 2;
+        ctx.quadraticCurveTo(prev.x, prev.y, cpx, (prev.y + curr.y) / 2);
+      }
+      ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+    }
     ctx.stroke();
+
+    // Draw data points
+    ctx.fillStyle = metric.color;
+    points.forEach((point) => {
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  });
+
+  // Draw axes
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padding.left, padding.top);
+  ctx.lineTo(padding.left, height - padding.bottom);
+  ctx.lineTo(width - padding.right, height - padding.bottom);
+  ctx.stroke();
+
+  // Draw date labels on X axis
+  ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+  ctx.font = "11px Space Grotesk, sans-serif";
+  ctx.textAlign = "center";
+  const dateLabels = getDaysLabels(days);
+  dateLabels.forEach((label, i) => {
+    const x = padding.left + ((width - padding.left - padding.right) * i) / (dateLabels.length - 1);
+    ctx.fillText(label, x, height - padding.bottom + 20);
   });
 }
 
-function drawSingleLineChart(ctx, canvas, data, metric, days) {
-  const width = canvas.width;
-  const height = canvas.height;
-  const padding = { top: 10, right: 10, bottom: 25, left: 40 };
+function getDaysLabels(days) {
+  const labels = [];
+  const now = new Date();
+  const count = Math.min(days, 7);
+  for (let i = count - 1; i >= 0; i--) {
+    const date = new Date(now - i * (days / count) * 24 * 60 * 60 * 1000);
+    labels.push(date.toLocaleDateString("en-US", { month: "short", day: "numeric" }));
+  }
+  return labels;
+}
 
-  ctx.clearRect(0, 0, width, height);
+function drawSingleLineChart(ctx, canvas, data, metric, days) {
+  // Scale for high DPI displays
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+  
+  const width = rect.width;
+  const height = rect.height;
+  const padding = { top: 15, right: 50, bottom: 30, left: 50 };
+
+  // Dark background like Grafana
+  ctx.fillStyle = "#0b0e11";
+  ctx.fillRect(0, 0, width, height);
 
   // Filter to date range
   const now = new Date();
@@ -382,6 +477,7 @@ function drawSingleLineChart(ctx, canvas, data, metric, days) {
 
   if (!filtered.length) {
     ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+    ctx.font = "12px Space Grotesk, sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("No data for this period", width / 2, height / 2);
     return;
@@ -392,8 +488,8 @@ function drawSingleLineChart(ctx, canvas, data, metric, days) {
   const max = Math.max(...values) * 1.05;
   const range = max - min || 1;
 
-  // Draw grid
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+  // Draw horizontal grid lines (Grafana style)
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
   ctx.lineWidth = 1;
   for (let i = 0; i <= 4; i++) {
     const y = padding.top + ((height - padding.top - padding.bottom) * i) / 4;
@@ -401,50 +497,81 @@ function drawSingleLineChart(ctx, canvas, data, metric, days) {
     ctx.moveTo(padding.left, y);
     ctx.lineTo(width - padding.right, y);
     ctx.stroke();
+    
+    // Y-axis labels
+    const value = max - (range * i) / 4;
+    ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+    ctx.font = "10px Space Grotesk, sans-serif";
+    ctx.textAlign = "right";
+    ctx.fillText(value.toFixed(0), padding.left - 8, y + 3);
   }
 
-  // Draw area fill
-  ctx.fillStyle = `${metric.color}20`;
+  // Draw area gradient fill (Grafana style)
+  const gradient = ctx.createLinearGradient(0, padding.top, 0, height - padding.bottom);
+  gradient.addColorStop(0, metric.color + "50");
+  gradient.addColorStop(0.5, metric.color + "20");
+  gradient.addColorStop(1, metric.color + "05");
+
+  ctx.fillStyle = gradient;
   ctx.beginPath();
   ctx.moveTo(padding.left, height - padding.bottom);
 
-  filtered.forEach((point, i) => {
+  const points = filtered.map((point, i) => {
     const x = padding.left + ((width - padding.left - padding.right) * i) / (filtered.length - 1 || 1);
     const y = height - padding.bottom - ((point.value - min) / range) * (height - padding.top - padding.bottom);
-    ctx.lineTo(x, y);
+    return { x, y, value: point.value, date: point.date };
   });
 
-  ctx.lineTo(width - padding.right, height - padding.bottom);
+  points.forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.lineTo(points[points.length - 1].x, height - padding.bottom);
   ctx.closePath();
   ctx.fill();
 
-  // Draw line
+  // Draw smooth line
   ctx.strokeStyle = metric.color;
   ctx.lineWidth = 2;
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
   ctx.beginPath();
 
-  filtered.forEach((point, i) => {
-    const x = padding.left + ((width - padding.left - padding.right) * i) / (filtered.length - 1 || 1);
-    const y = height - padding.bottom - ((point.value - min) / range) * (height - padding.top - padding.bottom);
-
-    if (i === 0) {
-      ctx.moveTo(x, y);
-    } else {
-      ctx.lineTo(x, y);
+  if (points.length > 1) {
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) {
+      const prev = points[i - 1];
+      const curr = points[i];
+      const cpx = (prev.x + curr.x) / 2;
+      ctx.quadraticCurveTo(prev.x, prev.y, cpx, (prev.y + curr.y) / 2);
     }
-  });
-
+    ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+  }
   ctx.stroke();
 
-  // Draw points
-  ctx.fillStyle = metric.color;
-  filtered.forEach((point, i) => {
-    const x = padding.left + ((width - padding.left - padding.right) * i) / (filtered.length - 1 || 1);
-    const y = height - padding.bottom - ((point.value - min) / range) * (height - padding.top - padding.bottom);
+  // Draw data points with glow
+  points.forEach((point) => {
+    // Glow effect
+    ctx.shadowColor = metric.color;
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = metric.color;
     ctx.beginPath();
-    ctx.arc(x, y, 3, 0, Math.PI * 2);
+    ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    
+    // Inner white dot
+    ctx.fillStyle = "#0b0e11";
+    ctx.beginPath();
+    ctx.arc(point.x, point.y, 2, 0, Math.PI * 2);
     ctx.fill();
   });
+
+  // Draw current value label (like Grafana "Last" value)
+  if (points.length > 0) {
+    const last = points[points.length - 1];
+    ctx.fillStyle = metric.color;
+    ctx.font = "bold 12px Orbitron, sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText(last.value.toFixed(1), last.x + 8, last.y + 4);
+  }
 }
 
 function updateChartStats(metricId, data, days) {
