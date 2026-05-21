@@ -20,6 +20,17 @@ export default defineConfig({
         affiliateSignup: resolve(__dirname, "affiliate/signup.html"),
         affiliateDashboard: resolve(__dirname, "affiliate/dashboard.html"),
         affiliateConnect: resolve(__dirname, "affiliate/connect.html"),
+        // New pages
+        blog: resolve(__dirname, "blog.html"),
+        press: resolve(__dirname, "press.html"),
+        products: resolve(__dirname, "products.html"),
+        brackets: resolve(__dirname, "brackets.html"),
+        win: resolve(__dirname, "win.html"),
+        // Free Tools (SEO pages)
+        tdeeCalculator: resolve(__dirname, "tools/tdee-calculator.html"),
+        bmiCalculator: resolve(__dirname, "tools/bmi-calculator.html"),
+        aiMealPlanner: resolve(__dirname, "tools/ai-meal-planner.html"),
+        foodDiary: resolve(__dirname, "tools/food-diary.html"),
       },
     },
   },

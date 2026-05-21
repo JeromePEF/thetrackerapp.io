@@ -1,0 +1,308 @@
+/* Brackets Page Styles */
+
+.brackets-section {
+  margin-bottom: 3rem;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.section-header h2 {
+  margin: 0;
+}
+
+.live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: "Orbitron", sans-serif;
+  font-size: 0.75rem;
+  color: var(--success);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--success);
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* Brackets Grid */
+.brackets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.bracket-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+  cursor: pointer;
+}
+
+.bracket-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(56, 255, 211, 0.3);
+}
+
+.bracket-card.active {
+  border-color: var(--success);
+}
+
+.bracket-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.bracket-card h3 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.bracket-status {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.bracket-status.live {
+  background: rgba(91, 231, 169, 0.2);
+  color: var(--success);
+}
+
+.bracket-status.upcoming {
+  background: rgba(56, 255, 211, 0.2);
+  color: var(--accent);
+}
+
+.bracket-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+  margin-bottom: 1rem;
+}
+
+.bracket-card-progress {
+  margin-bottom: 1rem;
+}
+
+.progress-bar {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.bracket-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bracket-prize {
+  font-family: "Orbitron", sans-serif;
+  color: var(--accent);
+  font-size: 1.1rem;
+}
+
+/* Bracket Visualization */
+.bracket-visualization-section {
+  margin-bottom: 3rem;
+  padding: 2rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  overflow-x: auto;
+}
+
+.bracket-tree {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  min-width: max-content;
+  padding: 1rem 0;
+}
+
+.bracket-round {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  gap: 1rem;
+}
+
+.bracket-match {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.75rem;
+  min-width: 180px;
+}
+
+.bracket-match.winner {
+  border-color: var(--success);
+}
+
+.bracket-participant {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.4rem 0;
+  font-size: 0.9rem;
+}
+
+.bracket-participant.winner {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.bracket-participant.loser {
+  color: var(--ink-muted);
+}
+
+.bracket-score {
+  font-family: "Orbitron", sans-serif;
+  font-size: 0.85rem;
+}
+
+.bracket-stats {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 2rem;
+  justify-content: center;
+}
+
+.stat-card {
+  background: rgba(56, 255, 211, 0.05);
+  border: 1px solid rgba(56, 255, 211, 0.2);
+  border-radius: 8px;
+  padding: 1rem 1.5rem;
+  text-align: center;
+}
+
+.stat-label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--ink-muted);
+  margin-bottom: 0.25rem;
+}
+
+.stat-value {
+  font-family: "Orbitron", sans-serif;
+  font-size: 1.5rem;
+  color: var(--accent);
+}
+
+/* Group Types */
+.group-types-section {
+  margin-bottom: 3rem;
+}
+
+.group-types-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.group-type-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.group-type-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.group-type-card h3 {
+  margin: 0 0 0.75rem;
+}
+
+.group-type-card p {
+  color: var(--ink-muted);
+  font-size: 0.9rem;
+  margin: 0 0 1.25rem;
+}
+
+/* Past Winners */
+.past-winners-section {
+  margin-bottom: 2rem;
+}
+
+.past-winners-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.past-winner-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.winner-place {
+  font-family: "Orbitron", sans-serif;
+  font-size: 1.5rem;
+  color: var(--accent);
+  min-width: 40px;
+}
+
+.winner-info h4 {
+  margin: 0 0 0.25rem;
+}
+
+.winner-info p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+
+@media (max-width: 640px) {
+  .brackets-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .group-types-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bracket-stats {
+    flex-wrap: wrap;
+  }
+}

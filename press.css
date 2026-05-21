@@ -1,0 +1,150 @@
+/* Press Page Styles */
+
+.press-content {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 3rem;
+  margin-top: 2rem;
+}
+
+/* Press Form */
+.press-form-section h2 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+}
+
+.press-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.press-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-weight: 500;
+}
+
+.press-form input,
+.press-form textarea {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+.press-form input:focus,
+.press-form textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.press-form textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+/* Press Info Sidebar */
+.press-info-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.press-info-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.press-info-card h3 {
+  margin: 0 0 1rem;
+  color: var(--accent);
+  font-size: 1.1rem;
+}
+
+.press-info-card p {
+  margin: 0 0 1rem;
+  color: var(--ink-muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.quick-facts-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.quick-facts-list li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.9rem;
+  color: var(--ink-muted);
+}
+
+.quick-facts-list li:last-child {
+  border-bottom: none;
+}
+
+.quick-facts-list strong {
+  color: var(--ink);
+}
+
+.press-releases-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.press-release-item {
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+}
+
+.press-release-item h4 {
+  margin: 0 0 0.25rem;
+  font-size: 0.95rem;
+}
+
+.press-release-item h4 a {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.press-release-item h4 a:hover {
+  color: var(--accent);
+}
+
+.press-release-item time {
+  font-size: 0.8rem;
+  color: var(--ink-muted);
+}
+
+.press-email-link {
+  display: inline-block;
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.press-email-link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 900px) {
+  .press-content {
+    grid-template-columns: 1fr;
+  }
+
+  .press-info-section {
+    order: -1;
+  }
+}

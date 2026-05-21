@@ -1,0 +1,331 @@
+/* Win $$$ Page Styles */
+
+.win-hero {
+  text-align: center;
+  padding-bottom: 2rem;
+}
+
+.prize-amount-display {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.prize-currency {
+  font-family: "Orbitron", sans-serif;
+  font-size: 2rem;
+  color: var(--success);
+  margin-top: 0.5rem;
+}
+
+.prize-value {
+  font-family: "Orbitron", sans-serif;
+  font-size: 5rem;
+  font-weight: 800;
+  color: var(--success);
+  line-height: 1;
+  text-shadow: 0 0 40px rgba(91, 231, 169, 0.4);
+}
+
+/* Active Challenge */
+.active-challenge-section {
+  margin-bottom: 3rem;
+}
+
+.challenge-status {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.challenge-live {
+  display: inline-flex;
+  background: rgba(91, 231, 169, 0.1);
+  padding: 0.5rem 1.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(91, 231, 169, 0.3);
+}
+
+.active-challenge-card {
+  background: linear-gradient(135deg, rgba(91, 231, 169, 0.1) 0%, rgba(0, 0, 0, 0.4) 100%);
+  border: 2px solid var(--success);
+  border-radius: 16px;
+  padding: 2rem;
+  text-align: center;
+}
+
+.challenge-title {
+  font-family: "Orbitron", sans-serif;
+  font-size: 1.5rem;
+  margin: 0 0 1rem;
+  color: var(--success);
+}
+
+.challenge-description {
+  font-size: 1.1rem;
+  color: var(--ink);
+  margin: 0 0 1.5rem;
+  line-height: 1.6;
+}
+
+.challenge-requirements {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.challenge-requirement {
+  text-align: center;
+}
+
+.requirement-value {
+  font-family: "Orbitron", sans-serif;
+  font-size: 2rem;
+  color: var(--accent);
+  display: block;
+}
+
+.requirement-label {
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+
+.challenge-prize-display {
+  font-family: "Orbitron", sans-serif;
+  font-size: 2.5rem;
+  color: var(--success);
+  margin-bottom: 1.5rem;
+}
+
+.challenge-cta {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.no-challenge-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.no-challenge-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.no-challenge-card h3 {
+  margin: 0 0 0.75rem;
+  color: var(--ink-muted);
+}
+
+.no-challenge-card p {
+  color: var(--ink-muted);
+  margin: 0 0 0.5rem;
+}
+
+.next-challenge-hint {
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem !important;
+}
+
+/* Challenge Leaderboard */
+.challenge-leaderboard-section {
+  margin-bottom: 3rem;
+}
+
+.leaderboard-timer {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  color: var(--ink-muted);
+}
+
+.timer-value {
+  font-family: "Orbitron", sans-serif;
+  font-size: 1.5rem;
+  color: var(--accent);
+  margin-left: 0.5rem;
+}
+
+.challenge-leaderboard {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.leaderboard-entry {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+}
+
+.leaderboard-entry:first-child {
+  background: rgba(91, 231, 169, 0.1);
+  border-color: var(--success);
+}
+
+.leaderboard-rank {
+  font-family: "Orbitron", sans-serif;
+  font-size: 1.25rem;
+  color: var(--accent);
+  min-width: 40px;
+}
+
+.leaderboard-user {
+  flex: 1;
+  font-weight: 500;
+}
+
+.leaderboard-progress {
+  font-family: "Orbitron", sans-serif;
+  color: var(--ink-muted);
+}
+
+.leaderboard-time {
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+
+/* How It Works */
+.how-it-works-section {
+  margin-bottom: 3rem;
+}
+
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.step-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.step-number {
+  width: 48px;
+  height: 48px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Orbitron", sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 auto 1rem;
+}
+
+.step-card h3 {
+  margin: 0 0 0.75rem;
+}
+
+.step-card p {
+  color: var(--ink-muted);
+  font-size: 0.9rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Past Winners */
+.past-winners-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.past-winner-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+.winner-avatar {
+  width: 48px;
+  height: 48px;
+  background: rgba(56, 255, 211, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+
+.winner-details {
+  flex: 1;
+}
+
+.winner-details h4 {
+  margin: 0 0 0.25rem;
+}
+
+.winner-details p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+
+.winner-prize {
+  font-family: "Orbitron", sans-serif;
+  font-size: 1.25rem;
+  color: var(--success);
+}
+
+/* Rules */
+.rules-section {
+  margin-bottom: 2rem;
+}
+
+.rules-list {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem 1.5rem 1.5rem 2.5rem;
+  margin-top: 1rem;
+}
+
+.rules-list li {
+  padding: 0.5rem 0;
+  color: var(--ink-muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .prize-value {
+    font-size: 3.5rem;
+  }
+
+  .challenge-requirements {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .challenge-cta {
+    flex-direction: column;
+  }
+
+  .steps-grid {
+    grid-template-columns: 1fr;
+  }
+}

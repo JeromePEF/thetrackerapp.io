@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Free TDEE Calculator | The Tracker App - Total Daily Energy Expenditure</title>
+    <meta name="description" content="Calculate your Total Daily Energy Expenditure (TDEE) for free. Know exactly how many calories you burn daily based on your activity level. Track via SMS, iMessage, or Telegram." />
+    <meta name="keywords" content="TDEE calculator, total daily energy expenditure, calorie calculator, daily calorie needs, BMR calculator, calorie tracking, SMS calorie tracker, iMessage fitness" />
+    <meta name="theme-color" content="#000000" />
+
+    <link rel="canonical" href="https://thetrackerapp.io/tools/tdee-calculator" />
+    <link rel="icon" href="/favicon.svg?v=5" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3" sizes="180x180" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Free TDEE Calculator | The Tracker App" />
+    <meta property="og:description" content="Calculate your Total Daily Energy Expenditure (TDEE) for free. Know exactly how many calories you burn daily." />
+    <meta property="og:url" content="https://thetrackerapp.io/tools/tdee-calculator" />
+    <meta property="og:image" content="https://thetrackerapp.io/og-image.png" />
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "TDEE Calculator",
+      "applicationCategory": "HealthApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "description": "Free Total Daily Energy Expenditure calculator to help you understand your daily calorie needs for weight loss, maintenance, or muscle gain."
+    }
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/info-pages.css" />
+    <link rel="stylesheet" href="/tools.css" />
+  </head>
+  <body>
+    <div id="appShell">
+      <header class="site-header">
+        <div class="container header-row">
+          <nav class="app-links" aria-label="Navigation">
+            <a href="/">Home</a>
+            <a href="/tools/tdee-calculator" class="active">TDEE Calculator</a>
+            <a href="/tools/bmi-calculator">BMI Calculator</a>
+            <a href="/tools/ai-meal-planner">AI Meal Planner</a>
+            <a href="/tools/food-diary">Food Diary</a>
+          </nav>
+          <div class="header-auth">
+            <a id="loginLink" class="login-link" href="/login">Login</a>
+            <a id="dashboardLink" class="dashboard-link" href="https://dashboard.thetrackerapp.io/dashboard" hidden>Dashboard</a>
+          </div>
+        </div>
+      </header>
+
+      <main class="container page-content">
+        <section class="page-hero">
+          <h1>TDEE Calculator</h1>
+          <p class="hero-subtitle">Calculate your Total Daily Energy Expenditure to optimize your nutrition goals</p>
+        </section>
+
+        <section class="calculator-section">
+          <form id="tdeeForm" class="calculator-form">
+            <div class="form-row">
+              <label for="tdeeAge">
+                Age
+                <input type="number" id="tdeeAge" name="age" min="15" max="100" required placeholder="25" />
+              </label>
+
+              <label for="tdeeSex">
+                Biological Sex
+                <select id="tdeeSex" name="sex" required>
+                  <option value="">Select...</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="form-row">
+              <label for="tdeeWeight">
+                Weight
+                <div class="input-with-unit">
+                  <input type="number" id="tdeeWeight" name="weight" min="50" max="700" step="0.1" required placeholder="150" />
+                  <select id="tdeeWeightUnit" name="weightUnit">
+                    <option value="lb">lb</option>
+                    <option value="kg">kg</option>
+                  </select>
+                </div>
+              </label>
+
+              <label for="tdeeHeight">
+                Height
+                <div class="input-with-unit">
+                  <input type="number" id="tdeeHeight" name="height" min="36" max="96" step="0.1" required placeholder="68" />
+                  <select id="tdeeHeightUnit" name="heightUnit">
+                    <option value="in">in</option>
+                    <option value="cm">cm</option>
+                  </select>
+                </div>
+              </label>
+            </div>
+
+            <label for="tdeeActivity">
+              Activity Level
+              <select id="tdeeActivity" name="activity" required>
+                <option value="">Select your activity level...</option>
+                <option value="1.2">Sedentary (little or no exercise)</option>
+                <option value="1.375">Lightly Active (1-3 days/week)</option>
+                <option value="1.55">Moderately Active (3-5 days/week)</option>
+                <option value="1.725">Very Active (6-7 days/week)</option>
+                <option value="1.9">Extremely Active (2x/day, physical job)</option>
+              </select>
+            </label>
+
+            <button type="submit" class="btn-primary">Calculate TDEE</button>
+          </form>
+
+          <div id="tdeeResults" class="calculator-results" hidden>
+            <h2>Your Results</h2>
+            
+            <div class="results-grid">
+              <div class="result-card primary">
+                <span class="result-label">TDEE (Maintenance)</span>
+                <span id="tdeeMaintenance" class="result-value">0</span>
+                <span class="result-unit">calories/day</span>
+              </div>
+              
+              <div class="result-card">
+                <span class="result-label">BMR (Basal Metabolic Rate)</span>
+                <span id="tdeeBmr" class="result-value">0</span>
+                <span class="result-unit">calories/day</span>
+              </div>
+            </div>
+
+            <h3>Calorie Goals by Objective</h3>
+            <div class="goals-grid">
+              <div class="goal-card deficit">
+                <span class="goal-label">Aggressive Loss (-1 lb/week)</span>
+                <span id="tdeeAggressiveLoss" class="goal-value">0</span>
+              </div>
+              <div class="goal-card deficit">
+                <span class="goal-label">Moderate Loss (-0.5 lb/week)</span>
+                <span id="tdeeModrateLoss" class="goal-value">0</span>
+              </div>
+              <div class="goal-card maintain">
+                <span class="goal-label">Maintain Weight</span>
+                <span id="tdeeMaintain" class="goal-value">0</span>
+              </div>
+              <div class="goal-card surplus">
+                <span class="goal-label">Lean Bulk (+0.5 lb/week)</span>
+                <span id="tdeeLeanBulk" class="goal-value">0</span>
+              </div>
+              <div class="goal-card surplus">
+                <span class="goal-label">Aggressive Bulk (+1 lb/week)</span>
+                <span id="tdeeAggressiveBulk" class="goal-value">0</span>
+              </div>
+            </div>
+
+            <div class="cta-section">
+              <p>Track your daily calories via text message!</p>
+              <a href="/" class="btn-primary">Start Tracking Free</a>
+            </div>
+          </div>
+        </section>
+
+        <section class="info-section">
+          <h2>What is TDEE?</h2>
+          <p>Total Daily Energy Expenditure (TDEE) is the total number of calories you burn each day. It combines your Basal Metabolic Rate (BMR) with additional calories burned through physical activity and digestion.</p>
+          
+          <h3>How TDEE is Calculated</h3>
+          <p>This calculator uses the Mifflin-St Jeor equation, which is considered the most accurate for estimating BMR:</p>
+          <ul>
+            <li><strong>Men:</strong> BMR = (10 x weight in kg) + (6.25 x height in cm) - (5 x age) + 5</li>
+            <li><strong>Women:</strong> BMR = (10 x weight in kg) + (6.25 x height in cm) - (5 x age) - 161</li>
+          </ul>
+          <p>Your BMR is then multiplied by an activity factor to get your TDEE.</p>
+
+          <h3>Using TDEE for Your Goals</h3>
+          <ul>
+            <li><strong>Weight Loss:</strong> Eat 300-500 calories below TDEE for sustainable fat loss</li>
+            <li><strong>Maintenance:</strong> Eat at your TDEE to maintain current weight</li>
+            <li><strong>Muscle Gain:</strong> Eat 200-500 calories above TDEE with adequate protein</li>
+          </ul>
+        </section>
+
+        <!-- FAQ Section for SEO -->
+        <section class="faq-section">
+          <h2>Frequently Asked Questions</h2>
+          
+          <details class="faq-item">
+            <summary>How accurate is the TDEE calculator?</summary>
+            <p>The Mifflin-St Jeor equation is accurate within 10% for most people. For precise tracking, we recommend using The Tracker App to log your food and monitor weight changes over 2-4 weeks, then adjusting accordingly.</p>
+          </details>
+
+          <details class="faq-item">
+            <summary>Should I eat my exercise calories back?</summary>
+            <p>Your TDEE already accounts for your stated activity level. If you have an unusually active day, you may eat slightly more, but be cautious as calorie burn estimates from exercise machines are often inflated.</p>
+          </details>
+
+          <details class="faq-item">
+            <summary>How often should I recalculate my TDEE?</summary>
+            <p>Recalculate every 10-15 pounds of weight change or if your activity level significantly changes. Your metabolism adapts as your body composition changes.</p>
+          </details>
+
+          <details class="faq-item">
+            <summary>Can I track my calories via SMS or iMessage?</summary>
+            <p>Yes! The Tracker App lets you log calories, macros, and nutrition simply by texting. Just text what you ate and our system calculates and tracks it automatically.</p>
+          </details>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        <div class="container footer-row">
+          <a href="mailto:contact@thetrackerapp.io">contact@thetrackerapp.io</a>
+          <a href="/tools/tdee-calculator">TDEE Calculator</a>
+          <a href="/tools/bmi-calculator">BMI Calculator</a>
+          <a href="/privacy">Privacy Policy</a>
+          <a href="/terms">Terms</a>
+        </div>
+      </footer>
+    </div>
+
+    <script type="module" src="/src/tools/tdee-calculator.js"></script>
+  </body>
+</html>

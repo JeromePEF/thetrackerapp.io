@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Press | The Tracker App - Media Inquiries & Press Releases</title>
+    <meta name="description" content="Get in touch with The Tracker App press team for media inquiries, interviews, and press releases about SMS, iMessage, and Telegram fitness tracking." />
+    <meta name="keywords" content="press, media inquiries, fitness app press, tracker app news, interviews" />
+    <meta name="theme-color" content="#000000" />
+
+    <link rel="canonical" href="https://thetrackerapp.io/press" />
+    <link rel="icon" href="/favicon.svg?v=5" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3" sizes="180x180" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Press | The Tracker App" />
+    <meta property="og:description" content="Get in touch with our press team for media inquiries, interviews, and press releases." />
+    <meta property="og:url" content="https://thetrackerapp.io/press" />
+    <meta property="og:image" content="https://thetrackerapp.io/og-image.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="info-pages.css" />
+    <link rel="stylesheet" href="press.css" />
+  </head>
+  <body>
+    <div id="appShell">
+      <header class="site-header">
+        <div class="container header-row">
+          <nav class="app-links" aria-label="Navigation">
+            <a href="/">Home</a>
+            <a href="/blog">Blog</a>
+            <a href="/press" class="active">Press</a>
+            <a href="/tools/tdee-calculator">Free Tools</a>
+          </nav>
+          <div class="header-auth">
+            <a id="loginLink" class="login-link" href="/login">Login</a>
+            <a id="dashboardLink" class="dashboard-link" href="https://dashboard.thetrackerapp.io/dashboard" hidden>Dashboard</a>
+          </div>
+        </div>
+      </header>
+
+      <main class="container page-content">
+        <section class="page-hero">
+          <h1>Press</h1>
+          <p class="hero-subtitle">Get in touch with our press team for media inquiries, interviews, and press releases.</p>
+        </section>
+
+        <section class="press-content">
+          <div class="press-form-section">
+            <h2>Media Inquiry Form</h2>
+            <form id="pressInquiryForm" class="press-form">
+              <label for="pressEmail">
+                Email Address *
+                <input type="email" id="pressEmail" name="email" required placeholder="your.email@example.com" />
+              </label>
+
+              <label for="pressSubject">
+                Subject *
+                <input type="text" id="pressSubject" name="subject" required placeholder="Media inquiry subject" />
+              </label>
+
+              <label for="pressOutlet">
+                Media Outlet / Publication
+                <input type="text" id="pressOutlet" name="outlet" placeholder="Company or publication name" />
+              </label>
+
+              <label for="pressDeadline">
+                Deadline (if applicable)
+                <input type="date" id="pressDeadline" name="deadline" />
+              </label>
+
+              <label for="pressMessage">
+                Message *
+                <textarea id="pressMessage" name="message" required rows="6" placeholder="Please provide details about your media inquiry, including deadline, outlet information, and specific questions you'd like answered..."></textarea>
+              </label>
+
+              <div class="form-actions">
+                <button type="submit" class="btn-primary">Send Press Inquiry</button>
+              </div>
+              <p id="pressFormStatus" class="form-status" role="status"></p>
+            </form>
+          </div>
+
+          <aside class="press-info-section">
+            <div class="press-info-card">
+              <h3>Press Kit</h3>
+              <p>Download our press kit containing logos, screenshots, and brand guidelines.</p>
+              <a href="/press-kit.zip" class="btn-secondary" download>Download Press Kit</a>
+            </div>
+
+            <div class="press-info-card">
+              <h3>Quick Facts</h3>
+              <ul class="quick-facts-list">
+                <li><strong>Founded:</strong> 2024</li>
+                <li><strong>Platforms:</strong> iMessage, SMS, Telegram</li>
+                <li><strong>Integrations:</strong> Pebble, Fitbit, Garmin, Oura, Whoop, Apple Watch</li>
+                <li><strong>Tracking:</strong> Workouts, Calories, Water, Body Measurements, Steps, Sleep</li>
+              </ul>
+            </div>
+
+            <div class="press-info-card">
+              <h3>Recent Press Releases</h3>
+              <div id="pressReleasesList" class="press-releases-list">
+                <p class="loading-state">Loading press releases...</p>
+              </div>
+            </div>
+
+            <div class="press-info-card">
+              <h3>Direct Contact</h3>
+              <p>For urgent inquiries:</p>
+              <a href="mailto:press@thetrackerapp.io" class="press-email-link">press@thetrackerapp.io</a>
+            </div>
+          </aside>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        <div class="container footer-row">
+          <a href="mailto:contact@thetrackerapp.io">contact@thetrackerapp.io</a>
+          <a href="/blog">Blog</a>
+          <a href="/press">Press</a>
+          <a href="/privacy">Privacy Policy</a>
+          <a href="/terms">Terms</a>
+        </div>
+      </footer>
+    </div>
+
+    <script type="module" src="src/press.js"></script>
+  </body>
+</html>

@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Products | The Tracker App - Fitness Wearables & Accessories</title>
+    <meta name="description" content="Shop recommended fitness wearables and accessories compatible with The Tracker App. Pebble watches, Fitbit, Apple Watch, Garmin, Whoop, and more." />
+    <meta name="keywords" content="fitness wearables, pebble watch, fitbit, apple watch, garmin, whoop, fitness tracker, smartwatch" />
+    <meta name="theme-color" content="#000000" />
+
+    <link rel="canonical" href="https://thetrackerapp.io/products" />
+    <link rel="icon" href="/favicon.svg?v=5" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3" sizes="180x180" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Products | The Tracker App" />
+    <meta property="og:description" content="Shop recommended fitness wearables and accessories compatible with The Tracker App." />
+    <meta property="og:url" content="https://thetrackerapp.io/products" />
+    <meta property="og:image" content="https://thetrackerapp.io/og-image.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="info-pages.css" />
+    <link rel="stylesheet" href="products.css" />
+  </head>
+  <body>
+    <div id="appShell">
+      <header class="site-header">
+        <div class="container header-row">
+          <nav class="app-links" aria-label="Navigation">
+            <a href="/">Home</a>
+            <a href="/blog">Blog</a>
+            <a href="/products" class="active">Products</a>
+            <a href="/brackets">Brackets</a>
+          </nav>
+          <div class="header-auth">
+            <a id="loginLink" class="login-link" href="/login">Login</a>
+            <a id="dashboardLink" class="dashboard-link" href="https://dashboard.thetrackerapp.io/dashboard" hidden>Dashboard</a>
+          </div>
+        </div>
+      </header>
+
+      <main class="container page-content">
+        <section class="page-hero">
+          <h1>Products</h1>
+          <p class="hero-subtitle">Recommended fitness wearables and accessories compatible with The Tracker App</p>
+        </section>
+
+        <section class="products-filters">
+          <select id="productCategoryFilter" aria-label="Filter by category">
+            <option value="">All Categories</option>
+            <option value="smartwatch">Smartwatches</option>
+            <option value="fitness-band">Fitness Bands</option>
+            <option value="accessory">Accessories</option>
+          </select>
+          <select id="productBrandFilter" aria-label="Filter by brand">
+            <option value="">All Brands</option>
+            <option value="pebble">Pebble</option>
+            <option value="fitbit">Fitbit</option>
+            <option value="apple">Apple</option>
+            <option value="garmin">Garmin</option>
+            <option value="whoop">Whoop</option>
+            <option value="oura">Oura</option>
+          </select>
+        </section>
+
+        <section id="productsGrid" class="products-grid">
+          <article class="product-card" data-category="smartwatch" data-brand="pebble">
+            <div class="product-badge">Recommended</div>
+            <div class="product-image">
+              <img src="/images/products/pebble-time.png" alt="Pebble Time Steel" loading="lazy" />
+            </div>
+            <div class="product-info">
+              <h3>Pebble Time Steel</h3>
+              <p class="product-description">Classic e-paper smartwatch with excellent battery life. Native Tracker App integration.</p>
+              <div class="product-features">
+                <span class="feature-tag">Steps</span>
+                <span class="feature-tag">Sleep</span>
+                <span class="feature-tag">Workouts</span>
+              </div>
+              <p class="product-price">From $49</p>
+              <a href="#" class="btn-primary product-buy-btn" data-product="pebble-time">Shop Now</a>
+            </div>
+          </article>
+
+          <article class="product-card" data-category="fitness-band" data-brand="fitbit">
+            <div class="product-image">
+              <img src="/images/products/fitbit-charge.png" alt="Fitbit Charge 6" loading="lazy" />
+            </div>
+            <div class="product-info">
+              <h3>Fitbit Charge 6</h3>
+              <p class="product-description">Advanced fitness tracker with heart rate, GPS, and stress management.</p>
+              <div class="product-features">
+                <span class="feature-tag">Heart Rate</span>
+                <span class="feature-tag">GPS</span>
+                <span class="feature-tag">Sleep</span>
+              </div>
+              <p class="product-price">From $159</p>
+              <a href="#" class="btn-primary product-buy-btn" data-product="fitbit-charge-6">Shop Now</a>
+            </div>
+          </article>
+
+          <article class="product-card" data-category="smartwatch" data-brand="apple">
+            <div class="product-image">
+              <img src="/images/products/apple-watch.png" alt="Apple Watch Series 9" loading="lazy" />
+            </div>
+            <div class="product-info">
+              <h3>Apple Watch Series 9</h3>
+              <p class="product-description">Premium smartwatch with comprehensive health and fitness tracking.</p>
+              <div class="product-features">
+                <span class="feature-tag">ECG</span>
+                <span class="feature-tag">Blood O2</span>
+                <span class="feature-tag">Workouts</span>
+              </div>
+              <p class="product-price">From $399</p>
+              <a href="#" class="btn-primary product-buy-btn" data-product="apple-watch-9">Shop Now</a>
+            </div>
+          </article>
+
+          <article class="product-card" data-category="smartwatch" data-brand="garmin">
+            <div class="product-image">
+              <img src="/images/products/garmin-forerunner.png" alt="Garmin Forerunner 265" loading="lazy" />
+            </div>
+            <div class="product-info">
+              <h3>Garmin Forerunner 265</h3>
+              <p class="product-description">GPS running smartwatch with advanced training features and AMOLED display.</p>
+              <div class="product-features">
+                <span class="feature-tag">GPS</span>
+                <span class="feature-tag">Training Load</span>
+                <span class="feature-tag">Recovery</span>
+              </div>
+              <p class="product-price">From $449</p>
+              <a href="#" class="btn-primary product-buy-btn" data-product="garmin-forerunner-265">Shop Now</a>
+            </div>
+          </article>
+
+          <article class="product-card" data-category="fitness-band" data-brand="whoop">
+            <div class="product-image">
+              <img src="/images/products/whoop-4.png" alt="WHOOP 4.0" loading="lazy" />
+            </div>
+            <div class="product-info">
+              <h3>WHOOP 4.0</h3>
+              <p class="product-description">Screenless fitness band focused on recovery, strain, and sleep optimization.</p>
+              <div class="product-features">
+                <span class="feature-tag">Recovery</span>
+                <span class="feature-tag">Strain</span>
+                <span class="feature-tag">HRV</span>
+              </div>
+              <p class="product-price">$30/mo membership</p>
+              <a href="#" class="btn-primary product-buy-btn" data-product="whoop-4">Shop Now</a>
+            </div>
+          </article>
+
+          <article class="product-card" data-category="accessory" data-brand="oura">
+            <div class="product-image">
+              <img src="/images/products/oura-ring.png" alt="Oura Ring Gen 3" loading="lazy" />
+            </div>
+            <div class="product-info">
+              <h3>Oura Ring Gen 3</h3>
+              <p class="product-description">Smart ring for 24/7 health tracking with focus on sleep and readiness.</p>
+              <div class="product-features">
+                <span class="feature-tag">Sleep</span>
+                <span class="feature-tag">Readiness</span>
+                <span class="feature-tag">Activity</span>
+              </div>
+              <p class="product-price">From $299</p>
+              <a href="#" class="btn-primary product-buy-btn" data-product="oura-ring-3">Shop Now</a>
+            </div>
+          </article>
+        </section>
+
+        <section class="integration-info">
+          <h2>Device Integration</h2>
+          <p>All listed devices integrate seamlessly with The Tracker App. Your data syncs automatically to your dashboard, enabling comprehensive tracking across:</p>
+          <ul class="integration-features">
+            <li>Steps & Distance</li>
+            <li>Heart Rate & HRV</li>
+            <li>Sleep Stages & Quality</li>
+            <li>Workout Detection</li>
+            <li>Calories Burned</li>
+            <li>Recovery Metrics</li>
+          </ul>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        <div class="container footer-row">
+          <a href="mailto:contact@thetrackerapp.io">contact@thetrackerapp.io</a>
+          <a href="/blog">Blog</a>
+          <a href="/press">Press</a>
+          <a href="/privacy">Privacy Policy</a>
+          <a href="/terms">Terms</a>
+        </div>
+      </footer>
+    </div>
+
+    <script type="module" src="src/products.js"></script>
+  </body>
+</html>

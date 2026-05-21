@@ -1,0 +1,493 @@
+/* Dashboard Body Measurements Styles */
+
+.body-measurements-section {
+  margin-bottom: 2rem;
+}
+
+.section-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.section-header-row h2 {
+  margin: 0;
+  font-family: "Orbitron", sans-serif;
+}
+
+.measurement-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+/* Master Overview */
+.master-overview {
+  background: rgba(56, 255, 211, 0.05);
+  border: 1px solid rgba(56, 255, 211, 0.2);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.overview-stats {
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.overview-stat {
+  text-align: center;
+}
+
+.overview-stat .stat-label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--ink-muted);
+  margin-bottom: 0.25rem;
+}
+
+.overview-stat .stat-value {
+  font-family: "Orbitron", sans-serif;
+  font-size: 1.5rem;
+  color: var(--accent);
+}
+
+.overview-stat .stat-delta {
+  display: block;
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.stat-delta.positive {
+  color: var(--success);
+}
+
+.stat-delta.negative {
+  color: var(--error);
+}
+
+.goal-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 1rem !important;
+}
+
+.goal-badge.lose {
+  background: rgba(255, 127, 127, 0.2);
+  color: #ff7f7f;
+}
+
+.goal-badge.gain {
+  background: rgba(91, 231, 169, 0.2);
+  color: var(--success);
+}
+
+.goal-badge.maintain {
+  background: rgba(56, 255, 211, 0.2);
+  color: var(--accent);
+}
+
+/* Measurements Grid */
+.measurements-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.measurement-category h4 {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.measurement-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.measurement-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.measurement-card:hover {
+  border-color: rgba(56, 255, 211, 0.3);
+}
+
+.measurement-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.measurement-label {
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+
+.measurement-side-toggle {
+  font-size: 0.7rem;
+  color: var(--ink-muted);
+}
+
+.measurement-value {
+  margin-bottom: 0.5rem;
+}
+
+.measurement-value .value {
+  font-family: "Orbitron", sans-serif;
+  font-size: 1.5rem;
+  color: var(--ink);
+}
+
+.measurement-value .unit {
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+  margin-left: 0.25rem;
+}
+
+.measurement-progress {
+  margin-bottom: 0.5rem;
+}
+
+.measurement-progress .progress-bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 0.25rem;
+}
+
+.measurement-progress .progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+.measurement-progress .progress-text {
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+}
+
+.measurement-avg {
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+}
+
+/* Progress Charts Toggle */
+.progress-charts-toggle {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.expand-charts-btn {
+  background: rgba(56, 255, 211, 0.1);
+  border: 1px solid rgba(56, 255, 211, 0.3);
+  border-radius: 999px;
+  padding: 0.75rem 2rem;
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.expand-charts-btn:hover {
+  background: rgba(56, 255, 211, 0.2);
+}
+
+.expand-icon {
+  margin-right: 0.5rem;
+  transition: transform 0.2s ease;
+}
+
+.expand-charts-btn[aria-expanded="true"] .expand-icon {
+  transform: rotate(180deg);
+}
+
+/* Progress Charts Container */
+.progress-charts-container {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.charts-controls {
+  margin-bottom: 1.5rem;
+}
+
+.charts-controls h3 {
+  margin: 0 0 0.5rem;
+}
+
+.charts-description {
+  color: var(--ink-muted);
+  font-size: 0.9rem;
+  margin: 0 0 1rem;
+}
+
+.metric-selector label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+  margin-bottom: 0.5rem;
+}
+
+.metric-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.metric-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 0.4rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: border-color 0.2s ease;
+}
+
+.metric-checkbox:hover {
+  border-color: var(--metric-color);
+}
+
+.metric-checkbox input {
+  accent-color: var(--metric-color);
+}
+
+.metric-checkbox input:checked + .checkbox-label {
+  color: var(--metric-color);
+}
+
+.chart-time-range {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.time-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 0.4rem 0.75rem;
+  color: var(--ink-muted);
+  font-family: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.time-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.time-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* Charts Grid */
+.charts-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.aggregate-chart-container {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.aggregate-chart-container h4 {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+}
+
+.aggregate-chart-container canvas {
+  width: 100%;
+  max-width: 100%;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1rem;
+  justify-content: center;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--ink-muted);
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color);
+}
+
+.individual-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1rem;
+}
+
+.individual-chart-container {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.individual-chart-container h4 {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+
+.individual-chart-container canvas {
+  width: 100%;
+}
+
+.chart-stats {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--ink-muted);
+}
+
+.chart-stats strong {
+  color: var(--ink);
+}
+
+/* Qualitative Assessments */
+.qualitative-assessments {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.qualitative-assessments h3 {
+  margin: 0 0 1rem;
+}
+
+.journal-entries {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.journal-entry {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  padding: 1rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.journal-entry:hover {
+  border-left-color: var(--success);
+}
+
+.journal-part-name {
+  margin: 0 0 0.5rem;
+  color: var(--accent);
+  font-size: 0.95rem;
+}
+
+.journal-content {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  color: var(--ink-muted);
+  line-height: 1.5;
+}
+
+.journal-content em {
+  opacity: 0.6;
+}
+
+.journal-date {
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+}
+
+/* Error State */
+.error-state {
+  text-align: center;
+  color: var(--error);
+  padding: 2rem;
+}
+
+@media (max-width: 768px) {
+  .section-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .measurement-actions {
+    width: 100%;
+  }
+
+  .measurement-actions button {
+    flex: 1;
+  }
+
+  .overview-stats {
+    justify-content: space-between;
+  }
+
+  .measurement-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .individual-charts {
+    grid-template-columns: 1fr;
+  }
+
+  .journal-entries {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-time-range {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .measurement-cards {
+    grid-template-columns: 1fr;
+  }
+}

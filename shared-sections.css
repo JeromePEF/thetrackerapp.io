@@ -1,0 +1,553 @@
+/* Shared Section Styles */
+/* Testimonials, FAQ, iPhone Mockup, Step Tape */
+
+/* ============================================
+   TESTIMONIALS SECTION
+   ============================================ */
+
+.testimonials-section {
+  padding: 4rem 0;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.section-title {
+  font-family: "Orbitron", sans-serif;
+  font-size: 1.75rem;
+  text-align: center;
+  margin: 0 0 0.5rem;
+}
+
+.section-subtitle {
+  text-align: center;
+  color: var(--ink-muted);
+  margin: 0 0 2.5rem;
+}
+
+.testimonials-carousel {
+  position: relative;
+  max-width: 1200px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+.carousel-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  background: rgba(56, 255, 211, 0.1);
+  border: 1px solid rgba(56, 255, 211, 0.3);
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.carousel-btn:hover {
+  background: rgba(56, 255, 211, 0.2);
+}
+
+.carousel-btn.prev {
+  left: 0;
+}
+
+.carousel-btn.next {
+  right: 0;
+}
+
+.testimonials-track {
+  display: flex;
+  transition: transform 0.5s ease;
+}
+
+.testimonial-card {
+  flex: 0 0 calc(33.333% - 1rem);
+  margin: 0 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.testimonial-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.testimonial-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(56, 255, 211, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: var(--accent);
+  overflow: hidden;
+}
+
+.testimonial-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.testimonial-info h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.testimonial-meta {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--ink-muted);
+}
+
+.testimonial-rating {
+  color: #ffd700;
+  margin-bottom: 0.75rem;
+  letter-spacing: 2px;
+}
+
+.testimonial-content {
+  margin: 0 0 1rem;
+  font-style: italic;
+  color: var(--ink-muted);
+  line-height: 1.6;
+}
+
+.testimonial-stats {
+  margin: 0;
+  font-family: "Orbitron", sans-serif;
+  font-size: 0.85rem;
+  color: var(--accent);
+}
+
+.testimonials-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.carousel-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.carousel-dot.active {
+  background: var(--accent);
+}
+
+@media (max-width: 900px) {
+  .testimonial-card {
+    flex: 0 0 calc(50% - 1rem);
+  }
+}
+
+@media (max-width: 600px) {
+  .testimonial-card {
+    flex: 0 0 calc(100% - 1rem);
+  }
+
+  .carousel-btn {
+    display: none;
+  }
+}
+
+/* ============================================
+   FAQ SECTION
+   ============================================ */
+
+.faq-section {
+  padding: 4rem 0;
+}
+
+.faq-list {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.faq-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+}
+
+.faq-item summary {
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  font-weight: 500;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.faq-item summary::after {
+  content: "+";
+  font-size: 1.25rem;
+  color: var(--accent);
+}
+
+.faq-item[open] summary::after {
+  content: "-";
+}
+
+.faq-item p {
+  padding: 0 1.25rem 1rem;
+  margin: 0;
+  color: var(--ink-muted);
+  line-height: 1.6;
+}
+
+/* ============================================
+   IPHONE MOCKUP SECTION
+   ============================================ */
+
+.iphone-mockup-section {
+  padding: 4rem 0;
+  background: linear-gradient(135deg, rgba(56, 255, 211, 0.03) 0%, transparent 50%);
+}
+
+.mockup-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.mockup-text h2 {
+  font-family: "Orbitron", sans-serif;
+  font-size: 2rem;
+  margin: 0 0 1rem;
+}
+
+.mockup-text > p {
+  color: var(--ink-muted);
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin: 0 0 1.5rem;
+}
+
+.mockup-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 2rem;
+}
+
+.mockup-features li {
+  position: relative;
+  padding-left: 1.5rem;
+  margin-bottom: 0.75rem;
+  color: var(--ink-muted);
+}
+
+.mockup-features li::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+}
+
+.mockup-device {
+  display: flex;
+  justify-content: center;
+}
+
+.iphone-frame {
+  width: 280px;
+  height: 580px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #0a0a14 100%);
+  border-radius: 40px;
+  padding: 12px;
+  position: relative;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 0 0 3px rgba(255, 255, 255, 0.1);
+}
+
+.iphone-notch {
+  width: 120px;
+  height: 28px;
+  background: #000;
+  border-radius: 0 0 18px 18px;
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+}
+
+.iphone-screen {
+  width: 100%;
+  height: 100%;
+  background: #000;
+  border-radius: 30px;
+  overflow: hidden;
+}
+
+.messages-app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.messages-header {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2.5rem 1rem 0.75rem;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.messages-contact {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.messages-thread {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.message-bubble {
+  max-width: 80%;
+  padding: 0.6rem 0.9rem;
+  border-radius: 18px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.message-bubble.sent {
+  background: #007aff;
+  color: #fff;
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+}
+
+.message-bubble.received {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--ink);
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+}
+
+.iphone-home-indicator {
+  width: 120px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+@media (max-width: 900px) {
+  .mockup-content {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    text-align: center;
+  }
+
+  .mockup-device {
+    order: -1;
+  }
+
+  .mockup-features {
+    text-align: left;
+    max-width: 400px;
+    margin: 0 auto 2rem;
+  }
+}
+
+/* ============================================
+   PEBBLE STEP TAPE
+   ============================================ */
+
+.pebble-step-tape {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(56, 255, 211, 0.2);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.pebble-step-tape h3 {
+  font-family: "Orbitron", sans-serif;
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+  margin: 0 0 0.5rem;
+  color: var(--accent);
+}
+
+.step-tape-live {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: "Orbitron", sans-serif;
+  font-size: 0.7rem;
+  color: var(--success);
+  text-transform: uppercase;
+  margin: 0 0 1rem;
+}
+
+.step-tape-live .live-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--success);
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+}
+
+.step-tape-totals {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.step-stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.step-stat-label {
+  font-size: 0.65rem;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.step-stat-value {
+  font-family: "Orbitron", sans-serif;
+  font-size: 1.25rem;
+  color: var(--accent);
+}
+
+.step-tape-feed {
+  min-height: 150px;
+  max-height: 250px;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+}
+
+.step-tape-waiting {
+  text-align: center;
+  padding: 2rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+}
+
+.step-tape-waiting p {
+  margin: 0 0 0.5rem;
+  color: var(--ink-muted);
+}
+
+.step-tape-waiting small {
+  color: var(--ink-muted);
+  opacity: 0.7;
+}
+
+.step-tape-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.step-activity-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.85rem;
+}
+
+.step-activity-item.new {
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.step-username {
+  flex: 1;
+  color: var(--ink);
+}
+
+.step-delta {
+  font-family: "Orbitron", sans-serif;
+  color: var(--success);
+}
+
+.step-source {
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+  padding: 0.15rem 0.4rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.step-tape-note {
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+  margin: 0 0 1rem;
+}
+
+.step-tape-integrations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+}
+
+.integration-badge {
+  background: rgba(56, 255, 211, 0.1);
+  color: var(--accent);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
