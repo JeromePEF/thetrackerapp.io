@@ -1,0 +1,31 @@
+var e=`https://api.thetrackerapp.io`,t=[{key:`creatine`,displayName:`Creatine`,defaultUnit:`g`,defaultDose:5},{key:`whey`,displayName:`Whey Protein`,defaultUnit:`g`,defaultDose:25},{key:`vitaminD`,displayName:`Vitamin D`,defaultUnit:`IU`,defaultDose:2e3},{key:`fishOil`,displayName:`Fish Oil`,defaultUnit:`mg`,defaultDose:1e3},{key:`magnesium`,displayName:`Magnesium`,defaultUnit:`mg`,defaultDose:400},{key:`vitaminC`,displayName:`Vitamin C`,defaultUnit:`mg`,defaultDose:500},{key:`zinc`,displayName:`Zinc`,defaultUnit:`mg`,defaultDose:15},{key:`multivitamin`,displayName:`Multivitamin`,defaultUnit:`serving`,defaultDose:1},{key:`electrolytes`,displayName:`Electrolytes`,defaultUnit:`mL`,defaultDose:500},{key:`collagen`,displayName:`Collagen`,defaultUnit:`g`,defaultDose:10},{key:`ashwagandha`,displayName:`Ashwagandha`,defaultUnit:`mg`,defaultDose:600},{key:`melatonin`,displayName:`Melatonin`,defaultUnit:`mg`,defaultDose:3}],n={creatine:`#4dd0e1`,whey:`#64b5f6`,vitaminD:`#ffb74d`,fishOil:`#ff8a65`,magnesium:`#9575cd`,vitaminC:`#ffd54f`,zinc:`#90a4ae`,multivitamin:`#81c784`,electrolytes:`#4fc3f7`,collagen:`#a1887f`,ashwagandha:`#7e57c2`,melatonin:`#5c6bc0`},r={rootEl:null,registry:t,todayEntries:[],endpointAvailable:!0};function i(){try{let e=localStorage.getItem(`tracker.auth.session`);if(!e)return``;try{let t=JSON.parse(e),n=t&&(t.token||t.accessToken);if(n)return String(n).trim()}catch{}return String(e).trim()}catch{return``}}async function a(t,n={}){let a=i(),o={Accept:`application/json`,...n.headers||{}};n.body&&!o[`Content-Type`]&&(o[`Content-Type`]=`application/json`),a&&(o.Authorization=`Bearer ${a}`);let s=await fetch(`${e}${t}`,{...n,headers:o});if(!s.ok){(s.status===404||s.status===501)&&(r.endpointAvailable=!1);let e=await s.text().catch(()=>``);throw Error(`${t} ${s.status}: ${e||s.statusText}`)}return s.status===204?null:s.json().catch(()=>null)}function o(e){return String(e??``).replace(/&/g,`&amp;`).replace(/</g,`&lt;`).replace(/>/g,`&gt;`).replace(/"/g,`&quot;`).replace(/'/g,`&#39;`)}function s(){let e=new Date;return`${e.getFullYear()}-${String(e.getMonth()+1).padStart(2,`0`)}-${String(e.getDate()).padStart(2,`0`)}`}async function c(e){e&&(r.rootEl=e,d(),await Promise.allSettled([l(),u()]),d())}async function l(){try{let e=await a(`/api/nutrition/supplement/registry`);Array.isArray(e?.items)&&e.items.length&&(r.registry=e.items)}catch{}}async function u(){try{let e=await a(`/api/nutrition/supplement?date=${s()}`);r.todayEntries=Array.isArray(e?.entries)?e.entries:[]}catch{r.todayEntries=[]}}function d(){if(!r.rootEl)return;let e=new Set(r.todayEntries.map(e=>e.canonicalKey||e.key)),t=r.registry.slice().sort((t,n)=>!e.has(t.key)-+!e.has(n.key)),i=r.todayEntries.length?r.todayEntries.slice(0,5).map(e=>`<span class="supp-today-chip" style="--c:${n[e.canonicalKey]||`#64b5f6`}">${o(e.name||e.canonicalKey)} <strong>${e.amount}${o(e.unit||``)}</strong></span>`).join(``)+(r.todayEntries.length>5?`<span class="supp-today-more">+${r.todayEntries.length-5} more</span>`:``):`<span class="supp-today-empty">Nothing logged yet today — tap a chip below to log one.</span>`;r.rootEl.innerHTML=`
+    <section class="supplements-panel grafana-panel">
+      <header class="panel-header">
+        <div>
+          <h3>Supplements</h3>
+          <p class="panel-sub">Tap any supplement to log a dose. Each one becomes its own chart on the dashboard.</p>
+        </div>
+      </header>
+
+      <div class="supp-today-row">${i}</div>
+
+      <div class="supp-chip-grid">
+        ${t.map(t=>{let r=e.has(t.key),i=n[t.key]||`#64b5f6`,a=o(t.key);return`
+              <button type="button"
+                      class="supp-chip ${r?`is-taken`:``}"
+                      data-supp-key="${a}"
+                      style="--c:${i}"
+                      title="Log ${o(t.displayName)} (${t.defaultDose} ${o(t.defaultUnit)})">
+                <span class="supp-chip-name">${o(t.displayName)}</span>
+                <span class="supp-chip-dose">${t.defaultDose}<span class="supp-chip-unit">${o(t.defaultUnit)}</span></span>
+              </button>
+            `}).join(``)}
+        <button type="button" class="supp-chip supp-chip-add" data-supp-key="__other">
+          <span class="supp-chip-name">+ Other</span>
+          <span class="supp-chip-dose">custom</span>
+        </button>
+      </div>
+
+      ${r.endpointAvailable?``:`<p class="supp-fallback-note">Backend logging endpoint isn't live yet — chips will work as soon as it ships. You can text the bot in the meantime (e.g. "took 5g creatine") and it'll be logged via the existing nutrition path.</p>`}
+    </section>
+  `,f()}function f(){r.rootEl?.querySelectorAll(`.supp-chip[data-supp-key]`).forEach(e=>{e.addEventListener(`click`,async()=>{let t=e.dataset.suppKey;if(!t)return;if(t===`__other`){p();return}let n=r.registry.find(e=>e.key===t);if(!n)return;let i=n.defaultDose,a=n.defaultUnit;if(window.event?.shiftKey){let e=prompt(`How much ${n.displayName}? (default ${n.defaultDose} ${n.defaultUnit})`,n.defaultDose);if(e==null||e===``)return;if(i=Number(e),!Number.isFinite(i)||i<=0){alert(`Please enter a positive number.`);return}}await m({name:n.displayName,canonicalKey:n.key,amount:i,unit:a})})})}function p(){let e=prompt(`Supplement name (e.g. 'Beta-Alanine'):`);if(!e)return;let t=prompt(`How much ${e}? (number)`),n=Number(t);if(!Number.isFinite(n)||n<=0){alert(`Please enter a positive number.`);return}m({name:e,amount:n,unit:prompt(`Unit: g / mg / mcg / oz / IU / mL / L / serving / scoop / tablet / capsule`,`g`)||`g`})}async function m({name:e,canonicalKey:t,amount:n,unit:i}){let o={id:`pending-${Date.now()}`,name:e,canonicalKey:t,amount:n,unit:i,loggedAt:new Date().toISOString(),pending:!0};r.todayEntries=[o,...r.todayEntries],d();try{let s=await a(`/api/nutrition/supplement`,{method:`POST`,body:JSON.stringify({name:e,canonicalKey:t,amount:n,unit:i,source:`manual`})});if(s&&(s.id||s.entry)){let e=s.entry||s;r.todayEntries=r.todayEntries.map(t=>t===o?e:t)}d(),window.dispatchEvent(new CustomEvent(`tracker:nutrition-changed`,{detail:{kind:`supplement`}}))}catch(t){r.todayEntries=r.todayEntries.filter(e=>e!==o),d(),r.endpointAvailable&&(console.warn(`supplement log failed:`,t),alert(`Couldn't log ${e}. Try again in a moment.`))}}export{c as initSupplementsPanel};

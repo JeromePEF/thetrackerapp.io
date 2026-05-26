@@ -404,10 +404,11 @@ function renderAll() {
     bodyHtml = `
       ${renderSpotlight(availableMap)}
       ${renderInfoStrips(availableMap)}
-      ${renderCombinedChartPanel(QUICK_METRICS.filter((k) => availableMap.has(k)), {
+      ${renderCombinedChartPanel(buildAllTabKeys(availableMap), {
         subView: "all",
-        title: "Quick view",
-        subtitle: `Your most important metrics over ${state.range.toUpperCase()}. Toggle Individual to see each on its own chart.`,
+        title: "Everything you're tracking",
+        subtitle: `All ${availableMap.size} metric${availableMap.size === 1 ? "" : "s"} over ${state.range.toUpperCase()}. Click a legend chip to hide a line; toggle Individual to see each on its own.`,
+        defaultVisibleKeys: QUICK_METRICS.filter((k) => availableMap.has(k)),
       })}
       <div class="advanced-toggle-row">
         <button type="button" class="advanced-toggle ${state.advancedOpen ? "is-open" : ""}" id="advancedToggle" aria-expanded="${state.advancedOpen}">
@@ -435,6 +436,16 @@ function renderAll() {
   bindOverlayCheckboxes(availableMap);
   bindSpotlightEditors();
   bindDrilldownTriggers(availableMap);
+
+  // Lazy-init the Supplements panel when we render the Nutrition sub-view.
+  // Dynamic import keeps the dashboard bundle smaller for users who never
+  // open this tab.
+  const supplementsHost = rootEl?.querySelector("#supplementsPanelHost");
+  if (supplementsHost) {
+    import("./dashboard-supplements.js")
+      .then((mod) => mod.initSupplementsPanel(supplementsHost))
+      .catch((e) => console.warn("supplements panel failed:", e));
+  }
 
   rootEl.querySelector("#advancedToggle")?.addEventListener("click", () => {
     state.advancedOpen = !state.advancedOpen;
@@ -1561,7 +1572,41 @@ function colorForMetric(key, index, opts = {}) {
   if (opts.subView === "nutrition" && NUTRITION_COLORS[key]) {
     return NUTRITION_COLORS[key];
   }
+  // In the "All" view, still prefer nutrition's semantic color when the metric
+  // happens to be a nutrition one — keeps colors consistent across sub-tabs.
+  if (NUTRITION_COLORS[key]) return NUTRITION_COLORS[key];
   return colorFor(key, index);
+}
+
+// Build the full list of metric keys for the "All" combined chart. We want
+// EVERY available metric on the chart so the user sees a holistic view, but
+// sorted in a sensible order (body → nutrition → hydration → strength → other)
+// so the legend feels organized.
+function buildAllTabKeys(availableMap) {
+  const order = [
+    "weight", "bodyFat",
+    "calories", "protein", "carbs", "fats",
+    "saturatedFat", "polyunsaturatedFat", "monounsaturatedFat", "transFat",
+    "sugars", "sodium", "cholesterol", "fiber", "caffeine", "creatine",
+    "water", "steps",
+    "bench", "squat", "deadlift", "overheadPress", "ohp", "row", "pullup", "pushup",
+  ];
+  const seen = new Set();
+  const result = [];
+  for (const k of order) {
+    if (availableMap.has(k) && !seen.has(k)) {
+      result.push(k);
+      seen.add(k);
+    }
+  }
+  // Append any remaining metrics we didn't pre-sort.
+  for (const k of availableMap.keys()) {
+    if (!seen.has(k)) {
+      result.push(k);
+      seen.add(k);
+    }
+  }
+  return result;
 }
 
 /**
@@ -1591,6 +1636,16 @@ function renderCombinedChartPanel(keys, opts = {}) {
   const showToggle = !opts.singleSeriesAuto && dedup.length > 1;
   const safeView = escapeAttr(subView);
 
+  // `defaultVisibleKeys` lets callers start the chart with only some lines on
+  // (e.g. on the "All" tab we render every metric but only check the most
+  // important ones initially so the chart isn't a noisy rainbow at first
+  // glance). Users toggle the rest on via legend chips. When omitted, every
+  // metric starts visible.
+  const visibleSet =
+    opts.defaultVisibleKeys && opts.defaultVisibleKeys.length
+      ? new Set(opts.defaultVisibleKeys)
+      : null;
+
   // Build the legend / pills so the chart is self-documenting. Each entry
   // colour-matches the line and is clickable to toggle visibility (handled
   // by bindCombinedToggles below).
@@ -1599,10 +1654,11 @@ function renderCombinedChartPanel(keys, opts = {}) {
       const m = (state.data.metrics || []).find((x) => x.key === key) || { label: key, unit: "" };
       const allIdx = (state.data.metrics || []).findIndex((x) => x.key === key);
       const color = colorForMetric(key, allIdx >= 0 ? allIdx : i, { subView });
+      const visible = !visibleSet || visibleSet.has(key);
       return `
-        <button type="button" class="combined-legend-item" data-combined-key="${escapeAttr(key)}"
+        <button type="button" class="combined-legend-item ${visible ? "" : "is-hidden"}" data-combined-key="${escapeAttr(key)}"
                 data-view="${safeView}" style="--metric-color:${color}"
-                aria-pressed="true" title="Hide ${escapeHtml(m.label || key)}">
+                aria-pressed="${visible ? "true" : "false"}" title="${visible ? "Hide" : "Show"} ${escapeHtml(m.label || key)}">
           <span class="combined-legend-swatch"></span>
           <span class="combined-legend-name">${escapeHtml(m.label || key)}</span>
           ${m.unit ? `<span class="combined-legend-unit">${escapeHtml(m.unit)}</span>` : ""}
@@ -1806,15 +1862,20 @@ function renderNutritionView(availableMap, metricsByCategory) {
       </header>
 
       <div class="subview-kpis">
-        ${renderKpi("Today — calories", Math.round(value("calories")).toLocaleString(), "kcal")}
-        ${renderKpi("Today — protein", Math.round(value("protein")), "g")}
-        ${renderKpi("Today — carbs", Math.round(value("carbs")), "g")}
-        ${renderKpi("Today — fats", Math.round(value("fats")), "g")}
+        ${renderKpi("Today — calories", Math.round(value("calories")).toLocaleString(), "kcal", "calories")}
+        ${renderKpi("Today — protein", Math.round(value("protein")), "g", "protein")}
+        ${renderKpi("Today — carbs", Math.round(value("carbs")), "g", "carbs")}
+        ${renderKpi("Today — fats", Math.round(value("fats")), "g", "fats")}
+        ${value("saturatedFat") ? renderKpi("Saturated", Math.round(value("saturatedFat") * 10) / 10, "g", "saturatedFat") : ""}
+        ${value("polyunsaturatedFat") ? renderKpi("Polyunsat", Math.round(value("polyunsaturatedFat") * 10) / 10, "g", "polyunsaturatedFat") : ""}
+        ${value("monounsaturatedFat") ? renderKpi("Monounsat", Math.round(value("monounsaturatedFat") * 10) / 10, "g", "monounsaturatedFat") : ""}
+        ${value("transFat") ? renderKpi("Trans", Math.round(value("transFat") * 10) / 10, "g", "transFat") : ""}
         ${target("calories") ? renderKpi("Calorie target", Math.round(target("calories")).toLocaleString(), "kcal") : ""}
         ${renderKpi("Tracked metrics", present.length, "")}
       </div>
 
       ${renderCaloriesStrip(availableMap)}
+      <div id="supplementsPanelHost"></div>
       ${renderCombinedChartPanel(present, {
         subView: "nutrition",
         title: "Nutrition trends",
@@ -1869,10 +1930,18 @@ function renderWaterView(availableMap, metricsByCategory) {
 }
 
 // Re-usable KPI tile renderer (shared by all sub-views).
-function renderKpi(label, value, unit) {
+//
+// `colorKey` (optional) maps to NUTRITION_COLORS so the tile picks up the
+// semantic hue: a Today—calories tile glows amber, Today—protein glows blue,
+// Trans Fat glows red, etc. Passing nothing keeps the neutral grey card.
+function renderKpi(label, value, unit, colorKey) {
   if (value === undefined || value === null || value === "") return "";
+  const color = colorKey && NUTRITION_COLORS[colorKey];
+  const style = color ? ` style="--kpi-color:${color}"` : "";
+  const cls = color ? "subview-kpi has-color" : "subview-kpi";
   return `
-    <div class="subview-kpi">
+    <div class="${cls}"${style}>
+      <span class="subview-kpi-dot" aria-hidden="true"></span>
       <span class="subview-kpi-label">${escapeHtml(label)}</span>
       <span class="subview-kpi-value">${escapeHtml(String(value))}${unit ? `<span class="subview-kpi-unit">${escapeHtml(unit)}</span>` : ""}</span>
     </div>

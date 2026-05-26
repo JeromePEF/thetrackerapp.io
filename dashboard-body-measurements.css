@@ -3190,6 +3190,29 @@ details.stats-legacy > .milestones-toggle-card {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  position: relative;
+  overflow: hidden;
+}
+/* Color-coded variant: the tile picks up its --kpi-color (set inline) so
+   each nutrition KPI tile glows in the macro's semantic hue (amber for
+   calories, blue for protein, red for trans fat, etc.). */
+.subview-kpi.has-color {
+  background: color-mix(in srgb, var(--kpi-color) 12%, rgba(255, 255, 255, 0.025));
+  border-color: color-mix(in srgb, var(--kpi-color) 38%, transparent);
+}
+.subview-kpi.has-color::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--kpi-color);
+  border-radius: 10px 0 0 10px;
+}
+.subview-kpi.has-color .subview-kpi-label { color: color-mix(in srgb, var(--kpi-color) 65%, #fff); }
+.subview-kpi-dot {
+  display: none;
 }
 
 .subview-kpi-label {
@@ -4064,4 +4087,111 @@ details.stats-legacy > .milestones-toggle-card {
   background: rgba(255, 255, 255, 0.06);
   color: rgba(255, 255, 255, 0.78);
   font-size: 11px;
+}
+
+/* ============================================================================
+   SUPPLEMENTS PANEL — appears in the Nutrition sub-tab. One-tap log chips
+   for the user's most-used supplements + an "+ Other" custom entry.
+   Backend: SUPPLEMENT_TRACKING_BACKEND.txt
+   ============================================================================ */
+.supplements-panel { margin-top: 12px; }
+.supp-today-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 14px;
+  align-items: center;
+  min-height: 26px;
+}
+.supp-today-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--c, #64b5f6) 18%, rgba(255, 255, 255, 0.04));
+  color: color-mix(in srgb, var(--c, #64b5f6) 70%, #fff);
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid color-mix(in srgb, var(--c, #64b5f6) 40%, transparent);
+}
+.supp-today-chip strong { color: #fff; }
+.supp-today-more {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+}
+.supp-today-empty {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+}
+.supp-chip-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+.supp-chip {
+  appearance: none;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 12px 14px;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #fff;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  position: relative;
+}
+.supp-chip:hover {
+  background: color-mix(in srgb, var(--c, #64b5f6) 12%, rgba(255, 255, 255, 0.05));
+  border-color: color-mix(in srgb, var(--c, #64b5f6) 45%, transparent);
+  transform: translateY(-1px);
+}
+.supp-chip.is-taken {
+  background: color-mix(in srgb, var(--c, #64b5f6) 18%, rgba(255, 255, 255, 0.04));
+  border-color: color-mix(in srgb, var(--c, #64b5f6) 55%, transparent);
+}
+.supp-chip.is-taken::after {
+  content: "✓";
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  color: color-mix(in srgb, var(--c, #64b5f6) 80%, #fff);
+  font-weight: 700;
+  font-size: 14px;
+}
+.supp-chip-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+}
+.supp-chip-dose {
+  font-size: 11px;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--c, #64b5f6) 70%, #fff);
+  font-feature-settings: "tnum";
+}
+.supp-chip-unit {
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.55);
+  margin-left: 2px;
+}
+.supp-chip-add {
+  border-style: dashed;
+  color: rgba(255, 255, 255, 0.6);
+}
+.supp-chip-add .supp-chip-name { color: rgba(255, 255, 255, 0.85); }
+.supp-fallback-note {
+  margin-top: 12px;
+  font-size: 11px;
+  color: rgba(255, 184, 0, 0.85);
+  background: rgba(255, 184, 0, 0.08);
+  border-left: 3px solid rgba(255, 184, 0, 0.6);
+  padding: 8px 12px;
+  border-radius: 6px;
 }

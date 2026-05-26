@@ -1,0 +1,309 @@
+================================================================================
+SUPPLEMENT TRACKING — Backend additions for logging supplements & vitamins
+                      with arbitrary units (g / oz / mg / IU / L / mL / serving),
+                      and exposing each as a trackable chart metric.
+================================================================================
+
+Today the nutrition logger accepts free-text food entries that map to
+calories / protein / carbs / fats (+ the four fat sub-types now in
+NUTRITION_DETAIL_BACKEND.txt). We want to add a parallel path for SUPPLEMENT
+intake — creatine 5 g, vitamin D 2000 IU, fish oil 1000 mg, electrolytes
+500 mL, etc. — so users can:
+
+  1. Text the bot ("5g creatine", "took 2000 iu of vitamin d") and have it
+     parsed into a supplement entry.
+  2. See every supplement they're taking as its own chart on the dashboard
+     (line per supplement, in the Nutrition sub-view's combined chart).
+  3. Track adherence ("you took creatine 27 of the last 30 days").
+  4. Have running totals roll up to /api/chart/data with the right unit
+     conversion (mg → g, mL → L) so axes don't blow up.
+
+This spec mirrors the nutrition logger's shape so the existing
+`natural_language_food` parsing pipeline can dispatch to the supplement
+path when the parsed item matches a known supplement.
+
+================================================================================
+1. DATA MODEL
+================================================================================
+
+Per-entry shape:
+
+  {
+    "id":            "sup_8810",
+    "userId":        "alice",
+    "loggedAt":      "2026-05-22T07:14:00Z",
+    "name":          "Creatine Monohydrate",
+    "canonicalKey":  "creatine",         // see SUPPLEMENT_REGISTRY below
+    "brand":         "Optimum Nutrition",  // optional
+    "amount":        5,
+    "unit":          "g",                // g | mg | mcg | oz | IU | L | mL | serving | tablet | capsule | scoop | dropper
+    "dose":          "1 scoop",          // optional human label
+    "notes":         "Post-workout",     // optional
+    "source":        "natural_language_supplement",
+                                          //   natural_language_supplement |
+                                          //   barcode | manual | photo |
+                                          //   linked_to_food   (when a food
+                                          //                     entry contains
+                                          //                     a supplement)
+    "confidence":    { /* same shape as nutrition entries */ }
+  }
+
+================================================================================
+2. ENDPOINTS
+================================================================================
+
+CREATE / LOG
+
+  POST /api/nutrition/supplement
+    body: {
+      contact,
+      name,                  // free text — backend canonicalizes
+      amount, unit,
+      brand?, dose?, notes?,
+      source?: "manual" | "barcode" | "photo" | "natural_language_supplement",
+      loggedAt?: ISO            // default = now
+    }
+    Returns: the persisted entry (the shape above).
+
+  Backend should resolve `canonicalKey` from `name` against the registry
+  (see section 4). Unknown supplements are still stored with
+  `canonicalKey: null` and `name` preserved — they'll appear as their own
+  chart line keyed by lowercase slug ("ashwagandha", "tongkat-ali", etc.).
+
+LIST
+
+  GET /api/nutrition/supplement?contact=…&date=YYYY-MM-DD
+    Returns: { entries: [...], totals: { byKey: { creatine: 5, ... } } }
+
+  GET /api/nutrition/supplement/recent?contact=…&limit=30
+    Returns: { entries: [...] }    // most recent first across all supplements
+
+UPDATE / DELETE
+
+  PATCH  /api/nutrition/supplement/:id
+  DELETE /api/nutrition/supplement/:id
+
+NATURAL-LANGUAGE PARSE
+
+  POST /api/nutrition/supplement/from-text
+    body: { contact, text: "5g creatine and 2000 iu vitamin d" }
+    Returns: { entries: [/* one per parsed item */], unparsed: ["..."] }
+
+  Parser hints (suggested):
+    - "5g creatine"           → name=creatine, amount=5, unit=g
+    - "5 grams creatine"      → same
+    - "2000 iu vit d"         → name=vitamin d, amount=2000, unit=IU
+    - "1 scoop pre-workout"   → name=pre-workout, amount=1, unit=scoop
+    - "fish oil 1000 mg"      → name=fish oil, amount=1000, unit=mg
+    - "100 mL electrolytes"   → name=electrolytes, amount=100, unit=mL
+    - "creatine"              → amount=DEFAULT_DOSE_BY_KEY, unit=registry-unit
+                                (assume default dose; mark
+                                 confidence.level = "low" with explanation
+                                 "Dose not specified — assumed 5 g")
+
+================================================================================
+3. UNIT NORMALIZATION RULES
+================================================================================
+
+Chart endpoint needs to keep an axis sane. For each canonical supplement key,
+the registry picks a CANONICAL_UNIT and the chart endpoint converts every
+entry to that unit before aggregating per day:
+
+  CANONICAL_UNIT     conversion table the backend applies
+  ──────────────────────────────────────────────────────
+  g                  mg → /1000,      mcg → /1e6,    oz → ×28.3495
+  mg                 mcg → /1000,     g  → ×1000
+  IU                 (no conversion — IU is biological)
+  mL                 L → ×1000,       oz(fluid) → ×29.5735
+  serving            tablet | capsule | scoop | dropper all count as 1 serving
+                     for the purpose of "X servings/day", but the entry's
+                     real unit is preserved on the entry itself for display.
+
+The frontend never needs to do unit math — it just plots whatever shape the
+backend returns. The chart endpoint's `metrics[].unit` will say "g", "mg",
+"IU", "mL", or "servings/day".
+
+================================================================================
+4. SUPPLEMENT REGISTRY (server-side)
+================================================================================
+
+Pre-seed the registry with the most common items so they get color-coded
+nicely and the parser knows the typical dose. Suggested starter list:
+
+  key              displayName              defaultUnit  canonicalUnit  defaultDose  category
+  ────────────────────────────────────────────────────────────────────────────────────────
+  creatine         Creatine Monohydrate     g            g              5            performance
+  whey             Whey Protein             g            g              25           protein
+  caseinProtein    Casein Protein           g            g              25           protein
+  preWorkout       Pre-Workout              scoop        serving        1            performance
+  bcaa             BCAAs                    g            g              5            performance
+  eaa              EAAs                     g            g              5            performance
+  electrolytes     Electrolytes             mL           mL             500          hydration
+  caffeinePill     Caffeine                 mg           mg             200          performance
+  vitaminD         Vitamin D                IU           IU             2000         vitamin
+  vitaminC         Vitamin C                mg           mg             500          vitamin
+  vitaminB12       Vitamin B12              mcg          mcg            500          vitamin
+  multivitamin     Multivitamin             serving      serving        1            vitamin
+  fishOil          Fish Oil (Omega-3)       mg           mg             1000         vitamin
+  magnesium        Magnesium                mg           mg             400          mineral
+  zinc             Zinc                     mg           mg             15           mineral
+  iron             Iron                     mg           mg             18           mineral
+  calcium          Calcium                  mg           mg             500          mineral
+  potassium        Potassium                mg           mg             99           mineral
+  collagen         Collagen Peptides        g            g              10           recovery
+  ashwagandha      Ashwagandha              mg           mg             600          adaptogen
+  melatonin        Melatonin                mg           mg             3            sleep
+  glycine          Glycine                  g            g              3            sleep
+  lTheanine        L-Theanine               mg           mg             200          nootropic
+  tongkatAli       Tongkat Ali              mg           mg             400          adaptogen
+  taurine          Taurine                  g            g              1            performance
+  beetroot         Beetroot                 mg           mg             500          performance
+  citrulline       L-Citrulline             g            g              6            performance
+  betaAlanine      Beta-Alanine             g            g              3            performance
+  hmb              HMB                      g            g              3            performance
+  glutamine        Glutamine                g            g              5            recovery
+
+EXPOSE the registry via:
+
+  GET /api/nutrition/supplement/registry
+    Returns: { items: [ { key, displayName, defaultUnit, canonicalUnit,
+                          defaultDose, category, aliases: [...] } ] }
+
+Frontend uses this to populate the supplement-picker dropdown + colored chips.
+
+================================================================================
+5. CHART INTEGRATION
+================================================================================
+
+Each supplement the user has logged at least once shows up in
+/api/chart/data as a regular metric:
+
+  metrics[]
+    { "key": "creatine", "label": "Creatine", "unit": "g",
+      "category": "supplement", "available": true,
+      "subcategory": "performance",
+      "stats": { ... } }
+
+  chartData.creatine = [
+    { "date": "2026-05-20", "value": 5, "entryCount": 1, "source": "natural_language_supplement" },
+    { "date": "2026-05-21", "value": 5, "entryCount": 1 },
+    { "date": "2026-05-22", "value": 0, "entryCount": 0 },        // missed day
+    ...
+  ]
+
+  targets.creatineGoal = 5                                         // daily target
+
+ALSO add an aggregate "supplements taken today" KPI:
+
+  data.todaySupplements = {
+    count:      4,                  // # distinct supplements logged today
+    items:      ["creatine", "vitaminD", "fishOil", "magnesium"]
+  }
+
+ADHERENCE — for the supplement-streaks UI:
+
+  GET /api/nutrition/supplement/adherence?contact=…&range=30d
+    Returns:
+    {
+      byKey: {
+        creatine:  { daysLogged: 27, daysInRange: 30, adherencePct: 0.9,
+                     currentStreak: 6, longestStreak: 14 },
+        vitaminD:  { daysLogged: 22, daysInRange: 30, adherencePct: 0.73, ... }
+      }
+    }
+
+================================================================================
+6. FRONTEND ENTRY POINTS
+================================================================================
+
+The frontend already has a generic chart pipeline that auto-displays any
+metric with `category: "supplement"` in:
+
+  • Nutrition sub-tab combined chart (color = NUTRITION_COLORS[key] when known,
+    else PALETTE indexed)
+  • All-tab combined chart (always included once available)
+  • Stats per-metric cards (when user toggles Individual mode)
+
+A new "Supplements" panel will be added to the Nutrition sub-view rendering:
+  - A quick-add chip row: "+ Creatine (5g)" "+ Vitamin D (2000 IU)" etc
+    using the user's most-frequent supplements as buttons.
+  - "+ Other" button opens a sheet with the full registry list.
+  - Today's intake summary with adherence percentages.
+
+When the user texts the bot, the existing pipeline already routes to the
+nutrition parser — we just need the parser to recognize supplement shapes
+and POST to /api/nutrition/supplement instead of the food endpoint.
+
+================================================================================
+7. ROLLOUT ORDER
+================================================================================
+
+  Phase 1 — Storage + registry
+            [ ] POST   /api/nutrition/supplement
+            [ ] GET    /api/nutrition/supplement?date=YYYY-MM-DD
+            [ ] PATCH  /api/nutrition/supplement/:id
+            [ ] DELETE /api/nutrition/supplement/:id
+            [ ] GET    /api/nutrition/supplement/registry  (with starter list)
+
+  Phase 2 — Chart wiring
+            [ ] Surface each logged supplement as a `metrics[]` item with
+                category:"supplement" in /api/chart/data.
+            [ ] Populate chartData[<key>] with daily totals (normalized).
+            [ ] Add data.todaySupplements aggregate.
+
+  Phase 3 — Natural-language parse
+            [ ] POST /api/nutrition/supplement/from-text
+            [ ] Route incoming chat messages through this parser BEFORE the
+                food parser when text contains supplement keywords.
+
+  Phase 4 — Adherence + insights
+            [ ] GET /api/nutrition/supplement/adherence?range=30d
+            [ ] /api/chart/data also returns supplement-adherence streaks.
+
+================================================================================
+8. EDGE CASES
+================================================================================
+
+  • Same item under different brand names → canonicalKey is the source of
+    truth for the chart. Brand is display-only.
+
+  • Multi-ingredient pre-workouts → store the parent product as one entry
+    (`name: "C4 Pre-Workout"`, `canonicalKey: "preWorkout"`). If the user
+    explicitly logs caffeine separately, that's a second entry.
+
+  • Conflicting daily totals (user logs creatine in BOTH grams and "1 scoop")
+    → preserve both entries. Chart endpoint sums after unit conversion via
+    the registry's `defaultDose` for scoops (i.e. 1 scoop = 5 g for creatine).
+
+  • Supplements that are also food nutrients (creatine, caffeine, etc.) →
+    they already appear in /api/chart/data via the nutrition logger. The
+    supplement endpoint becomes the primary writer; food parsing should
+    only add to the *food* keys (caffeine in coffee), not the supplement
+    keys, unless the parsed item is clearly a supplement form (capsule,
+    powder scoop, tablet).
+
+  • Dose not specified ("took my creatine") → use `defaultDose` from the
+    registry and mark confidence.level="low" with explanation
+    "Dose not specified — assumed 5 g (typical maintenance)".
+
+  • Banned/withdrawn supplements (DMAA, ephedrine, etc.) → registry can
+    flag `isRestricted: true`; frontend shows a yellow ⚠ next to the chip.
+
+================================================================================
+9. ASKS (copy/paste into tracker)
+================================================================================
+
+  [ ] Define the entry schema with `canonicalKey`, `amount`, `unit`, `brand`,
+      `dose`, `notes`, `source`, `confidence`.
+  [ ] Seed the supplement registry with the ~30 starter items in section 4.
+  [ ] POST /api/nutrition/supplement (manual + linked-to-chat)
+  [ ] GET  /api/nutrition/supplement?date= and /recent?limit=
+  [ ] PATCH /api/nutrition/supplement/:id  and DELETE same
+  [ ] GET  /api/nutrition/supplement/registry  (for frontend autocomplete)
+  [ ] POST /api/nutrition/supplement/from-text (NL parse, returns entries[])
+  [ ] Surface each user's supplements as metrics[] in /api/chart/data with
+      category:"supplement" and the right unit. Daily totals in chartData[key].
+  [ ] Add data.todaySupplements aggregate to /api/chart/data.
+  [ ] GET /api/nutrition/supplement/adherence?range= for streaks UI.
+
+================================================================================
