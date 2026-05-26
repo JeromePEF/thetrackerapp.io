@@ -10,6 +10,7 @@ import {
   initRunClubsTab,
 } from "./dashboard-coach-community.js";
 import { initCalendarTab } from "./dashboard-calendar.js";
+import { initShortcutsTab } from "./dashboard-shortcuts.js";
 import {
   API_BASE,
   affiliateAgreement,
@@ -54,7 +55,7 @@ const STRIPE_CHECKOUT_SUCCESS_URL =
 const STRIPE_CHECKOUT_CANCEL_URL = "https://thetrackerapp.io/dashboard?billing=cancelled&contact={CONTACT}";
 const AFFILIATE_AGREEMENT_POLL_MS = 4000;
 
-const TAB_IDS = ["account", "stats", "calendar", "export", "goals", "billing", "integrate", "ai", "sheet", "personal-trainer", "groups", "run-clubs", "affiliate"];
+const TAB_IDS = ["account", "stats", "calendar", "shortcuts", "export", "goals", "billing", "integrate", "ai", "sheet", "personal-trainer", "groups", "run-clubs", "affiliate"];
 const RANGE_IDS = ["today", "week", "month", "year", "all"];
 const RANGE_LABELS = {
   today: "D",
@@ -1147,6 +1148,11 @@ function setActiveTab(tabId, updateUrl = true) {
     const body = document.getElementById("calendarPanelBody");
     if (body) {
       initCalendarTab(body).catch((e) => console.warn("calendar tab failed:", e));
+    }
+  } else if (targetTab === "shortcuts") {
+    const body = document.getElementById("shortcutsPanelBody");
+    if (body) {
+      initShortcutsTab(body).catch((e) => console.warn("shortcuts tab failed:", e));
     }
   } else if (targetTab === "personal-trainer") {
     const body = document.getElementById("personalTrainerPanelBody");

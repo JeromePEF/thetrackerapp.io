@@ -64,6 +64,7 @@
             <button id="navAccount" type="button" class="dashboard-tab" data-tab="account">ACCOUNT</button>
             <button id="navStats" type="button" class="dashboard-tab is-active" data-tab="stats">STATS</button>
             <button id="navCalendar" type="button" class="dashboard-tab" data-tab="calendar" data-feature="dashboardTabs.calendar">CALENDAR</button>
+            <button id="navShortcuts" type="button" class="dashboard-tab" data-tab="shortcuts">SHORTCUTS</button>
             <button id="navPersonalTrainer" type="button" class="dashboard-tab" data-tab="personal-trainer" data-feature="dashboardTabs.personalTrainer">PERSONAL TRAINER</button>
             <button id="navGroups" type="button" class="dashboard-tab" data-tab="groups" data-feature="dashboardTabs.groups">GROUPS</button>
             <button id="navRunClubs" type="button" class="dashboard-tab" data-tab="run-clubs" data-feature="dashboardTabs.runClubs">RUN CLUBS</button>
@@ -503,6 +504,14 @@
               <p>Your training schedule vs what you actually did. Tap any day for details.</p>
             </header>
             <div id="calendarPanelBody"></div>
+          </article>
+
+          <article id="tabShortcuts" class="dashboard-panel" data-tab-panel="shortcuts" hidden>
+            <header class="panel-head">
+              <h2>Your Shortcuts</h2>
+              <p>Turn any phrase into a /alias so you save typing.</p>
+            </header>
+            <div id="shortcutsPanelBody"></div>
           </article>
 
           <article id="tabPersonalTrainer" class="dashboard-panel" data-tab-panel="personal-trainer" data-feature="dashboardTabs.personalTrainer" hidden>

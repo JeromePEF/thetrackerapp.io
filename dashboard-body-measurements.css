@@ -4442,3 +4442,419 @@ details.stats-legacy > .milestones-toggle-card {
   display: flex;
   justify-content: flex-end;
 }
+
+/* ============================================================================
+   YOUR SHORTCUTS TAB — user-defined /alias → expansion table, modal, gallery.
+   Backend contract: USER_QUICK_COMMANDS_BACKEND.txt
+   ============================================================================ */
+.shortcuts-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.shortcuts-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.shortcuts-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+.shortcuts-tip {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(56, 255, 211, 0.06);
+  border-left: 3px solid rgba(56, 255, 211, 0.4);
+  padding: 10px 14px;
+  border-radius: 6px;
+  line-height: 1.5;
+}
+.shortcuts-tip code {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: #38ffd3;
+  font-size: 11px;
+}
+.shortcuts-loading {
+  text-align: center;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+  padding: 24px;
+}
+
+/* --- Empty state --- */
+.shortcuts-empty {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 26px 24px;
+  text-align: center;
+}
+.shortcuts-empty-title {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+}
+.shortcuts-empty-sub {
+  margin: 0 auto;
+  max-width: 460px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.5;
+}
+
+/* --- Table --- */
+.shortcuts-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.shortcuts-table thead th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.shortcuts-table tbody tr {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.shortcuts-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+.shortcuts-table tbody td {
+  padding: 12px 14px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  vertical-align: middle;
+}
+.shortcuts-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.shortcuts-td-key code {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  background: rgba(56, 255, 211, 0.1);
+  color: #38ffd3;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 12px;
+}
+.shortcuts-td-expansion {
+  color: rgba(255, 255, 255, 0.75);
+  max-width: 460px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.shortcuts-td-usage {
+  text-align: center;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  width: 60px;
+}
+.shortcuts-th-usage { text-align: center; width: 60px; }
+.shortcuts-th-actions { width: 100px; }
+.shortcuts-td-actions {
+  text-align: right;
+  white-space: nowrap;
+}
+.shortcuts-action-btn {
+  appearance: none;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid transparent;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-left: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.shortcuts-action-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+.shortcuts-action-danger:hover {
+  background: rgba(239, 83, 80, 0.18);
+  color: #ff8a8a;
+}
+
+/* --- Starter gallery --- */
+.shortcuts-starter-fold {
+  margin-top: 4px;
+}
+.shortcuts-starter-fold > summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 8px 0;
+  list-style: none;
+}
+.shortcuts-starter-fold > summary::-webkit-details-marker { display: none; }
+.shortcuts-starter-fold > summary:hover { color: #fff; }
+
+.shortcuts-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 12px;
+}
+.shortcuts-gallery-group h4 {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.5);
+}
+.shortcuts-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+}
+.shortcuts-gallery-card {
+  appearance: none;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 12px 14px;
+  text-align: left;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 4px 12px;
+  align-items: center;
+  font-family: inherit;
+  color: #fff;
+  transition: background 0.15s, border-color 0.15s;
+}
+.shortcuts-gallery-card:hover {
+  background: rgba(56, 255, 211, 0.06);
+  border-color: rgba(56, 255, 211, 0.35);
+}
+.shortcuts-gallery-card.is-added {
+  opacity: 0.6;
+  cursor: default;
+  background: rgba(255, 255, 255, 0.015);
+}
+.shortcuts-gallery-card.is-added:hover {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.015);
+}
+.shortcuts-gallery-key {
+  grid-column: 1;
+  grid-row: 1;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  background: rgba(56, 255, 211, 0.1);
+  color: #38ffd3;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  justify-self: start;
+}
+.shortcuts-gallery-expansion {
+  grid-column: 1;
+  grid-row: 2;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.4;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.shortcuts-gallery-add {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  font-size: 11px;
+  font-weight: 700;
+  color: #38ffd3;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(56, 255, 211, 0.12);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.shortcuts-gallery-card.is-added .shortcuts-gallery-add {
+  color: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* --- Modal --- */
+.shortcuts-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: shortcuts-fade 0.15s ease-out;
+}
+@keyframes shortcuts-fade { from { opacity: 0; } to { opacity: 1; } }
+.shortcuts-modal {
+  background: #11141a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 520px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 24px 24px 20px;
+  animation: shortcuts-pop 0.18s ease-out;
+}
+@keyframes shortcuts-pop {
+  from { transform: translateY(8px); opacity: 0; }
+  to   { transform: translateY(0);   opacity: 1; }
+}
+.shortcuts-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.shortcuts-modal-head h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+}
+.shortcuts-modal-close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 24px;
+  cursor: pointer;
+  line-height: 1;
+  width: 32px;
+  height: 32px;
+}
+.shortcuts-modal-close:hover { color: #fff; }
+
+.shortcuts-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.shortcuts-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.shortcuts-field-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+}
+.shortcuts-field-help {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.4;
+}
+.shortcuts-field-input-wrap {
+  display: flex;
+  align-items: stretch;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.shortcuts-field-input-wrap:focus-within {
+  border-color: rgba(56, 255, 211, 0.5);
+  background: rgba(56, 255, 211, 0.03);
+}
+.shortcuts-field-prefix {
+  padding: 10px 12px;
+  background: rgba(56, 255, 211, 0.08);
+  color: #38ffd3;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 700;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+.shortcuts-field-input {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 10px 12px;
+  color: #fff;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 14px;
+  outline: none;
+}
+.shortcuts-field-input.is-error,
+.shortcuts-field-textarea.is-error {
+  border-color: rgba(239, 83, 80, 0.7);
+}
+.shortcuts-field-input-wrap:has(.is-error) {
+  border-color: rgba(239, 83, 80, 0.7);
+}
+.shortcuts-field-textarea {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  resize: vertical;
+  min-height: 70px;
+  outline: none;
+  box-sizing: border-box;
+}
+.shortcuts-field-textarea:focus {
+  border-color: rgba(56, 255, 211, 0.5);
+  background: rgba(56, 255, 211, 0.03);
+}
+.shortcuts-field-counter {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+  align-self: flex-end;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+.shortcuts-field-counter.is-warn { color: #ffb74d; }
+.shortcuts-field-counter.is-error { color: #ef5350; }
+.shortcuts-field-error {
+  font-size: 11px;
+  color: #ff8a8a;
+  min-height: 14px;
+}
+
+.shortcuts-modal-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+}
+.shortcuts-modal-foot-right {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
