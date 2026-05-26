@@ -213,26 +213,129 @@ ADHERENCE — for the supplement-streaks UI:
     }
 
 ================================================================================
-6. FRONTEND ENTRY POINTS
+6. USER-CURATED TRACKING LIST (important — change of behavior)
 ================================================================================
 
-The frontend already has a generic chart pipeline that auto-displays any
-metric with `category: "supplement"` in:
+Users do NOT see every supplement on their dashboard. The frontend renders
+ONLY items the user has explicitly added to their tracked list — niche items
+like ashwagandha / tongkat / beetroot stay hidden until added.
 
-  • Nutrition sub-tab combined chart (color = NUTRITION_COLORS[key] when known,
-    else PALETTE indexed)
-  • All-tab combined chart (always included once available)
-  • Stats per-metric cards (when user toggles Individual mode)
+ADD to GET /api/account/profile response:
 
-A new "Supplements" panel will be added to the Nutrition sub-view rendering:
-  - A quick-add chip row: "+ Creatine (5g)" "+ Vitamin D (2000 IU)" etc
-    using the user's most-frequent supplements as buttons.
-  - "+ Other" button opens a sheet with the full registry list.
-  - Today's intake summary with adherence percentages.
+  {
+    ...,
+    "trackedSupplements": [             // canonical keys, user's curation
+      "creatine",
+      "whey",
+      "vitaminD",
+      "custom-tongkat-ali"              // see customSupplements below
+    ],
+    "customSupplements": [              // user-added items not in registry
+      {
+        "key":          "custom-tongkat-ali",
+        "displayName":  "Tongkat Ali",
+        "defaultUnit":  "mg",
+        "defaultDose":  400,
+        "createdAt":    "2026-05-22T17:14:00Z"
+      }
+    ]
+  }
+
+ACCEPT via PATCH /api/account/profile:
+
+  body: {
+    trackedSupplements: ["creatine", "whey", "vitaminD"],
+    customSupplements: [
+      { key, displayName, defaultUnit, defaultDose }   // upsert by key
+    ]
+  }
+
+Frontend mirrors the list to localStorage as a fallback when the profile
+endpoint is unavailable (e.g. logged-out preview mode), so the contract
+must accept the full list on every PATCH (no partial merge of array items).
+
+================================================================================
+7. CHART FILTERING (only render what the user tracks)
+================================================================================
+
+`/api/chart/data` must respect `trackedSupplements[]`:
+
+  - INCLUDE in `metrics[]` and `chartData[]`:
+      • Every supplement key present in `trackedSupplements`.
+      • Every supplement key the user has actually logged in the range
+        (so historical data isn't lost when they untrack something).
+
+  - EXCLUDE:
+      • Registry items the user has neither tracked nor logged.
+
+This keeps the dashboard sparse and focused on what the user cares about.
+When the user untracks a supplement, charts of past logs SHOULD still be
+visible (the data was theirs), but it should no longer appear in the
+"+ Add"/highlighted set.
+
+Suggested response shape:
+
+  {
+    metrics: [
+      { key: "creatine", label: "Creatine", unit: "g",
+        category: "supplement", tracked: true,
+        stats: {...} },
+      { key: "preWorkout", label: "Pre-Workout", unit: "serving",
+        category: "supplement", tracked: false,    // user untracked but
+                                                    // there's a log in range
+        stats: {...} }
+    ]
+  }
+
+The `tracked` boolean tells the frontend to:
+  - Show normally when `true`
+  - Show with a "Not currently tracking — × to hide" pill when `false`
+
+================================================================================
+8. REGISTRY STRUCTURE (popular flag)
+================================================================================
+
+Each registry item should carry a `popular` boolean so the picker can
+surface common items first and hide niche items behind "+ Browse other":
+
+  {
+    items: [
+      { key: "creatine", displayName: "Creatine Monohydrate",
+        defaultUnit: "g", canonicalUnit: "g", defaultDose: 5,
+        category: "performance", popular: true,
+        aliases: ["creatine", "creatine mono", "monohydrate"] },
+      { key: "ashwagandha", displayName: "Ashwagandha",
+        defaultUnit: "mg", canonicalUnit: "mg", defaultDose: 600,
+        category: "adaptogen", popular: false,   // hidden until expanded
+        aliases: ["ashwa", "ksm-66"] },
+      ...
+    ]
+  }
+
+Suggested `popular: true` set (the 10 most-used items):
+  creatine, whey, multivitamin, vitaminD, fishOil, magnesium, vitaminC,
+  electrolytes, collagen, preWorkout
+
+Everything else stays `popular: false` and lives behind the picker's
+"Browse other (N)" expander.
+
+================================================================================
+9. FRONTEND ENTRY POINTS
+================================================================================
+
+The frontend renders supplements only when the user has chosen to track them:
+
+  • Supplements panel (Nutrition sub-tab) — chip grid of tracked items,
+    "+ Add supplement" button opens picker.
+  • Picker modal — popular list at top, "Browse other (N)" expander,
+    "Custom…" row at bottom for user-defined items.
+  • Combined charts — only tracked supplements appear as lines.
 
 When the user texts the bot, the existing pipeline already routes to the
 nutrition parser — we just need the parser to recognize supplement shapes
-and POST to /api/nutrition/supplement instead of the food endpoint.
+and POST to /api/nutrition/supplement instead of the food endpoint. If the
+parsed supplement isn't in `trackedSupplements`, automatically add it
+(so a casual "took 5g creatine" auto-tracks creatine for the user).
 
 ================================================================================
 7. ROLLOUT ORDER
@@ -295,15 +398,26 @@ and POST to /api/nutrition/supplement instead of the food endpoint.
 
   [ ] Define the entry schema with `canonicalKey`, `amount`, `unit`, `brand`,
       `dose`, `notes`, `source`, `confidence`.
-  [ ] Seed the supplement registry with the ~30 starter items in section 4.
+  [ ] Seed the supplement registry with the ~30 starter items in section 4,
+      marking the top 10 with `popular: true` and the rest with `popular: false`.
+  [ ] Add `trackedSupplements: string[]` to the user profile.
+  [ ] Add `customSupplements: [{key, displayName, defaultUnit, defaultDose}]`
+      to the user profile so user-defined items survive.
+  [ ] GET  /api/account/profile returns both arrays.
+  [ ] PATCH /api/account/profile accepts both arrays (full replace, no merge).
   [ ] POST /api/nutrition/supplement (manual + linked-to-chat)
   [ ] GET  /api/nutrition/supplement?date= and /recent?limit=
   [ ] PATCH /api/nutrition/supplement/:id  and DELETE same
-  [ ] GET  /api/nutrition/supplement/registry  (for frontend autocomplete)
-  [ ] POST /api/nutrition/supplement/from-text (NL parse, returns entries[])
-  [ ] Surface each user's supplements as metrics[] in /api/chart/data with
-      category:"supplement" and the right unit. Daily totals in chartData[key].
-  [ ] Add data.todaySupplements aggregate to /api/chart/data.
-  [ ] GET /api/nutrition/supplement/adherence?range= for streaks UI.
+  [ ] GET  /api/nutrition/supplement/registry  → items[] each with `popular`
+  [ ] POST /api/nutrition/supplement/from-text (NL parse, returns entries[]).
+      If a parsed item isn't in `trackedSupplements`, auto-add it.
+  [ ] /api/chart/data returns supplement metrics ONLY for keys in
+      `trackedSupplements` OR keys with a logged entry in the range.
+      Tag each metric with `tracked: true|false` so the frontend can label
+      untracked-but-logged entries appropriately.
+  [ ] Add data.todaySupplements aggregate to /api/chart/data
+      (only for tracked supplements).
+  [ ] GET /api/nutrition/supplement/adherence?range= for streaks UI
+      (only computes for tracked supplements).
 
 ================================================================================

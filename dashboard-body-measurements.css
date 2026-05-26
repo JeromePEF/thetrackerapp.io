@@ -4195,3 +4195,250 @@ details.stats-legacy > .milestones-toggle-card {
   padding: 8px 12px;
   border-radius: 6px;
 }
+
+/* Each tracked chip is wrapped so we can position the small × remove button
+   on the upper-right without breaking the chip's flex layout. */
+.supp-chip-wrap {
+  position: relative;
+  display: contents;
+}
+.supp-chip-wrap > .supp-chip {
+  padding-right: 26px;       /* leave room for the × button */
+}
+.supp-chip-remove {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.6);
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+}
+.supp-chip-wrap:hover .supp-chip-remove,
+.supp-chip-remove:focus {
+  opacity: 1;
+}
+.supp-chip-remove:hover {
+  background: rgba(239, 83, 80, 0.25);
+  color: #ff8a8a;
+}
+
+/* Empty state shown until the user has added at least one supplement. */
+.supp-empty {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 28px 24px;
+  text-align: center;
+}
+.supp-empty-title {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+}
+.supp-empty-sub {
+  margin: 0 auto 18px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.5;
+  max-width: 460px;
+}
+.supp-empty-btn {
+  font-size: 13px;
+  padding: 10px 20px;
+}
+
+/* --- Picker modal (full-screen overlay, centered card) --- */
+.supp-picker-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: supp-fade 0.15s ease-out;
+}
+@keyframes supp-fade { from { opacity: 0; } to { opacity: 1; } }
+
+.supp-picker {
+  background: #11141a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 480px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 24px 24px 18px;
+  position: relative;
+  animation: supp-pop 0.18s ease-out;
+}
+@keyframes supp-pop {
+  from { transform: translateY(8px); opacity: 0; }
+  to   { transform: translateY(0);   opacity: 1; }
+}
+.supp-picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.supp-picker-head h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+}
+.supp-picker-close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 24px;
+  cursor: pointer;
+  line-height: 1;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.supp-picker-close:hover { color: #fff; }
+.supp-picker-sub {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0 0 16px;
+}
+.supp-picker-section {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.supp-picker-section:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+.supp-picker-section h4 {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.55);
+}
+.supp-picker-row {
+  appearance: none;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  color: #fff;
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s;
+}
+.supp-picker-row:hover {
+  background: color-mix(in srgb, var(--c, #64b5f6) 10%, rgba(255, 255, 255, 0.05));
+  border-color: color-mix(in srgb, var(--c, #64b5f6) 35%, transparent);
+}
+.supp-picker-row.is-tracked {
+  background: color-mix(in srgb, var(--c, #64b5f6) 15%, rgba(255, 255, 255, 0.03));
+  border-color: color-mix(in srgb, var(--c, #64b5f6) 50%, transparent);
+}
+.supp-picker-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: var(--c, #64b5f6);
+  box-shadow: 0 0 6px var(--c, #64b5f6);
+  flex-shrink: 0;
+}
+.supp-picker-name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+.supp-picker-meta {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+  font-feature-settings: "tnum";
+}
+.supp-picker-action {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.65);
+}
+.supp-picker-row.is-tracked .supp-picker-action {
+  background: color-mix(in srgb, var(--c, #64b5f6) 30%, transparent);
+  color: color-mix(in srgb, var(--c, #64b5f6) 75%, #fff);
+}
+.supp-picker-expand {
+  appearance: none;
+  width: 100%;
+  background: none;
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.7);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.supp-picker-expand:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+}
+.supp-picker-other {
+  margin-top: 6px;
+}
+.supp-picker-custom-hint {
+  margin: 0 0 8px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+}
+.supp-picker-custom-btn {
+  appearance: none;
+  width: 100%;
+  background: rgba(56, 255, 211, 0.08);
+  border: 1px dashed rgba(56, 255, 211, 0.35);
+  color: #38ffd3;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 12px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.supp-picker-custom-btn:hover {
+  background: rgba(56, 255, 211, 0.15);
+}
+.supp-picker-foot {
+  margin-top: 18px;
+  display: flex;
+  justify-content: flex-end;
+}
