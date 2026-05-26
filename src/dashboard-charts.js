@@ -155,7 +155,27 @@ const state = {
   inflight: null,
   contact: "",
   advancedOpen: false,
+  // Stats sub-tab: "all" (default) | "workouts" | "nutrition" | "water"
+  // Drives which sections / quick charts render. Sub-tab choice persists via
+  // URL hash on the dashboard so users can deep-link or share an isolated view.
+  subView: readSubViewFromUrl(),
 };
+
+const SUB_VIEWS = ["all", "workouts", "nutrition", "water"];
+
+function readSubViewFromUrl() {
+  if (typeof window === "undefined") return "all";
+  const hash = (window.location.hash || "").replace(/^#/, "").toLowerCase();
+  return SUB_VIEWS.includes(hash) ? hash : "all";
+}
+
+function writeSubViewToUrl(view) {
+  if (typeof window === "undefined") return;
+  const next = view === "all" ? "" : `#${view}`;
+  if (window.location.hash !== next) {
+    history.replaceState(null, "", `${window.location.pathname}${window.location.search}${next}`);
+  }
+}
 
 // Cardio range param mapping. The cardio endpoint uses short-form ranges
 // ("d", "w", "m", "y", "at") that don't perfectly match the chart endpoint's
@@ -182,6 +202,12 @@ export async function initDashboardCharts(container) {
 
   container.innerHTML = `
     <div class="grafana-shell" id="grafanaShell">
+      <nav class="stats-subtabs" role="tablist" aria-label="Stats view">
+        ${renderSubTab("all", "🏠 All")}
+        ${renderSubTab("workouts", "🏋️ Workouts")}
+        ${renderSubTab("nutrition", "🍎 Nutrition")}
+        ${renderSubTab("water", "💧 Water")}
+      </nav>
       <div class="grafana-toolbar">
         <div class="range-buttons" role="tablist" aria-label="Time range">
           ${renderRangeButton("7d", "7D")}
@@ -201,6 +227,8 @@ export async function initDashboardCharts(container) {
       </div>
     </div>
   `;
+
+  bindSubTabs(container);
 
   container.querySelectorAll(".range-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -236,6 +264,31 @@ export async function initDashboardCharts(container) {
 
 function renderRangeButton(range, label, active = false) {
   return `<button type="button" class="range-btn ${active ? "active" : ""}" data-range="${range}">${label}</button>`;
+}
+
+function renderSubTab(view, label) {
+  const active = state.subView === view;
+  return `<button type="button" class="stats-subtab ${active ? "active" : ""}" role="tab" aria-selected="${active}" data-subview="${view}">${label}</button>`;
+}
+
+function bindSubTabs(container) {
+  container.querySelectorAll(".stats-subtab").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const v = btn.dataset.subview;
+      if (!SUB_VIEWS.includes(v) || v === state.subView) return;
+      state.subView = v;
+      writeSubViewToUrl(v);
+      // Update toggle styling in place; then re-render the body so each
+      // section reflects the active sub-view's filter without losing the
+      // already-fetched data.
+      container.querySelectorAll(".stats-subtab").forEach((b) => {
+        const isActive = b.dataset.subview === v;
+        b.classList.toggle("active", isActive);
+        b.setAttribute("aria-selected", String(isActive));
+      });
+      if (state.data) renderAll();
+    });
+  });
 }
 
 async function loadAndRender() {
@@ -307,22 +360,35 @@ function renderAll() {
     if (state.overlay.length === 0) state.overlay = Array.from(availableMap.keys()).slice(0, 3);
   }
 
-  body.innerHTML = `
-    ${renderSpotlight(availableMap)}
-    ${renderInfoStrips(availableMap)}
-    ${renderQuickCharts(availableMap)}
-    <div class="advanced-toggle-row">
-      <button type="button" class="advanced-toggle ${state.advancedOpen ? "is-open" : ""}" id="advancedToggle" aria-expanded="${state.advancedOpen}">
-        <span class="advanced-toggle-icon">${state.advancedOpen ? "−" : "+"}</span>
-        ${state.advancedOpen ? "Hide advanced charts" : "Show advanced charts"}
-      </button>
-    </div>
-    <div class="advanced-section" id="advancedSection" ${state.advancedOpen ? "" : "hidden"}>
-      ${renderAggregatePanel(availableMap)}
-      ${renderSymmetryPanels(availableMap)}
-      ${renderCategoryPanels(metricsByCategory, availableMap)}
-    </div>
-  `;
+  // Build the body based on which sub-view is active. Each sub-view shows a
+  // focused subset; "all" keeps the original holistic layout.
+  let bodyHtml = "";
+  if (state.subView === "workouts") {
+    bodyHtml = renderWorkoutsView(availableMap, metricsByCategory);
+  } else if (state.subView === "nutrition") {
+    bodyHtml = renderNutritionView(availableMap, metricsByCategory);
+  } else if (state.subView === "water") {
+    bodyHtml = renderWaterView(availableMap, metricsByCategory);
+  } else {
+    bodyHtml = `
+      ${renderSpotlight(availableMap)}
+      ${renderInfoStrips(availableMap)}
+      ${renderQuickCharts(availableMap)}
+      <div class="advanced-toggle-row">
+        <button type="button" class="advanced-toggle ${state.advancedOpen ? "is-open" : ""}" id="advancedToggle" aria-expanded="${state.advancedOpen}">
+          <span class="advanced-toggle-icon">${state.advancedOpen ? "−" : "+"}</span>
+          ${state.advancedOpen ? "Hide advanced charts" : "Show advanced charts"}
+        </button>
+      </div>
+      <div class="advanced-section" id="advancedSection" ${state.advancedOpen ? "" : "hidden"}>
+        ${renderAggregatePanel(availableMap)}
+        ${renderSymmetryPanels(availableMap)}
+        ${renderCategoryPanels(metricsByCategory, availableMap)}
+      </div>
+    `;
+  }
+
+  body.innerHTML = bodyHtml;
 
   // Also populate the legacy Body Measurements panel (static cards in dashboard.html)
   // with the same data we just fetched — so users don't see "--" everywhere when
@@ -1371,6 +1437,271 @@ function renderQuickCharts(availableMap) {
       </div>
     </section>
   `;
+}
+
+// ============================================
+// FOCUSED SUB-VIEWS (Workouts / Nutrition / Water)
+// ============================================
+//
+// Each renders an isolated view of one data domain so users can drill into
+// just that area. Shared toolbar + sub-tab nav stay above (rendered by the
+// shell), and these renderers replace the "All" body content.
+
+function renderWorkoutsView(availableMap, metricsByCategory) {
+  const STRENGTH_KEYS = ["bench", "squat", "deadlift", "overheadPress", "ohp", "row", "pullup", "pushup"];
+  const metrics = state.data.metrics || [];
+  const strengthMetrics = metrics.filter(
+    (m) =>
+      m.available !== false &&
+      m.stats &&
+      (m.category === "strength" || STRENGTH_KEYS.includes(m.key)),
+  );
+
+  const cardio = state.cardio;
+  const cardioSummary = cardio?.summary || null;
+  const totals = computeWorkoutTotals(state.data, cardio);
+
+  return `
+    <section class="subview subview-workouts" aria-label="Workouts overview">
+      <header class="subview-head">
+        <h2 class="subview-title">Workouts</h2>
+        <p class="subview-sub">${escapeHtml(state.range.toUpperCase())} · ${strengthMetrics.length} lift${strengthMetrics.length === 1 ? "" : "s"} tracked</p>
+      </header>
+
+      <div class="subview-kpis">
+        ${renderKpi("Unique workouts (week)", totals.uniqueWorkoutsWeek, "")}
+        ${renderKpi("Total workouts", totals.totalWorkouts, "")}
+        ${renderKpi("Total reps", totals.totalReps?.toLocaleString(), "")}
+        ${renderKpi("Total sets", totals.totalSets?.toLocaleString(), "")}
+        ${renderKpi("Aggregate volume", totals.aggregateVolume?.toLocaleString(), "lb")}
+        ${renderKpi("Cardio sessions", cardioSummary?.totalSessions ?? "—", "")}
+      </div>
+
+      ${cardioSummary ? renderCardioStrip() : ""}
+
+      <article class="grafana-panel">
+        <header class="panel-header">
+          <h3>Top lifts</h3>
+          <p class="panel-sub">Latest, all-time PR, and Δ over the range. Gold = current value is the PR.</p>
+        </header>
+        ${
+          strengthMetrics.length
+            ? `<table class="legend-table legend-table-wide">
+                <thead><tr>
+                  <th>Lift</th>
+                  <th>Last</th>
+                  <th>PR</th>
+                  <th>Δ range</th>
+                  <th>Entries</th>
+                </tr></thead>
+                <tbody>${strengthMetrics.map(renderLiftRow).join("")}</tbody>
+              </table>`
+            : `<p class="grafana-empty">No strength workouts logged yet — text "bench press 4x8 at 225" to log one.</p>`
+        }
+      </article>
+
+      ${renderQuickChartsFor(strengthMetrics.map((m) => m.key))}
+    </section>
+  `;
+}
+
+function renderNutritionView(availableMap, metricsByCategory) {
+  const nutritionKeys = ["calories", "protein", "carbs", "fats", "sugars", "sodium", "cholesterol", "fiber", "caffeine", "creatine"];
+  const present = nutritionKeys.filter((k) => availableMap.has(k));
+  const today = todayIso();
+  const value = (key) =>
+    Number((state.data.chartData?.[key] || []).find((p) => p.date === today)?.value) || 0;
+  const target = (key) => Number(state.data.targets?.[key]) || 0;
+
+  return `
+    <section class="subview subview-nutrition" aria-label="Nutrition overview">
+      <header class="subview-head">
+        <h2 class="subview-title">Nutrition</h2>
+        <p class="subview-sub">Today · ${escapeHtml(state.range.toUpperCase())} totals + breakdown</p>
+      </header>
+
+      <div class="subview-kpis">
+        ${renderKpi("Today — calories", Math.round(value("calories")).toLocaleString(), "kcal")}
+        ${renderKpi("Today — protein", Math.round(value("protein")), "g")}
+        ${renderKpi("Today — carbs", Math.round(value("carbs")), "g")}
+        ${renderKpi("Today — fats", Math.round(value("fats")), "g")}
+        ${target("calories") ? renderKpi("Calorie target", Math.round(target("calories")).toLocaleString(), "kcal") : ""}
+        ${renderKpi("Tracked metrics", present.length, "")}
+      </div>
+
+      ${renderCaloriesStrip(availableMap)}
+      ${renderQuickChartsFor(present)}
+    </section>
+  `;
+}
+
+function renderWaterView(availableMap, metricsByCategory) {
+  const points = state.data.chartData?.water || [];
+  const today = todayIso();
+  const todayValue = Number(points.find((p) => p.date === today)?.value) || 0;
+  const target = Number(state.data.targets?.water) || 0;
+
+  const sevenDayPoints = points.filter((p) => {
+    const d = new Date(p.date);
+    if (Number.isNaN(d.getTime())) return false;
+    const diffDays = (Date.now() - d.getTime()) / (1000 * 60 * 60 * 24);
+    return diffDays >= 0 && diffDays <= 7;
+  });
+  const weekTotal = sevenDayPoints.reduce((s, p) => s + (Number(p.value) || 0), 0);
+  const daysMet = target
+    ? sevenDayPoints.filter((p) => Number(p.value) >= target).length
+    : null;
+  const avg = sevenDayPoints.length ? weekTotal / sevenDayPoints.length : 0;
+
+  return `
+    <section class="subview subview-water" aria-label="Water overview">
+      <header class="subview-head">
+        <h2 class="subview-title">Water</h2>
+        <p class="subview-sub">Hydration · ${escapeHtml(state.range.toUpperCase())}</p>
+      </header>
+
+      <div class="subview-kpis">
+        ${renderKpi("Today", Math.round(todayValue), "oz")}
+        ${target ? renderKpi("Target", Math.round(target), "oz") : ""}
+        ${renderKpi("7-day total", Math.round(weekTotal), "oz")}
+        ${renderKpi("7-day avg", Math.round(avg), "oz/day")}
+        ${daysMet != null ? renderKpi("Days hit target", `${daysMet} / 7`, "") : ""}
+      </div>
+
+      ${renderWaterStrip(availableMap)}
+      ${renderQuickChartsFor(["water"])}
+    </section>
+  `;
+}
+
+// Re-usable KPI tile renderer (shared by all sub-views).
+function renderKpi(label, value, unit) {
+  if (value === undefined || value === null || value === "") return "";
+  return `
+    <div class="subview-kpi">
+      <span class="subview-kpi-label">${escapeHtml(label)}</span>
+      <span class="subview-kpi-value">${escapeHtml(String(value))}${unit ? `<span class="subview-kpi-unit">${escapeHtml(unit)}</span>` : ""}</span>
+    </div>
+  `;
+}
+
+// Reuse the existing quick-card markup, but for an arbitrary set of metric keys.
+function renderQuickChartsFor(keys) {
+  if (!Array.isArray(keys) || !keys.length || !state.data) return "";
+  const dedup = Array.from(new Set(keys));
+  const cards = dedup
+    .map((key) => {
+      const m = (state.data.metrics || []).find((x) => x.key === key);
+      if (!m || m.available === false) return "";
+      const points = state.data.chartData?.[key] || [];
+      if (!points.length) return "";
+      const i = (state.data.metrics || []).findIndex((x) => x.key === key);
+      const color = colorFor(key, i >= 0 ? i : 0);
+      const safe = escapeAttr(key);
+      return `
+        <article class="metric-card" data-metric="${safe}" style="--metric-color:${color}">
+          <header class="metric-card-head">
+            <span class="metric-dot"></span>
+            <span class="metric-card-label">${escapeHtml(m.label || key)}</span>
+            <span class="metric-card-unit">${escapeHtml(m.unit || "")}</span>
+            <span class="metric-card-last">${formatNum(m.stats?.last?.value)}</span>
+          </header>
+          <div class="chart-wrapper">
+            <canvas id="quick-${safe}" class="grafana-canvas" data-h="170"></canvas>
+            <div class="chart-tooltip" id="quick-tooltip-${safe}" hidden></div>
+          </div>
+          ${renderStatsTable([m], { mode: "single" })}
+        </article>`;
+    })
+    .filter(Boolean)
+    .join("");
+  if (!cards) return "";
+  return `
+    <section class="grafana-panel">
+      <header class="panel-header">
+        <h3>Charts</h3>
+        <p class="panel-sub">One line per metric over ${escapeHtml(state.range.toUpperCase())}.</p>
+      </header>
+      <div class="quick-charts-grid">${cards}</div>
+    </section>
+  `;
+}
+
+function renderLiftRow(m) {
+  const stats = m.stats || {};
+  const unit = m.unit || "lb";
+  const last = stats.last && typeof stats.last === "object" ? stats.last.value : stats.last;
+  const max = stats.max;
+  const delta = stats.delta;
+  const isPR =
+    Number.isFinite(Number(last)) &&
+    Number.isFinite(Number(max)) &&
+    Math.abs(Number(last) - Number(max)) < 0.001;
+  return `
+    <tr class="${isPR ? "is-pr" : ""}">
+      <td>${escapeHtml(m.label || m.key)}</td>
+      <td class="num">${formatNum(last)}${last != null ? ` ${escapeHtml(unit)}${isPR ? " 🏆" : ""}` : ""}</td>
+      <td class="num">${formatNum(max)}${max != null ? ` ${escapeHtml(unit)}` : ""}</td>
+      <td class="num ${delta > 0 ? "delta-pos" : delta < 0 ? "delta-neg" : ""}">${formatDelta(delta, unit)}</td>
+      <td class="num">${stats.count ?? "—"}</td>
+    </tr>
+  `;
+}
+
+// Aggregate workout totals across whatever the backend exposes:
+// - `metrics[]` strength lifts: count entries + sum reps × sets × weight
+// - cardio.summary: session count + miles
+// - `chartData.workouts[]`: daily session counter if available
+function computeWorkoutTotals(data, cardio) {
+  const metrics = data.metrics || [];
+  const STRENGTH_KEYS = ["bench", "squat", "deadlift", "overheadPress", "ohp", "row", "pullup", "pushup"];
+  const strengthMetrics = metrics.filter(
+    (m) => m.category === "strength" || STRENGTH_KEYS.includes(m.key),
+  );
+
+  // Total reps / sets / volume from per-day datapoint metadata when available.
+  // Frontend tolerates two shapes:
+  //   A) per-point fields: { date, value, reps, sets, volume }
+  //   B) backend-aggregated: data.workoutSummary = { totalReps, totalSets, totalVolume, totalWorkouts }
+  let totalReps = Number(data.workoutSummary?.totalReps) || 0;
+  let totalSets = Number(data.workoutSummary?.totalSets) || 0;
+  let aggregateVolume = Number(data.workoutSummary?.totalVolume) || 0;
+  let totalWorkouts = Number(data.workoutSummary?.totalWorkouts) || 0;
+  let uniqueWorkoutsWeek = Number(data.workoutSummary?.uniqueWorkoutsWeek) || 0;
+
+  // Derive from per-point reps/sets/value when present + nothing pre-aggregated.
+  const cutoff = Date.now() - 7 * 86400000;
+  const seenDates = new Set();
+  for (const m of strengthMetrics) {
+    const pts = data.chartData?.[m.key] || [];
+    for (const p of pts) {
+      if (Number.isFinite(p.reps) && Number.isFinite(p.sets)) {
+        if (!data.workoutSummary?.totalReps) totalReps += p.reps * p.sets;
+        if (!data.workoutSummary?.totalSets) totalSets += p.sets;
+        if (Number.isFinite(p.value)) {
+          if (!data.workoutSummary?.totalVolume)
+            aggregateVolume += p.value * p.reps * p.sets;
+        }
+      }
+      if (!data.workoutSummary?.totalWorkouts) totalWorkouts += 1;
+      const ts = new Date(p.date).getTime();
+      if (Number.isFinite(ts) && ts >= cutoff) seenDates.add(p.date);
+    }
+  }
+  if (!data.workoutSummary?.uniqueWorkoutsWeek) uniqueWorkoutsWeek = seenDates.size;
+
+  // Cardio sessions also count as "workouts done" for the unique-week metric.
+  if (cardio?.summary?.totalSessions && !data.workoutSummary?.totalWorkouts) {
+    totalWorkouts += Number(cardio.summary.totalSessions);
+  }
+
+  return {
+    uniqueWorkoutsWeek,
+    totalWorkouts,
+    totalReps,
+    totalSets,
+    aggregateVolume: Math.round(aggregateVolume),
+  };
 }
 
 function renderAggregatePanel(availableMap) {

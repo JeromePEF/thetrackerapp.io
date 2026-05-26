@@ -1,0 +1,91 @@
+================================================================================
+STATS SUB-VIEWS — Optional backend fields to make Workouts KPIs accurate
+================================================================================
+
+The Stats tab now has sub-tabs: All · Workouts · Nutrition · Water. The
+Workouts sub-tab shows headline KPIs:
+
+   Unique workouts (week)
+   Total workouts
+   Total reps
+   Total sets
+   Aggregate volume
+   Cardio sessions
+
+The frontend derives these from the existing /api/chart/data response, but
+the derivation is best-effort. To make the numbers exact, please add the
+optional aggregator block below to the chart-data response when convenient.
+
+================================================================================
+1. WHAT THE FRONTEND DOES TODAY (no backend change required)
+================================================================================
+
+Without `workoutSummary`, the frontend computes KPIs by:
+
+  - Walking every strength metric in `metrics[]` (`category === "strength"`
+    OR key in [bench, squat, deadlift, overheadPress, ohp, row, pullup, pushup])
+  - Summing `point.reps`, `point.sets`, `point.value × reps × sets` per point
+  - Counting points in chartData[*] as "Total workouts"
+  - Counting unique dates within the last 7 days as "Unique workouts (week)"
+  - Adding `cardio.summary.totalSessions` (from /api/cardio/stats) to
+    Total workouts
+
+This gives reasonable numbers but is sensitive to per-point shape. The
+`workoutSummary` block below lets the backend send the authoritative
+aggregates so the frontend doesn't have to guess.
+
+================================================================================
+2. SHAPE TO ADD TO /api/chart/data
+================================================================================
+
+```jsonc
+{
+  // ... existing fields (metrics, chartData, targets, ...) ...
+
+  "workoutSummary": {
+    "totalWorkouts":       582,    // count of distinct workout sessions in range
+    "uniqueWorkoutsWeek":  5,      // distinct days in last 7 days with ≥1 workout
+    "totalReps":           41280,
+    "totalSets":           3416,
+    "totalVolume":         184200, // lb (or kg — backend's choice, frontend displays the unit)
+    "volumeUnit":          "lb"    // optional, defaults to "lb"
+  }
+}
+```
+
+When `workoutSummary` is present the frontend uses its values verbatim — it
+will NOT re-derive from chartData. So make sure all six fields are populated
+if you ship the block (or omit the block entirely to fall back to derivation).
+
+Per-point reps/sets/value (optional but cheap):
+
+```jsonc
+{
+  "chartData": {
+    "bench": [
+      { "date": "2026-05-21", "value": 225, "reps": 8, "sets": 4 }
+    ]
+  }
+}
+```
+
+If you can ship per-point `reps`/`sets` without aggregating, the frontend
+derives totals correctly on its own. Either approach works.
+
+================================================================================
+3. SUB-TAB → DATA REQUIREMENTS REFERENCE
+================================================================================
+
+  Sub-tab        Metrics it reads from chartData                     Required?
+  ─────────────────────────────────────────────────────────────────────────────
+  Workouts       bench, squat, deadlift, overheadPress, ohp, row,    one+ to be useful
+                 pullup, pushup, anything category="strength"
+  Nutrition      calories, protein, carbs, fats, sugars, sodium,     one+ to be useful
+                 cholesterol, fiber, caffeine, creatine
+  Water          water                                                always
+
+Each sub-view degrades gracefully — if no metric for that domain is present,
+the KPI tiles still render with "—" and the charts grid simply shows fewer
+cards. No empty-page failure mode.
+
+================================================================================

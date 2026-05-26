@@ -3102,3 +3102,132 @@ details.stats-legacy > .milestones-toggle-card {
 @media (max-width: 640px) {
   .checklist-window { width: 100vw; }
 }
+
+/* ============================================
+   STATS SUB-TABS (All / Workouts / Nutrition / Water)
+   ============================================ */
+
+.stats-subtabs {
+  display: flex;
+  gap: 0.35rem;
+  margin-bottom: 0.85rem;
+  padding: 0.3rem;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  overflow-x: auto;
+}
+
+.stats-subtab {
+  flex: 1;
+  min-width: max-content;
+  background: transparent;
+  border: 0;
+  color: #93a5b8;
+  padding: 0.5rem 0.85rem;
+  border-radius: 7px;
+  font-family: "Orbitron", sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.stats-subtab:hover {
+  color: #ecf4ff;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.stats-subtab.active {
+  background: rgba(56, 255, 211, 0.16);
+  color: var(--accent, #38ffd3);
+  box-shadow: inset 0 -2px 0 var(--accent, #38ffd3);
+}
+
+@media (max-width: 640px) {
+  .stats-subtabs {
+    flex-wrap: nowrap;
+  }
+  .stats-subtab {
+    font-size: 0.7rem;
+    padding: 0.4rem 0.6rem;
+  }
+}
+
+/* Sub-view shells (focused Workouts / Nutrition / Water pages) */
+.subview {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.subview-head h2.subview-title {
+  margin: 0 0 0.2rem;
+  font-family: "Orbitron", sans-serif;
+  font-size: 1.4rem;
+  letter-spacing: 0.02em;
+  color: #ecf4ff;
+}
+
+.subview-head .subview-sub {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #93a5b8;
+}
+
+.subview-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.6rem;
+}
+
+.subview-kpi {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.subview-kpi-label {
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #93a5b8;
+  font-family: "Orbitron", sans-serif;
+}
+
+.subview-kpi-value {
+  font-family: "Orbitron", sans-serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #ecf4ff;
+  font-variant-numeric: tabular-nums;
+}
+
+.subview-kpi-unit {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #93a5b8;
+  margin-left: 0.25rem;
+}
+
+/* Wider stats table used in workouts sub-view */
+.legend-table-wide td.num,
+.legend-table-wide th { text-align: right; }
+.legend-table-wide td:first-child,
+.legend-table-wide th:first-child { text-align: left; }
+
+.legend-table-wide tr.is-pr td {
+  background: linear-gradient(90deg, rgba(255, 209, 102, 0.16), rgba(255, 209, 102, 0));
+}
+.legend-table-wide tr.is-pr td:first-child,
+.legend-table-wide tr.is-pr td:nth-child(2),
+.legend-table-wide tr.is-pr td:nth-child(3) {
+  color: #ffd166;
+  font-weight: 700;
+}
