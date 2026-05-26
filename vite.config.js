@@ -32,6 +32,8 @@ export default defineConfig({
         guide: resolve(__dirname, "guide.html"),
         status: resolve(__dirname, "status.html"),
         trust: resolve(__dirname, "trust.html"),
+        changelog: resolve(__dirname, "changelog.html"),
+        leaderboard: resolve(__dirname, "leaderboard.html"),
         // Free Tools (SEO pages)
         tdeeCalculator: resolve(__dirname, "tools/tdee-calculator.html"),
         bmiCalculator: resolve(__dirname, "tools/bmi-calculator.html"),

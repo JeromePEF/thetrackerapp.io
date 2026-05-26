@@ -1,0 +1,178 @@
+================================================================================
+LIVE AGENT TICKETS — Chatbot ↔ Human Agent Interplay
+================================================================================
+
+The frontend chatbot widget (src/chatbot.js) already supports escalation to a
+human agent. This doc covers two specific issues to fix in the agent loop:
+
+  1. Strip raw phone numbers from chat responses (today users see "7373686293"
+     leak into the chat). Replace those with "Live Agent" handles + a ticket #.
+
+  2. Surface a ticket number per session so users + agents have a stable
+     reference even after sessions close or hand back to AI.
+
+This is purely a content/wire-format change — no frontend code changes are
+required to start using it.
+
+================================================================================
+1. WHAT THE FRONTEND DOES NOW
+================================================================================
+
+The chat widget renders each backend reply through `linkify()` → escapeHtml +
+bare-URL autolink + Markdown-style [label](url) → <a>. The DOM has these
+roles per message:
+
+  role: "user"    – the visitor
+  role: "ai"      – the LLM
+  role: "agent"   – a human                       ← needs the redaction
+  role: "system"  – status banners ("Connecting to support...", etc.)
+
+Header subtitle:                  "AI · typically replies instantly"
+                                  "Human · usually replies within minutes"
+                                  "Human · ETA <eta string>"
+                                  "Human · live"
+
+Today the backend's REST replies are surfaced verbatim. So if the LLM or the
+agent platform leaks a phone number, the user sees the phone number.
+
+================================================================================
+2. ASKS FOR THE BACKEND
+================================================================================
+
+A. Strip / mask phone numbers in any AI or agent reply.
+
+   Before sending the reply text to the client in:
+     POST /api/chat/message      → `reply` field
+     POST /api/chat/request-agent → `greeting` field
+     GET  /api/chat/messages     → `messages[*].text` field
+
+   Apply this regex (or equivalent) and replace each match with the literal
+   string "Live Agent":
+
+     /(?:\+?\d{1,3}[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/g
+     /\+?\d{10,15}/g                  (catches international like +447373686293)
+
+   Skip the redaction when the digits look like ticket IDs, dates, prices,
+   ETAs, or workout numbers (most of which are < 7 consecutive digits).
+
+   Examples of input → output:
+
+     "I'll text 7373686293 about your bill."
+       → "I'll have Live Agent look at your bill."
+
+     "+1 (737) 368-6293 has your refund request."
+       → "Live Agent has your refund request."
+
+     "Your ticket #TX-83A21 is queued."          (untouched — alphanumeric)
+
+   If you'd like to keep the agent's name available for the bubble header,
+   send it in `agentName` (already supported by the frontend) — DO NOT
+   embed the phone number inside the text.
+
+B. Always include a ticket ID with every escalated session.
+
+   When /api/chat/request-agent (or any subsequent /api/chat/messages reply
+   with mode=agent) is returned, include a `ticketId` field on the response:
+
+     {
+       "ok":        true,
+       "sessionId": "chat_8aZb…",
+       "mode":      "agent",
+       "ticketId":  "TX-83A21",                 // NEW
+       "eta":       "2 minutes",
+       "greeting":  "Hi! This is Live Agent — your ticket is TX-83A21..."
+     }
+
+   Format: prefix "TX-" + 5–7 random alphanumerics from the
+   ABCDEFGHJKLMNPQRSTUVWXYZ23456789 alphabet (no 0/O/1/I) so users can read
+   it back over the phone without confusion.
+
+   The frontend will surface `ticketId` in the subtitle (e.g. "Human · live
+   · TX-83A21") and in the system message body so users can quote it.
+
+C. Optionally: include `ticketId` on every chat message a user sends back
+   while in agent mode so the backend can correlate. The frontend already
+   re-sends `sessionId` on every POST; we can also send back the ticketId
+   if you confirm it should be echoed.
+
+================================================================================
+3. SUGGESTED RESPONSE SHAPE (replaces existing /api/chat/* responses)
+================================================================================
+
+POST /api/chat/message  →
+
+  {
+    "ok": true,
+    "sessionId": "chat_…",
+    "reply": "<phone-redacted text>",
+    "mode": "ai" | "agent",
+    "handedOff": false,
+    "agentName": "Sarah" | null,        // present only when mode=agent
+    "ticketId":  "TX-83A21" | null,     // present once a ticket exists
+    "suggestedActions": [ {label,url,kind?}, ... ]
+  }
+
+POST /api/chat/request-agent  →
+
+  {
+    "ok": true,
+    "sessionId": "chat_…",
+    "mode": "agent",
+    "ticketId": "TX-83A21",
+    "eta": "2 minutes",                 // optional
+    "greeting": "Hi! This is Live Agent — your ticket is TX-83A21..."
+  }
+
+GET /api/chat/messages?sessionId=…&since=…  →
+
+  {
+    "ok": true,
+    "mode": "agent",
+    "closed": false,
+    "ticketId": "TX-83A21",             // mirror on every poll for stability
+    "messages": [
+      {
+        "id": "msg_88",
+        "role": "agent",
+        "agentName": "Sarah",
+        "text": "<phone-redacted text>",
+        "ts": "2026-05-26T17:01:00Z"
+      }
+    ]
+  }
+
+================================================================================
+4. FRONTEND CHANGES THAT FOLLOW (already implemented in dashboard-charts.js'
+    chatbot module — no further work to start using):
+================================================================================
+
+  - If `data.agentName` is "Live Agent" (or any value), the bubble header is
+    set to that string (it already does this; the change is purely in what
+    the backend sends).
+  - If `data.ticketId` is present, the chat header subtitle becomes
+    "Human · ETA <eta> · <ticketId>" and the welcome system message embeds
+    the ticket id (frontend already escape-renders the text).
+  - The frontend already strips/escapes HTML in every text body so any
+    additional digit-string the LLM emits is rendered literally — the user
+    will SEE "7373686293" if backend sends it. Redaction MUST happen server
+    side.
+
+================================================================================
+5. TEST CHECKLIST
+================================================================================
+
+  [ ] curl the message endpoint, ask the AI "What's your phone number?"
+      Backend should return a reply containing "Live Agent", NOT a digit
+      string.
+
+  [ ] Trigger an escalation. Confirm response includes ticketId of form
+      ^TX-[A-Z0-9]{5,7}$.
+
+  [ ] In the agent reply queue, leak a phone number on purpose into the
+      agent's typed text. Verify GET /api/chat/messages returns it with the
+      phone replaced by "Live Agent" or the masked variant.
+
+  [ ] After session closes (closed:true), confirm the ticketId is preserved
+      in the final messages array for the user's records.
+
+================================================================================

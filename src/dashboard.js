@@ -1,6 +1,7 @@
 import { inject } from "@vercel/analytics";
 import { initGoogleAnalytics } from "./google-analytics.js";
 import { initFeatureFlags } from "./feature-flags.js";
+import { initChecklist } from "./dashboard-checklist.js";
 import { attachInlineEditMeasurements, hydrateInlineEditMeasurements } from "./inline-edit-measurements.js";
 import { initDashboardCharts } from "./dashboard-charts.js";
 import {
@@ -5417,6 +5418,9 @@ function initBodyMeasurementCharts() {
 function initEnhancedDashboard() {
   renderEnhancedBodyMeasurements();
   initBodyMeasurementCharts();
+  // Mount the deferred-onboarding checklist bell (top of the sidebar nav).
+  initChecklist().catch((e) => console.warn("initChecklist failed:", e));
+
   // Apply backend-driven feature flags so dashboardTabs.* / footer.* / etc.
   // take effect on this page. Without this call the Stats / Personal Trainer /
   // Groups / Run Clubs tab buttons ignore the `data-feature` attribute and

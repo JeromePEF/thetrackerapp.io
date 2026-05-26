@@ -1,0 +1,250 @@
+================================================================================
+WEEKLY SNAPSHOT IMAGE — Backend generation spec
+================================================================================
+
+The frontend ships a "📸 Share week" button on the Stats tab that renders a
+branded 1080×1920 PNG of the user's week. The backend needs to produce the
+SAME image on a schedule so that users with `profile.weeklyDigestOptOut !== true`
+receive it as a Sunday-morning text via the basicTextServer weekly-chart-digest
+cron (BASIC_TEXT_WEEKLY_CHART_DIGEST_*).
+
+This document is the exact rendering recipe so the SMS / iMessage image
+matches what users see when they click Share. Reference implementation:
+`src/weekly-snapshot.js` in the frontend repo.
+
+================================================================================
+1. CANVAS
+================================================================================
+
+  Width      1080 px
+  Height     1920 px      (fits Instagram Stories, TikTok, X portrait)
+  DPI        72
+  Format     PNG (alpha allowed)
+
+================================================================================
+2. PALETTE
+================================================================================
+
+  Background gradient (top → bottom): #0e1117 → #06080b
+  Accent strip:                       0.45 rad rotation, top-right, alpha gradient #38ffd3 → 0
+  Panel base:                         #11131a   (1px border #ffffff @ 8%)
+  Text — primary:                     #ecf4ff
+  Text — secondary / labels:          #93a5b8
+  Text — faint / "no data":           #6b7c91
+  Accent (brand):                     #38ffd3   (Orbitron, used for highlights)
+  Protein:                            #64b5f6
+  Carbs:                              #ffb74d
+  Fats:                               #ba68c8
+  Calories accent (kcal text):        #ff8a65
+  Water:                              #4fc3f7
+  PR gold:                            #ffd166
+
+  Fonts:
+    Title / numbers — Orbitron (weights 600 / 700 / 800)
+    Body / labels   — Space Grotesk (weights 500 / 600 / 700)
+
+================================================================================
+3. SECTION LAYOUT (top to bottom)
+================================================================================
+
+Every section has 60 px left/right margin and 20 px vertical gap between
+sections. Section drawing functions return the y-coordinate where they ended
+so the next section can flow underneath:
+
+  y = 60   Header (height 190 px)
+            - "THE TRACKER APP" (Orbitron 700/22, accent color)
+            - "WEEKLY SNAPSHOT" (Space Grotesk 500/18, dim)
+            - "@<username>" (Orbitron 800/56, primary text)
+            - "{week range}" e.g. "MAY 19 – MAY 25, 2026" (Space Grotesk 500/22)
+
+  +20     Calories panel (height 300 px)
+            - Stats row: TOTAL, DAILY AVG, TARGET / DAY (each: Orbitron 600/14
+              label + Orbitron 700/30 value)
+            - 7-bar chart of last 7 days. Bars use the accent gradient
+              (#38ffd3 → #1c7d6c). Today's bar uses #ffeb3b instead.
+              Bar widths: (w − 48 − 6×18) / 7
+              Bar value text on top: Space Grotesk 600/16
+              Day initial below: Space Grotesk 600/18 (#93a5b8, or #ffeb3b if today)
+
+  +20     Macros panel (height 150 px)
+            - 3 cells: Protein / Carbs / Fats with current/target gram bars
+              in the macro colour. Bar height 8 px, rounded.
+
+  +20     Workouts panel (height 280 px)
+            - Header row LIFT / LAST / PR / Δ RANGE (Orbitron 600/14, dim)
+            - Up to 4 rows of strength metrics (`bench`, `squat`, `deadlift`,
+              `overheadPress`, `ohp`, `row`, `pullup`, `pushup` OR anything
+              with category="strength").
+            - Row height 44 px. When last.value === stats.max (PR), wrap the
+              row in a gold gradient strip (#ffd166 @ 18% → 0) and render the
+              Last + PR cells in #ffd166 with a " 🏆" suffix.
+            - Delta cell: green #5be7a9 when positive, red #ff8585 when negative.
+            - If >4 lifts, show "+ N more on the dashboard" beneath.
+            - Empty state: "No strength workouts logged yet — text one to add it!"
+
+  +20     Nutrition panel (height 230 px)
+            - Header
+            - Summary line: "<cal> kcal · <p>g P · <c>g C · <f>g F"
+              (Space Grotesk 500/18)
+            - Up to 4 food entries from today, ordered by time:
+                left  : name (Space Grotesk 600/18, truncated at 48 chars)
+                right : "<kcal> kcal" (Orbitron 700/18, in #ff8a65)
+              Row height 32 px.
+            - Empty state: "Click a day on the dashboard to see line-by-line entries."
+            - If >4 entries: "+ N more entries today" beneath.
+
+  +20     Cardio panel (height 150 px)
+            - Reads from /api/cardio/stats response.
+            - 4 stat cells: SESSIONS / MILES / KCAL / TIME.
+            - Empty state: "No cardio logged this week."
+
+  +20     Water + Streak row (height 200 px, split into two 50% panels gap 24)
+            - LEFT — Water:
+                * Stats stacked: TODAY = "{n} oz" (y=70), 7-DAY TOTAL = "{n} oz" (y=140)
+                * Right column: progress ring vs target
+                    - radius 50, stroke 12
+                    - track:  #ffffff @ 10%
+                    - filled: #4fc3f7
+                    - centre text: "{pct}%" (Orbitron 700/24, primary)
+                    - subtext:    "of {target} oz" (Space Grotesk 500/12)
+            - RIGHT — Streak:
+                * "{currentDays}" (Orbitron 800/80, primary)
+                * "days in a row · best {longestDays}" (Space Grotesk 500/20, dim)
+                * Goal pill top-right: "{GOAL}" (Orbitron 600/16, accent on
+                  rgba(56,255,211,0.16) pill, padding 14px×16px, 999 radius)
+
+  +20     Watermark (height ~88 px, anchored 110 px from bottom)
+            - "Track yours via text →" (Space Grotesk 600/24, dim)
+            - "thetrackerapp.io"       (Orbitron 800/32, accent)
+            - Right side: "iMessage · SMS · Telegram" (Space Grotesk 500/16, faint)
+
+================================================================================
+4. DATA SOURCES
+================================================================================
+
+The image draws from two backend responses:
+
+  GET /api/chart/data?contact=<u>&range=7d
+    Used for: calories bars, macros today, workouts table (metrics[].stats),
+              water totals, streak (data.streak), goal (data.goal),
+              today's nutrition entries (data.todayNutrition.entries).
+
+  GET /api/cardio/stats?contact=<u>&range=w
+    Used for: cardio panel (summary.totalSessions / totalMiles /
+              totalCalories / totalTime).
+
+The frontend implementation queries these and renders entirely in the
+browser. The server-side renderer should use the SAME response payloads to
+guarantee parity.
+
+================================================================================
+5. WORKOUTS PANEL — what counts as a PR
+================================================================================
+
+A row is rendered as a PR when (for that lift):
+
+    metric.stats.last.value === metric.stats.max
+    (within float-precision tolerance of 0.001)
+
+When this matches:
+  - The Last cell gets a " 🏆" suffix
+  - Both Last and PR cells use the PR_GOLD colour (#ffd166)
+  - A gold gradient strip is drawn behind the row
+  - The downloadable workouts CSV (frontend's "📋 Workouts CSV" button) marks
+    that row's PR column as "★ PR"
+
+================================================================================
+6. EMPTY-STATE COPY (use verbatim so SMS image matches frontend snapshot)
+================================================================================
+
+  Calories panel — no entries this week:
+      ↳ This panel always renders; bars just become 4-px-tall stubs.
+
+  Workouts panel — no strength metrics in metrics[]:
+      "No strength workouts logged yet — text one to add it!"
+
+  Nutrition panel — no entries today:
+      "Click a day on the dashboard to see line-by-line entries."
+
+  Cardio panel — summary.totalSessions === 0:
+      "No cardio logged this week."
+
+================================================================================
+7. SUGGESTED SMS / iMESSAGE COPY
+================================================================================
+
+When the cron sends the image, prefix it with:
+
+  📊 Weekly Progress Report for @<username>
+  Avg calories: <n> · Avg protein: <n>g · Avg water: <n> oz · <streakDays> day streak
+
+  Reply STATS to see today's totals · DETAIL for line-by-line meals ·
+  STOP to pause weekly reports.
+
+  [PNG image attached]
+
+================================================================================
+8. SCHEDULING (already implemented backend-side)
+================================================================================
+
+Defaults from basicTextServer cron config:
+  BASIC_TEXT_WEEKLY_CHART_DIGEST_ENABLED   = 1
+  BASIC_TEXT_WEEKLY_CHART_DIGEST_DAY       = sunday
+  BASIC_TEXT_WEEKLY_CHART_DIGEST_TIME      = 09:00     (user's local TZ)
+  BASIC_TEXT_WEEKLY_CHART_DIGEST_BATCH_SIZE= 5
+  BASIC_TEXT_WEEKLY_CHART_DIGEST_TIMEZONE  = America/New_York   (default; per-user TZ overrides)
+
+After send, update profile fields:
+  profile.lastWeeklyDigestSentAt = ISO timestamp
+  profile.lastWeeklyDigestWeek   = ISO week e.g. "2026-W21"
+
+Skip the send when:
+  profile.weeklyDigestOptOut === true
+  profile.messagingEnabled  === false
+
+================================================================================
+9. RENDERING STACK (suggested)
+================================================================================
+
+We recommend headless Chromium + `node-canvas` for pixel-perfect parity with
+the browser version:
+
+  - Headless Chromium: spin up Puppeteer with the same HTML/CSS used in the
+    `src/weekly-snapshot.js` reference. The simplest approach is to import
+    the same JS module into a Node script and call `downloadWeeklySnapshot`
+    against a `node-canvas` Canvas object. Same draw functions, same output.
+
+  - Or pure node-canvas: re-implement the draw functions using node-canvas
+    primitives. The frontend implementation is ~400 lines and is straight
+    drawing code (no DOM dependencies), so this port is mechanical.
+
+Either way, the output should be byte-stable across multiple renders of the
+same input data so users see consistent images week-over-week.
+
+================================================================================
+10. ASKS — what backend needs to verify
+================================================================================
+
+  [ ] /api/chart/data?range=7d populates ALL of:
+        chartData.calories[].{date,value}
+        chartData.water[].{date,value}
+        chartData.protein/carbs/fats[]
+        metrics[*].stats.{last,max,delta}    (so PR detection works)
+        targets.{calories,protein,carbs,fats,water}
+        streak.{currentDays,longestDays}
+        goal                                   ("Maintain", etc.)
+        todayNutrition.{totals,entries}        (optional — degrades gracefully)
+
+  [ ] /api/cardio/stats?range=w populates:
+        summary.{totalSessions,totalMiles,totalCalories,totalTime}
+
+  [ ] When generating the image server-side, ensure fonts Orbitron + Space
+      Grotesk are installed in the rendering environment, OR ship them
+      bundled with the renderer (Google Fonts CSS works).
+
+  [ ] The PNG is delivered as an attachment via Twilio (SMS), iMessage
+      (basicTextServer), or Telegram (sendPhoto). Each transport has a size
+      cap; the typical PNG comes in at ~600 KB. Pre-flight resize to 1080×1920
+      stays inside iMessage's 5 MB limit and Twilio's 5 MB MMS cap.
+
+================================================================================

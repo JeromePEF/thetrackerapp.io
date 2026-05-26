@@ -1,0 +1,53 @@
+================================================================================
+CHANGELOG FEED — Backend endpoint spec
+================================================================================
+
+The /changelog page (frontend: changelog.html + src/changelog.js) renders a
+public list of recent changes. Until the backend exposes a feed the page
+uses a hard-coded fallback list of recent entries.
+
+For the page to stay current automatically, please expose:
+
+  GET https://api.thetrackerapp.io/changelog        [PUBLIC, cacheable]
+
+Response:
+  {
+    "ok":     true,
+    "entries": [
+      {
+        "date":  "2026-05-26",                  // ISO date, required
+        "title": "Webhook-driven control invalidation",
+        "tags":  ["added","changed"],           // optional, see allowed list
+        "items": [                              // simple bullet list (preferred)
+          { "text": "Stats refreshes within 30s of a flag flip" },
+          { "text": "Maintenance toggle recovers in ~2s" }
+        ],
+        "markdown": "- ...",                    // optional alt content type
+        "html":     "<ul><li>...</li></ul>"     // optional alt content type
+                                                //   (script tags stripped client-side
+                                                //   for safety; do NOT embed user input)
+      }
+    ]
+  }
+
+Notes:
+  - Sort by date descending; frontend re-sorts defensively anyway.
+  - Allowed `tags` (each maps to a colour pill on the page):
+        "added"     — green
+        "fixed"     — amber
+        "changed"   — blue
+        "removed"   — red
+        "security"  — purple
+    Custom tags render with the neutral grey pill, no special colour.
+  - Prefer the `items[]` array. `markdown` and `html` are escape hatches if
+    you need richer formatting; only one of the three should be set per entry.
+  - Cache-Control: public, s-maxage=300, stale-while-revalidate=600 is fine.
+    The frontend bypasses cache with cache:"no-store" on its end.
+  - Edge-cache via Vercel is automatic if we ever proxy this; right now the
+    frontend fetches directly from api.thetrackerapp.io.
+
+If the endpoint isn't implemented the page still works — it ships with a
+fallback timeline baked into src/changelog.js. Once the endpoint returns a
+non-empty `entries` array, that overrides the fallback automatically.
+
+================================================================================

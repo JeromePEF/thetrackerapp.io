@@ -48,6 +48,7 @@ let state = {
   open: false,
   busy: false,
   mode: "ai",          // "ai" | "agent"
+  ticketId: null,
   pollTimer: null,
   lastPolledAt: null,
 };
@@ -142,9 +143,40 @@ function escapeHtml(s) {
     .replace(/'/g, "&#39;");
 }
 
+/**
+ * Defence-in-depth phone-number redaction. The backend is responsible for
+ * stripping phone numbers from agent/AI replies (see LIVE_AGENT_BACKEND.txt);
+ * this client-side scrub catches anything the backend missed so users never
+ * see raw operator numbers like "7373686293" leak through.
+ *
+ * Matches:
+ *   - 10–15 consecutive digits (international format)
+ *   - North-American (xxx) xxx-xxxx, xxx-xxx-xxxx, xxx.xxx.xxxx
+ *   - With optional +<country> prefix
+ *
+ * Leaves untouched:
+ *   - Ticket IDs (e.g. TX-83A21) — they contain hyphens with letters
+ *   - 4-6 digit codes (PINs, dates, prices, calorie counts)
+ *   - Short dates (5/22 etc.)
+ */
+function redactPhoneNumbers(text) {
+  if (!text) return "";
+  let out = String(text);
+  // (xxx) xxx-xxxx, xxx-xxx-xxxx, xxx.xxx.xxxx, optional +1 prefix
+  out = out.replace(
+    /(?:\+?\d{1,3}[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/g,
+    "Live Agent",
+  );
+  // Bare 10–15 digit runs
+  out = out.replace(/\+?\b\d{10,15}\b/g, "Live Agent");
+  return out;
+}
+
 function linkify(text) {
+  // Redact phone numbers before escaping so the digits never reach the DOM.
+  const redacted = redactPhoneNumbers(text);
+  let html = escapeHtml(redacted);
   // Render markdown-y links [label](https://…) and bare URLs as anchors.
-  let html = escapeHtml(text);
   html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (m, label, url) =>
     `<a href="${url}" target="_blank" rel="noreferrer">${escapeHtml(label)}</a>`,
   );
@@ -417,7 +449,11 @@ async function submit() {
       persistSession(session);
     }
     state.mode = data?.mode === "agent" ? "agent" : "ai";
-    if (state.mode === "agent") setHeadSub("Human · usually replies within minutes");
+    if (data?.ticketId) state.ticketId = data.ticketId;
+    if (state.mode === "agent") {
+      const ticket = state.ticketId ? ` · ${state.ticketId}` : "";
+      setHeadSub(`Human · usually replies within minutes${ticket}`);
+    }
     pushMessage({
       role: state.mode === "agent" ? "agent" : "ai",
       text: data?.reply || "Hmm — got an empty reply. Try again?",
@@ -458,12 +494,15 @@ async function requestAgent(originalMessage) {
       persistSession(session);
     }
     state.mode = "agent";
-    setHeadSub(`Human · ${data?.eta ? `ETA ${data.eta}` : "usually replies within minutes"}`);
+    if (data?.ticketId) state.ticketId = data.ticketId;
+    const ticket = state.ticketId ? ` · ${state.ticketId}` : "";
+    setHeadSub(`Human · ${data?.eta ? `ETA ${data.eta}` : "usually replies within minutes"}${ticket}`);
     pushMessage({
       role: "system",
       text:
         data?.greeting ||
-        `Got it — a human will jump in${data?.eta ? ` in ${data.eta}` : " shortly"}. ` +
+        `Got it — Live Agent will jump in${data?.eta ? ` in ${data.eta}` : " shortly"}` +
+          `${state.ticketId ? ` · ticket ${state.ticketId}` : ""}. ` +
           `Feel free to keep typing in the meantime.`,
       ts: new Date().toISOString(),
     });
