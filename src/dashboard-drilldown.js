@@ -164,6 +164,7 @@ export async function openNutritionDay({ date, fallback = {} }) {
     if (!data || data.ok === false) throw new Error(data?.error || "No data");
     setModalBody(renderNutritionDay(data, date));
     bindNutritionDeleteButtons(date, fallback);
+    bindNutritionConfidenceToggles();
   } catch (err) {
     // Graceful fallback when the endpoint isn't ready yet.
     setModalBody(renderNutritionFallback(date, fallback, err));
@@ -199,17 +200,53 @@ function renderNutritionDay(data, date) {
       </thead>
       <tbody>
         ${entries
-          .map((e) => {
+          .map((e, idx) => {
             const time = fmtTime(e.loggedAt || e.time || e.timestamp);
             const name = escapeHtml(e.name || e.item || e.raw || "Entry");
             const id = escapeHtml(e.id ?? "");
-            const source = escapeHtml(e.source || "");
+            const source = escapeHtml(
+              (e.confidence && e.confidence.source) || e.source || ""
+            );
+            const conf = normalizeConfidence(e.confidence);
+            const confBadge = conf
+              ? `<button type="button" class="drilldown-conf-badge is-${conf.level}" data-action="toggle-conf" data-entry-idx="${idx}" aria-expanded="false" aria-controls="conf-${idx}" title="Tap to see how this was estimated">${conf.scorePct}% · ±${conf.plusMinusKcal} kcal</button>`
+              : "";
+            const confRow = conf
+              ? `<tr class="drilldown-conf-row" id="conf-${idx}" hidden>
+                  <td colspan="7">
+                    <div class="drilldown-conf-panel">
+                      <div class="drilldown-conf-head">
+                        <span class="drilldown-conf-pill is-${conf.level}">${escapeHtml(conf.level)} confidence · ${conf.scorePct}%</span>
+                        ${conf.sourceLabel ? `<span class="drilldown-conf-source">${escapeHtml(conf.sourceLabel)}</span>` : ""}
+                      </div>
+                      <div class="drilldown-conf-ranges">
+                        ${renderRange("Calories", conf.ranges.calories, "kcal")}
+                        ${renderRange("Protein", conf.ranges.protein, "g")}
+                        ${renderRange("Carbs", conf.ranges.carbs, "g")}
+                        ${renderRange("Fats", conf.ranges.fats, "g")}
+                      </div>
+                      ${conf.explanation ? `<p class="drilldown-conf-explain">${escapeHtml(conf.explanation)}</p>` : ""}
+                      ${
+                        conf.alternatives && conf.alternatives.length
+                          ? `<div class="drilldown-conf-alts"><span class="drilldown-conf-alts-label">Wrong item?</span>${conf.alternatives
+                              .map(
+                                (a) =>
+                                  `<span class="drilldown-conf-alt">${escapeHtml(a.name)}${a.calories != null ? ` · ${Math.round(a.calories)} kcal` : ""}</span>`
+                              )
+                              .join("")}</div>`
+                          : ""
+                      }
+                    </div>
+                  </td>
+                </tr>`
+              : "";
             return `
             <tr data-entry-id="${id}">
               <td>${time}</td>
               <td>
                 <span class="drilldown-item-name">${name}</span>
                 ${source ? `<span class="drilldown-source">${source}</span>` : ""}
+                ${confBadge}
               </td>
               <td class="num">${formatNum(e.calories)}</td>
               <td class="num">${formatNum(e.protein)}</td>
@@ -219,14 +256,15 @@ function renderNutritionDay(data, date) {
                 ${id ? `<button type="button" class="drilldown-delete" data-action="delete-nut" data-entry-id="${id}" title="Delete entry">×</button>` : ""}
               </td>
             </tr>
+            ${confRow}
           `;
           })
           .join("")}
       </tbody>
     </table>
     <p class="tracker-modal-foot">
-      Spot something wrong? Click the × to remove an entry. Changes update your
-      stats immediately.
+      Spot something wrong? Click the × to remove an entry, or tap the confidence
+      badge to see how an estimate was made. Changes update your stats immediately.
     </p>
   `;
 }
@@ -240,6 +278,91 @@ function renderNutTotal(label, value, unit) {
       <span class="drilldown-stat-value">${Math.round(n).toLocaleString()}<span class="drilldown-stat-unit">${escapeHtml(unit)}</span></span>
     </div>
   `;
+}
+
+// ---------- CONFIDENCE / TRANSPARENCY ----------
+// See NUTRITION_DETAIL_BACKEND.txt for the contract. Backend may send either
+// a 0..1 `score` or a "high"/"medium"/"low" `level`; we tolerate both and
+// fall back to a deterministic level when one isn't present.
+
+const SOURCE_LABELS = {
+  natural_language_food: "Natural-language parse",
+  barcode: "Barcode scan",
+  photo_estimate: "Photo estimate",
+  menu_match: "Restaurant menu match",
+  user_manual: "Manual entry",
+  restaurant_db: "Restaurant database",
+  brand_db: "Brand database",
+  recipe_compose: "Recipe (sum of ingredients)",
+};
+
+function normalizeConfidence(c) {
+  if (!c || typeof c !== "object") return null;
+  let score = Number(c.score);
+  let level = String(c.level || "").toLowerCase();
+  if (!Number.isFinite(score)) {
+    score = level === "high" ? 0.9 : level === "medium" ? 0.7 : level === "low" ? 0.45 : NaN;
+  }
+  if (!level) {
+    level = score >= 0.85 ? "high" : score >= 0.6 ? "medium" : "low";
+  }
+  if (!Number.isFinite(score)) return null;
+  const ranges = c.ranges || {};
+  const calRange = ranges.calories || {};
+  const plusMinusKcal = Math.round(
+    Number(calRange.plusMinus) ||
+      (Number(calRange.high) && Number(calRange.low)
+        ? (calRange.high - calRange.low) / 2
+        : 0)
+  );
+  return {
+    score,
+    scorePct: Math.round(score * 100),
+    level,
+    plusMinusKcal,
+    sourceLabel: SOURCE_LABELS[c.source] || c.source || "",
+    explanation: c.explanation || "",
+    ranges: {
+      calories: ranges.calories,
+      protein: ranges.protein,
+      carbs: ranges.carbs,
+      fats: ranges.fats,
+    },
+    alternatives: Array.isArray(c.alternativeMatches) ? c.alternativeMatches : [],
+  };
+}
+
+function renderRange(label, r, unit) {
+  if (!r || typeof r !== "object") return "";
+  const pm = Number(r.plusMinus);
+  const low = Number(r.low);
+  const high = Number(r.high);
+  const pmStr = Number.isFinite(pm)
+    ? `±${Math.round(pm * 10) / 10}`
+    : Number.isFinite(low) && Number.isFinite(high)
+    ? `${Math.round(low)}–${Math.round(high)}`
+    : "";
+  if (!pmStr) return "";
+  return `
+    <div class="drilldown-conf-range">
+      <span class="drilldown-conf-range-label">${escapeHtml(label)}</span>
+      <span class="drilldown-conf-range-value">${escapeHtml(pmStr)}<span class="drilldown-conf-range-unit"> ${escapeHtml(unit)}</span></span>
+    </div>
+  `;
+}
+
+function bindNutritionConfidenceToggles() {
+  modalEl?.querySelectorAll('[data-action="toggle-conf"]').forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const idx = btn.dataset.entryIdx;
+      const row = modalEl.querySelector(`#conf-${idx}`);
+      if (!row) return;
+      const open = !row.hidden;
+      row.hidden = open;
+      btn.setAttribute("aria-expanded", open ? "false" : "true");
+      btn.classList.toggle("is-open", !open);
+    });
+  });
 }
 
 function renderNutritionFallback(date, fallback, err) {

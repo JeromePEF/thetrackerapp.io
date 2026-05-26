@@ -3231,3 +3231,232 @@ details.stats-legacy > .milestones-toggle-card {
   color: #ffd166;
   font-weight: 700;
 }
+
+/* ---------- Maintenance calorie row (under the calorie ring) ----------
+ * Shows estimated daily calories needed to maintain weight with a
+ * confidence pill + Why? affordance. See NUTRITION_DETAIL_BACKEND.txt. */
+.spotlight-maint {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.spotlight-maint.is-low {
+  border-color: rgba(255, 184, 0, 0.45);
+  background: rgba(255, 184, 0, 0.06);
+}
+.spotlight-maint.is-high { border-color: rgba(102, 187, 106, 0.35); }
+.spotlight-maint-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.spotlight-maint-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.spotlight-maint-conf {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.78);
+}
+.spotlight-maint.is-high .spotlight-maint-conf { background: rgba(102, 187, 106, 0.18); color: #9be39d; }
+.spotlight-maint.is-medium .spotlight-maint-conf { background: rgba(100, 181, 246, 0.18); color: #8fc6f2; }
+.spotlight-maint.is-low .spotlight-maint-conf { background: rgba(255, 184, 0, 0.22); color: #ffd680; }
+.spotlight-maint-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+}
+.spotlight-maint-unit {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.55);
+  margin-left: 4px;
+}
+.spotlight-maint-delta {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.65);
+}
+.spotlight-maint-why {
+  align-self: flex-start;
+  font-size: 11px;
+  color: #8fc6f2;
+  background: none;
+  border: none;
+  padding: 2px 0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.spotlight-maint-empty .spotlight-maint-link {
+  font-size: 11px;
+  color: #8fc6f2;
+  text-decoration: none;
+}
+.spotlight-maint-empty .spotlight-maint-link:hover { text-decoration: underline; }
+
+/* ---------- Fat sub-type breakdown inside macros card ---------- */
+.macro-fat-breakdown {
+  margin-top: 8px;
+  font-size: 11px;
+}
+.macro-fat-breakdown > summary {
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 600;
+  list-style: none;
+  padding: 2px 0;
+}
+.macro-fat-breakdown > summary::-webkit-details-marker { display: none; }
+.macro-fat-breakdown > summary::before {
+  content: "▸ ";
+  font-size: 9px;
+  transition: transform 0.15s;
+  display: inline-block;
+}
+.macro-fat-breakdown[open] > summary::before { content: "▾ "; }
+.macro-fat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 3px 6px 3px 16px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.78);
+}
+.macro-fat-row.is-trans { color: #ff8a8a; }
+.macro-fat-label { color: rgba(255, 255, 255, 0.6); }
+.macro-fat-target { color: rgba(255, 255, 255, 0.4); margin-left: 2px; }
+
+/* ---------- Drill-down confidence transparency ---------- */
+.drilldown-conf-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 0.02em;
+}
+.drilldown-conf-badge:hover { background: rgba(255, 255, 255, 0.12); }
+.drilldown-conf-badge.is-high {
+  background: rgba(102, 187, 106, 0.18);
+  color: #9be39d;
+  border-color: rgba(102, 187, 106, 0.35);
+}
+.drilldown-conf-badge.is-medium {
+  background: rgba(100, 181, 246, 0.18);
+  color: #8fc6f2;
+  border-color: rgba(100, 181, 246, 0.35);
+}
+.drilldown-conf-badge.is-low {
+  background: rgba(255, 184, 0, 0.18);
+  color: #ffd680;
+  border-color: rgba(255, 184, 0, 0.4);
+}
+.drilldown-conf-badge.is-open { background: rgba(255, 255, 255, 0.16); }
+.drilldown-conf-row td {
+  background: rgba(255, 255, 255, 0.02);
+  border-top: none !important;
+  padding: 0 !important;
+}
+.drilldown-conf-panel {
+  padding: 12px 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.drilldown-conf-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.drilldown-conf-pill {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.78);
+}
+.drilldown-conf-pill.is-high { background: rgba(102, 187, 106, 0.18); color: #9be39d; }
+.drilldown-conf-pill.is-medium { background: rgba(100, 181, 246, 0.18); color: #8fc6f2; }
+.drilldown-conf-pill.is-low { background: rgba(255, 184, 0, 0.2); color: #ffd680; }
+.drilldown-conf-source {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+}
+.drilldown-conf-ranges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+}
+.drilldown-conf-range {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 70px;
+}
+.drilldown-conf-range-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.45);
+  font-weight: 600;
+}
+.drilldown-conf-range-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.92);
+}
+.drilldown-conf-range-unit {
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+}
+.drilldown-conf-explain {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.72);
+}
+.drilldown-conf-alts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  font-size: 11px;
+}
+.drilldown-conf-alts-label {
+  color: rgba(255, 255, 255, 0.55);
+  margin-right: 4px;
+}
+.drilldown-conf-alt {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 11px;
+}

@@ -597,6 +597,18 @@ function bindSpotlightEditors() {
       }
     });
   });
+
+  // Wire the maintenance-calorie "Why?" button so users can see the inputs
+  // and method behind the estimate. Uses native confirm/alert for simplicity
+  // — we keep this lightweight rather than opening a full modal.
+  document.querySelectorAll(".spotlight-maint-why").forEach((btn) => {
+    if (btn.dataset.maintBound === "1") return;
+    btn.dataset.maintBound = "1";
+    btn.addEventListener("click", () => {
+      const msg = btn.dataset.why || "Maintenance calories are estimated from your age, sex, height, weight, and recent activity.";
+      alert(msg);
+    });
+  });
 }
 
 function startSpotlightEdit(el) {
@@ -745,6 +757,44 @@ function renderSpotlight(availableMap) {
   const calsTarget = numberOr(targets.calories, null);
   const calsPct = calsTarget && cals != null ? Math.min(100, Math.round((cals / calsTarget) * 100)) : null;
 
+  // Maintenance calorie estimate (see NUTRITION_DETAIL_BACKEND.txt).
+  // Backend supplies the full object when available; we tolerate the bare
+  // number when an older response only sends a scalar.
+  const maintRaw = state.data.maintenanceCalories;
+  const maintenance =
+    maintRaw && typeof maintRaw === "object"
+      ? {
+          value: numberOr(maintRaw.value, null),
+          confidence: String(maintRaw.confidence || "").toLowerCase(),
+          method: String(maintRaw.method || ""),
+          explanation: maintRaw.explanation || "",
+        }
+      : maintRaw != null
+      ? { value: numberOr(maintRaw, null), confidence: "", method: "", explanation: "" }
+      : null;
+
+  // Macros (Protein / Carbs / Fats). Fat row optionally expands to show
+  // saturated / polyunsaturated / monounsaturated / trans when backend
+  // exposes those keys. Empty sub-fat block stays hidden.
+  const fatBreakdown = ["saturatedFat", "polyunsaturatedFat", "monounsaturatedFat", "transFat"]
+    .map((k) => {
+      const v = todayValue(k);
+      if (v == null) return null;
+      const tgt = numberOr(targets[k], null);
+      return {
+        key: k,
+        label: ({
+          saturatedFat: "Saturated",
+          polyunsaturatedFat: "Polyunsat",
+          monounsaturatedFat: "Monounsat",
+          transFat: "Trans",
+        })[k],
+        value: v,
+        target: tgt,
+      };
+    })
+    .filter(Boolean);
+
   const macros = ["protein", "carbs", "fats"].map((k) => {
     const value = todayValue(k);
     const target = numberOr(targets[k], null);
@@ -756,6 +806,8 @@ function renderSpotlight(availableMap) {
       target,
       pct: target && value != null ? Math.min(100, Math.round((value / target) * 100)) : null,
       color: { protein: "#64b5f6", carbs: "#ffb74d", fats: "#ba68c8" }[k],
+      // Fats card carries the breakdown so the renderer can pop a sub-list.
+      breakdown: k === "fats" ? fatBreakdown : null,
     };
   });
 
@@ -804,6 +856,7 @@ function renderSpotlight(availableMap) {
             ${calsTarget && cals != null ? `<div class="spotlight-cal-delta ${cals > calsTarget ? "delta-over" : "delta-under"}">${cals > calsTarget ? "+" : ""}${Math.round(cals - calsTarget).toLocaleString()} kcal vs target</div>` : ""}
           </div>
         </div>
+        ${renderMaintenanceRow(maintenance, cals)}
       </article>
 
       <article class="spotlight-card spotlight-macros">
@@ -824,6 +877,23 @@ function renderSpotlight(availableMap) {
               const targetBtn = m.target
                 ? `<span class="editable-target" data-target-edit="${field}" data-target-unit="${unit}" tabindex="0" role="button" aria-label="Edit ${m.label} target">${Math.round(m.target)}${unit}</span>`
                 : `<span class="editable-target macro-target-empty" data-target-edit="${field}" data-target-unit="${unit}" tabindex="0" role="button" aria-label="Set ${m.label} target">+ Set target</span>`;
+              // Fats row optionally expands to show sub-types (saturated /
+              // polyunsaturated / monounsaturated / trans) when backend
+              // includes the breakdown.
+              const subRows =
+                m.breakdown && m.breakdown.length
+                  ? `<details class="macro-fat-breakdown"><summary>Fat breakdown</summary>${m.breakdown
+                      .map(
+                        (b) => `
+                        <div class="macro-fat-row${b.key === "transFat" ? " is-trans" : ""}">
+                          <span class="macro-fat-label">${escapeHtml(b.label)}</span>
+                          <span class="macro-fat-value">${Math.round(b.value * 10) / 10}g${
+                            b.target ? ` <span class="macro-fat-target">/ ${Math.round(b.target)}g</span>` : ""
+                          }</span>
+                        </div>`
+                      )
+                      .join("")}</details>`
+                  : "";
               return `
             <div class="macro-row" style="--macro-color:${m.color}">
               <div class="macro-row-head">
@@ -831,6 +901,7 @@ function renderSpotlight(availableMap) {
                 <span class="macro-row-value">${logged}<span class="macro-row-divider"> / </span>${targetBtn}</span>
               </div>
               <div class="macro-bar"><div class="macro-bar-fill" style="width:${m.pct ?? 0}%"></div></div>
+              ${subRows}
             </div>
           `;
             })
@@ -1264,6 +1335,54 @@ function formatMiles(v) {
   if (n >= 100) return Math.round(n).toLocaleString();
   if (n >= 10) return n.toFixed(1);
   return n.toFixed(2).replace(/\.?0+$/, "");
+}
+
+// Maintenance-calorie row that hangs under the calories ring. Shows the
+// estimated daily calories needed to maintain weight, a confidence badge,
+// and a tooltip explaining how the number was computed. Hidden entirely
+// when the backend hasn't supplied a value.
+function renderMaintenanceRow(maintenance, todayCals) {
+  if (!maintenance || !Number.isFinite(maintenance.value)) {
+    // Fall back to a "Set your maintenance" affordance so users know the
+    // tile will light up once their profile is complete.
+    return `
+      <div class="spotlight-maint spotlight-maint-empty">
+        <span class="spotlight-maint-label">Maintenance</span>
+        <a class="spotlight-maint-link" href="/dashboard?view=stats#nutrition">Complete your profile to see this →</a>
+      </div>
+    `;
+  }
+  const confidenceClass = maintenance.confidence ? `is-${maintenance.confidence}` : "";
+  const delta = todayCals != null ? Math.round(todayCals - maintenance.value) : null;
+  const deltaLabel =
+    delta == null
+      ? ""
+      : delta === 0
+      ? "right at maintenance"
+      : delta > 0
+      ? `+${delta.toLocaleString()} above today`
+      : `${delta.toLocaleString()} below today`;
+  return `
+    <div class="spotlight-maint ${confidenceClass}" role="group" aria-label="Maintenance calories">
+      <div class="spotlight-maint-head">
+        <span class="spotlight-maint-label">Maintenance</span>
+        ${
+          maintenance.confidence
+            ? `<span class="spotlight-maint-conf">${escapeHtml(maintenance.confidence)} confidence</span>`
+            : ""
+        }
+      </div>
+      <div class="spotlight-maint-value">
+        ${Math.round(maintenance.value).toLocaleString()}<span class="spotlight-maint-unit">kcal/day</span>
+      </div>
+      ${deltaLabel ? `<div class="spotlight-maint-delta">${escapeHtml(deltaLabel)}</div>` : ""}
+      ${
+        maintenance.explanation
+          ? `<button type="button" class="spotlight-maint-why" data-why="${escapeAttr(maintenance.explanation)}" aria-label="How is this computed?">Why?</button>`
+          : ""
+      }
+    </div>
+  `;
 }
 
 function renderRing(pct, units) {

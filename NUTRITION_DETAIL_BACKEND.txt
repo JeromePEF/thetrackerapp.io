@@ -1,0 +1,280 @@
+================================================================================
+NUTRITION DETAIL — Backend additions for fat breakdown, maintenance calories,
+                   and per-log confidence transparency
+================================================================================
+
+The frontend Stats tab has been updated to surface three things the backend
+needs to provide:
+
+  1. Detailed fat breakdown (Saturated / Polyunsaturated / Monounsaturated / Trans)
+  2. The user's maintenance-calorie estimate + how confident we are in it
+  3. Per-log confidence score + accuracy range when users click any food
+     entry — so estimates feel transparent rather than magical
+
+This doc is the wire spec. Everything below is OPTIONAL — the frontend
+already ships fallbacks that hide each section when backend doesn't return
+its fields. So you can roll these out one at a time without breaking the UI.
+
+================================================================================
+1. DETAILED FAT BREAKDOWN
+================================================================================
+
+Today's `/api/chart/data` response exposes a single `fats` metric. We want
+sub-metrics for the four fat types so users can track quality, not just total.
+
+ADD to GET /api/chart/data response:
+
+  metrics[]  – four new entries, same shape as the existing `fats` metric:
+
+    { "key": "saturatedFat",       "label": "Saturated Fat",       "unit": "g",
+      "category": "nutrition",     "available": true,
+      "stats": { min, max, avg, count, first, last, delta } }
+
+    { "key": "polyunsaturatedFat", "label": "Polyunsaturated Fat", "unit": "g",
+      "category": "nutrition",     "available": true,
+      "stats": { ... } }
+
+    { "key": "monounsaturatedFat", "label": "Monounsaturated Fat", "unit": "g",
+      "category": "nutrition",     "available": true,
+      "stats": { ... } }
+
+    { "key": "transFat",           "label": "Trans Fat",           "unit": "g",
+      "category": "nutrition",     "available": true,
+      "stats": { ... } }
+
+  chartData – one array per key:
+    chartData.saturatedFat:       [ { date, value, source?, entryCount? }, ... ]
+    chartData.polyunsaturatedFat: [ ... ]
+    chartData.monounsaturatedFat: [ ... ]
+    chartData.transFat:           [ ... ]
+
+  targets – optional daily targets (omit if user hasn't set one):
+    targets.saturatedFatGoal:       <g/day, max>     (e.g. 22 = AHA's 6% rule on 2000kcal)
+    targets.polyunsaturatedFatGoal: <g/day, min>     (e.g. 22 for 10% kcal)
+    targets.monounsaturatedFatGoal: <g/day, min>     (e.g. 44 for 20% kcal)
+    targets.transFatGoal:           <g/day, max>     (almost always 0)
+
+The frontend already treats every nutrition metric uniformly, so once the
+chart endpoint includes the four keys above, the Stats sub-tabs (Nutrition
+view) automatically render them as new quick-chart cards.
+
+ALSO ADD to the per-day breakdown endpoints:
+
+  GET /api/user/nutrition/day?contact=…&date=YYYY-MM-DD
+
+  Augment each food entry with the four sub-fat fields:
+
+    {
+      "id": 48211,
+      "name": "Five Guys Little Hamburger",
+      "loggedAt": "2026-05-22T17:14:00Z",
+      "calories": 540,
+      "protein":  23,
+      "carbs":    39,
+      "fats":     26,
+      "saturatedFat":        9,    // NEW
+      "polyunsaturatedFat":  3,    // NEW
+      "monounsaturatedFat":  10,   // NEW
+      "transFat":            0.5,  // NEW
+      "source": "natural_language_food"
+    }
+
+If a particular database row doesn't have the breakdown, omit the field
+entirely (don't send 0 if you don't actually know — the frontend treats
+"absent" and "zero" differently in the disclaimer).
+
+ALSO ADD to the chart `todayNutrition.totals`:
+
+  data.todayNutrition.totals = {
+    calories, protein, carbs, fats,
+    saturatedFat, polyunsaturatedFat, monounsaturatedFat, transFat
+  }
+
+================================================================================
+2. MAINTENANCE CALORIE ESTIMATE
+================================================================================
+
+We want the dashboard to show the user's MAINTENANCE calorie level — the
+calories they'd need to eat each day to neither gain nor lose weight at
+their current activity level. This is the single most useful number for
+anybody managing weight, but very few apps surface it cleanly.
+
+ADD to GET /api/account/profile response AND /api/chart/data response:
+
+  {
+    // ... existing fields ...
+    "maintenanceCalories": {
+      "value":          2380,         // integer kcal/day
+      "method":         "mifflin_st_jeor_x_activity",
+                                      //   mifflin_st_jeor_x_activity |
+                                      //   katch_mcardle              |
+                                      //   harris_benedict            |
+                                      //   tdee_log_regression        |
+                                      //   manual                     |
+                                      //   default_assumed
+      "confidence":     "high",       // high | medium | low
+      "computedAt":     "2026-05-22T17:14:00Z",
+      "inputs": {                     // optional — used to show "why" tooltip
+        "age":               29,
+        "sex":               "male",
+        "currentWeightLb":   178,
+        "currentHeightIn":   70,
+        "activityFactor":    1.55,
+        "deficitOrSurplus":  -300     // if user has a goal, the daily delta
+      },
+      "explanation": "Estimated from your age, sex, height, weight, and an active lifestyle (≥4 workouts/week)."
+    }
+  }
+
+Confidence rule of thumb (suggested):
+
+   high    – user has age, sex, height, weight, AND ≥10 logged workouts last
+              30 days that match the assumed activity level. OR backend has
+              the user's actual TDEE from log regression (weight trend vs
+              calorie intake).
+   medium  – has age, sex, height, weight but activity level is assumed.
+   low     – missing two or more of {age, sex, height, weight} — using
+              app-wide averages as fallback.
+
+Frontend will show:
+
+   Maintenance · 2,380 kcal/day · high confidence  [why?]
+
+The "why?" tooltip shows the `explanation` and `inputs` so users can see
+how the number was computed. When confidence is `low`, the tile gets a
+subtle amber border and the tooltip links to /guide#tdee for the user to
+add missing profile fields.
+
+ALSO HONOR a user-set override:
+
+  PATCH /api/account/profile
+    { "maintenanceCaloriesOverride": 2200 }       // explicit override
+    { "maintenanceCaloriesOverride": null }       // clear override → recompute
+
+When `maintenanceCaloriesOverride` is set, return that value as
+`maintenanceCalories.value` with `method: "manual"` and `confidence: "high"`.
+
+================================================================================
+3. PER-LOG CONFIDENCE SCORE + ACCURACY RANGE
+================================================================================
+
+When users click any logged food (or any AI-estimated metric — weight from
+photo, calories from a meal photo, etc.), we want to show:
+
+   "Estimated 540 ± 60 kcal · confidence 82%"
+   [tooltip: "Source: natural_language_food. The AI parsed 'Five Guys little
+              burger' against the USDA database. Confidence is medium because
+              portion size wasn't specified — assumed default 4 oz patty."]
+
+This applies to BOTH single nutrition entries AND aggregated daily totals.
+
+EXTEND every nutrition entry (in /api/user/nutrition/day, /api/chart/data
+per-point shape, search results, etc.) with:
+
+  {
+    "id": 48211,
+    "name": "Five Guys Little Hamburger",
+    "calories": 540,
+    "protein": 23, "carbs": 39, "fats": 26,
+
+    // NEW transparency block — optional, frontend renders only when present
+    "confidence": {
+      "score":     0.82,             // 0..1 float, OR
+      "level":     "medium",         // "high"|"medium"|"low"  (either is fine)
+      "ranges": {                    // per-field ±
+        "calories":  { "low": 480, "high": 600, "plusMinus": 60 },
+        "protein":   { "low": 20,  "high": 26,  "plusMinus": 3 },
+        "carbs":     { "low": 34,  "high": 44,  "plusMinus": 5 },
+        "fats":      { "low": 22,  "high": 30,  "plusMinus": 4 }
+      },
+      "source":     "natural_language_food",
+                                     // natural_language_food | barcode |
+                                     // photo_estimate        | menu_match |
+                                     // user_manual           | restaurant_db |
+                                     // brand_db              | recipe_compose
+      "explanation": "Parsed 'Five Guys little burger' against the USDA database. Portion size assumed (4 oz patty, default toppings).",
+      "matchedItem": "Five Guys Little Hamburger (USDA #21091)",
+                                     // optional reference back to source row
+      "alternativeMatches": [         // optional — frontend shows "Wrong item? Try..."
+        { "name": "Five Guys Cheeseburger", "calories": 700 },
+        { "name": "Five Guys Bacon Burger", "calories": 780 }
+      ]
+    }
+  }
+
+CONFIDENCE LEVEL SEMANTICS (suggested):
+
+  high     – exact match against a curated DB (barcode scan, restaurant menu
+             match with brand+size, user-saved custom item). ±5–10%.
+  medium   – natural-language parse with assumed portion. ±15–25%.
+  low      – photo estimate with no scale reference, or freeform text the
+             parser couldn't lock down. ±30–50% or higher.
+
+The `score` (0..1 float) is preferred when available; if you only have a
+heuristic bucket, send `level` and the frontend will map:
+
+  level "high"   → 0.90 +/- 0.07
+  level "medium" → 0.70 +/- 0.20
+  level "low"    → 0.45 +/- 0.40
+
+================================================================================
+4. WHERE THE FRONTEND USES EACH FIELD
+================================================================================
+
+  Field                              UI location
+  ─────────────────────────────────────────────────────────────────────────────
+  metrics[*] for fat sub-types       Stats → Nutrition sub-tab quick charts
+  chartData.{satFat, ...}            Same — drives the per-metric line chart
+  targets.saturatedFatGoal           Macros card sub-rows (when shipped)
+  todayNutrition.totals.saturatedFat Macros card expanded view
+
+  maintenanceCalories.value          New "Maintenance" KPI tile on Stats tab
+  maintenanceCalories.confidence     Subtle colour band on the tile
+  maintenanceCalories.explanation    Tooltip on hover/tap
+  maintenanceCaloriesOverride        Settable inline (clicks the tile → edit)
+
+  entry.confidence.score             "82%" badge on each food row
+  entry.confidence.ranges.*.plusMinus "± 60 kcal" inline next to value
+  entry.confidence.source            Source pill ("natural language", "barcode")
+  entry.confidence.explanation       Tooltip body
+  entry.confidence.alternativeMatches "Wrong item? Try..." mini-list
+
+================================================================================
+5. ROLLOUT ORDER
+================================================================================
+
+Each chunk is independent — implement in whatever order is easiest. The
+frontend handles each one being absent gracefully.
+
+  Phase 1 — Maintenance calorie:
+      Add `maintenanceCalories` to /api/account/profile + /api/chart/data.
+      UI: new KPI tile lights up immediately on next dashboard load.
+
+  Phase 2 — Fat breakdown:
+      Add `saturatedFat`, `polyunsaturatedFat`, `monounsaturatedFat`,
+      `transFat` to metrics[] / chartData / todayNutrition.totals.
+      UI: new charts appear under Stats → Nutrition; macros card gets
+      an expand-arrow that reveals the four sub-rows.
+
+  Phase 3 — Confidence transparency:
+      Add `confidence` block to nutrition entries.
+      UI: every row in the per-day drill-down modal gets a clickable "± X"
+      indicator + colored badge; "Why?" tooltip reveals source + explanation.
+
+================================================================================
+6. ASKS (copy/paste into your tracker)
+================================================================================
+
+  [ ] Add four nutrition metrics for fat sub-types to /api/chart/data.
+  [ ] Mirror them in todayNutrition.totals + per-entry fields.
+  [ ] Add targets.{saturatedFat,polyunsaturatedFat,monounsaturatedFat,transFat}Goal
+      to /api/account/profile + chart-data response.
+  [ ] Add maintenanceCalories block to /api/account/profile AND /api/chart/data
+      (use Mifflin-St Jeor × activity factor as the baseline method).
+  [ ] Accept PATCH /api/account/profile { maintenanceCaloriesOverride } and
+      return the overridden value with method:"manual", confidence:"high".
+  [ ] Augment every food entry (/api/user/nutrition/day + chart-data points)
+      with a `confidence` block: score OR level, ranges{} per macro, source,
+      explanation, optional matchedItem + alternativeMatches.
+
+================================================================================
