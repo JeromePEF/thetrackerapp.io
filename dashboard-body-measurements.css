@@ -4987,3 +4987,31 @@ details.stats-legacy > .milestones-toggle-card {
   margin-top: auto;
   width: 100%;
 }
+
+/* Make sure the billing panel's manage/cancel actions and the action-status
+   line are clearly separated from the upgrade card grid above. Without this
+   the success/redirect text ("Redirecting to Stripe…") was flowing right
+   under the Cancel button with no breathing room. */
+#tabBilling .panel-actions {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+#tabBilling #billingActionStatus {
+  margin-top: 14px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  border-left: 3px solid rgba(56, 255, 211, 0.5);
+}
+#tabBilling #billingActionStatus:empty {
+  display: none;
+}
+#tabBilling #billingActionStatus.is-error {
+  border-left-color: #ef5350;
+  background: rgba(239, 83, 80, 0.08);
+}
+#tabBilling #billingActionStatus.is-success {
+  border-left-color: #66bb6a;
+  background: rgba(102, 187, 106, 0.08);
+}

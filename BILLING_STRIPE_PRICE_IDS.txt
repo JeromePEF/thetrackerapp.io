@@ -1,0 +1,104 @@
+================================================================================
+BILLING — Stripe checkout is loading TEST prices instead of production prices
+================================================================================
+
+SYMPTOM
+-------
+User clicked "Switch to Yearly" on the dashboard. The frontend posted
+
+  POST /api/stripe/checkout-session
+  {
+    "contact":    "<user>",
+    "plan":       "yearly",
+    "successUrl": "https://thetrackerapp.io/dashboard?billing=success&session_id={CHECKOUT_SESSION_ID}",
+    "cancelUrl":  "https://thetrackerapp.io/dashboard?billing=cancelled"
+  }
+
+Stripe checkout opened, but showed:
+  - Yearly: $0.10 instead of $96.00
+  - Premium: $0.01 instead of $19.99
+
+That's the test-mode Price ID. The /api/control billing block is returning
+the correct PROD prices ($96, $19.99, $200, etc.) but the Stripe Price IDs
+the backend is sending to checkout-session are pointing at test prices.
+
+WHAT THE FRONTEND IS SENDING
+----------------------------
+Plan keys the frontend sends in the `plan` field:
+
+  "monthly"         → maps to billing.monthlyTier        ($10/mo  base)
+  "yearly"          → maps to billing.yearlyTier         ($96/yr  base)
+  "weekly"          → maps to billing.weeklyTier         ($3/wk   base, hidden on /pricing)
+  "premium"         → maps to billing.premiumTier        ($19.99/mo premium)
+  "premiumYearly"   → maps to billing.premiumYearlyTier  ($200/yr premium)
+
+(These are the same keys the control flags expose under `billing.<key>`.
+Frontend uses them verbatim; do not rename without telling us.)
+
+WHAT THE BACKEND NEEDS TO MAP THEM TO
+-------------------------------------
+Each plan needs to be wired to a LIVE-mode Stripe Price ID matching the
+displayed price. Suggested env var convention:
+
+  STRIPE_PRICE_MONTHLY_BASE         = price_xxx     ($10/mo)
+  STRIPE_PRICE_YEARLY_BASE          = price_xxx     ($96/yr)
+  STRIPE_PRICE_WEEKLY_BASE          = price_xxx     ($3/wk)
+  STRIPE_PRICE_MONTHLY_PREMIUM      = price_xxx     ($19.99/mo)
+  STRIPE_PRICE_YEARLY_PREMIUM       = price_xxx     ($200/yr)
+
+In `/api/stripe/checkout-session`, the mapping should look like:
+
+  const PLAN_TO_PRICE = {
+    monthly:       process.env.STRIPE_PRICE_MONTHLY_BASE,
+    yearly:        process.env.STRIPE_PRICE_YEARLY_BASE,
+    weekly:        process.env.STRIPE_PRICE_WEEKLY_BASE,
+    premium:       process.env.STRIPE_PRICE_MONTHLY_PREMIUM,
+    premiumYearly: process.env.STRIPE_PRICE_YEARLY_PREMIUM,
+  };
+
+  const priceId = PLAN_TO_PRICE[req.body.plan];
+  if (!priceId) return res.status(400).json({ ok: false, error: "unknown_plan" });
+
+VERIFICATION CHECKLIST
+----------------------
+[ ] Stripe Dashboard → Switch to "Live mode" (not Test).
+[ ] Confirm a Product exists for each tier (Monthly, Yearly, Weekly,
+    Premium Monthly, Premium Yearly).
+[ ] Each Product has one or more Prices. Grab the Price ID (price_…) for
+    the canonical interval you want sold.
+[ ] Set each Price's amount to match the value the frontend's /control
+    response shows. E.g. yearly should be 9600 cents = $96.00.
+[ ] Set the Stripe keys in production env:
+    STRIPE_SECRET_KEY=sk_live_…
+    STRIPE_WEBHOOK_SECRET=whsec_… (for live mode)
+    STRIPE_PRICE_* env vars from the live Price IDs.
+[ ] Restart the API so the new env is picked up.
+[ ] Test: POST /api/stripe/checkout-session with plan:"yearly" — the
+    returned URL should open Stripe with $96.00, not $0.10.
+
+CHANGING PLAN MID-SUBSCRIPTION (for active subscribers)
+-------------------------------------------------------
+Right now the frontend posts the same checkout-session URL whether the
+user is starting fresh or switching. Stripe will handle this as:
+  - If they have NO active sub on the price → new subscription begins.
+  - If they HAVE an active sub on a different price → Stripe's "Replace
+    plan" flow takes over (with proration applied).
+
+If you'd rather route active subscribers through the Customer Portal for
+plan changes (cleaner UX, lets users see proration before confirming),
+let me know — I'll switch the frontend to POST /api/portal with a
+`change_plan` flow_data block instead of checkout-session.
+
+Stripe docs:
+  - https://stripe.com/docs/billing/subscriptions/upgrade-downgrade
+  - https://stripe.com/docs/billing/subscriptions/customer-portal
+
+ASKS
+----
+[ ] Map plan keys → live Stripe Price IDs in checkout-session handler.
+[ ] Switch STRIPE_SECRET_KEY + webhook secret to live mode in prod env.
+[ ] Verify the test transaction above shows $96.00 not $0.10.
+[ ] (Optional) Decide whether to keep checkout-session for plan changes
+    OR route active subs through /api/portal flow_data.
+
+================================================================================

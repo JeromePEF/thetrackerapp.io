@@ -348,17 +348,26 @@ function getNestedValue(obj, path) {
 }
 
 export function applyFeatureFlags(flags = cachedFlags || DEFAULT_FLAGS) {
-  // Apply visibility to elements with data-feature attribute
+  // Apply visibility to elements with data-feature attribute.
+  //
+  // RULE CHANGE: previously we showed by default and only hid on `false`.
+  // That meant tabs flashed visible during initial page load (before flags
+  // arrived) and stayed visible for flags the backend hadn't defined yet —
+  // users saw tabs they weren't supposed to have access to.
+  //
+  // New rule: only show when `enabled === true`. Anything else (undefined,
+  // null, false) stays hidden. The HTML default for every `data-feature`
+  // element is `hidden`, so the first paint never shows a gated tab.
   document.querySelectorAll("[data-feature]").forEach((el) => {
     const feature = el.dataset.feature;
     const enabled = getNestedValue(flags, feature);
 
-    if (enabled === false) {
-      el.hidden = true;
-      el.setAttribute("aria-hidden", "true");
-    } else {
+    if (enabled === true) {
       el.hidden = false;
       el.removeAttribute("aria-hidden");
+    } else {
+      el.hidden = true;
+      el.setAttribute("aria-hidden", "true");
     }
   });
 
