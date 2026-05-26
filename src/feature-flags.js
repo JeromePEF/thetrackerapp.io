@@ -246,6 +246,14 @@ function startVersionPolling() {
   });
 }
 
+// Synchronous accessor for the last-cached flags. Returns null if we
+// haven't fetched yet. Useful when a module needs flag data right now
+// (e.g. the billing renderer reading `flags.billing.*Tier`) without
+// awaiting the network.
+export function getCachedFlags() {
+  return cachedFlags;
+}
+
 export async function fetchFeatureFlags() {
   const now = Date.now();
 

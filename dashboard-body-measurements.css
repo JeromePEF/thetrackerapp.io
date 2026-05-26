@@ -4858,3 +4858,132 @@ details.stats-legacy > .milestones-toggle-card {
   gap: 8px;
   margin-left: auto;
 }
+
+/* ============================================================================
+   BILLING — Upgrade tier cards (populated from /api/control billing.*Tier).
+   ============================================================================ */
+.billing-upgrade-section {
+  margin-top: 22px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.billing-upgrade-title {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+}
+.billing-upgrade-sub {
+  margin: 0 0 14px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+.billing-upgrade-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+.billing-upgrade-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 18px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.billing-upgrade-card.is-premium {
+  background: linear-gradient(180deg, rgba(255, 215, 0, 0.06), rgba(255, 255, 255, 0.03));
+  border-color: rgba(255, 215, 0, 0.35);
+}
+.billing-upgrade-tier {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #ffd166;
+  background: rgba(255, 215, 0, 0.15);
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+.billing-upgrade-badge {
+  position: absolute;
+  top: -10px;
+  left: 14px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: #38ffd3;
+  color: #0b1018;
+  padding: 4px 10px;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(56, 255, 211, 0.4);
+}
+.billing-upgrade-card.is-premium .billing-upgrade-badge {
+  background: #ffd166;
+  color: #2a1f00;
+  box-shadow: 0 4px 12px rgba(255, 209, 102, 0.4);
+}
+.billing-upgrade-name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+}
+.billing-upgrade-price {
+  font-size: 28px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.02em;
+  font-feature-settings: "tnum";
+  line-height: 1.1;
+}
+.bill-card-interval {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.55);
+  margin-left: 3px;
+}
+.bill-card-mo-eq {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 2px;
+}
+.billing-upgrade-features {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+.billing-upgrade-features li {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  padding-left: 16px;
+  position: relative;
+  line-height: 1.4;
+}
+.billing-upgrade-features li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: #38ffd3;
+  font-weight: 700;
+}
+.billing-upgrade-card.is-premium .billing-upgrade-features li::before {
+  color: #ffd166;
+}
+.billing-upgrade-btn {
+  margin-top: auto;
+  width: 100%;
+}

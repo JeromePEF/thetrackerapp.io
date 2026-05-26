@@ -64,7 +64,7 @@
             <button id="navAccount" type="button" class="dashboard-tab" data-tab="account">ACCOUNT</button>
             <button id="navStats" type="button" class="dashboard-tab is-active" data-tab="stats">STATS</button>
             <button id="navCalendar" type="button" class="dashboard-tab" data-tab="calendar" data-feature="dashboardTabs.calendar">CALENDAR</button>
-            <button id="navShortcuts" type="button" class="dashboard-tab" data-tab="shortcuts">SHORTCUTS</button>
+            <button id="navShortcuts" type="button" class="dashboard-tab" data-tab="shortcuts" data-feature="dashboardTabs.shortcuts">SHORTCUTS</button>
             <button id="navPersonalTrainer" type="button" class="dashboard-tab" data-tab="personal-trainer" data-feature="dashboardTabs.personalTrainer">PERSONAL TRAINER</button>
             <button id="navGroups" type="button" class="dashboard-tab" data-tab="groups" data-feature="dashboardTabs.groups">GROUPS</button>
             <button id="navRunClubs" type="button" class="dashboard-tab" data-tab="run-clubs" data-feature="dashboardTabs.runClubs">RUN CLUBS</button>
@@ -408,6 +408,16 @@
               <p><strong>Next Billing Date:</strong> <span id="billingNextBillingValue">-</span></p>
               <p id="billingCancelNotice" class="stats-status is-error" hidden></p>
             </div>
+
+            <!-- Upgrade tier cards. Populated by renderBillingUpgrades() in
+                 dashboard.js using the `billing` block from /api/control.
+                 Hidden when no upgrade paths apply to the user's current plan. -->
+            <section id="billingUpgradeSection" class="billing-upgrade-section" hidden>
+              <h3 class="billing-upgrade-title">Upgrade your plan</h3>
+              <p class="billing-upgrade-sub">Switch billing intervals or unlock Premium features.</p>
+              <div id="billingUpgradeGrid" class="billing-upgrade-grid"></div>
+            </section>
+
             <div class="panel-actions">
               <a
                 id="billingManageLink"
@@ -506,7 +516,7 @@
             <div id="calendarPanelBody"></div>
           </article>
 
-          <article id="tabShortcuts" class="dashboard-panel" data-tab-panel="shortcuts" hidden>
+          <article id="tabShortcuts" class="dashboard-panel" data-tab-panel="shortcuts" data-feature="dashboardTabs.shortcuts" hidden>
             <header class="panel-head">
               <h2>Your Shortcuts</h2>
               <p>Turn any phrase into a /alias so you save typing.</p>

@@ -1,6 +1,6 @@
 import { inject } from "@vercel/analytics";
 import { initGoogleAnalytics } from "./google-analytics.js";
-import { initFeatureFlags } from "./feature-flags.js";
+import { initFeatureFlags, getCachedFlags } from "./feature-flags.js";
 import { initChecklist } from "./dashboard-checklist.js";
 import { attachInlineEditMeasurements, hydrateInlineEditMeasurements } from "./inline-edit-measurements.js";
 import { initDashboardCharts } from "./dashboard-charts.js";
@@ -4100,8 +4100,202 @@ function applyBillingPayload(payload) {
     els.billingResumeButton.hidden = !scheduledForCancel;
   }
 
+  // Render upgrade tier cards. Pulls the `billing` block from /api/control
+  // (cached via feature-flags module) and filters to upgrades that make
+  // sense given the user's current plan.
+  renderBillingUpgrades({ currentPlan: plan, hasActiveSub });
+
   persistBillingOverview(status, plan, lastPaymentDate, nextBillingDate);
   return status;
+}
+
+// ---------- Upgrade tier cards ----------
+//
+// Reads control flags (billing.{monthly,yearly,premium,premiumYearly}Tier) and
+// renders cards showing the plans the user can move TO from their current
+// plan. Each card has price, savings badge, key features, and an Upgrade
+// button that fires Stripe checkout with the appropriate `plan` parameter.
+
+const PLAN_ALIAS_MAP = {
+  monthly: "monthly", "monthlyTier": "monthly", "month": "monthly",
+  yearly: "yearly",   "yearlyTier":  "yearly",  "annual": "yearly", "year": "yearly",
+  premium: "premium", "premiumTier": "premium",
+  premiumYearly: "premiumYearly", "premium_yearly": "premiumYearly", "premiumYearlyTier": "premiumYearly",
+  weekly: "weekly",   "weeklyTier":  "weekly",
+  free: "free",
+};
+
+function normalizePlanKey(raw) {
+  const key = String(raw || "").trim().toLowerCase().replace(/\s+/g, "");
+  return PLAN_ALIAS_MAP[key] || key;
+}
+
+// Which tiers a user on `currentPlan` can upgrade INTO. Ordered by recommended
+// path (cheaper switch first). Free users see everything; weekly/monthly can
+// move to yearly or premium; yearly can move to premium yearly; premium users
+// only see Premium Yearly as an upgrade.
+function upgradePathsFor(currentPlan) {
+  const cur = normalizePlanKey(currentPlan);
+  if (cur === "free" || cur === "" || cur === "-") {
+    return ["monthly", "yearly", "premium", "premiumYearly"];
+  }
+  if (cur === "weekly") return ["monthly", "yearly", "premium", "premiumYearly"];
+  if (cur === "monthly") return ["yearly", "premium", "premiumYearly"];
+  if (cur === "yearly") return ["premium", "premiumYearly"];
+  if (cur === "premium") return ["premiumYearly"];
+  if (cur === "premiumyearly") return [];
+  return ["yearly", "premium", "premiumYearly"];
+}
+
+function tierFlagKey(planKey) {
+  // map normalized → control-flag tier key
+  return ({
+    monthly: "monthlyTier",
+    yearly: "yearlyTier",
+    premium: "premiumTier",
+    premiumYearly: "premiumYearlyTier",
+    weekly: "weeklyTier",
+    free: "freeTier",
+  })[planKey];
+}
+
+function renderBillingUpgrades({ currentPlan, hasActiveSub }) {
+  const grid = document.getElementById("billingUpgradeGrid");
+  const section = document.getElementById("billingUpgradeSection");
+  if (!grid || !section) return;
+
+  const flags = getCachedFlags();
+  const billing = flags?.billing || {};
+  const paths = upgradePathsFor(currentPlan);
+
+  // Compute monthly-equivalent of the current plan so we can show savings.
+  const currentMonthly = (() => {
+    const cur = normalizePlanKey(currentPlan);
+    const t = billing[tierFlagKey(cur)];
+    if (!t) return null;
+    if (t.interval === "year") {
+      const yearly = Number(t.yearlyEquivalent ?? t.price / 12);
+      return Number.isFinite(yearly) ? yearly : null;
+    }
+    if (t.interval === "week") {
+      return Number(t.price) * 4.33;
+    }
+    return Number(t.price);
+  })();
+
+  const cards = paths
+    .map((plan) => {
+      const tier = billing[tierFlagKey(plan)];
+      if (!tier || !tier.name) return null;
+      const interval = tier.interval || "month";
+      const price = Number(tier.price);
+      if (!Number.isFinite(price)) return null;
+      const isPremium = tier.tierType === "premium" || /premium/i.test(tier.name);
+
+      // Monthly-equivalent for savings math.
+      const monthlyEq =
+        interval === "year"
+          ? Number(tier.yearlyEquivalent ?? price / 12)
+          : interval === "week"
+          ? price * 4.33
+          : price;
+      const saveBadge =
+        currentMonthly && Number.isFinite(monthlyEq) && monthlyEq < currentMonthly
+          ? `Save $${Math.round((currentMonthly - monthlyEq) * 12)}/yr`
+          : interval === "year" && price < 12 * 10
+          ? "Best value"
+          : "";
+
+      const priceLine =
+        interval === "year"
+          ? `$${price}<span class="bill-card-interval">/yr</span><span class="bill-card-mo-eq">≈ $${monthlyEq.toFixed(2)}/mo</span>`
+          : interval === "week"
+          ? `$${price}<span class="bill-card-interval">/week</span>`
+          : `$${price}<span class="bill-card-interval">/mo</span>`;
+
+      const features = Array.isArray(tier.features) ? tier.features.slice(0, 4) : [];
+
+      return `
+        <article class="billing-upgrade-card ${isPremium ? "is-premium" : ""}" data-plan="${escapeHtmlAttr(plan)}">
+          ${saveBadge ? `<span class="billing-upgrade-badge">${escapeHtmlAttr(saveBadge)}</span>` : ""}
+          ${isPremium ? `<span class="billing-upgrade-tier">Premium</span>` : ""}
+          <h4 class="billing-upgrade-name">${escapeHtmlAttr(tier.name)}</h4>
+          <div class="billing-upgrade-price">${priceLine}</div>
+          ${
+            features.length
+              ? `<ul class="billing-upgrade-features">${features
+                  .map((f) => `<li>${escapeHtmlAttr(String(f))}</li>`)
+                  .join("")}</ul>`
+              : ""
+          }
+          <button type="button" class="btn-primary billing-upgrade-btn" data-action="upgrade" data-plan="${escapeHtmlAttr(plan)}">
+            ${hasActiveSub ? `Switch to ${tier.name}` : `Start ${tier.name}`}
+          </button>
+        </article>
+      `;
+    })
+    .filter(Boolean);
+
+  if (!cards.length) {
+    section.hidden = true;
+    return;
+  }
+
+  grid.innerHTML = cards.join("");
+  section.hidden = false;
+  // Bind upgrade clicks (idempotent — replaces with fresh handlers each render).
+  grid.querySelectorAll('[data-action="upgrade"]').forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const plan = btn.dataset.plan;
+      if (plan) startStripeCheckoutForPlan(plan, btn);
+    });
+  });
+}
+
+function escapeHtmlAttr(s) {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+async function startStripeCheckoutForPlan(plan, originBtn) {
+  setStatus(els.billingActionStatus, `Starting checkout for ${plan}…`);
+  const contact = resolveBillingContact();
+  if (!contact) {
+    setStatus(
+      els.billingActionStatus,
+      "Missing contact. Re-login so checkout can be linked to your account.",
+      "is-error"
+    );
+    return;
+  }
+  if (originBtn) originBtn.disabled = true;
+  try {
+    const body = await postAuthedJson(
+      [
+        `${API_BASE}/api/stripe/checkout-session`,
+        "/api/stripe/checkout-session",
+        "/api/stripe/checkout",
+        "/api/billing/checkout-session",
+      ],
+      {
+        contact,
+        plan,
+        successUrl: STRIPE_CHECKOUT_SUCCESS_URL,
+        cancelUrl: STRIPE_CHECKOUT_CANCEL_URL,
+      },
+    );
+    const checkoutUrl = checkoutSessionUrlFromBody(body);
+    if (!checkoutUrl) throw new Error("Checkout session created but no URL was returned.");
+    setStatus(els.billingActionStatus, "Redirecting to Stripe…", "is-success");
+    window.location.assign(checkoutUrl);
+  } catch (e) {
+    if (originBtn) originBtn.disabled = false;
+    setStatus(els.billingActionStatus, String(e?.message || "Unable to start checkout."), "is-error");
+  }
 }
 
 function clearBillingRedirectParams() {
