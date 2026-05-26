@@ -146,6 +146,13 @@ const SYMMETRY_PAIRS = [
 // the "+ Show advanced charts" toggle.
 const QUICK_METRICS = ["weight", "calories", "protein", "water"];
 
+// Sub-tab identifiers must be declared BEFORE `state` because `state.subView`
+// is computed via readSubViewFromUrl() during the state object initializer
+// (line below) and that function references SUB_VIEWS. Declaring SUB_VIEWS
+// after `state` triggers a TDZ access that minification surfaces as
+// "Cannot read properties of undefined (reading 'includes')" at runtime.
+const SUB_VIEWS = ["all", "workouts", "nutrition", "water"];
+
 const state = {
   range: "30d",
   data: null,
@@ -160,8 +167,6 @@ const state = {
   // URL hash on the dashboard so users can deep-link or share an isolated view.
   subView: readSubViewFromUrl(),
 };
-
-const SUB_VIEWS = ["all", "workouts", "nutrition", "water"];
 
 function readSubViewFromUrl() {
   if (typeof window === "undefined") return "all";
