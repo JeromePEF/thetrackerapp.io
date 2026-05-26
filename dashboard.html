@@ -63,6 +63,7 @@
           <nav id="dashboardNav">
             <button id="navAccount" type="button" class="dashboard-tab" data-tab="account">ACCOUNT</button>
             <button id="navStats" type="button" class="dashboard-tab is-active" data-tab="stats">STATS</button>
+            <button id="navCalendar" type="button" class="dashboard-tab" data-tab="calendar" data-feature="dashboardTabs.calendar">CALENDAR</button>
             <button id="navPersonalTrainer" type="button" class="dashboard-tab" data-tab="personal-trainer" data-feature="dashboardTabs.personalTrainer">PERSONAL TRAINER</button>
             <button id="navGroups" type="button" class="dashboard-tab" data-tab="groups" data-feature="dashboardTabs.groups">GROUPS</button>
             <button id="navRunClubs" type="button" class="dashboard-tab" data-tab="run-clubs" data-feature="dashboardTabs.runClubs">RUN CLUBS</button>
@@ -494,6 +495,14 @@
               <a id="sheetDatabaseLink" class="btn-primary sheet-link" href="#" target="_blank" rel="noopener noreferrer">Open Sheet</a>
             </div>
             <p id="sheetStatus" class="stats-status" role="status" aria-live="polite"></p>
+          </article>
+
+          <article id="tabCalendar" class="dashboard-panel" data-tab-panel="calendar" data-feature="dashboardTabs.calendar" hidden>
+            <header class="panel-head">
+              <h2>Calendar</h2>
+              <p>Your training schedule vs what you actually did. Tap any day for details.</p>
+            </header>
+            <div id="calendarPanelBody"></div>
           </article>
 
           <article id="tabPersonalTrainer" class="dashboard-panel" data-tab-panel="personal-trainer" data-feature="dashboardTabs.personalTrainer" hidden>
