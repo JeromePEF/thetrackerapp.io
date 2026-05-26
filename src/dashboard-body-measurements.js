@@ -1,7 +1,37 @@
 // Dashboard Body Measurements Section
 // Includes body measurements tracking, progress charts, and narrative journals
+//
+// All measurement values, goals, height, weight, body fat, date, and journal
+// entries are inline-editable. Edits debounce to the backend via:
+//   PATCH /api/user/profile          (height, goal)
+//   POST  /api/user/measurements     (current-day measurements)
+//   POST  /api/user/journals/:part   (qualitative assessments per body part)
+// See BACKEND_TODO.md for the complete contract.
 
 const API_BASE = "https://api.thetrackerapp.io";
+
+function getAuthToken() {
+  try {
+    return localStorage.getItem("tracker.auth.session") || "";
+  } catch {
+    return "";
+  }
+}
+
+async function apiRequest(path, options = {}) {
+  const token = getAuthToken();
+  const headers = {
+    "Content-Type": "application/json",
+    ...(options.headers || {}),
+  };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`API ${res.status}: ${text || res.statusText}`);
+  }
+  return res.status === 204 ? null : res.json();
+}
 
 // Body measurement types
 const BODY_MEASUREMENTS = [
@@ -81,20 +111,24 @@ export function renderBodyMeasurementsSection(container, data = {}) {
         <div class="overview-stats">
           <div class="overview-stat">
             <span class="stat-label">Height</span>
-            <span class="stat-value">${latestMeasurement.height || "--"}</span>
+            <span class="stat-value editable" data-edit="profile" data-field="height" data-type="number" data-unit="in" tabindex="0" role="button" aria-label="Edit height">${latestMeasurement.height || "--"}</span>
           </div>
           <div class="overview-stat">
             <span class="stat-label">Weight</span>
-            <span class="stat-value">${latestMeasurement.weight || "--"}</span>
+            <span class="stat-value editable" data-edit="measurement" data-field="weight" data-type="number" data-unit="lb" tabindex="0" role="button" aria-label="Edit weight">${latestMeasurement.weight || "--"}</span>
             <span class="stat-delta ${getDeltaClass(data.weightDelta)}">${formatDelta(data.weightDelta)}</span>
           </div>
           <div class="overview-stat">
+            <span class="stat-label">Body Fat</span>
+            <span class="stat-value editable" data-edit="measurement" data-field="bodyFat" data-type="number" data-unit="%" tabindex="0" role="button" aria-label="Edit body fat">${latestMeasurement.bodyFat || "--"}</span>
+          </div>
+          <div class="overview-stat">
             <span class="stat-label">Goal</span>
-            <span class="stat-value goal-badge ${data.goal?.toLowerCase() || ""}">${data.goal || "Maintain"}</span>
+            <span class="stat-value goal-badge editable ${data.goal?.toLowerCase() || ""}" data-edit="profile" data-field="goal" data-type="goal" tabindex="0" role="button" aria-label="Edit goal">${data.goal || "Maintain"}</span>
           </div>
           <div class="overview-stat">
             <span class="stat-label">Date</span>
-            <span class="stat-value">${formatDate(latestMeasurement.date) || "--"}</span>
+            <span class="stat-value editable" data-edit="measurement" data-field="date" data-type="date" tabindex="0" role="button" aria-label="Edit measurement date">${formatDate(latestMeasurement.date) || "--"}</span>
           </div>
         </div>
       </div>
@@ -166,7 +200,7 @@ function renderMeasurementCards(latest, goals, averages) {
                   `
                   }
                 </div>
-                <div class="measurement-value">
+                <div class="measurement-value editable" data-edit="measurement" data-field="${m.id}" data-type="number" data-unit="${m.unit}" tabindex="0" role="button" aria-label="Edit ${m.label}">
                   <span class="value">${value || "--"}</span>
                   <span class="unit">${value ? m.unit : ""}</span>
                 </div>
@@ -208,16 +242,31 @@ function renderJournalEntries(journals) {
 
   return bodyParts
     .map((part) => {
-      const entry = journals[part.toLowerCase().replace(/\s+/g, "")] || {};
+      const partKey = part.toLowerCase().replace(/\s+/g, "");
+      const entry = journals[partKey] || {};
+      const content = entry.content || "";
       return `
-      <div class="journal-entry" data-part="${part}">
+      <div class="journal-entry editable" data-edit="journal" data-part="${partKey}" data-display="${escapeAttr(part)}" tabindex="0" role="button" aria-label="Edit ${part} assessment">
         <h5 class="journal-part-name">${part}</h5>
-        <p class="journal-content">${entry.content || `<em>No assessment yet. Click to add.</em>`}</p>
+        <p class="journal-content">${content ? escapeHtml(content) : `<em>Click to add assessment...</em>`}</p>
         ${entry.date ? `<span class="journal-date">Updated ${formatDate(entry.date)}</span>` : ""}
       </div>
     `;
     })
     .join("");
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function escapeAttr(s) {
+  return escapeHtml(s);
 }
 
 // ============================================
@@ -624,17 +673,10 @@ function initBodyMeasurementsEvents() {
     if (container) {
       container.hidden = !container.hidden;
       if (!container.hidden && !container.dataset.loaded) {
-        // Fetch chart data and render
         try {
-          const session = localStorage.getItem("tracker.auth.session");
-          const response = await fetch(`${API_BASE}/api/user/charts`, {
-            headers: { Authorization: `Bearer ${session}` },
-          });
-          if (response.ok) {
-            const data = await response.json();
-            renderMultiMetricCharts(container, data);
-            container.dataset.loaded = "true";
-          }
+          const data = await apiRequest("/api/user/charts");
+          renderMultiMetricCharts(container, data || {});
+          container.dataset.loaded = "true";
         } catch (e) {
           container.innerHTML = '<p class="error-state">Failed to load chart data.</p>';
         }
@@ -642,26 +684,280 @@ function initBodyMeasurementsEvents() {
     }
   });
 
-  // Add measurement modal
+  // "Add Measurement" jumps to today's date and opens weight editor.
   document.getElementById("addMeasurementBtn")?.addEventListener("click", () => {
-    // Would open a modal for adding measurements
-    alert("Measurement input form coming soon!");
+    const weightEl = document.querySelector('[data-edit="measurement"][data-field="weight"]');
+    if (weightEl) startInlineEdit(weightEl);
   });
 
-  // Add journal entry
+  // "Add Journal Entry" focuses the first journal that has no content yet.
   document.getElementById("addJournalBtn")?.addEventListener("click", () => {
-    // Would open a modal for adding journal entry
-    alert("Journal entry form coming soon!");
+    const empty = Array.from(document.querySelectorAll('.journal-entry .journal-content em')).find(
+      (em) => em.textContent.includes("Click to add")
+    );
+    if (empty) {
+      const journal = empty.closest(".journal-entry");
+      if (journal) startInlineEdit(journal);
+    } else {
+      const first = document.querySelector(".journal-entry");
+      if (first) startInlineEdit(first);
+    }
   });
 
-  // Click on journal entry to edit
-  document.querySelectorAll(".journal-entry").forEach((entry) => {
-    entry.addEventListener("click", () => {
-      const part = entry.dataset.part;
-      // Would open edit modal
-      alert(`Edit journal for ${part} - coming soon!`);
+  // Delegate clicks on all .editable elements (overview, measurement cards, journals).
+  document.querySelectorAll(".body-measurements-section .editable").forEach((el) => {
+    el.addEventListener("click", (ev) => {
+      // Don't trigger if user is already editing inside this element
+      if (el.querySelector("input, textarea, select")) return;
+      ev.preventDefault();
+      startInlineEdit(el);
+    });
+    el.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        startInlineEdit(el);
+      }
     });
   });
+}
+
+// ============================================
+// INLINE EDIT MACHINERY
+// ============================================
+
+const GOAL_OPTIONS = ["Maintain", "Lose", "Gain", "Recomp", "Bulk", "Cut"];
+
+function startInlineEdit(el) {
+  const editKind = el.dataset.edit;
+  if (editKind === "journal") return startJournalEdit(el);
+
+  const field = el.dataset.field;
+  const type = el.dataset.type || "number";
+  const unit = el.dataset.unit || "";
+
+  // Capture the current displayed text so we can revert on cancel.
+  const originalHtml = el.innerHTML;
+  const currentValue = readCurrentValue(el, type);
+
+  let input;
+  if (type === "goal") {
+    input = document.createElement("select");
+    input.className = "inline-edit-input";
+    GOAL_OPTIONS.forEach((opt) => {
+      const o = document.createElement("option");
+      o.value = opt;
+      o.textContent = opt;
+      if (currentValue && opt.toLowerCase() === String(currentValue).toLowerCase()) o.selected = true;
+      input.appendChild(o);
+    });
+  } else if (type === "date") {
+    input = document.createElement("input");
+    input.className = "inline-edit-input";
+    input.type = "date";
+    input.value = toIsoDate(currentValue) || todayIso();
+  } else {
+    input = document.createElement("input");
+    input.className = "inline-edit-input";
+    input.type = "number";
+    input.inputMode = "decimal";
+    input.step = "0.1";
+    input.placeholder = unit ? `value (${unit})` : "value";
+    input.value = currentValue ?? "";
+  }
+  input.setAttribute("aria-label", el.getAttribute("aria-label") || "Edit");
+
+  // Replace contents with the input.
+  el.innerHTML = "";
+  el.appendChild(input);
+  // Preserve the unit suffix for number editors so the user sees what they're typing.
+  if (type === "number" && unit) {
+    const u = document.createElement("span");
+    u.className = "unit";
+    u.textContent = unit;
+    el.appendChild(u);
+  }
+  input.focus();
+  if (input.select) input.select();
+
+  let settled = false;
+  const commit = async () => {
+    if (settled) return;
+    settled = true;
+    const raw = input.value;
+    if (raw === "" || raw === null || raw === undefined) {
+      el.innerHTML = originalHtml;
+      return;
+    }
+    const value = type === "number" ? Number(raw) : raw;
+    if (type === "number" && (Number.isNaN(value) || value < 0)) {
+      el.innerHTML = originalHtml;
+      return;
+    }
+    try {
+      await saveField(editKind, field, value);
+      el.innerHTML = renderDisplayValue(value, type, unit, el);
+      el.classList.add("just-saved");
+      setTimeout(() => el.classList.remove("just-saved"), 700);
+    } catch (e) {
+      el.innerHTML = originalHtml;
+      el.classList.add("save-failed");
+      setTimeout(() => el.classList.remove("save-failed"), 1200);
+      console.warn("Save failed:", e);
+    }
+  };
+
+  input.addEventListener("blur", commit);
+  input.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      input.blur();
+    } else if (ev.key === "Escape") {
+      ev.preventDefault();
+      settled = true;
+      el.innerHTML = originalHtml;
+    }
+  });
+}
+
+function startJournalEdit(el) {
+  const partKey = el.dataset.part;
+  const display = el.dataset.display || partKey;
+  const contentEl = el.querySelector(".journal-content");
+  const dateEl = el.querySelector(".journal-date");
+  const currentText = contentEl?.querySelector("em") ? "" : (contentEl?.textContent || "").trim();
+
+  const textarea = document.createElement("textarea");
+  textarea.className = "inline-edit-textarea";
+  textarea.rows = 3;
+  textarea.placeholder = `How does your ${display.toLowerCase()} look and feel?`;
+  textarea.value = currentText;
+
+  contentEl.replaceChildren(textarea);
+  textarea.focus();
+
+  let settled = false;
+  const commit = async () => {
+    if (settled) return;
+    settled = true;
+    const value = textarea.value.trim();
+    if (!value && !currentText) {
+      contentEl.innerHTML = `<em>Click to add assessment...</em>`;
+      return;
+    }
+    if (!value && currentText) {
+      // Empty value with prior content = delete
+      try {
+        await apiRequest(`/api/user/journals/${encodeURIComponent(partKey)}`, { method: "DELETE" });
+        contentEl.innerHTML = `<em>Click to add assessment...</em>`;
+        if (dateEl) dateEl.remove();
+      } catch (e) {
+        contentEl.textContent = currentText;
+      }
+      return;
+    }
+    try {
+      const result = await apiRequest(`/api/user/journals/${encodeURIComponent(partKey)}`, {
+        method: "POST",
+        body: JSON.stringify({ content: value }),
+      });
+      contentEl.textContent = value;
+      const updatedAt = (result && (result.date || result.updatedAt)) || new Date().toISOString();
+      if (dateEl) {
+        dateEl.textContent = `Updated ${formatDate(updatedAt)}`;
+      } else {
+        const newDate = document.createElement("span");
+        newDate.className = "journal-date";
+        newDate.textContent = `Updated ${formatDate(updatedAt)}`;
+        el.appendChild(newDate);
+      }
+      el.classList.add("just-saved");
+      setTimeout(() => el.classList.remove("just-saved"), 700);
+    } catch (e) {
+      contentEl.textContent = currentText;
+      el.classList.add("save-failed");
+      setTimeout(() => el.classList.remove("save-failed"), 1200);
+    }
+  };
+
+  textarea.addEventListener("blur", commit);
+  textarea.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter" && (ev.metaKey || ev.ctrlKey)) {
+      ev.preventDefault();
+      textarea.blur();
+    } else if (ev.key === "Escape") {
+      ev.preventDefault();
+      settled = true;
+      contentEl.innerHTML = currentText ? escapeHtml(currentText) : `<em>Click to add assessment...</em>`;
+    }
+  });
+}
+
+function readCurrentValue(el, type) {
+  const text = (el.querySelector(".value")?.textContent || el.textContent || "").trim();
+  if (!text || text === "--") return null;
+  if (type === "number") {
+    const n = parseFloat(text);
+    return Number.isNaN(n) ? null : n;
+  }
+  if (type === "date") return text;
+  if (type === "goal") return text;
+  return text;
+}
+
+function renderDisplayValue(value, type, unit, el) {
+  if (type === "goal") {
+    const goalLower = String(value).toLowerCase();
+    // Reset goal classes
+    el.classList.remove("lose", "gain", "maintain", "recomp", "bulk", "cut");
+    el.classList.add(goalLower);
+    return String(value);
+  }
+  if (type === "date") {
+    return formatDate(value) || String(value);
+  }
+  if (el.classList.contains("measurement-value")) {
+    return `<span class="value">${escapeHtml(String(value))}</span><span class="unit">${escapeHtml(unit || "")}</span>`;
+  }
+  return `${escapeHtml(String(value))}`;
+}
+
+async function saveField(editKind, field, value) {
+  if (editKind === "profile") {
+    // Profile-level changes (height, goal, units, etc.)
+    return apiRequest("/api/user/profile", {
+      method: "PATCH",
+      body: JSON.stringify({ [field]: value }),
+    });
+  }
+  // Default: a single measurement entry for the most recent date.
+  // The backend should upsert a row keyed by (user, date) and merge the
+  // single field into that day's record.
+  const date = readActiveMeasurementDate();
+  return apiRequest("/api/user/measurements", {
+    method: "POST",
+    body: JSON.stringify({ date, [field]: value }),
+  });
+}
+
+function readActiveMeasurementDate() {
+  // Use whatever date is currently shown in the overview, or today.
+  const dateEl = document.querySelector('[data-edit="measurement"][data-field="date"]');
+  if (dateEl) {
+    const iso = toIsoDate(dateEl.textContent.trim());
+    if (iso) return iso;
+  }
+  return todayIso();
+}
+
+function toIsoDate(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString().slice(0, 10);
+}
+
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
 }
 
 function initChartEvents(container) {

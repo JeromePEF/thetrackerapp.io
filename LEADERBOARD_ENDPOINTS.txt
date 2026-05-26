@@ -1,0 +1,186 @@
+================================================================================
+HOMEPAGE LEADERBOARDS – ENDPOINT MAP
+================================================================================
+
+Frontend reads ONE endpoint to populate every leaderboard panel on the homepage:
+
+  Strength Leaderboard       (BENCH / SQUAT / DEADLIFT, top 1 each)
+  Calisthenics Leaderboard   (PUSHUPS / PULLUPS / SQUATS / DIPS, top 1 each)
+  Pebble Live Leaderboard    (Top Calorie Burners / Top Workouts / Top Steps
+                              / Top Sleep Scores / Miles Traversed)
+  Top Streaks                (with live streak callout under it)
+
+================================================================================
+LAYER 1 — What the browser calls
+================================================================================
+
+  GET https://thetrackerapp.io/api/public-leaderboard
+
+  - Implemented as a Vercel serverless function at
+    /api/public-leaderboard.js
+  - Cached at the edge for 15 s (s-maxage=15, stale-while-revalidate=45).
+  - JS that invokes it:
+      src/api.js → fetchPublicLeaderboardSnapshot()
+      src/main.js → loadLeaderboard() → fetchPublicLeaderboardSnapshot()
+  - Returns the unified payload the homepage renders:
+      {
+        ok, generatedAt, source, sourceVersion,
+        entries:        [ /* strength: BENCH/SQUAT/DEADLIFT top 1 */ ],
+        groupEntries:   [ /* calisthenics: PUSHUPS/PULLUPS/SQUATS/DIPS top 1 */ ],
+        streakEntries:  [ /* top streak rows */ ],
+        streakLiveMessage: "🔥 fierylion just logged 202 days in a row!",
+        pebble: {
+          caloriesTop: [...], workoutsTop: [...], stepsTop: [...],
+          sleepTop:    [...], milesTop:    [...],
+          totalStepsAllTime, totalMilesAllTime, stepEvents
+        },
+        liveEvents:     [ /* live ticker */ ],
+        usersToday, usersThisWeek, usersOnline,
+        workoutsLogged, caloriesTracked, gallonsDrank,
+        directories, generatedAt
+      }
+
+================================================================================
+LAYER 2 — What /api/public-leaderboard calls upstream
+================================================================================
+
+Primary path (single backend call, used when available):
+
+  GET ${API_BASE}/api/public-site-snapshot
+      where API_BASE = https://api.thetrackerapp.io   (process.env.API_BASE)
+
+  Expected response shape (consumed by normalizeBackendSnapshot):
+      {
+        ok, generatedAt, sourceVersion,
+        leaderboards: {
+          strength:     [ {rank, displayName|username|name, exercise, score|value, unit, valueLabel} ],
+          calisthenics: [ same row shape ],
+          streaks:      [ {rank, displayName|username|name, days|score, valueLabel} ],
+          pebble: {
+            caloriesBurnedTop|caloriesTop: [...],
+            workoutsTop|topWorkouts:       [...],
+            stepsTop:                      [...],
+            sleepScoresTop|sleepTop:       [...],
+            milesTraversedTop|milesTop:    [...],
+            totalStepsAllTime, totalMilesAllTime,
+            recentStepEvents|stepEvents|recentSteps|stepsEvents|stepsTape|steps.feed
+          }
+        },
+        metrics: {
+          usersToday, usersThisWeek, usersOnline,
+          workoutsLogged, caloriesTracked, gallonsDrank
+        },
+        directories: { ... }
+      }
+
+Fallback path (only if /api/public-site-snapshot fails / 5xx / timeout):
+
+  Strength / Calisthenics / Streaks come from Google Sheets CSV exports
+  (read-only, no auth):
+
+    GET https://docs.google.com/spreadsheets/d/
+        1Fd0wKgx7qB6UVoxdk1hkZdjT-ymsScmwzLjeflaW-3c/gviz/tq?tqx=out:csv&sheet=Site%20Strength
+    GET https://docs.google.com/spreadsheets/d/
+        1Fd0wKgx7qB6UVoxdk1hkZdjT-ymsScmwzLjeflaW-3c/gviz/tq?tqx=out:csv&sheet=Site%20Calisthenics
+    GET https://docs.google.com/spreadsheets/d/
+        1Fd0wKgx7qB6UVoxdk1hkZdjT-ymsScmwzLjeflaW-3c/gviz/tq?tqx=out:csv&sheet=Top%20Streaks
+
+  Pebble sub-leaderboards fan-out (Promise.allSettled, 6 s timeout each):
+
+    GET ${API_BASE}/api/pebble/leaderboard          (combined snapshot)
+    GET ${API_BASE}/api/pebble/calories-burned      (Top Calorie Burners)
+    GET ${API_BASE}/api/pebble/top-workouts         (Top Workouts)
+    GET ${API_BASE}/api/pebble/steps                (Top Steps)
+    GET ${API_BASE}/api/pebble/sleep-scores         (Top Sleep Scores)
+    GET ${API_BASE}/api/pebble/miles-traversed      (Miles Traversed)
+
+  Live streak ticker ("🔥 fierylion just logged 202 days in a row!"):
+
+    GET ${API_BASE}/api/streaks/live
+        Response body (any of these fields used):
+          { message: "...", text: "..." }
+
+================================================================================
+Per-panel mapping — which backend field powers which UI block
+================================================================================
+
+UI:  "Strength Leaderboard"  (BENCH/SQUAT/DEADLIFT cards, top 1 each)
+DOM: <ol id="leaderboardList"> in index.html
+JS:  src/main.js → renderLeaderboard(payload.entries)
+WIRE: leaderboards.strength[]
+KEEP TOP 1 PER EXERCISE in [BENCH, SQUAT, DEADLIFT].
+EXPECTED ROW:
+   { rank, exercise: "BENCH"|"SQUAT"|"DEADLIFT",
+     displayName|username|name, score|value, unit: "lb", valueLabel? }
+
+UI:  "Calisthenics Leaderboard"  (PUSHUPS/PULLUPS/SQUATS/DIPS top 1 each)
+DOM: <ol id="groupLeaderboardList">
+JS:  src/main.js → renderGroupLeaderboard(payload.groupEntries)
+WIRE: leaderboards.calisthenics[]
+EXERCISES kept: [PUSHUPS, PULLUPS, SQUATS, DIPS]
+EXPECTED ROW: same shape as strength, unit "reps".
+
+UI:  "Pebble Live Leaderboard"
+       ├ Top Calorie Burners
+       ├ Top Workouts
+       ├ Top Steps
+       ├ Top Sleep Scores
+       └ Miles Traversed
+DOM: <ol id="pebbleCaloriesList">, <ol id="pebbleWorkoutsList">,
+     <ol id="pebbleStepsList">,    <ol id="pebbleSleepList">,
+     <ol id="pebbleMilesList">
+JS:  src/main.js → renderPebbleLeaderboard(payload.pebble)
+WIRE: leaderboards.pebble.{caloriesTop, workoutsTop, stepsTop, sleepTop, milesTop}
+PER ROW expected: { rank?, username|name|contact, value|score|amount|steps|miles,
+                    unit?, valueLabel?|valueText?|display?|details? }
+
+UI:  "Top Streaks"  +  "Waiting for live streak activity..." callout
+DOM: <ol id="streakLeaderboardList">, <p id="streakLiveCallout">
+JS:  src/main.js → renderStreakLeaderboard(payload.streakEntries),
+                   renderStreakLiveCallout(payload.streakLiveMessage || …)
+WIRE: leaderboards.streaks[]  + a string `streakLiveMessage`
+EXPECTED ROW: { rank, displayName|username|name, days|score, unit?, valueLabel? }
+Live message can be returned at top-level (streakLiveMessage) or derived from
+streakEntries[0].
+
+UI:  Header counters (USERS USING TODAY, TOTAL USERS THIS WEEK, WORKOUTS LOGGED,
+     CALORIES TRACKED, GALLONS DRANK, USERS ONLINE)
+JS:  src/main.js → setCounterValue / setCounterValueWithDecimals
+WIRE: metrics.{usersToday, usersThisWeek, usersOnline,
+              workoutsLogged, caloriesTracked, gallonsDrank}
+
+================================================================================
+TL;DR – endpoints the backend should make sure are alive
+================================================================================
+
+  PRIMARY (preferred – one call returns everything):
+    GET  https://api.thetrackerapp.io/api/public-site-snapshot
+
+  FALLBACKS (used per-section if primary 5xx/timeouts):
+    GET  https://api.thetrackerapp.io/api/pebble/leaderboard
+    GET  https://api.thetrackerapp.io/api/pebble/calories-burned
+    GET  https://api.thetrackerapp.io/api/pebble/top-workouts
+    GET  https://api.thetrackerapp.io/api/pebble/steps
+    GET  https://api.thetrackerapp.io/api/pebble/sleep-scores
+    GET  https://api.thetrackerapp.io/api/pebble/miles-traversed
+    GET  https://api.thetrackerapp.io/api/streaks/live
+
+  GOOGLE SHEETS FALLBACKS (no backend dependency, read-only CSV):
+    https://docs.google.com/spreadsheets/d/1Fd0wKgx7qB6UVoxdk1hkZdjT-ymsScmwzLjeflaW-3c/gviz/tq?tqx=out:csv&sheet=Site%20Strength
+    https://docs.google.com/spreadsheets/d/1Fd0wKgx7qB6UVoxdk1hkZdjT-ymsScmwzLjeflaW-3c/gviz/tq?tqx=out:csv&sheet=Site%20Calisthenics
+    https://docs.google.com/spreadsheets/d/1Fd0wKgx7qB6UVoxdk1hkZdjT-ymsScmwzLjeflaW-3c/gviz/tq?tqx=out:csv&sheet=Top%20Streaks
+
+================================================================================
+Cache + auth notes
+================================================================================
+- /api/public-leaderboard sets `Cache-Control: s-maxage=15, stale-while-revalidate=45`,
+  so Vercel CDN serves the response for 15 s before refetching.
+- No auth: all of these endpoints are PUBLIC (used pre-login by anonymous
+  visitors on the homepage).
+- Per-call timeout to the backend is 6 s (REQUEST_TIMEOUT_MS).
+- The browser polls indirectly: the homepage calls fetchPublicLeaderboardSnapshot
+  on first load and again after the user clicks the Online/Today/Week/All buttons
+  on the metrics widget. The Pebble step-tape and live-ticker poll on their own
+  intervals via fetchLiveMetrics(window) → /api/live-metrics.
+
+================================================================================

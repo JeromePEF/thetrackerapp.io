@@ -1,0 +1,116 @@
+# The Tracker App Overview
+
+The Tracker App is a **text-based fitness and health tracking platform**. It lets you log workouts, nutrition, water intake, and body measurements via iMessage, SMS, or Telegram - no app download required. Just text what you did and we handle the rest.
+
+## What is Text-Based Tracking?
+It means two things:
+
+1. **Frictionless logging**: Text "bench press 3x10 at 185" and we parse, log, and analyze it automatically
+2. **Works everywhere**: Use the messaging app you already have - iMessage, SMS, or Telegram
+
+## Quick Start (2 min)
+1. Visit https://thetrackerapp.io
+2. Select your messaging platform (iMessage, SMS, or Telegram)
+3. Enter your phone number or Telegram username
+4. Start texting your workouts and meals
+5. View your dashboard at https://dashboard.thetrackerapp.io
+
+## Links
+- [Homepage](https://thetrackerapp.io)
+- [Dashboard](https://dashboard.thetrackerapp.io)
+- [User Guide](https://thetrackerapp.io/guide)
+- [Pricing](https://thetrackerapp.io/pricing)
+- [System Status](https://thetrackerapp.io/status)
+- [Trust Center](https://thetrackerapp.io/trust)
+- [Privacy Policy](https://thetrackerapp.io/privacy)
+- [Terms of Service](https://thetrackerapp.io/terms)
+
+## External Links
+- [Telegram Bot](https://t.me/TheTrackerAppBot)
+- [Blog](https://thetrackerapp.io/blog)
+- [Community](https://thetrackerapp.io/community)
+
+## What You Can Track
+
+### Workouts
+Log any exercise with natural language:
+- "bench press 3x10 at 185lb"
+- "ran 5k in 28 minutes"
+- "did 50 pushups"
+- "yoga 45 min"
+- "deadlift 4x8 at 315"
+
+### Nutrition
+Track meals and macros:
+- "had grilled chicken and rice"
+- "ate 2 eggs and toast for breakfast"
+- "protein shake 30g protein"
+- "lunch was a salad with salmon"
+
+### Water Intake
+Stay hydrated:
+- "water 24oz"
+- "drank 2 cups of water"
+- "32 oz water"
+
+### Body Measurements
+Track progress:
+- "weighed 178 lbs"
+- "body fat 15%"
+- "waist 32 inches"
+
+### Supplements
+Log your stack:
+- "took 5g creatine"
+- "vitamin D 2000 IU"
+- "omega 3 fish oil"
+
+## Features
+
+### Live Leaderboards
+Compete with other users on:
+- Strength lifts (bench, squat, deadlift)
+- Calisthenics (pushups, pullups, squats, dips)
+- Daily streaks
+- Steps and miles
+
+### Workout Groups
+Join or create groups on Telegram or iMessage. Track together, compete on group leaderboards.
+
+### Dashboard & Charts
+Visualize your progress with Grafana-style charts:
+- Weight trends
+- Nutrition breakdown
+- Workout volume
+- Body measurements over time
+
+### Wearable Integration
+Connect your fitness devices:
+- Apple Watch
+- Oura Ring
+- Garmin
+- Fitbit
+- Whoop
+- Pebble
+
+## Supported Platforms
+
+### iMessage
+Best for iPhone users. Full feature support including rich responses.
+
+### SMS
+Works on any phone. Standard messaging rates apply.
+
+### Telegram
+Use our bot @TheTrackerAppBot. Great for Android users or those who prefer Telegram.
+
+## Pricing
+- **Free**: Basic tracking, 7-day history, leaderboards
+- **Pro** ($9.99/mo): Unlimited history, advanced analytics, body measurements
+- **Premium** ($19.99/mo): AI meal planning, API access, custom goals
+
+## Feedback
+- Email: support@thetrackerapp.io
+- Community: https://thetrackerapp.io/community
+
+(Updated May 2026)

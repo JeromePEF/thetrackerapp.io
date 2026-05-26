@@ -20,6 +20,7 @@
     />
     <link rel="stylesheet" href="auth-pages.css" />
     <link rel="stylesheet" href="affiliate.css" />
+    <link rel="stylesheet" href="dashboard-body-measurements.css" />
     <script>
       // Synchronous auth gate. Runs before body parses so unauthenticated users
       // never see dashboard markup. dashboard.js does the same check + URL param
@@ -62,6 +63,9 @@
           <nav id="dashboardNav">
             <button id="navAccount" type="button" class="dashboard-tab" data-tab="account">ACCOUNT</button>
             <button id="navStats" type="button" class="dashboard-tab is-active" data-tab="stats">STATS</button>
+            <button id="navPersonalTrainer" type="button" class="dashboard-tab" data-tab="personal-trainer" data-feature="dashboardTabs.personalTrainer">PERSONAL TRAINER</button>
+            <button id="navGroups" type="button" class="dashboard-tab" data-tab="groups" data-feature="dashboardTabs.groups">GROUPS</button>
+            <button id="navRunClubs" type="button" class="dashboard-tab" data-tab="run-clubs" data-feature="dashboardTabs.runClubs">RUN CLUBS</button>
             <button type="button" class="dashboard-tab" data-tab="export">EXPORT</button>
             <button id="navGoals" type="button" class="dashboard-tab" data-tab="goals" hidden>GOALS/PLAN</button>
             <button type="button" class="dashboard-tab" data-tab="billing">BILLING</button>
@@ -69,71 +73,52 @@
             <button type="button" class="dashboard-tab" data-tab="ai">AI</button>
             <button type="button" class="dashboard-tab" data-tab="sheet">SHEET</button>
             <button id="navAffiliate" type="button" class="dashboard-tab" data-tab="affiliate">AFFILIATE</button>
-            <button id="navPersonalTrainer" type="button" class="dashboard-tab" data-tab="personal-trainer" hidden>PERSONAL TRAINER</button>
           </nav>
         </aside>
 
         <section class="dashboard-content" aria-label="Dashboard views">
           <article id="tabStats" class="dashboard-panel is-active" data-tab-panel="stats">
-            <header class="panel-head">
-              <h2>Stats</h2>
-              <p>Workouts, nutrition, water, and body measure trends.</p>
+            <header class="panel-head stats-panel-head">
+              <div>
+                <h2>Stats</h2>
+                <p>Your daily snapshot, charts, and trends.</p>
+              </div>
+              <a id="leaderboardLink" class="stats-leaderboard-link" href="https://thetrackerapp.io/#leaderboard" target="_blank" rel="noopener noreferrer">
+                <span class="lb-emoji">🏆</span>
+                <span class="lb-label">Rank</span>
+                <span id="leaderboardRankValue" class="lb-rank">-</span>
+              </a>
             </header>
 
-            <section class="stats-toolbar" aria-label="Stats range controls">
-              <div class="stats-range-preset" role="group" aria-label="Preset ranges">
-                <button type="button" class="stats-range-btn is-active" data-range="today">D</button>
-                <button type="button" class="stats-range-btn" data-range="week">W</button>
-                <button type="button" class="stats-range-btn" data-range="month">M</button>
-                <button type="button" class="stats-range-btn" data-range="year">Y</button>
-                <button type="button" class="stats-range-btn" data-range="all">AT</button>
-              </div>
-              <div class="stats-range-custom">
-                <label>
-                  From
-                  <input id="statsFromDate" type="date" />
-                </label>
-                <label>
-                  To
-                  <input id="statsToDate" type="date" />
-                </label>
-                <button id="applyCustomRangeButton" type="button" class="btn-secondary">Apply Range</button>
-              </div>
-              <p id="statsRangeStatus" class="stats-status" role="status" aria-live="polite"></p>
-            </section>
+            <!-- ============================================
+                 Spotlight + Quick view + Advanced charts
+                 (Rendered by src/dashboard-charts.js, auto-opened on tab load.
+                 Backend endpoint: GET /api/chart/data)
+                 ============================================ -->
+            <div id="progressChartsContainer" class="progress-charts-container"></div>
 
-            <section class="stats-kpis" aria-label="Stats summary">
-              <article class="stats-kpi">
-                <p class="kpi-label">Workouts</p>
-                <p id="statsWorkoutsValue" class="kpi-value">-</p>
-              </article>
-              <article class="stats-kpi">
-                <p class="kpi-label">Nutrition</p>
-                <p id="statsCaloriesValue" class="kpi-value">-</p>
-              </article>
-              <article class="stats-kpi">
-                <p class="kpi-label">Water (Gallons)</p>
-                <p id="statsGallonsValue" class="kpi-value">-</p>
-              </article>
-            </section>
+            <!-- Hidden but still in DOM so legacy JS that references these IDs
+                 (range toolbar inputs, KPI counters) does not crash. -->
+            <div class="stats-hidden-shims" aria-hidden="true" style="display:none">
+              <button type="button" class="stats-range-btn is-active" data-range="today">D</button>
+              <button type="button" class="stats-range-btn" data-range="week">W</button>
+              <button type="button" class="stats-range-btn" data-range="month">M</button>
+              <button type="button" class="stats-range-btn" data-range="year">Y</button>
+              <button type="button" class="stats-range-btn" data-range="all">AT</button>
+              <input id="statsFromDate" type="date" />
+              <input id="statsToDate" type="date" />
+              <button id="applyCustomRangeButton" type="button">Apply Range</button>
+              <p id="statsRangeStatus"></p>
+              <p id="statsWorkoutsValue">-</p>
+              <p id="statsCaloriesValue">-</p>
+              <p id="statsGallonsValue">-</p>
+            </div>
 
-            <section class="stats-meta-row" aria-label="Leaderboard info">
-              <p><strong>Leaderboard Rank:</strong> <span id="leaderboardRankValue">-</span></p>
-              <a id="leaderboardLink" href="https://thetrackerapp.io/#leaderboard" target="_blank" rel="noopener noreferrer">Open Leaderboard</a>
-            </section>
-
-            <section class="milestones-toggle-card" aria-label="Milestones">
-              <div class="stats-trend-head">
-                <h3>Milestones / Achievements</h3>
-                <button id="toggleMilestonesButton" type="button" class="btn-secondary">Show Milestones</button>
-              </div>
-              <div id="milestonesSection" hidden>
-                <div id="milestonesList" class="milestones-list"></div>
-                <p id="milestonesStatus" class="stats-status" role="status" aria-live="polite"></p>
-              </div>
-            </section>
-
-            <section class="stats-grid" aria-label="Main stat charts">
+            <div class="stats-hidden-shims" aria-hidden="true" style="display:none">
+              <button id="toggleMilestonesButton" type="button">Show Milestones</button>
+              <div id="milestonesSection"><div id="milestonesList"></div><p id="milestonesStatus"></p></div>
+              <p id="statsWindowLabel">Range: D</p>
+              <section class="stats-grid" aria-label="Main stat charts">
               <article class="stats-trend-card">
                 <div class="stats-trend-head">
                   <h3>Workouts</h3>
@@ -192,6 +177,98 @@
                 </div>
                 <div id="waterHeatmap" class="heatmap-grid"></div>
               </article>
+            </section>
+            </div>
+
+            <!-- Body Measurements Section (Grafana-style) -->
+            <section class="body-measurements-section" id="bodyMeasurementsSection" aria-label="Body measurements and progress charts">
+              <div class="section-header-row">
+                <h3>Body Measurements</h3>
+                <div class="measurement-actions">
+                  <span class="stat-label" style="font-size:0.8rem;color:var(--ink-muted)">Goal:</span>
+                  <span class="stat-value goal-badge maintain" id="measureGoal" data-edit="profile" data-field="goal" data-type="goal">Maintain</span>
+                </div>
+              </div>
+
+              <div class="master-overview" id="masterOverview">
+                <div class="overview-stats">
+                  <div class="overview-stat">
+                    <span class="stat-label">Height</span>
+                    <span class="stat-value" id="measureHeight" data-edit="profile" data-field="height" data-type="number" data-unit="in">--</span>
+                  </div>
+                  <div class="overview-stat">
+                    <span class="stat-label">Weight</span>
+                    <span class="stat-value" id="measureWeight" data-edit="measurement" data-field="weight" data-type="number" data-unit="lb">--</span>
+                    <span class="stat-delta" id="measureWeightDelta"></span>
+                  </div>
+                  <div class="overview-stat">
+                    <span class="stat-label">Body Fat</span>
+                    <span class="stat-value" id="measureBodyFat" data-edit="measurement" data-field="bodyFat" data-type="number" data-unit="%">--</span>
+                  </div>
+                  <div class="overview-stat">
+                    <span class="stat-label">Date</span>
+                    <span class="stat-value" id="measureDate" data-edit="measurement" data-field="date" data-type="date">--</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Body Part Measurements Grid -->
+              <div class="measurements-grid" id="measurementsGrid">
+                <div class="measurement-category">
+                  <h4>Upper Body</h4>
+                  <div class="measurement-cards">
+                    <div class="measurement-card"><span class="measurement-label">Bicep (L)</span><span class="measurement-value" id="measureBicepL" data-edit="measurement" data-field="bicepL" data-type="number" data-unit="in">--</span></div>
+                    <div class="measurement-card"><span class="measurement-label">Bicep (R)</span><span class="measurement-value" id="measureBicepR" data-edit="measurement" data-field="bicepR" data-type="number" data-unit="in">--</span></div>
+                    <div class="measurement-card"><span class="measurement-label">Forearm (L)</span><span class="measurement-value" id="measureForearmL" data-edit="measurement" data-field="forearmL" data-type="number" data-unit="in">--</span></div>
+                    <div class="measurement-card"><span class="measurement-label">Forearm (R)</span><span class="measurement-value" id="measureForearmR" data-edit="measurement" data-field="forearmR" data-type="number" data-unit="in">--</span></div>
+                    <div class="measurement-card"><span class="measurement-label">Chest</span><span class="measurement-value" id="measureChest" data-edit="measurement" data-field="chest" data-type="number" data-unit="in">--</span></div>
+                    <div class="measurement-card"><span class="measurement-label">Shoulders</span><span class="measurement-value" id="measureShoulders" data-edit="measurement" data-field="shoulders" data-type="number" data-unit="in">--</span></div>
+                    <div class="measurement-card"><span class="measurement-label">Neck</span><span class="measurement-value" id="measureNeck" data-edit="measurement" data-field="neck" data-type="number" data-unit="in">--</span></div>
+                    <div class="measurement-card"><span class="measurement-label">Lats</span><span class="measurement-value" id="measureLats" data-edit="measurement" data-field="lats" data-type="number" data-unit="in">--</span></div>
+                    <div class="measurement-card"><span class="measurement-label">Traps</span><span class="measurement-value" id="measureTraps" data-edit="measurement" data-field="traps" data-type="number" data-unit="in">--</span></div>
+                    <div class="measurement-card"><span class="measurement-label">Serratus</span><span class="measurement-value" id="measureSerratus" data-edit="measurement" data-field="serratusAnterior" data-type="number" data-unit="in">--</span></div>
+                  </div>
+                </div>
+                <div class="measurement-category">
+                  <h4>Core</h4>
+                  <div class="measurement-cards">
+                    <div class="measurement-card"><span class="measurement-label">Waist</span><span class="measurement-value" id="measureWaist" data-edit="measurement" data-field="waist" data-type="number" data-unit="in">--</span></div>
+                    <div class="measurement-card"><span class="measurement-label">Abs</span><span class="measurement-value" id="measureAbs" data-edit="measurement" data-field="abs" data-type="number" data-unit="in">--</span></div>
+                    <div class="measurement-card"><span class="measurement-label">Obliques</span><span class="measurement-value" id="measureObliques" data-edit="measurement" data-field="obliques" data-type="number" data-unit="in">--</span></div>
+                  </div>
+                </div>
+                <div class="measurement-category">
+                  <h4>Lower Body</h4>
+                  <div class="measurement-cards">
+                    <div class="measurement-card"><span class="measurement-label">Quad (L)</span><span class="measurement-value" id="measureQuadL" data-edit="measurement" data-field="quadL" data-type="number" data-unit="in">--</span></div>
+                    <div class="measurement-card"><span class="measurement-label">Quad (R)</span><span class="measurement-value" id="measureQuadR" data-edit="measurement" data-field="quadR" data-type="number" data-unit="in">--</span></div>
+                    <div class="measurement-card"><span class="measurement-label">Calf (L)</span><span class="measurement-value" id="measureCalfL" data-edit="measurement" data-field="calfL" data-type="number" data-unit="in">--</span></div>
+                    <div class="measurement-card"><span class="measurement-label">Calf (R)</span><span class="measurement-value" id="measureCalfR" data-edit="measurement" data-field="calfR" data-type="number" data-unit="in">--</span></div>
+                    <div class="measurement-card"><span class="measurement-label">Glutes</span><span class="measurement-value" id="measureGlutes" data-edit="measurement" data-field="glutes" data-type="number" data-unit="in">--</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- (Progress Charts moved to top of Stats tab) -->
+
+              <!-- Qualitative Assessments / Journal -->
+              <div class="qualitative-assessments" id="qualitativeAssessments">
+                <h4>Qualitative Assessments</h4>
+                <div class="journal-entries" id="journalEntries">
+                  <div class="journal-entry" data-edit="journal" data-part="abs" data-display="Abs"><h5>Abs</h5><p class="journal-content"><em>Click to add assessment...</em></p></div>
+                  <div class="journal-entry" data-edit="journal" data-part="arms" data-display="Arms"><h5>Arms</h5><p class="journal-content"><em>Click to add assessment...</em></p></div>
+                  <div class="journal-entry" data-edit="journal" data-part="back" data-display="Back"><h5>Back</h5><p class="journal-content"><em>Click to add assessment...</em></p></div>
+                  <div class="journal-entry" data-edit="journal" data-part="calves" data-display="Calves"><h5>Calves</h5><p class="journal-content"><em>Click to add assessment...</em></p></div>
+                  <div class="journal-entry" data-edit="journal" data-part="chest" data-display="Chest"><h5>Chest</h5><p class="journal-content"><em>Click to add assessment...</em></p></div>
+                  <div class="journal-entry" data-edit="journal" data-part="lats" data-display="Lats"><h5>Lats</h5><p class="journal-content"><em>Click to add assessment...</em></p></div>
+                  <div class="journal-entry" data-edit="journal" data-part="neck" data-display="Neck"><h5>Neck</h5><p class="journal-content"><em>Click to add assessment...</em></p></div>
+                  <div class="journal-entry" data-edit="journal" data-part="obliques" data-display="Obliques"><h5>Obliques</h5><p class="journal-content"><em>Click to add assessment...</em></p></div>
+                  <div class="journal-entry" data-edit="journal" data-part="quads" data-display="Quads"><h5>Quads</h5><p class="journal-content"><em>Click to add assessment...</em></p></div>
+                  <div class="journal-entry" data-edit="journal" data-part="serratusanterior" data-display="Serratus Anterior"><h5>Serratus Anterior</h5><p class="journal-content"><em>Click to add assessment...</em></p></div>
+                  <div class="journal-entry" data-edit="journal" data-part="shoulders" data-display="Shoulders"><h5>Shoulders</h5><p class="journal-content"><em>Click to add assessment...</em></p></div>
+                  <div class="journal-entry" data-edit="journal" data-part="traps" data-display="Traps"><h5>Traps</h5><p class="journal-content"><em>Click to add assessment...</em></p></div>
+                </div>
+              </div>
             </section>
 
             <p class="stats-meta">Generated: <span id="statsGeneratedAtValue">-</span></p>
@@ -419,10 +496,36 @@
             <p id="sheetStatus" class="stats-status" role="status" aria-live="polite"></p>
           </article>
 
-          <article id="tabPersonalTrainer" class="dashboard-panel" data-tab-panel="personal-trainer" hidden>
-            <header class="panel-head"><h2>Personal Trainer</h2></header>
-            <p><strong>Status:</strong> <span id="personalTrainerStatusValue">Attached</span></p>
-            <p><strong>Coach:</strong> <span id="personalTrainerNameValue">-</span></p>
+          <article id="tabPersonalTrainer" class="dashboard-panel" data-tab-panel="personal-trainer" data-feature="dashboardTabs.personalTrainer" hidden>
+            <header class="panel-head">
+              <h2>Personal Trainer</h2>
+              <p>See your current coach, athletes you train, or apply to become a coach.</p>
+            </header>
+            <div id="personalTrainerPanelBody"></div>
+          </article>
+
+          <article id="tabGroups" class="dashboard-panel" data-tab-panel="groups" data-feature="dashboardTabs.groups" hidden>
+            <header class="panel-head">
+              <h2>Groups</h2>
+              <p>Workout groups you've joined on iMessage, SMS, or Telegram.</p>
+            </header>
+            <div id="groupsPanelBody"></div>
+            <p class="panel-cta">
+              <a class="btn-primary" href="/groups">Find a group</a>
+              <a class="btn-secondary" href="/groups#create">Create a group</a>
+            </p>
+          </article>
+
+          <article id="tabRunClubs" class="dashboard-panel" data-tab-panel="run-clubs" data-feature="dashboardTabs.runClubs" hidden>
+            <header class="panel-head">
+              <h2>Run Clubs</h2>
+              <p>Local run clubs and online running communities you're a member of.</p>
+            </header>
+            <div id="runClubsPanelBody"></div>
+            <p class="panel-cta">
+              <a class="btn-primary" href="/run-clubs">Find a run club</a>
+              <a class="btn-secondary" href="/run-clubs#create">Start a run club</a>
+            </p>
           </article>
 
           <article id="tabAffiliate" class="dashboard-panel" data-tab-panel="affiliate" hidden>

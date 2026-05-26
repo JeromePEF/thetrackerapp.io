@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blog | The Tracker App - Fitness Tips, Updates & Insights</title>
+    <meta name="description" content="Read the latest fitness tips, app updates, and health insights from The Tracker App team. Stay informed about SMS, iMessage, and Telegram workout tracking." />
+    <meta name="keywords" content="fitness blog, workout tips, calorie tracking tips, SMS fitness, iMessage workout, nutrition advice, body measurement tracking" />
+    <meta name="theme-color" content="#000000" />
+
+    <link rel="canonical" href="https://thetrackerapp.io/blog" />
+    <link rel="icon" href="/favicon.svg?v=5" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3" sizes="180x180" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Blog | The Tracker App" />
+    <meta property="og:description" content="Read the latest fitness tips, app updates, and health insights from The Tracker App team." />
+    <meta property="og:url" content="https://thetrackerapp.io/blog" />
+    <meta property="og:image" content="https://thetrackerapp.io/og-image.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+    <script type="module" crossorigin src="/assets/blog-BOahvlrR.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-DdFyKP1d.js">
+    <link rel="modulepreload" crossorigin href="/assets/feature-flags-CpbHEPVM.js">
+    <link rel="stylesheet" crossorigin href="/assets/blog-BIU_sKfm.css">
+    <link rel="stylesheet" crossorigin href="/assets/info-pages-iuJ7kj43.css">
+  </head>
+  <body>
+    <div id="appShell">
+      <header class="site-header">
+        <div class="container header-row">
+          <nav class="app-links" aria-label="Navigation">
+            <a href="/">Home</a>
+            <a href="/blog" class="active">Blog</a>
+            <a href="/press">Press</a>
+            <a href="/tools/tdee-calculator">Free Tools</a>
+          </nav>
+          <div class="header-auth">
+            <a id="loginLink" class="login-link" href="/login">Login</a>
+            <a id="dashboardLink" class="dashboard-link" href="https://dashboard.thetrackerapp.io/dashboard" hidden>Dashboard</a>
+          </div>
+        </div>
+      </header>
+
+      <main class="container page-content">
+        <section class="page-hero">
+          <h1>Blog</h1>
+          <p class="hero-subtitle">Fitness tips, app updates, and insights from The Tracker App team</p>
+        </section>
+
+        <!-- Blog Post Creation (Admin Only) -->
+        <section id="blogCreateSection" class="blog-create-section" hidden>
+          <h2>Create New Post</h2>
+          <form id="blogCreateForm" class="blog-create-form">
+            <label for="blogTitle">
+              Title *
+              <input type="text" id="blogTitle" name="title" required placeholder="Enter post title" />
+            </label>
+            <label for="blogSlug">
+              URL Slug *
+              <input type="text" id="blogSlug" name="slug" required placeholder="my-post-title" />
+              <small class="field-help">Used in the URL: /blog/my-post-title</small>
+            </label>
+            <label for="blogExcerpt">
+              Excerpt *
+              <textarea id="blogExcerpt" name="excerpt" required placeholder="Brief summary of the post..." rows="2"></textarea>
+            </label>
+            <label for="blogContent">
+              Content (Markdown) *
+              <textarea id="blogContent" name="content" required placeholder="Write your post content in Markdown..." rows="12"></textarea>
+            </label>
+            <label for="blogTags">
+              Tags (comma-separated)
+              <input type="text" id="blogTags" name="tags" placeholder="fitness, tracking, tips" />
+            </label>
+            <label for="blogFeaturedImage">
+              Featured Image URL
+              <input type="url" id="blogFeaturedImage" name="featuredImage" placeholder="https://..." />
+            </label>
+            <div class="form-actions">
+              <button type="submit" class="btn-primary">Publish Post</button>
+              <button type="button" id="blogPreviewBtn" class="btn-secondary">Preview</button>
+            </div>
+            <p id="blogCreateStatus" class="form-status" role="status"></p>
+          </form>
+        </section>
+
+        <!-- Blog Posts List -->
+        <section class="blog-posts-section">
+          <div class="blog-filters">
+            <input type="search" id="blogSearch" placeholder="Search posts..." aria-label="Search blog posts" />
+            <select id="blogTagFilter" aria-label="Filter by tag">
+              <option value="">All Tags</option>
+            </select>
+          </div>
+
+          <div id="blogPostsList" class="blog-posts-grid">
+            <p class="loading-state">Loading posts...</p>
+          </div>
+
+          <div id="blogPagination" class="blog-pagination" hidden>
+            <button id="blogPrevPage" class="btn-secondary" disabled>Previous</button>
+            <span id="blogPageInfo">Page 1</span>
+            <button id="blogNextPage" class="btn-secondary">Next</button>
+          </div>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        <div class="container footer-row">
+          <a data-feature="footer.contact" href="mailto:contact@thetrackerapp.io">contact@thetrackerapp.io</a>
+          <a data-feature="footer.blog" href="/blog">Blog</a>
+          <a data-feature="footer.press" href="/press">Press</a>
+          <a data-feature="footer.privacy" href="/privacy">Privacy Policy</a>
+          <a data-feature="footer.terms" href="/terms">Terms</a>
+        </div>
+      </footer>
+    </div>
+
+  </body>
+</html>

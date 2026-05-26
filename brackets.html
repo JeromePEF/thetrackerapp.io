@@ -3,144 +3,98 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Brackets | The Tracker App - Fitness Competitions & Challenges</title>
-    <meta name="description" content="Compete in fitness brackets and challenges. Join run clubs, personal trainers, and groups in head-to-head competitions with real-time tracking." />
-    <meta name="keywords" content="fitness competition, workout challenge, run club, personal trainer, fitness bracket, group competition" />
+    <title>Brackets | The Tracker App - Fitness Competitions</title>
+    <meta name="description" content="Live tournament brackets for fitness competitions. Watch groups and personal trainer teams compete head-to-head." />
     <meta name="theme-color" content="#000000" />
 
     <link rel="canonical" href="https://thetrackerapp.io/brackets" />
     <link rel="icon" href="/favicon.svg?v=5" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3" sizes="180x180" />
-
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="Brackets | The Tracker App" />
-    <meta property="og:description" content="Compete in fitness brackets and challenges with run clubs, trainers, and groups." />
-    <meta property="og:url" content="https://thetrackerapp.io/brackets" />
-    <meta property="og:image" content="https://thetrackerapp.io/og-image.png" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="info-pages.css" />
     <link rel="stylesheet" href="brackets.css" />
   </head>
   <body>
-    <div id="appShell">
-      <header class="site-header">
-        <div class="container header-row">
-          <nav class="app-links" aria-label="Navigation">
-            <a href="/">Home</a>
-            <a href="/brackets" class="active">Brackets</a>
-            <a href="/win">Win $$$</a>
-            <a href="/run-clubs">Run Clubs</a>
-            <a href="/personal-trainers">Personal Trainers</a>
-          </nav>
-          <div class="header-auth">
-            <a id="loginLink" class="login-link" href="/login">Login</a>
-            <a id="dashboardLink" class="dashboard-link" href="https://dashboard.thetrackerapp.io/dashboard" hidden>Dashboard</a>
-          </div>
+    <div id="bracketApp">
+      <!-- Header Bar -->
+      <header class="bracket-header">
+        <a href="/" class="bracket-logo">The Tracker App</a>
+        <div class="bracket-toggle">
+          <button class="toggle-btn active" data-type="groups">Groups</button>
+          <button class="toggle-btn" data-type="trainers">Personal Trainers</button>
+        </div>
+        <div class="bracket-meta">
+          <span class="live-badge"><span class="live-dot"></span>LIVE</span>
+          <select id="competitionSelect" class="competition-select">
+            <option value="weekly">Weekly Challenge</option>
+            <option value="monthly">Monthly Championship</option>
+            <option value="special">Special Event</option>
+          </select>
         </div>
       </header>
 
-      <main class="container page-content">
-        <section class="page-hero">
-          <h1>Brackets</h1>
-          <p class="hero-subtitle">Group fitness competitions with real-time tracking and bracket elimination</p>
-        </section>
-
-        <!-- Active Brackets -->
-        <section class="brackets-section">
-          <div class="section-header">
-            <h2>Active Competitions</h2>
-            <p class="live-indicator"><span class="live-dot" aria-hidden="true"></span>LIVE</p>
+      <!-- Full Screen Bracket -->
+      <main class="bracket-container">
+        <canvas id="bracketCanvas" class="bracket-canvas"></canvas>
+        
+        <!-- Bracket Info Overlay -->
+        <div class="bracket-info">
+          <div class="info-item">
+            <span class="info-label">Participants</span>
+            <span class="info-value" id="participantCount">16</span>
           </div>
-
-          <div id="activeBracketsList" class="brackets-grid">
-            <p class="loading-state">Loading active brackets...</p>
+          <div class="info-item">
+            <span class="info-label">Round</span>
+            <span class="info-value" id="currentRound">Quarter Finals</span>
           </div>
-        </section>
-
-        <!-- Bracket Visualization -->
-        <section id="bracketVisualization" class="bracket-visualization-section" hidden>
-          <h2 id="bracketTitle">Competition Bracket</h2>
-          <div id="bracketTree" class="bracket-tree">
-            <!-- Bracket visualization will be rendered here -->
+          <div class="info-item">
+            <span class="info-label">Prize Pool</span>
+            <span class="info-value" id="prizePool">$500</span>
           </div>
-          <div id="bracketStats" class="bracket-stats">
-            <div class="stat-card">
-              <span class="stat-label">Participants</span>
-              <span id="bracketParticipants" class="stat-value">0</span>
+        </div>
+
+        <!-- Match Details Panel (shows on hover/click) -->
+        <div id="matchDetails" class="match-details" hidden>
+          <button class="close-details">&times;</button>
+          <h3 id="matchTitle">Match Details</h3>
+          <div class="match-competitors">
+            <div class="competitor" id="competitor1">
+              <span class="competitor-name">Team A</span>
+              <span class="competitor-score">1,250 pts</span>
+              <div class="competitor-stats">
+                <span>Workouts: 45</span>
+                <span>Streak: 12 days</span>
+              </div>
             </div>
-            <div class="stat-card">
-              <span class="stat-label">Rounds Remaining</span>
-              <span id="bracketRoundsLeft" class="stat-value">0</span>
+            <span class="vs">VS</span>
+            <div class="competitor" id="competitor2">
+              <span class="competitor-name">Team B</span>
+              <span class="competitor-score">1,180 pts</span>
+              <div class="competitor-stats">
+                <span>Workouts: 42</span>
+                <span>Streak: 8 days</span>
+              </div>
             </div>
-            <div class="stat-card">
-              <span class="stat-label">Prize Pool</span>
-              <span id="bracketPrizePool" class="stat-value">$0</span>
+          </div>
+          <div class="match-progress">
+            <span class="progress-label">Match Progress</span>
+            <div class="progress-bar">
+              <div class="progress-fill" id="matchProgress" style="width: 65%"></div>
             </div>
+            <span class="progress-time" id="matchTime">3 days remaining</span>
           </div>
-        </section>
-
-        <!-- Upcoming Brackets -->
-        <section class="brackets-section">
-          <h2>Upcoming Competitions</h2>
-          <div id="upcomingBracketsList" class="brackets-grid">
-            <p class="loading-state">Loading upcoming brackets...</p>
-          </div>
-        </section>
-
-        <!-- Group Types -->
-        <section class="group-types-section">
-          <h2>Competition Categories</h2>
-          <div class="group-types-grid">
-            <article class="group-type-card">
-              <div class="group-type-icon">🏃</div>
-              <h3>Run Clubs</h3>
-              <p>Compete with running groups in distance, pace, and consistency challenges.</p>
-              <a href="/run-clubs" class="btn-secondary">View Run Clubs</a>
-            </article>
-
-            <article class="group-type-card">
-              <div class="group-type-icon">💪</div>
-              <h3>Personal Trainers</h3>
-              <p>Join trainer-led teams and compete against other training groups.</p>
-              <a href="/personal-trainers" class="btn-secondary">Find Trainers</a>
-            </article>
-
-            <article class="group-type-card">
-              <div class="group-type-icon">🏆</div>
-              <h3>Open Brackets</h3>
-              <p>Anyone can join! Compete individually in various fitness challenges.</p>
-              <button id="joinOpenBracketBtn" class="btn-primary">Join Open Bracket</button>
-            </article>
-
-            <article class="group-type-card">
-              <div class="group-type-icon">🎯</div>
-              <h3>Corporate Teams</h3>
-              <p>Company vs company fitness showdowns for team building.</p>
-              <button id="createCorporateBracketBtn" class="btn-secondary">Create Team</button>
-            </article>
-          </div>
-        </section>
-
-        <!-- Past Winners -->
-        <section class="past-winners-section">
-          <h2>Past Champions</h2>
-          <div id="pastWinnersList" class="past-winners-grid">
-            <p class="loading-state">Loading past winners...</p>
-          </div>
-        </section>
+        </div>
       </main>
 
-      <footer class="site-footer">
-        <div class="container footer-row">
-          <a href="mailto:contact@thetrackerapp.io">contact@thetrackerapp.io</a>
-          <a href="/blog">Blog</a>
-          <a href="/press">Press</a>
-          <a href="/privacy">Privacy Policy</a>
-          <a href="/terms">Terms</a>
-        </div>
+      <!-- Bottom Controls -->
+      <footer class="bracket-footer">
+        <button class="footer-btn" id="zoomOutBtn">−</button>
+        <button class="footer-btn" id="zoomInBtn">+</button>
+        <button class="footer-btn" id="resetViewBtn">Reset View</button>
+        <div class="footer-spacer"></div>
+        <a href="/win" class="footer-link">Win $$$</a>
+        <a href="/" class="footer-link">Home</a>
       </footer>
     </div>
 

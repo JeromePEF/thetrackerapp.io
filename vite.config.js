@@ -26,6 +26,12 @@ export default defineConfig({
         products: resolve(__dirname, "products.html"),
         brackets: resolve(__dirname, "brackets.html"),
         win: resolve(__dirname, "win.html"),
+        community: resolve(__dirname, "community.html"),
+        pricing: resolve(__dirname, "pricing.html"),
+        groups: resolve(__dirname, "groups.html"),
+        guide: resolve(__dirname, "guide.html"),
+        status: resolve(__dirname, "status.html"),
+        trust: resolve(__dirname, "trust.html"),
         // Free Tools (SEO pages)
         tdeeCalculator: resolve(__dirname, "tools/tdee-calculator.html"),
         bmiCalculator: resolve(__dirname, "tools/bmi-calculator.html"),

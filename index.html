@@ -97,17 +97,25 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="shared-sections.css" />
   </head>
   <body>
+    <!-- Skip to main content link for keyboard users (ADA compliance) -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
     <div id="appShell">
       <header class="site-header">
         <div class="container header-row">
           <nav class="app-links" aria-label="App downloads">
-            <a href="/pebble-app">Pebble App</a>
-            <a href="/mac-apps">Mac Apps</a>
-            <a href="/workout-resources">Workout Resources</a>
-            <a id="runClubsNavLink" href="https://thetrackerapp.io/run-clubs" target="_blank" rel="noreferrer" hidden>Run Clubs</a>
-            <a id="personalTrainersNavLink" href="https://thetrackerapp.io/personal-trainers" target="_blank" rel="noreferrer" hidden>Personal Trainers</a>
+            <a href="/pricing" data-feature="pricing">Pricing</a>
+            <a href="/pebble-app" data-feature="pebbleApp">Pebble App</a>
+            <a href="/mac-apps" data-feature="macApps">Mac Apps</a>
+            <a href="/workout-resources" data-feature="workoutResources">Workout Resources</a>
+            <a href="/products" data-feature="products">Products</a>
+            <a id="runClubsNavLink" href="/run-clubs" data-feature="runClubs" hidden>Run Clubs</a>
+            <a id="personalTrainersNavLink" href="/personal-trainers" data-feature="personalTrainers" hidden>Personal Trainers</a>
+            <a href="/brackets" data-feature="brackets">Brackets</a>
+            <a href="/win" data-feature="win">Win $$$</a>
           </nav>
           <div class="header-stats" aria-label="Usage counters">
             <p>
@@ -169,61 +177,8 @@
         </div>
       </header>
 
-      <main class="container hero-layout" id="main-content">
-        <section class="hero-panel">
-          <div class="service-zone">
-            <div class="service-preview">
-              <div class="service-shell" id="serviceShell">
-                <div id="serviceCarousel" class="service-carousel" role="listbox" aria-label="Swipe to choose service"></div>
-              </div>
-              <p id="serviceCarouselLabel" class="service-carousel-label">iMessage selected</p>
-              <p class="service-carousel-hint">Swipe the icons left or right to change service.</p>
-            </div>
-          </div>
-
-          <form id="signupForm" class="signup-form" novalidate>
-            <p class="form-intro">Select an app, enter your info, then submit onboarding.</p>
-            <p class="form-intro">Current launch services: iMessage, SMS, Telegram. Additional channels are on the roadmap.</p>
-            <p class="form-flow" aria-hidden="true">1. Select App  2. Enter Info  3. Submit</p>
-            <div class="input-grid">
-              <label for="serviceSelect">
-                Service
-                <select id="serviceSelect" name="serviceSelect" aria-label="Select service"></select>
-                <small class="field-help">Choose where onboarding messages should be sent.</small>
-              </label>
-
-              <label id="serviceIdentityLabel" for="serviceIdentityInput">
-                <span id="serviceIdentityText">Phone Number</span>
-                <input id="serviceIdentityInput" name="serviceIdentity" type="text" autocomplete="off" placeholder="(555) 555-5555" />
-                <small id="serviceIdentityHelp" class="field-help">Required for the selected service.</small>
-              </label>
-
-              <label for="emailInput">
-                Email (optional)
-                <input id="emailInput" name="email" type="email" autocomplete="email" placeholder="you@example.com" />
-                <small class="field-help">Add email for receipts and account recovery.</small>
-              </label>
-
-              <div id="telegramLinkBox" class="telegram-link-box" hidden>
-                <p>To onboard via Telegram, message our bot:</p>
-                <a href="https://t.me/TheTrackerAppBot" target="_blank" rel="noreferrer" class="telegram-bot-link">@TheTrackerAppBot</a>
-                <small class="field-help">Users must initiate the interaction because bots cannot start conversations.</small>
-              </div>
-            </div>
-
-            <label id="consentWrap" class="consent-row" for="consentCheckbox">
-              <input id="consentCheckbox" name="consentCheckbox" type="checkbox" />
-              I consent to receive onboarding text messages and agree to 10DLC/A2P messaging terms.
-            </label>
-
-            <div class="cta-row">
-              <button type="submit">Submit Onboarding</button>
-            </div>
-            <p id="signupStatus" class="form-status" role="status" aria-live="polite"></p>
-          </form>
-
-        </section>
-
+      <main class="hero-fullscreen-layout" id="main-content">
+        <!-- LEFT: Leaderboards -->
         <aside class="leaderboard-panel" aria-label="Workout leaderboard">
           <section class="leaderboard-section">
             <div class="leaderboard-headline-row">
@@ -265,11 +220,126 @@
             <p class="live-indicator"><span class="live-dot" aria-hidden="true"></span>LIVE</p>
             <ol id="streakLeaderboardList" class="leaderboard-list streak-leaderboard-list"></ol>
             <p id="streakLeaderboardState" class="panel-state" role="status" aria-live="polite"></p>
+            <div id="liveWorkoutToastContainer" class="live-toast-container">
+              <aside id="liveWorkoutToast" class="live-workout-toast" aria-live="polite" hidden>
+                <p class="live-workout-toast-kicker">Live Activity</p>
+                <p id="liveWorkoutToastMessage" class="live-workout-toast-message"></p>
+              </aside>
+            </div>
             <p id="streakLiveCallout" class="streak-live-callout" role="status" aria-live="polite"></p>
           </section>
 
-          <a class="group-join-button" href="https://api.thetrackerapp.io/groups/join" target="_blank" rel="noreferrer">Join a Workout Group</a>
+          <a class="group-join-button" href="/groups" data-feature="workoutGroups">Join a Workout Group</a>
         </aside>
+
+        <!-- AUTHENTICATED VIEW: Brackets preview (only shows for logged-in users) -->
+        <aside class="auth-brackets-panel" data-feature="brackets" aria-label="Brackets preview" hidden>
+          <section class="leaderboard-section auth-brackets-section">
+            <h2>Active Brackets</h2>
+            <p class="live-indicator"><span class="live-dot" aria-hidden="true"></span>LIVE</p>
+            <div id="authBracketsList" class="auth-brackets-list">
+              <p class="panel-state">Loading brackets...</p>
+            </div>
+            <a class="group-join-button" href="/brackets">View All Brackets</a>
+          </section>
+        </aside>
+
+        <!-- CENTER: Onboarding Form (hidden when authenticated) -->
+        <section class="hero-center-column">
+          <div class="service-zone">
+            <div class="service-preview">
+              <div class="service-shell" id="serviceShell">
+                <div id="serviceCarousel" class="service-carousel" role="listbox" aria-label="Swipe to choose service"></div>
+              </div>
+              <p id="serviceCarouselLabel" class="service-carousel-label">iMessage selected</p>
+              <p class="service-carousel-hint">Swipe the icons left or right to change service.</p>
+            </div>
+          </div>
+
+          <form id="signupForm" class="signup-form" novalidate>
+            <div class="input-grid">
+              <label for="serviceSelect">
+                Service
+                <select id="serviceSelect" name="serviceSelect" aria-label="Select service"></select>
+                <small class="field-help">Choose where onboarding messages should be sent.</small>
+              </label>
+
+              <label id="serviceIdentityLabel" for="serviceIdentityInput">
+                <span id="serviceIdentityText">Phone Number</span>
+                <input id="serviceIdentityInput" name="serviceIdentity" type="text" autocomplete="off" placeholder="(555) 555-5555" />
+                <small id="serviceIdentityHelp" class="field-help">Required for the selected service.</small>
+              </label>
+
+              <label for="emailInput">
+                Email (optional)
+                <input id="emailInput" name="email" type="email" autocomplete="email" placeholder="you@example.com" />
+                <small class="field-help">Add email for receipts and account recovery.</small>
+              </label>
+
+              <div id="telegramLinkBox" class="telegram-link-box" hidden>
+                <p>To onboard via Telegram, message our bot:</p>
+                <a href="https://t.me/TheTrackerAppBot" target="_blank" rel="noreferrer" class="telegram-bot-link">@TheTrackerAppBot</a>
+                <small class="field-help">Users must initiate the interaction because bots cannot start conversations.</small>
+              </div>
+            </div>
+
+            <label id="consentWrap" class="consent-row" for="consentCheckbox">
+              <input id="consentCheckbox" name="consentCheckbox" type="checkbox" />
+              I consent to receive onboarding text messages and agree to 10DLC/A2P messaging terms.
+            </label>
+
+            <div class="cta-row">
+              <button type="submit">Submit Onboarding</button>
+            </div>
+            <p id="signupStatus" class="form-status" role="status" aria-live="polite"></p>
+          </form>
+        </section>
+
+        <!-- RIGHT: iPhone Mockup -->
+        <div class="hero-right-column" id="heroRightColumn">
+          <div class="hero-mockup-compact" id="heroMockup">
+            <div class="iphone-frame iphone-frame-compact" id="iphoneFrame">
+              <div class="iphone-notch"></div>
+              <div class="iphone-screen">
+                <div class="messages-app">
+                  <div class="messages-header">
+                    <span class="messages-contact">The Tracker App</span>
+                  </div>
+                  <div class="messages-thread" id="heroMockupMessages"></div>
+                  <div class="messages-composer">
+                    <span class="composer-placeholder">iMessage</span>
+                    <span class="composer-mic">🎙</span>
+                  </div>
+                </div>
+              </div>
+              <div class="iphone-home-indicator"></div>
+            </div>
+          </div>
+
+          <!-- Live Activity Feed -->
+          <div class="hero-live-feed" id="heroLiveFeed" data-feature="liveActivityFeed">
+            <div class="live-feed-header">
+              <span class="pulse-dot"></span>
+              <span class="live-feed-title">Live Activity</span>
+              <span class="live-feed-count" id="heroActiveUsers">24 active</span>
+            </div>
+            <div class="live-feed-items" id="heroFeedItems"></div>
+            <div class="live-feed-stats">
+              <div class="feed-stat">
+                <span class="feed-stat-value" id="heroTotalSteps">0</span>
+                <span class="feed-stat-label">Steps</span>
+              </div>
+              <div class="feed-stat">
+                <span class="feed-stat-value" id="heroTotalMiles">0.0</span>
+                <span class="feed-stat-label">Miles</span>
+              </div>
+              <div class="feed-stat">
+                <span class="feed-stat-value" id="heroTotalWorkouts">0</span>
+                <span class="feed-stat-label">Workouts</span>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <aside id="stepsCounterPanel" class="steps-tape-panel" aria-label="Realtime step counter activity" hidden>
           <section class="steps-tape-card">
@@ -303,24 +373,29 @@
         </aside>
       </main>
 
+
+
       <footer class="site-footer">
         <div class="container footer-row">
-          <a href="mailto:contact@thetrackerapp.io">contact@thetrackerapp.io</a>
-          <a href="/workout-resources">Workout Resources</a>
-          <a href="/privacy">Privacy Policy</a>
-          <a href="/terms">Terms</a>
+          <a href="mailto:contact@thetrackerapp.io" data-feature="footer.contact">contact@thetrackerapp.io</a>
+          <a href="/pricing" data-feature="footer.pricing">Pricing</a>
+          <a href="/community" data-feature="footer.community">Community & FAQ</a>
+          <a href="/blog" data-feature="footer.blog">Blog</a>
+          <a href="/press" data-feature="footer.press">Press</a>
+          <a href="/guide" data-feature="footer.guide">Guide</a>
+          <a href="/status" data-feature="footer.status">Status</a>
+          <a href="/trust" data-feature="footer.trust">Trust</a>
+          <a href="/llms.txt" data-feature="footer.llmsTxt">llms.txt</a>
+          <a href="/privacy" data-feature="footer.privacy">Privacy</a>
+          <a href="/terms" data-feature="footer.terms">Terms</a>
         </div>
         <div class="container mobile-download-links" aria-label="App downloads">
-          <a href="/pebble-app">Pebble App</a>
-          <a href="/mac-apps">Mac Apps</a>
+          <a href="/pebble-app" data-feature="footer.pebbleApp">Pebble App</a>
+          <a href="/mac-apps" data-feature="footer.macApps">Mac Apps</a>
+          <a href="/tools/tdee-calculator" data-feature="footer.freeTools">Free Tools</a>
         </div>
       </footer>
     </div>
-    <aside id="liveWorkoutToast" class="live-workout-toast" aria-live="polite" hidden>
-      <p class="live-workout-toast-kicker">Live Activity</p>
-      <p id="liveWorkoutToastMessage" class="live-workout-toast-message"></p>
-    </aside>
-
     <script type="module" src="src/main.js"></script>
   </body>
 </html>

@@ -3,12 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Personal Trainers | The Tracker App</title>
+    <title>Personal Trainers Directory | Find Fitness Coaches Near You | The Tracker App</title>
     <meta
       name="description"
-      content="Find personal trainers by city, compare coaching specialties, and join trainer-led workout groups in The Tracker App."
+      content="Find personal trainers and fitness coaches by city. Compare specialties, training styles, and join trainer-led workout programs for your fitness goals."
     />
+    <meta name="keywords" content="personal trainers, fitness coaches, workout coaches, fitness training, personal training, gym trainers, fitness instructors" />
     <link rel="canonical" href="https://thetrackerapp.io/personal-trainers" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Personal Trainers Directory | Find Fitness Coaches Near You" />
+    <meta property="og:description" content="Find personal trainers by city. Compare specialties, training styles, and join trainer-led workout programs." />
+    <meta property="og:url" content="https://thetrackerapp.io/personal-trainers" />
+    <meta property="og:site_name" content="The Tracker App" />
+    <meta property="og:image" content="https://thetrackerapp.io/og-image.png" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Personal Trainers Directory | Find Fitness Coaches Near You" />
+    <meta name="twitter:description" content="Find personal trainers by city. Compare specialties and join trainer-led workout programs." />
+    <meta name="twitter:image" content="https://thetrackerapp.io/og-image.png" />
     <link rel="icon" href="/favicon.svg?v=3" type="image/svg+xml" />
     <link rel="icon" href="/favicon-32x32.png?v=3" sizes="32x32" type="image/png" />
     <link rel="icon" href="/favicon-16x16.png?v=3" sizes="16x16" type="image/png" />
@@ -20,8 +33,10 @@
       href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
-    <script type="module" crossorigin src="/assets/google-analytics-D1ItWCpu.js"></script>
-    <script type="module" crossorigin src="/assets/directory-page-BRIboFEB.js"></script>
+    <script type="module" crossorigin src="/assets/personalTrainers-BU2_cvSG.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-DdFyKP1d.js">
+    <link rel="modulepreload" crossorigin href="/assets/google-analytics-Dtj7BBKw.js">
+    <link rel="modulepreload" crossorigin href="/assets/directory-page-D50NwtVR.js">
     <link rel="stylesheet" crossorigin href="/assets/directory-page-fQZrCg1p.css">
   </head>
   <body data-directory-type="personal-trainers">
@@ -49,6 +64,60 @@
         </section>
 
         <section id="cardsGrid" class="cards-grid" aria-label="Personal trainer cards"></section>
+
+        <!-- Sign-up: become a personal trainer -->
+        <section id="apply" class="pt-signup-section" aria-label="Become a coach">
+          <div class="pt-signup-card">
+            <header class="pt-signup-head">
+              <h2>Become a coach on The Tracker App</h2>
+              <p>Already training clients in real life? Get listed here and get a unique coach code your athletes can lock into from their dashboard.</p>
+            </header>
+            <form id="ptSignupForm" class="pt-signup-form" novalidate>
+              <div class="pt-signup-grid">
+                <label>
+                  <span>Full legal name</span>
+                  <input name="fullName" type="text" autocomplete="name" required maxlength="120" />
+                </label>
+                <label>
+                  <span>Email</span>
+                  <input name="email" type="email" autocomplete="email" required maxlength="200" />
+                </label>
+                <label>
+                  <span>City</span>
+                  <input name="city" type="text" placeholder="Austin, TX or Online" required maxlength="120" />
+                </label>
+                <label>
+                  <span>Years coaching</span>
+                  <input name="experienceYears" type="number" min="0" max="60" step="1" inputmode="numeric" required />
+                </label>
+                <label class="pt-full">
+                  <span>Credentials &amp; certifications</span>
+                  <input name="credentials" type="text" placeholder="NSCA-CPT, RDN, USA Weightlifting L2 — separate with commas" maxlength="200" />
+                </label>
+                <label class="pt-full">
+                  <span>Specialties</span>
+                  <input name="specialties" type="text" placeholder="e.g. Hybrid, Strength, Endurance, Hyrox" maxlength="200" />
+                </label>
+                <label class="pt-full">
+                  <span>Short bio</span>
+                  <textarea name="bio" rows="4" maxlength="500" placeholder="A few sentences athletes will see when they look you up." required></textarea>
+                </label>
+                <label class="pt-full">
+                  <span>Portfolio / Instagram / website (optional)</span>
+                  <input name="portfolioUrl" type="url" placeholder="https://" maxlength="200" />
+                </label>
+              </div>
+              <label class="pt-agree">
+                <input name="agreeTerms" type="checkbox" required />
+                <span>I agree to the <a href="/terms">Terms</a> and confirm the credentials above are accurate.</span>
+              </label>
+              <div class="pt-signup-actions">
+                <button type="submit" class="btn-primary">Submit application</button>
+                <p id="ptSignupStatus" class="pt-signup-status" role="status" aria-live="polite"></p>
+              </div>
+            </form>
+          </div>
+        </section>
       </main>
     </div>
 

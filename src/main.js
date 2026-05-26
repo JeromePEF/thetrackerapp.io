@@ -2,6 +2,7 @@ import { API_BASE, fetchLiveMetrics, fetchPublicLeaderboardSnapshot, submitSignu
 import { inject } from "@vercel/analytics";
 import { initGoogleAnalytics } from "./google-analytics.js";
 import { attachRefToPayload, captureRefFromUrl } from "./affiliate-ref.js";
+import { fetchFeatureFlags, applyFeatureFlags } from "./feature-flags.js";
 
 const SERVICES = [
   {
@@ -67,6 +68,7 @@ const els = {
   serviceCarouselLabel: document.getElementById("serviceCarouselLabel"),
   loginLink: document.getElementById("loginLink"),
   dashboardLink: document.getElementById("dashboardLink"),
+  authBracketsList: document.getElementById("authBracketsList"),
   runClubsNavLink: document.getElementById("runClubsNavLink"),
   personalTrainersNavLink: document.getElementById("personalTrainersNavLink"),
   stepsCounterPanel: document.getElementById("stepsCounterPanel"),
@@ -197,6 +199,48 @@ function syncAuthNavigation() {
   if (els.loginLink) {
     els.loginLink.textContent = loggedIn ? "Dashboard" : "Login";
     els.loginLink.href = loggedIn ? DASHBOARD_HOME_URL : `/login?next=${encodeURIComponent(DASHBOARD_HOME_URL)}`;
+  }
+
+  // Toggle leaderboard-focused view when authenticated
+  if (document.body) {
+    document.body.classList.toggle("is-authenticated", loggedIn);
+  }
+
+  // Load brackets preview when authenticated
+  if (loggedIn) {
+    loadAuthBrackets();
+  }
+}
+
+async function loadAuthBrackets() {
+  if (!els.authBracketsList) return;
+  try {
+    const res = await fetch("https://api.thetrackerapp.io/brackets/active", {
+      credentials: "include",
+    });
+    if (!res.ok) throw new Error("Brackets fetch failed");
+    const data = await res.json();
+    const brackets = Array.isArray(data?.brackets) ? data.brackets : [];
+    if (brackets.length === 0) {
+      els.authBracketsList.innerHTML = `<p class="panel-state">No active brackets. <a href="/brackets" style="color:var(--accent)">Browse all brackets</a></p>`;
+      return;
+    }
+    els.authBracketsList.innerHTML = brackets
+      .slice(0, 5)
+      .map(
+        (b) => `
+        <a href="/brackets#${escapeHtml(String(b.id || ""))}" class="bracket-card">
+          <span class="bracket-card-title">${escapeHtml(String(b.name || "Bracket"))}</span>
+          <span class="bracket-card-meta">
+            <span>👥 ${escapeHtml(String(b.participants || 0))} players</span>
+            <span>🏆 ${escapeHtml(String(b.prize || "Glory"))}</span>
+            <span>⏱ ${escapeHtml(String(b.endsIn || "Active"))}</span>
+          </span>
+        </a>`
+      )
+      .join("");
+  } catch (err) {
+    els.authBracketsList.innerHTML = `<p class="panel-state">Active brackets unavailable. <a href="/brackets" style="color:var(--accent)">View all</a></p>`;
   }
 }
 
@@ -1926,6 +1970,855 @@ function init() {
   requestViewportFit();
 }
 
+// ============================================
+// FEATURE FLAGS & NEW SECTIONS
+// ============================================
+
+const DEFAULT_TESTIMONIALS = [
+  {
+    name: "Mike R.",
+    location: "Austin, TX",
+    platform: "iMessage",
+    rating: 5,
+    content: "I've tried every fitness app out there. This is the first one that actually stuck because I don't have to open anything - just text what I did.",
+    stats: "Lost 23 lbs in 4 months",
+  },
+  {
+    name: "Sarah K.",
+    location: "NYC",
+    platform: "SMS",
+    rating: 5,
+    content: "The simplicity is genius. I text my meals and workouts throughout the day, then check my dashboard weekly. Finally hit my protein goals consistently.",
+    stats: "180 day streak",
+  },
+  {
+    name: "James L.",
+    location: "Chicago",
+    platform: "Telegram",
+    rating: 5,
+    content: "Love the Pebble integration! My watch syncs automatically and I can see everything in one place. The leaderboard keeps me motivated.",
+    stats: "Top 10 on strength board",
+  },
+  {
+    name: "Emily T.",
+    location: "LA",
+    platform: "iMessage",
+    rating: 5,
+    content: "Finally a tracker that doesn't make me feel like I need a PhD to log a sandwich. Just text it and done.",
+    stats: "Gained 8 lbs muscle",
+  },
+  {
+    name: "David M.",
+    location: "Seattle",
+    platform: "SMS",
+    rating: 5,
+    content: "The body measurement tracking is incredible. I can see my biceps and chest growing week over week.",
+    stats: "+2 inches on arms",
+  },
+  {
+    name: "Lisa P.",
+    location: "Miami",
+    platform: "Telegram",
+    rating: 4,
+    content: "Great for water tracking! I always forgot to drink enough water until I started texting every glass.",
+    stats: "Hydration: 100% daily",
+  },
+];
+
+const DEFAULT_FAQS = [
+  {
+    question: "How do I log a workout?",
+    answer: "Just text naturally! Say 'Just did 20 pushups' or 'bench press 185x8x3' or 'ran 3 miles in 28 minutes'. You can also use voice dictation - tap the mic and say what you did. We understand natural language and log it automatically.",
+  },
+  {
+    question: "How do I track what I eat?",
+    answer: "Text your meals in plain English: 'I ate 2 eggs and a banana' or 'grilled chicken salad with olive oil dressing'. We'll break it down and calculate calories, protein, carbs, and fats for you.",
+  },
+  {
+    question: "Can I track water intake?",
+    answer: "Absolutely! Just text 'Drank 16 ounces of water' or even simpler: '16oz water'. Ask 'How much today?' anytime to see your daily total and progress toward your hydration goal.",
+  },
+  {
+    question: "What messaging apps work?",
+    answer: "We support iMessage, SMS, and Telegram - pick whichever you prefer. Wearable integrations include Pebble, Fitbit, Garmin, Whoop, Oura, and Apple Watch for automatic syncing.",
+  },
+  {
+    question: "Can I track body measurements?",
+    answer: "Yes! Track weight, body fat, and specific measurements like biceps, chest, waist, quads, and more. We'll chart your progress over time with visual graphs and goal tracking.",
+  },
+  {
+    question: "Is my data private?",
+    answer: "Your health data is encrypted and never sold to third parties. You own your data - export or delete it anytime from your dashboard.",
+  },
+];
+
+function renderTestimonials(testimonials = DEFAULT_TESTIMONIALS) {
+  const track = document.getElementById("testimonialsTrack");
+  const dotsContainer = document.getElementById("testimonialsDots");
+  if (!track) return;
+
+  track.innerHTML = testimonials.map((t) => {
+    const stars = "★".repeat(t.rating || 5) + "☆".repeat(5 - (t.rating || 5));
+    const initials = t.name.split(" ").map(n => n[0]).join("").toUpperCase();
+    return `
+      <article class="testimonial-card">
+        <div class="testimonial-header">
+          <div class="testimonial-avatar">${initials}</div>
+          <div class="testimonial-info">
+            <h4>${t.name}</h4>
+            <p class="testimonial-meta">${t.location || ""} via ${t.platform || ""}</p>
+          </div>
+        </div>
+        <div class="testimonial-rating">${stars}</div>
+        <blockquote class="testimonial-content">"${t.content}"</blockquote>
+        ${t.stats ? `<p class="testimonial-stats">${t.stats}</p>` : ""}
+      </article>
+    `;
+  }).join("");
+
+  // Carousel logic
+  const cardsPerView = window.innerWidth > 900 ? 3 : window.innerWidth > 600 ? 2 : 1;
+  const totalSlides = Math.ceil(testimonials.length / cardsPerView);
+  let currentSlide = 0;
+
+  if (dotsContainer && totalSlides > 1) {
+    dotsContainer.innerHTML = "";
+    for (let i = 0; i < totalSlides; i++) {
+      const dot = document.createElement("button");
+      dot.className = `carousel-dot ${i === 0 ? "active" : ""}`;
+      dot.addEventListener("click", () => goToSlide(i));
+      dotsContainer.appendChild(dot);
+    }
+  }
+
+  function goToSlide(index) {
+    currentSlide = Math.max(0, Math.min(index, totalSlides - 1));
+    track.style.transform = `translateX(-${currentSlide * (100 / cardsPerView) * cardsPerView}%)`;
+    dotsContainer?.querySelectorAll(".carousel-dot").forEach((dot, i) => {
+      dot.classList.toggle("active", i === currentSlide);
+    });
+  }
+
+  document.getElementById("testimonialsPrev")?.addEventListener("click", () => goToSlide(currentSlide - 1));
+  document.getElementById("testimonialsNext")?.addEventListener("click", () => goToSlide(currentSlide + 1));
+
+  // Auto-advance
+  setInterval(() => goToSlide((currentSlide + 1) % totalSlides), 6000);
+}
+
+function renderFAQ(faqs = DEFAULT_FAQS) {
+  const list = document.getElementById("faqList");
+  if (!list) return;
+
+  list.innerHTML = faqs.map((faq) => `
+    <details class="faq-item">
+      <summary>${faq.question}</summary>
+      <p>${faq.answer}</p>
+    </details>
+  `).join("");
+}
+
+// Real conversation examples matching the simulator API responses
+const MOCKUP_CONVERSATION_SETS = [
+  // Workout logging
+  [
+    { type: "sent", text: "Just did 20 pushups" },
+    { type: "received", text: "✅ Logged 20 pushups.\nToday's pushups total: 20." },
+    { type: "sent", text: "Add another 15" },
+    { type: "received", text: "✅ Logged 15 pushups.\nToday's pushups total: 35." },
+    { type: "sent", text: "bench press 4x8 at 225" },
+    { type: "received", text: "🏋️ Logged Bench Press: 4x8 @ 225lb.\nVolume: 7,200 lb" },
+  ],
+  // Nutrition logging
+  [
+    { type: "sent", text: "I had a Five Guys little burger" },
+    { type: "received", text: "Logged:\n• Five Guys Little Hamburger\n\nToday's totals:\nCalories: 540 cal\nProtein: 23g\nCarbs: 39g\nFats: 26g" },
+    { type: "sent", text: "Also add a medium fry" },
+    { type: "received", text: "Logged:\n• Medium French Fries\n\nToday's totals:\nCalories: 860 cal\nProtein: 27g\nCarbs: 82g\nFats: 41g" },
+    { type: "sent", text: "Drank a Celsius" },
+    { type: "received", text: "Logged:\n• Celsius Energy Drink\n\nToday's totals:\nCalories: 870 cal\nProtein: 27g\nCarbs: 84g\nFats: 41g" },
+  ],
+  // Water tracking
+  [
+    { type: "sent", text: "/water 20" },
+    { type: "received", text: "💧 Added 20 oz.\nToday's water: 20 oz / 128 oz." },
+    { type: "sent", text: "Drank 32 oz of water" },
+    { type: "received", text: "💧 Added 32 oz.\nToday's water: 52 oz / 128 oz." },
+    { type: "sent", text: "Had a bottle of water" },
+    { type: "received", text: "💧 Added 16 oz (bottle = 16 oz).\nToday's water: 68 oz / 128 oz." },
+    { type: "sent", text: "Drank 1 liter" },
+    { type: "received", text: "💧 Added 33.8 oz (1 L).\nToday's water: 101.8 oz / 128 oz." },
+  ],
+  // Mixed day
+  [
+    { type: "sent", text: "Treadmill 20 min 6.5 mph 2% incline" },
+    { type: "received", text: "🏃 Logged Treadmill\n• 20 min • 6.5 mph • 2% incline\n~215 calories burned" },
+    { type: "sent", text: "Had grilled chicken and rice" },
+    { type: "received", text: "Logged:\n• Grilled Chicken (6 oz)\n• White Rice (1 cup)\n\nCalories: 485 cal\nProtein: 57g" },
+    { type: "sent", text: "water 24oz" },
+    { type: "received", text: "💧 Added 24 oz.\nToday's water: 24 oz / 128 oz." },
+  ],
+  // 📸 NEW: photo → AI calorie estimate
+  // The user attaches a photo of their meal and the AI parses it directly,
+  // returning a breakdown without a single typed word.
+  [
+    {
+      type: "image",
+      // Inline SVG so the demo works offline + matches the dark-mode aesthetic.
+      // Self-contained "chicken teriyaki bowl" illustration.
+      svg: `<svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#8d6e63"/>
+            <stop offset="1" stop-color="#3e2723"/>
+          </linearGradient>
+        </defs>
+        <rect width="240" height="240" fill="url(#bg)"/>
+        <ellipse cx="120" cy="160" rx="100" ry="22" fill="#1b1b1b" opacity="0.25"/>
+        <circle cx="120" cy="130" r="86" fill="#f5f5f5"/>
+        <circle cx="120" cy="130" r="78" fill="#e0e0e0"/>
+        <!-- rice bed -->
+        <ellipse cx="120" cy="138" rx="68" ry="46" fill="#fafafa"/>
+        <ellipse cx="100" cy="128" rx="14" ry="9" fill="#ffffff" opacity="0.6"/>
+        <ellipse cx="140" cy="148" rx="12" ry="8" fill="#ffffff" opacity="0.6"/>
+        <!-- chicken -->
+        <ellipse cx="115" cy="118" rx="38" ry="22" fill="#bf6e2a"/>
+        <ellipse cx="105" cy="112" rx="14" ry="9" fill="#d98a3a"/>
+        <ellipse cx="128" cy="120" rx="16" ry="10" fill="#a55520"/>
+        <!-- broccoli florets -->
+        <circle cx="78" cy="148" r="11" fill="#43a047"/>
+        <circle cx="74" cy="142" r="6" fill="#66bb6a"/>
+        <circle cx="84" cy="143" r="6" fill="#66bb6a"/>
+        <circle cx="80" cy="155" r="6" fill="#388e3c"/>
+        <circle cx="160" cy="156" r="11" fill="#43a047"/>
+        <circle cx="156" cy="150" r="6" fill="#66bb6a"/>
+        <circle cx="166" cy="151" r="6" fill="#66bb6a"/>
+        <circle cx="162" cy="163" r="6" fill="#388e3c"/>
+        <!-- sesame seeds -->
+        <circle cx="110" cy="112" r="1.5" fill="#fff8e1"/>
+        <circle cx="118" cy="110" r="1.5" fill="#fff8e1"/>
+        <circle cx="124" cy="116" r="1.5" fill="#fff8e1"/>
+        <circle cx="105" cy="120" r="1.5" fill="#fff8e1"/>
+        <!-- carrot bits -->
+        <circle cx="98" cy="142" r="3.5" fill="#ff8a3d"/>
+        <circle cx="146" cy="132" r="3.5" fill="#ff8a3d"/>
+        <circle cx="132" cy="148" r="3" fill="#ff8a3d"/>
+        <!-- chopsticks -->
+        <rect x="48" y="62" width="148" height="4" fill="#5d4037" transform="rotate(-12 48 64)"/>
+        <rect x="48" y="74" width="148" height="4" fill="#4e342e" transform="rotate(-12 48 76)"/>
+      </svg>`,
+      alt: "Photo of a chicken teriyaki bowl",
+    },
+    {
+      type: "received",
+      text:
+        "📸 Analyzing your photo…",
+    },
+    {
+      type: "received",
+      text:
+        "Detected: Chicken Teriyaki Bowl\n" +
+        "• Grilled chicken (6 oz)\n" +
+        "• Steamed broccoli (1 cup)\n" +
+        "• White rice (1 cup)\n" +
+        "• Teriyaki sauce (2 tbsp)\n\n" +
+        "Estimated:\nCalories: 620 cal\nProtein: 45g\nCarbs: 72g\nFats: 14g\n\n" +
+        "Logged ✓ Reply 'edit' to tweak.",
+    },
+  ],
+];
+
+// Pick a random conversation set
+const MOCKUP_CONVERSATIONS = MOCKUP_CONVERSATION_SETS[Math.floor(Math.random() * MOCKUP_CONVERSATION_SETS.length)];
+
+// ----- iOS-style keyboard tap audio (synthetic, generated by Web Audio API) -----
+//
+// We synthesise the tap/send sounds at runtime so there's nothing to download
+// and the iPhone-on-the-homepage animation always has audio available.
+// Sound is OFF until the user has at least one click/scroll on the page; this
+// satisfies browser autoplay policy and keeps things quiet for new visitors.
+// Users can also mute permanently via the speaker toggle (renderMockupSoundToggle
+// below) — that preference is persisted in localStorage.
+const MOCKUP_SOUND_PREF_KEY = "tracker.mockup.soundMuted";
+let mockupSoundMuted = (() => {
+  try {
+    return localStorage.getItem(MOCKUP_SOUND_PREF_KEY) === "1";
+  } catch {
+    return false;
+  }
+})();
+
+let audioCtx = null;
+let audioUnlocked = false;
+function getAudioCtx() {
+  if (audioCtx) return audioCtx;
+  try {
+    const Ctor = window.AudioContext || window.webkitAudioContext;
+    if (!Ctor) return null;
+    audioCtx = new Ctor();
+    return audioCtx;
+  } catch {
+    return null;
+  }
+}
+function unlockAudio() {
+  if (audioUnlocked) return;
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  if (ctx.state === "suspended") {
+    ctx.resume().catch(() => {});
+  }
+  audioUnlocked = true;
+}
+if (typeof document !== "undefined") {
+  ["pointerdown", "keydown", "touchstart"].forEach((ev) =>
+    document.addEventListener(ev, unlockAudio, { once: true, passive: true }),
+  );
+}
+
+function isMockupSoundEnabled() {
+  if (mockupSoundMuted) return false;
+  if (window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) return false;
+  return true;
+}
+
+function setMockupSoundMuted(muted) {
+  mockupSoundMuted = !!muted;
+  try {
+    localStorage.setItem(MOCKUP_SOUND_PREF_KEY, mockupSoundMuted ? "1" : "0");
+  } catch {
+    /* ignore quota / private mode */
+  }
+  syncMockupSoundToggleUI();
+}
+
+function playTapSound() {
+  const ctx = getAudioCtx();
+  if (!ctx || !audioUnlocked) return;
+  if (!isMockupSoundEnabled()) return;
+  const now = ctx.currentTime;
+  // Two layered oscillators – a high "tick" and a softer body – matching the
+  // iOS keyboard tap timbre. Total duration ~30ms.
+  const tickOsc = ctx.createOscillator();
+  const tickGain = ctx.createGain();
+  tickOsc.type = "square";
+  // Tiny pitch variance so repeated taps don't feel robotic.
+  tickOsc.frequency.value = 1750 + Math.random() * 250;
+  tickGain.gain.setValueAtTime(0.0001, now);
+  tickGain.gain.exponentialRampToValueAtTime(0.18, now + 0.002);
+  tickGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
+  tickOsc.connect(tickGain).connect(ctx.destination);
+  tickOsc.start(now);
+  tickOsc.stop(now + 0.05);
+
+  const bodyOsc = ctx.createOscillator();
+  const bodyGain = ctx.createGain();
+  bodyOsc.type = "sine";
+  bodyOsc.frequency.value = 380 + Math.random() * 60;
+  bodyGain.gain.setValueAtTime(0.0001, now);
+  bodyGain.gain.exponentialRampToValueAtTime(0.12, now + 0.003);
+  bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.06);
+  bodyOsc.connect(bodyGain).connect(ctx.destination);
+  bodyOsc.start(now);
+  bodyOsc.stop(now + 0.07);
+}
+function playSendSound() {
+  const ctx = getAudioCtx();
+  if (!ctx || !audioUnlocked) return;
+  if (!isMockupSoundEnabled()) return;
+  const now = ctx.currentTime;
+  // Ascending "swoosh" – classic iMessage send.
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(420, now);
+  osc.frequency.exponentialRampToValueAtTime(1180, now + 0.22);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.22, now + 0.04);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(now);
+  osc.stop(now + 0.33);
+}
+function playReceiveSound() {
+  const ctx = getAudioCtx();
+  if (!ctx || !audioUnlocked) return;
+  if (!isMockupSoundEnabled()) return;
+  const now = ctx.currentTime;
+  // Short descending blip – incoming bubble.
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "triangle";
+  osc.frequency.setValueAtTime(880, now);
+  osc.frequency.exponentialRampToValueAtTime(560, now + 0.12);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.16, now + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(now);
+  osc.stop(now + 0.2);
+}
+
+// ----- Sound toggle UI -----
+//
+// Floating speaker icon (top-left of every iPhone mockup) that lets users
+// silence the phone demonstration. Click toggles mute and the choice is
+// persisted in localStorage. The icon swaps between speaker-on and
+// speaker-muted SVGs and announces its state for screen readers.
+const SPEAKER_ON_SVG = `
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+  <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+</svg>`;
+const SPEAKER_OFF_SVG = `
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+  <line x1="23" y1="9" x2="17" y2="15"></line>
+  <line x1="17" y1="9" x2="23" y2="15"></line>
+</svg>`;
+
+function syncMockupSoundToggleUI() {
+  document.querySelectorAll(".mockup-sound-toggle").forEach((btn) => {
+    btn.innerHTML = mockupSoundMuted ? SPEAKER_OFF_SVG : SPEAKER_ON_SVG;
+    btn.classList.toggle("is-muted", mockupSoundMuted);
+    btn.setAttribute("aria-pressed", mockupSoundMuted ? "true" : "false");
+    btn.setAttribute(
+      "aria-label",
+      mockupSoundMuted ? "Unmute phone demo sound" : "Mute phone demo sound",
+    );
+    btn.title = mockupSoundMuted ? "Sound off — click to unmute" : "Sound on — click to mute";
+  });
+}
+
+function ensureMockupSoundToggle(containerEl) {
+  if (!containerEl) return;
+  // Anchor the button inside the .iphone-frame so it visually belongs to the
+  // phone (top-left, like a hardware toggle). One per phone instance.
+  const phone = containerEl.closest(".iphone-frame, .iphone-frame-compact, .hero-mockup, .hero-mockup-compact") || containerEl;
+  if (phone.querySelector(":scope > .mockup-sound-toggle")) return;
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "mockup-sound-toggle";
+  btn.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    setMockupSoundMuted(!mockupSoundMuted);
+    // Ensure the audio context unlocks on first interaction even if mute was on.
+    unlockAudio();
+    // Tiny feedback chirp when unmuting (so the user knows it worked).
+    if (!mockupSoundMuted) playTapSound();
+  });
+  phone.appendChild(btn);
+  syncMockupSoundToggleUI();
+}
+
+// ----- Conversation animation -----
+function initMockupAnimation(containerId, conversations = MOCKUP_CONVERSATIONS) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  // The composer lives next to the messages thread in the same iphone-screen.
+  const screenRoot = container.closest(".messages-app") || container.parentElement;
+  const composer = screenRoot?.querySelector(".composer-placeholder");
+  const originalComposerText = composer?.textContent || "iMessage";
+
+  // Sound toggle (one per iPhone mockup on the page).
+  ensureMockupSoundToggle(container);
+
+  let cancelled = false;
+
+  // Allow the page to stop the animation (used by maintenance mode etc.)
+  container._stopMockupAnimation = () => {
+    cancelled = true;
+  };
+
+  async function typeIntoComposer(text) {
+    if (!composer || cancelled) return;
+    composer.classList.add("is-typing");
+    composer.textContent = "";
+    const cursor = '<span class="composer-cursor" aria-hidden="true">|</span>';
+    for (let i = 0; i < text.length; i++) {
+      if (cancelled) return;
+      composer.innerHTML = escapeForComposer(text.slice(0, i + 1)) + cursor;
+      playTapSound();
+      // Slight variation so the typing feels human.
+      const base = 38; // ms per char
+      const variance = Math.random() * 28;
+      const punctuationPause = /[.,!?\n]/.test(text[i]) ? 90 : 0;
+      const spacePause = text[i] === " " ? 30 : 0;
+      await wait(base + variance + punctuationPause + spacePause);
+    }
+    // Brief pause before "send"
+    composer.innerHTML = escapeForComposer(text) + cursor;
+    await wait(220);
+  }
+
+  function resetComposer() {
+    if (!composer) return;
+    composer.classList.remove("is-typing");
+    composer.textContent = originalComposerText;
+  }
+
+  function addBubble(msg) {
+    const bubble = document.createElement("div");
+    // `image` is treated as a sent bubble (the user-side of the chat) but
+    // styled like an iMessage photo attachment — a square, rounded thumbnail
+    // with the food image instead of a text bubble.
+    if (msg.type === "image") {
+      bubble.className = "message-bubble sent message-image-bubble";
+      const inner = msg.svg
+        ? msg.svg
+        : msg.imageUrl
+        ? `<img src="${escapeForComposer(msg.imageUrl)}" alt="${escapeForComposer(msg.alt || "Photo")}" />`
+        : "📷";
+      bubble.innerHTML = `<div class="message-image-frame" role="img" aria-label="${escapeForComposer(msg.alt || "Photo of meal")}">${inner}</div>`;
+    } else {
+      bubble.className = `message-bubble ${msg.type}`;
+      bubble.textContent = msg.text;
+    }
+    bubble.style.opacity = "0";
+    bubble.style.transform = "translateY(10px) scale(0.98)";
+    container.appendChild(bubble);
+    container.scrollTop = container.scrollHeight;
+    requestAnimationFrame(() => {
+      bubble.style.transition = "opacity 0.3s ease, transform 0.35s cubic-bezier(.2,.8,.2,1)";
+      bubble.style.opacity = "1";
+      bubble.style.transform = "translateY(0) scale(1)";
+    });
+    return bubble;
+  }
+
+  function addTypingIndicator() {
+    const bubble = document.createElement("div");
+    bubble.className = "message-bubble received typing-indicator";
+    bubble.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
+    bubble.style.opacity = "0";
+    container.appendChild(bubble);
+    container.scrollTop = container.scrollHeight;
+    requestAnimationFrame(() => {
+      bubble.style.transition = "opacity 0.2s ease";
+      bubble.style.opacity = "1";
+    });
+    return bubble;
+  }
+
+  async function runConversation() {
+    while (!cancelled) {
+      for (let i = 0; i < conversations.length; i++) {
+        if (cancelled) return;
+        const msg = conversations[i];
+        if (msg.type === "sent") {
+          await typeIntoComposer(msg.text);
+          resetComposer();
+          playSendSound();
+          addBubble(msg);
+          await wait(900);
+        } else if (msg.type === "image") {
+          // Show a small "picking a photo" hint in the composer for realism,
+          // then drop the image bubble in. Plays the send swoosh but skips
+          // the typing animation since there's no text to type.
+          if (composer) {
+            composer.classList.add("is-typing");
+            composer.innerHTML = `<span class="composer-photo-hint">📎 Photo</span>`;
+          }
+          await wait(620);
+          resetComposer();
+          playSendSound();
+          addBubble(msg);
+          await wait(1100);
+        } else {
+          // Show typing dots, then deliver the bubble.
+          const indicator = addTypingIndicator();
+          await wait(900 + Math.random() * 600);
+          indicator.remove();
+          playReceiveSound();
+          addBubble(msg);
+          await wait(1700);
+        }
+      }
+      // Pause then loop
+      await wait(2400);
+      if (!cancelled) container.innerHTML = "";
+    }
+  }
+
+  runConversation();
+}
+
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function escapeForComposer(s) {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\n/g, " ");
+}
+
+function initIPhoneMockup() {
+  // Initialize hero mockup (inline next to form)
+  initMockupAnimation("heroMockupMessages");
+  // Initialize section mockup (below fold)
+  initMockupAnimation("mockupMessages");
+}
+
+async function initFeatureSections() {
+  // Always initialize the hero mockup (inline next to form)
+  initMockupAnimation("heroMockupMessages");
+
+  try {
+    const flags = await fetchFeatureFlags();
+    applyFeatureFlags(flags);
+    // Footer socials + chatbot widget run as side-effects of feature flags.
+    // initFeatureFlags() does both already, but the homepage uses the
+    // lower-level fetch+apply pair so we kick them off manually here.
+    try {
+      const { applyFooterSocials } = await import("./footer-socials.js");
+      applyFooterSocials(flags?.socials);
+    } catch {
+      /* socials optional */
+    }
+    try {
+      const { initChatbot } = await import("./chatbot.js");
+      initChatbot(flags);
+    } catch {
+      /* chatbot optional */
+    }
+
+    // Show/hide sections based on flags
+    const iphoneSection = document.getElementById("iphoneMockupSection");
+    const testimonialsSection = document.getElementById("testimonialsSection");
+    const faqSection = document.getElementById("faqSection");
+
+    if (flags.iphoneMockup && iphoneSection) {
+      iphoneSection.hidden = false;
+      // Initialize section mockup (below fold)
+      initMockupAnimation("mockupMessages");
+    }
+
+    if (flags.testimonials && testimonialsSection) {
+      testimonialsSection.hidden = false;
+      // Fetch from API or use defaults
+      try {
+        const res = await fetch(`${API_BASE}/api/testimonials`);
+        if (res.ok) {
+          const data = await res.json();
+          renderTestimonials(data.testimonials || DEFAULT_TESTIMONIALS);
+        } else {
+          renderTestimonials(DEFAULT_TESTIMONIALS);
+        }
+      } catch {
+        renderTestimonials(DEFAULT_TESTIMONIALS);
+      }
+    }
+
+    if (flags.faq && faqSection) {
+      faqSection.hidden = false;
+      renderFAQ(DEFAULT_FAQS);
+    }
+  } catch (error) {
+    console.warn("Failed to fetch feature flags:", error);
+  }
+}
+
+// ============================================
+// HERO LIVE ACTIVITY FEED
+// ============================================
+
+async function initHeroLiveFeed() {
+  const feed = document.getElementById("heroFeedItems");
+  const activeUsers = document.getElementById("heroActiveUsers");
+  const totalSteps = document.getElementById("heroTotalSteps");
+  const totalMiles = document.getElementById("heroTotalMiles");
+  const totalWorkouts = document.getElementById("heroTotalWorkouts");
+  
+  if (!feed) return;
+
+  // Try to fetch from API
+  async function fetchLiveData() {
+    try {
+      const res = await fetch("https://api.thetrackerapp.io/api/activity/live");
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      console.warn("Could not fetch live activity:", e);
+    }
+    return null;
+  }
+
+  function renderEvents(events) {
+    feed.innerHTML = "";
+    events.slice(0, 6).forEach(event => {
+      const item = document.createElement("div");
+      item.className = "live-feed-item";
+      item.innerHTML = `
+        <span class="feed-icon">${event.icon || "👟"}</span>
+        <div class="feed-info">
+          <span class="feed-name">${escapeHtml(event.name)}</span>
+          <span class="feed-location">${escapeHtml(event.location || "")}</span>
+        </div>
+        <span class="feed-value">+${event.delta || event.steps || 0}</span>
+      `;
+      feed.appendChild(item);
+    });
+  }
+
+  function updateStats(stats) {
+    if (activeUsers && stats.activeUsers) {
+      activeUsers.textContent = `${stats.activeUsers} active`;
+    }
+    if (totalSteps && stats.totalStepsToday) {
+      totalSteps.textContent = stats.totalStepsToday.toLocaleString();
+    }
+    if (totalMiles && stats.totalMilesToday) {
+      totalMiles.textContent = stats.totalMilesToday.toFixed(1);
+    }
+    if (totalWorkouts && stats.totalWorkoutsToday) {
+      totalWorkouts.textContent = stats.totalWorkoutsToday;
+    }
+  }
+
+  function escapeHtml(str) {
+    if (!str) return "";
+    return str.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  }
+
+  // Initial fetch
+  const data = await fetchLiveData();
+  if (data) {
+    if (data.events) renderEvents(data.events);
+    if (data.stats) updateStats(data.stats);
+  } else {
+    // Fallback to simulated data
+    useFallbackData();
+  }
+
+  // Poll for updates
+  setInterval(async () => {
+    const data = await fetchLiveData();
+    if (data) {
+      if (data.events) renderEvents(data.events);
+      if (data.stats) updateStats(data.stats);
+    }
+  }, 5000);
+
+  function useFallbackData() {
+    const names = ["John D.", "Sarah M.", "Alex K.", "Emily R.", "Mike T.", "Lisa W."];
+    const locations = ["Austin", "NYC", "LA", "Chicago", "Seattle", "Miami"];
+    const icons = ["👟", "🏃", "🚶", "💪", "🏋️", "🚴"];
+    let stepTotal = Math.floor(Math.random() * 5000) + 2000;
+    let workoutTotal = Math.floor(Math.random() * 5) + 1;
+
+    if (totalSteps) totalSteps.textContent = stepTotal.toLocaleString();
+    if (totalMiles) totalMiles.textContent = (stepTotal / 2000).toFixed(1);
+    if (totalWorkouts) totalWorkouts.textContent = workoutTotal;
+    if (activeUsers) activeUsers.textContent = `${Math.floor(Math.random() * 30) + 15} active`;
+
+    for (let i = 0; i < 4; i++) addFallbackItem();
+
+    function addFallbackItem() {
+      const steps = Math.floor(Math.random() * 400) + 50;
+      const item = document.createElement("div");
+      item.className = "live-feed-item";
+      item.innerHTML = `
+        <span class="feed-icon">${icons[Math.floor(Math.random() * icons.length)]}</span>
+        <div class="feed-info">
+          <span class="feed-name">${names[Math.floor(Math.random() * names.length)]}</span>
+          <span class="feed-location">${locations[Math.floor(Math.random() * locations.length)]}</span>
+        </div>
+        <span class="feed-value">+${steps}</span>
+      `;
+      feed.insertBefore(item, feed.firstChild);
+      while (feed.children.length > 6) feed.removeChild(feed.lastChild);
+      stepTotal += steps;
+      if (totalSteps) totalSteps.textContent = stepTotal.toLocaleString();
+      if (totalMiles) totalMiles.textContent = (stepTotal / 2000).toFixed(1);
+    }
+
+    setInterval(() => {
+      addFallbackItem();
+      if (activeUsers) activeUsers.textContent = `${Math.floor(Math.random() * 30) + 15} active`;
+    }, 3000 + Math.random() * 2000);
+  }
+}
+
+// ============================================
+// MAINTENANCE MODE CHECK
+// ============================================
+
+async function checkMaintenanceMode() {
+  try {
+    // Use our edge-cached proxy (/api/control) instead of hitting the
+    // upstream backend on every page load. Vercel caches this response
+    // for 30 minutes at the edge.
+    const res = await fetch("/api/control");
+    if (!res.ok) return false;
+    const flags = await res.json();
+    
+    if (flags.maintenanceMode) {
+      // Hide ALL page content
+      document.body.innerHTML = "";
+      document.body.style.margin = "0";
+      document.body.style.padding = "0";
+      document.body.style.overflow = "hidden";
+      
+      // Create maintenance page
+      const overlay = document.createElement("div");
+      overlay.className = "maintenance-overlay";
+      overlay.innerHTML = `
+        <div class="maintenance-icon">🔧</div>
+        <h1>We'll Be Right Back</h1>
+        <p>${flags.maintenanceMessage || "We're making some improvements. Check back soon!"}</p>
+      `;
+      document.body.appendChild(overlay);
+      return true;
+    }
+  } catch (e) {
+    console.warn("Could not check maintenance mode:", e);
+  }
+  return false;
+}
+
+// Handle live feed visibility based on feature flag
+async function handleLiveFeedVisibility() {
+  try {
+    // Use the edge-cached /api/control proxy (30 min cache) instead of
+    // hammering the upstream backend on every page load.
+    const res = await fetch("/api/control");
+    if (!res.ok) throw new Error("Failed to fetch flags");
+    const flags = await res.json();
+    
+    const liveFeed = document.getElementById("heroLiveFeed");
+    const iphoneFrame = document.getElementById("iphoneFrame");
+    const rightColumn = document.getElementById("heroRightColumn");
+    
+    if (flags.liveActivityFeed === false) {
+      // Hide live feed
+      if (liveFeed) liveFeed.style.display = "none";
+      // Expand iPhone to fill the space
+      if (iphoneFrame) {
+        iphoneFrame.classList.add("iphone-frame-expanded");
+      }
+      if (rightColumn) {
+        rightColumn.classList.add("hero-right-column-expanded");
+      }
+    } else {
+      // Show live feed and initialize it
+      if (liveFeed) liveFeed.style.display = "";
+      initHeroLiveFeed();
+    }
+  } catch (e) {
+    // Default: show live feed
+    initHeroLiveFeed();
+  }
+}
+
 inject();
 initGoogleAnalytics();
 init();
+initFeatureSections();
+handleLiveFeedVisibility();

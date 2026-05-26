@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pricing | The Tracker App</title>
+    <meta name="description" content="Simple, transparent pricing for The Tracker App. Start free, upgrade when you're ready." />
+    <meta name="theme-color" content="#000000" />
+
+    <link rel="canonical" href="https://thetrackerapp.io/pricing" />
+    <link rel="icon" href="/favicon.svg?v=5" type="image/svg+xml" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="pricing.css" />
+  </head>
+  <body>
+    <div id="pricingApp">
+      <header class="pricing-header">
+        <a href="/" class="logo">The Tracker App</a>
+        <nav class="pricing-nav">
+          <a href="/">Home</a>
+          <a href="/community">Community</a>
+          <a href="/blog">Blog</a>
+        </nav>
+        <a href="/login" class="login-btn">Login</a>
+      </header>
+
+      <main class="pricing-main">
+        <section class="pricing-hero">
+          <h1>Simple, Transparent Pricing</h1>
+          <p class="hero-subtitle" id="pricingSubtitle">Loading current pricing…</p>
+        </section>
+
+        <!-- Pricing cards are rendered dynamically from /api/control → billing.*.
+             See src/pricing.js. The skeleton shown below disappears as soon
+             as the live data lands so users never see a blank page. -->
+        <div id="pricingContainer" class="pricing-dynamic">
+          <div class="pricing-skeleton" aria-hidden="true">
+            <div class="pricing-skeleton-card"></div>
+            <div class="pricing-skeleton-card"></div>
+          </div>
+        </div>
+
+        <section class="pricing-faq">
+          <h2>Frequently Asked Questions</h2>
+          <div class="faq-grid">
+            <details class="faq-item">
+              <summary>Can I cancel anytime?</summary>
+              <p>Yes! You can cancel your subscription at any time. You'll continue to have access until the end of your billing period.</p>
+            </details>
+            <details class="faq-item">
+              <summary>Is there a free trial?</summary>
+              <p>Yes — every new account gets a 7-day free trial of the full app. No credit card required to start.</p>
+            </details>
+            <details class="faq-item">
+              <summary>What payment methods do you accept?</summary>
+              <p>We accept all major credit cards, Apple Pay, and Google Pay through our secure payment processor.</p>
+            </details>
+            <details class="faq-item">
+              <summary>Can I switch plans?</summary>
+              <p>Absolutely! You can upgrade or downgrade your plan at any time. Changes take effect on your next billing cycle.</p>
+            </details>
+          </div>
+        </section>
+
+        <section class="pricing-cta">
+          <h2>Ready to start tracking?</h2>
+          <p>Join thousands of users who've made fitness tracking effortless.</p>
+          <a href="/" class="cta-button">Get Started Free</a>
+        </section>
+      </main>
+
+      <footer class="pricing-footer">
+        <div class="footer-links">
+          <a data-feature="footer.contact" href="mailto:contact@thetrackerapp.io">Contact</a>
+          <a data-feature="footer.privacy" href="/privacy">Privacy</a>
+          <a data-feature="footer.terms" href="/terms">Terms</a>
+        </div>
+      </footer>
+    </div>
+
+    <script type="module" src="src/pricing.js"></script>
+  </body>
+</html>

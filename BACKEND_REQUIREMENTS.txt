@@ -1,0 +1,483 @@
+================================================================================
+BACKEND REQUIREMENTS — The Tracker App (thetrackerapp.io)
+Single source of truth for everything the api.thetrackerapp.io backend
+needs to support the frontend in its current state.
+================================================================================
+
+Last updated: 2026-05-22
+
+This file is a tight TODO list. Long-form contracts live in:
+  - PERSONAL_TRAINER_BACKEND.txt                 (coach <-> athlete linking, PT signup)
+  - PERSONAL_TRAINERS_AND_LEADERBOARD_SPEC.txt   (leaderboard + /u/:username profile)
+  - LEADERBOARD_ENDPOINTS.txt                    (existing homepage leaderboard wire-up)
+  - BACKEND_TODO.md                              (legacy detailed spec)
+
+For every endpoint below: respond with `Content-Type: application/json` and
+include `ok: true` on success. Errors → HTTP 4xx/5xx with `{ ok:false,
+error:"..." }`. Authenticated routes accept `Authorization: Bearer <session>`.
+
+================================================================================
+0. FEATURE FLAGS — GET /api/control          [public, edge-cached at Vercel 5 min]
+================================================================================
+Tunable: set Vercel env var `CONTROL_CACHE_SECONDS` to change the edge cache
+window. 30 → near-realtime, 300 → 5 min default, 1800 → 30 min. The backend
+gets at most ~1 hit / region / CACHE_SECONDS regardless of traffic volume.
+
+
+Existing endpoint. Add the following keys to its response body. ALL are
+optional — when missing the frontend uses its FALLBACK_FLAGS (in api/control.js)
+so the site never breaks while you're rolling these out.
+
+```jsonc
+{
+  // === toggles for individual sidebar tabs on /dashboard ==================
+  "dashboardTabs": {
+    "personalTrainer": true,   // hides PERSONAL TRAINER tab when false
+    "groups":          true,   // hides GROUPS tab when false
+    "runClubs":        true    // hides RUN CLUBS tab when false
+  },
+
+  // === toggles for individual footer links (per page) =====================
+  "footer": {
+    "contact": true, "pricing": true, "community": true, "blog": true,
+    "press":   true, "guide":   true, "status":    true, "trust":  true,
+    "llmsTxt": true, "privacy": true, "terms":     true, "home":   true,
+    "pebbleApp": true, "macApps": true, "freeTools": true, "groups": true,
+    "workoutResources": true, "win": false, "products": true,
+    "runClubs": true, "personalTrainers": true, "brackets": false
+  },
+
+  // === social-media icons (white SVG row, bottom-right of every footer) ===
+  // key  → url     (empty/null/missing = hide that icon)
+  "socials": {
+    "x": "", "twitter": "", "threads": "", "instagram": "", "facebook": "",
+    "tiktok": "", "snapchat": "", "linkedin": "", "bluesky": "",
+    "youtube": "", "rumble": "", "twitch": "", "kick": "", "bitchute": "",
+    "pinterest": "", "gbp": "", "reddit": "", "discord": "", "telegram": "",
+    "mastodon": "", "spotify": "", "appleMusic": "", "podcast": "",
+    "medium": "", "substack": "", "patreon": "", "kofi": "", "github": "",
+    "website": ""
+  },
+
+  // === pricing page (simplified to one plan, two billing intervals) =======
+  // Yearly card shows "$X/mo billed annually" computed from price/12 unless
+  // `yearlyEquivalent` is explicitly set.
+  "billing": {
+    "monthlyTier": {
+      "name":     "Monthly",
+      "price":    10,
+      "interval": "month",
+      "features": [
+        "Unlimited workout, nutrition & water logging",
+        "Body measurements & progress charts",
+        "Leaderboards, brackets & streaks",
+        "Wearable integrations",
+        "Cancel anytime"
+      ]
+    },
+    "yearlyTier": {
+      "name":             "Yearly",
+      "price":            96,
+      "interval":         "year",
+      "yearlyEquivalent": 8,
+      "features": [
+        "Everything in Monthly",
+        "2 months free vs monthly",
+        "Priority support",
+        "Early access to new features"
+      ]
+    }
+  }
+}
+```
+
+NOTE: previous tiers `freeTier`, `weeklyTier`, `proTier`, `premiumTier` were
+removed when the pricing page was simplified. Keep emitting them if you want,
+they'll be ignored.
+
+================================================================================
+1. PROFILE — GET / PATCH /api/account/profile          [auth]
+================================================================================
+
+GET is the single source of truth that the dashboard reads on every Stats-tab
+load, every PT-tab load, every Groups/Run-Clubs-tab load. Add these fields to
+its current response:
+
+```jsonc
+{
+  // === Personal trainer side ============================================
+  "isPersonalTrainer":        false,   // approved PTs only
+  "personalTrainerStatus":    "none",  // none|pending|linked|rejected|removed
+  "trainerApplicationStatus": "none",  // none|pending|approved|rejected
+
+  "personalTrainer": null,             // athlete's coach when linked
+  // { id, username, displayName, avatar, since, trainerCode }
+
+  "trainerCodePending": null,          // when athlete redeemed but PT hasn't acted
+  // { trainerUsername, submittedAt }
+
+  "trainerCode": "RIVER-9X4P",         // PT only
+  "clientsAsTrainer": [],              // PT only
+  // [ { id, username, displayName, since, lastLog, status:"active|pending|removed" } ]
+  "trainerSettings": {                 // PT only
+    "publicProfile":    true,
+    "acceptingClients": true,
+    "bio":              "..."
+  },
+
+  // === Communities (Groups + Run Clubs tabs) ============================
+  "communities": [
+    {
+      "id":          "tg_morning_lifters",
+      "kind":        "telegram",   // telegram | imessage | group | run-club | bracket
+      "name":        "Morning Lifters",
+      "emoji":       "🏋️",
+      "memberCount": 156,
+      "role":        "member",     // member | admin | owner
+      "since":       "2026-02-10",
+      "url":         "https://t.me/morninglifters",
+      "isPublic":    true,
+      "location":    null          // run-club only: "Austin, TX"
+    }
+  ]
+}
+```
+
+PATCH accepts any subset of those (writes from frontend so far):
+  { "fitnessGoal": "Maintain" | "Lose" | "Gain" | "Recomp" | "Bulk" | "Cut" }
+  { "height": 70 }
+  { "calorieGoal": 2400, "proteinGoal": 180, "carbsGoal": 250, "fatsGoal": 70, "stepsGoal": 10000 }
+  { "trainerSettings": { "acceptingClients": false } }     // PT only
+  { "trainerSettings": { "publicProfile": true } }
+  { "trainerSettings": { "bio": "..." } }
+
+PATCH URL form used by the frontend:
+  PATCH /api/account/profile?contact=<username>
+
+================================================================================
+2. PERSONAL TRAINER FLOW                              [most are auth-only]
+================================================================================
+
+Full state machines + DB shape in PERSONAL_TRAINER_BACKEND.txt. Endpoints used:
+
+  POST  /api/account/trainer-code/redeem        body:{ code }              [auth]
+  POST  /api/account/trainer-code/cancel        body:{}                    [auth]
+  POST  /api/trainer/clients/:athleteId/remove  body:{}                    [auth athlete OR PT]
+
+  POST  /api/trainer/application                body:{...}                 [auth]
+  POST  /api/trainer/application/withdraw       body:{}                    [auth]
+  POST  /api/trainer/application/public         body:{...email,city...}    [PUBLIC, no auth]
+
+  GET   /api/trainer/requests                                              [PT only]
+  POST  /api/trainer/requests/:athleteId/approve                           [PT only]
+  POST  /api/trainer/requests/:athleteId/reject body:{reason?}             [PT only]
+
+  POST  /api/admin/trainer/applications/:id/approve                        [admin]
+  POST  /api/admin/trainer/applications/:id/reject                         [admin]
+
+PUBLIC application body (from /personal-trainers#apply form):
+```jsonc
+{
+  "fullName":         "River Park",
+  "email":            "river@example.com",
+  "city":             "Austin, TX",
+  "experienceYears":  10,
+  "credentials":      ["NSCA-CPT","RDN"],
+  "specialties":      ["Hybrid","Strength","Endurance"],
+  "bio":              "...",
+  "portfolioUrl":     "https://...",
+  "agreeTerms":       true
+}
+```
+
+When an admin approves a public application:
+  - If a user account with that email already exists → flip them to
+    isPersonalTrainer:true, mint trainerCode, fire notification.
+  - If no account exists → email applicant a sign-up link that auto-attaches
+    the trainer record once they finish auth.
+
+Trainer code format: `WORD-XXXX` (4–7 letter readable word + 4-char alphanum,
+no 0/O/1/I). Stored case-insensitive, displayed upper. Frontend strips spaces
+and hyphens on submit so users can paste "river9x4p" or "RIVER-9X4P" the same.
+
+================================================================================
+3. COMMUNITIES (Groups + Run Clubs tabs)              [auth]
+================================================================================
+
+Drives both the GROUPS and RUN CLUBS sidebar tabs in the dashboard.
+
+  POST  /api/communities/:id/join              body:{}        // public groups
+  POST  /api/communities/:id/leave             body:{}
+  POST  /api/communities/:id/request-join      body:{}        // private groups
+
+The list of communities the user belongs to comes from
+`/api/account/profile → communities[]` (see Section 1). No separate "list"
+endpoint is needed.
+
+================================================================================
+4. CHARTS — GET /api/chart/data                       [auth]
+================================================================================
+
+Single endpoint powers the Stats-tab spotlight + quick-charts + advanced view.
+
+Query: ?contact=<u>&range=<7d|30d|90d|1y|all>[&metric=<key>][&from=YYYY-MM-DD&to=YYYY-MM-DD]
+
+Response shape: see PERSONAL_TRAINERS_AND_LEADERBOARD_SPEC.txt § "Chart Data API"
+or the inline spec in BACKEND_TODO.md "3. Dashboard Charts API". Minimum:
+
+```jsonc
+{
+  "ok": true,
+  "contact": "fierylion",
+  "range": "30d",
+  "metrics":            [ { key, label, unit, category, available, stats:{...} } ],
+  "metricsByCategory":  { body:[...], bodyMeasures:[...], nutrition:[...],
+                          hydration:[...], health:[...] },
+  "chartData": { "weight": [ { date, value } ], "bicepL": [ ... ] },
+
+  // Optional but lights up the dashboard spotlight cards:
+  "goal":    "Maintain",
+  "streak":  { "currentDays": 12, "longestDays": 47, "lastLog": "2026-05-22" },
+  "targets": { "calories": 2400, "protein": 180, "carbs": 250,
+               "fats": 70, "water": 128, "steps": 10000 }
+}
+```
+
+The frontend filters out `waterGallons` (it's the same series as `water`
+in different units). Only return metrics where `available:true && chartData[k].length > 0`
+or just drop the rest entirely.
+
+================================================================================
+5. BODY MEASUREMENTS & JOURNALS (inline editing on Stats tab)   [auth]
+================================================================================
+
+  GET    /api/user/measurements                  // hydrate the panel
+  POST   /api/user/measurements                  // upsert one or more fields
+  POST   /api/user/journals/:part                // upsert qualitative assessment
+  DELETE /api/user/journals/:part                // remove an assessment
+
+Measurement fields accepted by POST:
+  height, weight, bodyFat, chest, shoulders, neck, lats, traps,
+  serratusAnterior, bicepL, bicepR, forearmL, forearmR, waist, abs, obliques,
+  hips, glutes, quadL, quadR, calfL, calfR
+
+Journal :part keys (lowercased, whitespace stripped):
+  abs, arms, back, calves, chest, lats, neck, obliques, quads,
+  serratusanterior, shoulders, traps
+
+Units: weight=lb, height=in, bodyFat=%, all circumferences=in.
+
+Full request/response examples: BACKEND_TODO.md § "3b. Body Measurements & Journals".
+
+================================================================================
+6. PUBLIC LEADERBOARD + USER PROFILES                          [public, cached 60 s]
+================================================================================
+
+The /leaderboard page and /u/:username pages are both PUBLIC.
+
+  GET /api/leaderboard
+        ?category=strength|calisthenics|streaks|steps|calories|sleep|miles
+        [&metric=bench|squat|...]
+        [&range=7d|30d|90d|1y|all]
+        [&limit=50&offset=0]
+        [&region=US|EU|ALL]
+        [&runclub=<id>] [&bracket=<id>]
+
+  GET /api/u/:username                  // full public profile
+  GET /api/u/:username/exists           // existence check
+
+Schemas + flair / badges details: PERSONAL_TRAINERS_AND_LEADERBOARD_SPEC.txt
+sections C and D.
+
+A /u/:username profile's chart sparklines fetch:
+  GET /api/chart/data?contact=<viewer>&forUser=<profileUsername>&range=30d
+Backend must authorize: viewer may see another user's charts iff that user is
+public OR is the viewer's PT OR is one of the viewer's athletes (when viewer
+is a PT).
+
+================================================================================
+7. HOMEPAGE LEADERBOARDS (existing, unchanged)
+================================================================================
+
+The homepage panels (Strength, Calisthenics, Pebble, Top Streaks) all read
+from /api/public-leaderboard which is a Vercel proxy in front of:
+
+  GET https://api.thetrackerapp.io/api/public-site-snapshot
+
+Detailed map: LEADERBOARD_ENDPOINTS.txt. No changes needed there.
+
+================================================================================
+PART D2 · CHATBOT (floating widget on every page)
+================================================================================
+
+Gated by /api/control → `chatbotEnabled: true`. When the flag is true the
+frontend mounts a launcher in the bottom-right of every page (src/chatbot.js).
+Conversations are stateless on the frontend — the backend owns the session
+keyed by `sessionId`.
+
+All three endpoints are PUBLIC (logged-out visitors can chat). If the
+caller provides an Authorization bearer token, attach the resolved user to
+the session so the AI has context about the logged-in account.
+
+  POST  /api/chat/message
+    Body:
+      {
+        "sessionId": "chat_abc123",      // omitted on first message
+        "contact":   "fierylion",        // present when user is logged in
+        "message":   "How do I log a workout?",
+        "context":   { "page":"/", "url":"https://thetrackerapp.io/" }
+      }
+    Reply:
+      {
+        "ok":   true,
+        "sessionId": "chat_abc123",       // always echo back; client persists it
+        "reply": "Just text the bot with the lift…",
+        "mode":  "ai",                   // "ai" | "agent"
+        "handedOff": false,              // true after an agent took over
+        "suggestedActions": [             // optional inline CTAs
+          { "label": "Open guide", "url": "/guide", "kind": "link" }
+        ],
+        "agentName": null                // populated when mode === "agent"
+      }
+    Notes:
+      - First request from a browser has no sessionId — backend mints one.
+      - When mode flips to "agent" the frontend starts polling /api/chat/messages.
+
+  POST  /api/chat/request-agent
+    Body:
+      {
+        "sessionId": "chat_abc123",
+        "contact":   "fierylion",
+        "reason":    "I need help with billing"   // optional user-typed reason
+      }
+    Reply:
+      {
+        "ok":       true,
+        "sessionId":"chat_abc123",
+        "mode":     "agent",
+        "eta":      "2 minutes",                // optional, shown to user
+        "greeting": "Hi — Sarah here. How can I help?"
+      }
+    Notes:
+      - Triggered by clicking "Talk to a human" or typing /^(agent|human|support|representative)/i.
+      - Should notify the on-call human agent via Slack/Telegram/email/SMS.
+
+  GET   /api/chat/messages?sessionId=…&since=<isoTimestamp>
+    Reply:
+      {
+        "ok": true,
+        "mode": "agent",
+        "closed": false,
+        "messages": [
+          { "id": "msg_88", "role": "agent", "agentName": "Sarah",
+            "text": "How can I help today?", "ts": "2026-05-22T17:01:00Z" }
+        ]
+      }
+    Notes:
+      - Polled every 6 s by the frontend once a session has been handed off.
+      - `since` lets the backend return only new messages.
+      - When `closed:true` the frontend stops polling.
+
+The frontend persists `sessionId` + the last 50 messages in localStorage so a
+refresh keeps the conversation alive. Anti-abuse: rate-limit /api/chat/message
+to ~30/min per session/IP.
+
+================================================================================
+PART E · NOTIFICATIONS (out-of-band suggestions)
+================================================================================
+
+Whenever any of the following happen, the backend should fire a text via the
+user's preferred service (iMessage/SMS/Telegram):
+
+  - Athlete redeems a PT code           → PT:        "@x wants you to coach them. Reply YES/NO."
+  - PT approves                          → Athlete:   "You're now linked with <PT>."
+  - PT rejects                           → Athlete:   "Not a match this time — try another code."
+  - Either side breaks the link          → other:     "Coaching link with <other> has ended."
+  - PT application approved              → Applicant: "You're a coach now! Your code is RIVER-9X4P."
+  - PT application rejected              → Applicant: "Application wasn't approved — reason: X."
+  - Bracket / streak badge earned        → Athlete + PT.
+
+Short-code text replies the bot should understand after a coach-request
+notification (case-insensitive):
+
+  YES                – approve the most recent pending request
+  NO                 – reject  the most recent pending request
+  YES <code>         – approve a specific athlete (when more than one is pending)
+  NO  <code>         – reject  a specific athlete
+  LIST               – list pending requests with athlete codes
+
+================================================================================
+9. ROLLOUT ORDER
+================================================================================
+
+The frontend already ships with graceful empty states for every new field.
+Implement in this order and the UI lights up incrementally:
+
+  Phase 1 — /api/control                       Adds dashboardTabs, footer.*, socials, billing.{monthly,yearly}Tier
+            /api/account/profile (GET only)    Adds the new fields, set defaults (none/[]/null/false)
+            → All three new tabs render correctly with empty states.
+
+  Phase 2 — PT signup                          /api/trainer/application + /api/trainer/application/public
+            /api/admin/trainer/applications/:id/{approve,reject}
+            → "Become a coach" form on /personal-trainers#apply works end-to-end.
+
+  Phase 3 — Coach <-> athlete linking          all /api/account/trainer-code/* and /api/trainer/requests/* routes
+            → Athletes can lock into coaches via their code.
+
+  Phase 4 — Communities mutations              /api/communities/:id/{join,leave,request-join}
+
+  Phase 5 — Notifications + short-code replies (Section 8)
+
+  Phase 6 — Public leaderboard + profiles      /api/leaderboard + /api/u/:username
+
+================================================================================
+10. ENDPOINT INDEX (everything in one table)
+================================================================================
+
+| Method | Path                                          | Auth   | Cache |
+|--------|-----------------------------------------------|--------|-------|
+| GET    | /api/control                                  | public | 30 m  |
+| GET    | /api/account/profile                          | bearer | none  |
+| PATCH  | /api/account/profile?contact=<u>              | bearer | none  |
+| POST   | /api/account/trainer-code/redeem              | bearer | none  |
+| POST   | /api/account/trainer-code/cancel              | bearer | none  |
+| POST   | /api/trainer/application                      | bearer | none  |
+| POST   | /api/trainer/application/withdraw             | bearer | none  |
+| POST   | /api/trainer/application/public               | public | none  |
+| GET    | /api/trainer/requests                         | PT     | none  |
+| POST   | /api/trainer/requests/:athleteId/approve      | PT     | none  |
+| POST   | /api/trainer/requests/:athleteId/reject       | PT     | none  |
+| POST   | /api/trainer/clients/:athleteId/remove        | athlete or PT | none |
+| POST   | /api/admin/trainer/applications/:id/approve   | admin  | none  |
+| POST   | /api/admin/trainer/applications/:id/reject    | admin  | none  |
+| POST   | /api/communities/:id/join                     | bearer | none  |
+| POST   | /api/communities/:id/leave                    | bearer | none  |
+| POST   | /api/communities/:id/request-join             | bearer | none  |
+| GET    | /api/chart/data                               | bearer | none  |
+| GET    | /api/user/measurements                        | bearer | none  |
+| POST   | /api/user/measurements                        | bearer | none  |
+| POST   | /api/user/journals/:part                      | bearer | none  |
+| DELETE | /api/user/journals/:part                      | bearer | none  |
+| GET    | /api/leaderboard                              | public | 60 s  |
+| GET    | /api/u/:username                              | public | 60 s  |
+| GET    | /api/u/:username/exists                       | public | 60 s  |
+| GET    | /api/public-site-snapshot                     | public | (read by Vercel /api/public-leaderboard) |
+
+================================================================================
+11. SECURITY CHECKLIST
+================================================================================
+
+- Rate-limit /api/account/trainer-code/redeem        (10/hour per athlete)
+- Rate-limit /api/trainer/application                (1/day per user)
+- Rate-limit /api/trainer/application/public         (3/day per IP+email)
+- PT-only endpoints check `isPersonalTrainer === true` on the bearer's user.
+- /api/trainer/clients/:athleteId/remove allows ONLY:
+    (a) the athlete whose id matches `:athleteId`, OR
+    (b) the PT currently linked to that athlete.
+- /api/admin/* requires the admin scope on the session token.
+- PATCH /api/account/profile may not change `isPersonalTrainer`, `trainerCode`,
+  or `clientsAsTrainer` directly (admin-only or system fields).
+- /api/chart/data?forUser=<other>: viewer must be (a) other === viewer, OR
+  (b) other.isPublic === true, OR (c) PT-of-other, OR (d) athlete-of-other.
+
+================================================================================

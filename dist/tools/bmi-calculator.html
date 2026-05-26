@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Free BMI Calculator | The Tracker App - Body Mass Index Calculator</title>
+    <meta name="description" content="Calculate your Body Mass Index (BMI) for free. Understand your weight category and get personalized health insights. Track body measurements via SMS, iMessage, or Telegram." />
+    <meta name="keywords" content="BMI calculator, body mass index, weight calculator, health calculator, body measurement tracking, SMS body tracker, iMessage fitness" />
+    <meta name="theme-color" content="#000000" />
+
+    <link rel="canonical" href="https://thetrackerapp.io/tools/bmi-calculator" />
+    <link rel="icon" href="/favicon.svg?v=5" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3" sizes="180x180" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Free BMI Calculator | The Tracker App" />
+    <meta property="og:description" content="Calculate your Body Mass Index (BMI) for free and understand your weight category." />
+    <meta property="og:url" content="https://thetrackerapp.io/tools/bmi-calculator" />
+    <meta property="og:image" content="https://thetrackerapp.io/og-image.png" />
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "BMI Calculator",
+      "applicationCategory": "HealthApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "description": "Free Body Mass Index calculator to help understand your weight relative to your height."
+    }
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+    <script type="module" crossorigin src="/assets/bmiCalculator-BfCFPK_8.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-DdFyKP1d.js">
+    <link rel="modulepreload" crossorigin href="/assets/feature-flags-CpbHEPVM.js">
+    <link rel="stylesheet" crossorigin href="/assets/info-pages-iuJ7kj43.css">
+    <link rel="stylesheet" crossorigin href="/assets/tools-DPjuYxsW.css">
+  </head>
+  <body>
+    <div id="appShell">
+      <header class="site-header">
+        <div class="container header-row">
+          <nav class="app-links" aria-label="Navigation">
+            <a href="/">Home</a>
+            <a href="/tools/tdee-calculator">TDEE Calculator</a>
+            <a href="/tools/bmi-calculator" class="active">BMI Calculator</a>
+            <a href="/tools/ai-meal-planner">AI Meal Planner</a>
+            <a href="/tools/food-diary">Food Diary</a>
+          </nav>
+          <div class="header-auth">
+            <a id="loginLink" class="login-link" href="/login">Login</a>
+            <a id="dashboardLink" class="dashboard-link" href="https://dashboard.thetrackerapp.io/dashboard" hidden>Dashboard</a>
+          </div>
+        </div>
+      </header>
+
+      <main class="container page-content">
+        <section class="page-hero">
+          <h1>BMI Calculator</h1>
+          <p class="hero-subtitle">Calculate your Body Mass Index and understand your weight category</p>
+        </section>
+
+        <section class="calculator-section">
+          <form id="bmiForm" class="calculator-form">
+            <div class="form-row">
+              <label for="bmiWeight">
+                Weight
+                <div class="input-with-unit">
+                  <input type="number" id="bmiWeight" name="weight" min="50" max="700" step="0.1" required placeholder="150" />
+                  <select id="bmiWeightUnit" name="weightUnit">
+                    <option value="lb">lb</option>
+                    <option value="kg">kg</option>
+                  </select>
+                </div>
+              </label>
+
+              <label for="bmiHeight">
+                Height
+                <div class="input-with-unit">
+                  <input type="number" id="bmiHeight" name="height" min="36" max="96" step="0.1" required placeholder="68" />
+                  <select id="bmiHeightUnit" name="heightUnit">
+                    <option value="in">in</option>
+                    <option value="cm">cm</option>
+                  </select>
+                </div>
+              </label>
+            </div>
+
+            <button type="submit" class="btn-primary">Calculate BMI</button>
+          </form>
+
+          <div id="bmiResults" class="calculator-results" hidden>
+            <h2>Your Results</h2>
+            
+            <div class="bmi-result-display">
+              <div class="bmi-value-container">
+                <span id="bmiValue" class="bmi-value">0</span>
+                <span id="bmiCategory" class="bmi-category">-</span>
+              </div>
+              
+              <div class="bmi-scale">
+                <div class="bmi-scale-bar">
+                  <div class="bmi-zone underweight" style="width: 18.75%">Underweight</div>
+                  <div class="bmi-zone normal" style="width: 25%">Normal</div>
+                  <div class="bmi-zone overweight" style="width: 25%">Overweight</div>
+                  <div class="bmi-zone obese" style="width: 31.25%">Obese</div>
+                </div>
+                <div id="bmiIndicator" class="bmi-indicator" style="left: 0%"></div>
+              </div>
+
+              <div class="bmi-ranges">
+                <span>Underweight: &lt;18.5</span>
+                <span>Normal: 18.5-24.9</span>
+                <span>Overweight: 25-29.9</span>
+                <span>Obese: 30+</span>
+              </div>
+            </div>
+
+            <div class="weight-ranges-section">
+              <h3>Healthy Weight Range for Your Height</h3>
+              <p>Based on BMI 18.5-24.9:</p>
+              <p class="weight-range">
+                <span id="healthyWeightMin">0</span> - <span id="healthyWeightMax">0</span> <span id="healthyWeightUnit">lb</span>
+              </p>
+            </div>
+
+            <div class="cta-section">
+              <p>Track your body measurements and weight via text message!</p>
+              <a href="/" class="btn-primary">Start Tracking Free</a>
+            </div>
+          </div>
+        </section>
+
+        <section class="info-section">
+          <h2>What is BMI?</h2>
+          <p>Body Mass Index (BMI) is a simple measure of body fat based on your height and weight. While it doesn't directly measure body fat percentage, it's a useful screening tool for identifying potential weight-related health issues.</p>
+          
+          <h3>BMI Categories</h3>
+          <ul>
+            <li><strong>Underweight:</strong> BMI less than 18.5</li>
+            <li><strong>Normal weight:</strong> BMI 18.5 to 24.9</li>
+            <li><strong>Overweight:</strong> BMI 25 to 29.9</li>
+            <li><strong>Obese:</strong> BMI 30 or higher</li>
+          </ul>
+
+          <h3>Limitations of BMI</h3>
+          <p>BMI has limitations and may not accurately reflect body composition for:</p>
+          <ul>
+            <li>Athletes and bodybuilders (muscle weighs more than fat)</li>
+            <li>Elderly individuals (may underestimate fat)</li>
+            <li>Different ethnic groups (risk levels may vary)</li>
+          </ul>
+          <p>For a more complete picture, track additional body measurements like waist circumference, body fat percentage, and muscle measurements with The Tracker App.</p>
+        </section>
+
+        <section class="faq-section">
+          <h2>Frequently Asked Questions</h2>
+          
+          <details class="faq-item">
+            <summary>Is BMI an accurate measure of health?</summary>
+            <p>BMI is a screening tool, not a diagnostic one. It doesn't account for muscle mass, bone density, or fat distribution. Athletes often have "overweight" BMIs despite being very healthy. Use BMI alongside other metrics like body measurements and body fat percentage.</p>
+          </details>
+
+          <details class="faq-item">
+            <summary>How can I track my body measurements?</summary>
+            <p>The Tracker App lets you log body measurements via SMS, iMessage, or Telegram. Track chest, arms, waist, hips, thighs, and more with simple text commands.</p>
+          </details>
+
+          <details class="faq-item">
+            <summary>What's a healthy rate of weight change?</summary>
+            <p>For sustainable results, aim for 0.5-1 lb per week for weight loss and 0.25-0.5 lb per week for muscle gain. Rapid changes are often unsustainable and may include muscle loss.</p>
+          </details>
+
+          <details class="faq-item">
+            <summary>Should I focus on weight or body measurements?</summary>
+            <p>Both! Weight gives you a quick snapshot, but body measurements show where changes are happening. Someone gaining muscle while losing fat might see little scale change but significant measurement changes.</p>
+          </details>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        <div class="container footer-row">
+          <a data-feature="footer.contact" href="mailto:contact@thetrackerapp.io">contact@thetrackerapp.io</a>
+          <a data-feature="footer.freeTools" href="/tools/tdee-calculator">TDEE Calculator</a>
+          <a href="/tools/bmi-calculator">BMI Calculator</a>
+          <a data-feature="footer.privacy" href="/privacy">Privacy Policy</a>
+          <a data-feature="footer.terms" href="/terms">Terms</a>
+        </div>
+      </footer>
+    </div>
+
+  </body>
+</html>

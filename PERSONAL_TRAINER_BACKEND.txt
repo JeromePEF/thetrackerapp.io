@@ -1,0 +1,369 @@
+================================================================================
+PERSONAL TRAINER DYNAMIC — Backend implementation guide
+================================================================================
+
+Frontend status: the "Coach & Community" section already ships on the Stats tab
+(src/dashboard-coach-community.js). It reads from /api/account/profile and
+posts to the endpoints below. Every endpoint degrades gracefully — if the
+backend isn't implemented yet the UI just shows "Unlinked / Not applied"
+states without crashing.
+
+This file is a single-page summary of everything the backend needs to add for
+personal trainers to work end-to-end. A more verbose spec covering leaderboards
+and run-clubs lives in PERSONAL_TRAINERS_AND_LEADERBOARD_SPEC.txt.
+
+================================================================================
+1. ROLES
+================================================================================
+
+  Athlete            – default for every user. Coached by 0 or 1 PTs at a time.
+  Personal Trainer   – an admin-approved user. Has a unique `trainerCode`,
+                       can be coaching N athletes.
+
+A user can be BOTH — a PT can have their own coach.
+
+================================================================================
+2. STATE MACHINE — "athlete <-> coach" link
+================================================================================
+
+                +-----------+   redeem code      +-----------+
+                |   none    | -----------------> |  pending  |
+                +-----------+                    +-----+-----+
+                       ^                               |
+              unlink / +- removed                 PT approves
+              reject       \                           v
+                            \                    +-----------+
+                             +-------------------|  linked   |
+                                                 +-----+-----+
+                                                       |
+                                              either side removes
+                                                       v
+                                                 +-----------+
+                                                 |  removed  |
+                                                 +-----------+
+
+  Field on the athlete: `personalTrainerStatus` ∈
+        "none" | "pending" | "linked" | "rejected" | "removed"
+
+================================================================================
+3. STATE MACHINE — "become a personal trainer" application
+================================================================================
+
+         +-------+   POST /api/trainer/application   +---------+
+         | none  | --------------------------------> | pending |
+         +-------+                                   +----+----+
+            ^                                             |
+            |                                   admin approves / rejects
+            |                                             v
+         +-------+ <----- POST withdraw          +-----+-----+----+
+         | rejec |                               |           |
+         | ted   |       admin reject            |  pending  |  admin approve
+         +-------+ <-----------------------------+           +-----> approved
+                                                                       |
+                                                              isPersonalTrainer = true
+                                                              trainerCode = generate()
+
+  Field on the user: `trainerApplicationStatus` ∈
+        "none" | "pending" | "approved" | "rejected"
+
+================================================================================
+4. DATA EVERY /api/account/profile RESPONSE NEEDS
+================================================================================
+
+Add the following fields to the existing GET /api/account/profile payload:
+
+```jsonc
+{
+  // === existing profile fields stay here ===
+
+  // Personal-trainer side
+  "isPersonalTrainer":        false,
+  "personalTrainerStatus":    "none",       // see state machine above
+  "trainerApplicationStatus": "none",
+
+  // ATHLETE-side info (present when status === "linked")
+  "personalTrainer": null,
+  //   {
+  //     "id":          "user_abc",
+  //     "username":    "coachjay",
+  //     "displayName": "Coach Jay",
+  //     "avatar":      "https://.../avatar.png",
+  //     "since":       "2026-04-12",
+  //     "trainerCode": "RIVER-9X4P"
+  //   }
+
+  // ATHLETE-side pending (present when status === "pending")
+  "trainerCodePending": null,
+  //   { "trainerUsername":"coachjay", "submittedAt":"2026-05-22T01:23:00Z" }
+
+  // PT-side (present when isPersonalTrainer === true)
+  "trainerCode":  "RIVER-9X4P",
+  "clientsAsTrainer": [],
+  //   [
+  //     { "id":"user_xyz", "username":"fierylion",
+  //       "displayName":"🔥 Fierylion", "since":"2026-04-20",
+  //       "lastLog":"2026-05-22", "status":"active" }
+  //   ]
+  "trainerSettings": {
+    "publicProfile":    true,
+    "acceptingClients": true,
+    "bio":              "10 yrs NSCA, hybrid lifter."
+  }
+}
+```
+
+  `clientsAsTrainer[].status` ∈ "active" | "pending" | "removed"
+  `trainerCode` format: `WORD-XXXX` where WORD is a 4-7 letter readable token
+                        and XXXX is alphanumeric. Frontend treats it case-
+                        insensitively. Example: "RIVER-9X4P".
+
+================================================================================
+5. ENDPOINTS (all auth-required unless noted)
+================================================================================
+
+ATHLETE-side
+------------
+
+  POST  /api/account/trainer-code/redeem
+        Body:  { "code": "RIVER-9X4P" }
+        Behaviour:
+          - case-insensitive, hyphen-flexible code lookup
+          - 404 if no PT matches that code
+          - 409 if athlete is already `linked`
+          - sets athlete `personalTrainerStatus = "pending"`,
+            `trainerCodePending = { trainerUsername, submittedAt:<now> }`
+          - notifies the PT (text + push) — see Notifications below
+          - returns the updated profile slice
+
+  POST  /api/account/trainer-code/cancel
+        Body:  {}
+        Behaviour: athlete withdraws their pending request before the PT acts.
+        Resets `personalTrainerStatus = "none"`.
+
+  POST  /api/trainer/clients/:athleteId/remove
+        Body:  {}
+        Behaviour: athlete leaves their current coach (also usable by PT).
+        Sets `personalTrainerStatus = "removed"`, clears `personalTrainer`.
+        PT's `clientsAsTrainer[that athlete].status` becomes "removed".
+
+PT-side
+-------
+
+  GET   /api/trainer/requests
+        Returns the pending requests the signed-in PT has to act on:
+          { ok:true, requests:[
+              { athleteId, username, displayName, avatar, submittedAt }
+          ] }
+
+  POST  /api/trainer/requests/:athleteId/approve
+        Behaviour:
+          - athlete `personalTrainerStatus` → "linked",
+            athlete `personalTrainer` populated with PT info,
+            athlete `trainerCodePending` → null
+          - PT `clientsAsTrainer` gains the entry
+        Returns: { ok:true, client:{ id, username, displayName, since:<today> } }
+
+  POST  /api/trainer/requests/:athleteId/reject
+        Body:  { "reason"?: "string" }
+        Behaviour: athlete `personalTrainerStatus` → "rejected".
+
+  POST  /api/trainer/clients/:athleteId/remove
+        (same endpoint as athlete-side – either party may break the link)
+
+  PATCH /api/account/profile?contact=<u>
+        Frontend writes `trainerSettings.acceptingClients` (bool) here when
+        the PT toggles the "Accepting new athletes" switch. Accepts any subset:
+          { "trainerSettings": { "acceptingClients": false } }
+          { "trainerSettings": { "publicProfile":    true  } }
+          { "trainerSettings": { "bio":              "..." } }
+
+PT-application flow
+-------------------
+
+  POST  /api/trainer/application/public           (NEW – no auth required)
+        Body shape identical to /api/trainer/application, plus:
+          "email":  "...",   // required when anonymous
+          "city":   "..."    // shown on the public trainer directory
+        Behaviour:
+          - Creates a pending application linked by email (not yet to a user).
+          - When an admin approves the application AND the email matches an
+            existing user, that user is flipped to isPersonalTrainer:true and
+            their trainerCode is minted.
+          - When no user exists yet, the admin approval emails the applicant
+            a sign-up link that auto-attaches the trainer record after auth.
+
+  POST  /api/trainer/application                  (existing – auth required)
+        Body:
+          {
+            "fullName":         "River Park",
+            "bio":              "10 yrs NSCA, hybrid lifter.",
+            "credentials":      ["NSCA-CPT","RDN"],
+            "experienceYears":  10,
+            "specialties":      ["Hybrid","Strength","Endurance"],
+            "portfolioUrl":     "https://...",
+            "agreeTerms":       true
+          }
+        Behaviour: creates a `pending` application. Admin reviews it out of
+        band (or via the admin endpoint below). Sets the user's
+        `trainerApplicationStatus = "pending"`.
+
+  POST  /api/trainer/application/withdraw
+        Body: {}
+        Cancels a pending application. Sets status back to "none".
+
+  [admin-only] POST /api/admin/trainer/applications/:id/approve
+  [admin-only] POST /api/admin/trainer/applications/:id/reject
+        Flip the user to `isPersonalTrainer: true`, mint their `trainerCode`,
+        and fire the "you're a coach now" notification.
+
+================================================================================
+6. UNIQUE TRAINER CODE GENERATION
+================================================================================
+
+Suggested algorithm (matches what the UI assumes):
+
+  1. Pick a random 4–7 letter word from a curated list of fitness-friendly
+     nouns (e.g. RIVER, FORGE, SUMMIT, TIDE, GRIT, KETTLE, BARBELL …).
+  2. Append `-XXXX` where XXXX is 4 random characters from
+     `ABCDEFGHJKLMNPQRSTUVWXYZ23456789` (no 0/O/1/I to keep it human-readable).
+  3. Retry up to 10× on collision before falling back to a wholly random code.
+
+Codes are stored case-insensitive but displayed in upper-case. Trim/strip
+hyphens on input so the user can paste "river9x4p", "river 9x4p", or
+"RIVER-9X4P" interchangeably.
+
+================================================================================
+7. NOTIFICATIONS (suggested)
+================================================================================
+
+Fire these as outbound texts through the user's preferred service
+(iMessage / SMS / Telegram). All are optional but make the flow feel alive.
+
+| When                                  | Sent to        | Message (template)
+|---------------------------------------|----------------|----
+| Athlete redeems a PT code             | PT             | "@<athlete> wants you to coach them. Reply YES to approve or NO to reject. Or open https://thetrackerapp.io/dashboard?view=stats"
+| PT approves                           | Athlete        | "You're now linked with <PT> 🏋️ View their profile: https://thetrackerapp.io/u/<pt>"
+| PT rejects                            | Athlete        | "Not a match this time — try another coach's code anytime on your dashboard."
+| Athlete cancels their pending request | PT (optional)  | "@<athlete> cancelled their request."
+| Either side breaks the link           | other party    | "Coaching link with @<other> has ended."
+| PT application approved               | Applicant      | "You're a coach now! Your code is RIVER-9X4P. Share it and we'll text you when athletes redeem it."
+| PT application rejected               | Applicant      | "Your coach application wasn't approved — reason: <reason>. You can reapply on the Personal Trainers page."
+| Bracket / streak badge earned         | Athlete + PT   | (existing notifications path)
+
+================================================================================
+8. SHORT-CODE COMMANDS (text replies)
+================================================================================
+
+If you want to let PTs approve/reject without opening the dashboard, the bot
+should understand these replies (case-insensitive) right after a "wants you
+to coach them" notification:
+
+  YES          – approve the most recent pending request
+  NO           – reject the most recent pending request
+  YES <code>   – approve a specific athlete (when there are multiple)
+  NO  <code>   – reject a specific athlete
+  LIST         – list pending requests with their athlete codes
+
+================================================================================
+9. DATABASE SHAPE (suggestion only)
+================================================================================
+
+  trainers (
+    user_id           PK (FK → users.id)
+    code              text UNIQUE not null
+    accepting_clients bool not null default true
+    public_profile    bool not null default true
+    bio               text
+    approved_at       timestamptz not null
+  )
+
+  trainer_applications (
+    id            uuid PK
+    user_id       FK → users.id
+    status        text not null   -- pending | approved | rejected
+    submitted_at  timestamptz not null
+    decided_at    timestamptz
+    decided_by    FK → users.id (admin)
+    full_name     text
+    bio           text
+    credentials   text[]
+    experience_yr int
+    specialties   text[]
+    portfolio_url text
+  )
+
+  trainer_links (
+    athlete_id    FK → users.id
+    trainer_id    FK → users.id
+    status        text not null   -- pending | linked | rejected | removed
+    requested_at  timestamptz not null
+    decided_at    timestamptz
+    decided_by    text not null   -- 'athlete' | 'trainer' | 'admin'
+    PRIMARY KEY (athlete_id)      -- athlete has at most one current link
+  )
+
+  History rows (status=rejected/removed) can stay in the same table or be
+  archived into trainer_link_history depending on your retention policy.
+
+================================================================================
+10. SECURITY / AUTHORIZATION CHECKLIST
+================================================================================
+
+- Only PTs can hit /api/trainer/requests and /api/trainer/requests/:id/{approve,reject}.
+- /api/trainer/clients/:athleteId/remove is callable by either:
+    (a) the athlete whose id matches `:athleteId`, OR
+    (b) the PT currently linked to that athlete.
+- /api/account/trainer-code/redeem must rate-limit by athlete (e.g. 10/hour)
+  to prevent code-fishing.
+- /api/trainer/application has its own rate limit (1/day per user) so people
+  don't spam admin review.
+- /api/admin/trainer/applications/:id/{approve,reject} requires the admin
+  scope on the session.
+- /api/account/profile PATCH for `trainerSettings.*` requires the caller to
+  be `isPersonalTrainer === true`.
+
+================================================================================
+11. ROLLOUT ORDER (so the frontend lights up incrementally)
+================================================================================
+
+  Phase 0 (already shipping): the Coach & Community panel renders empty
+          states when none of the new fields are present.
+
+  Phase 1: add the new fields to GET /api/account/profile
+          (all set to defaults — none / null / [] / false).
+          → UI immediately shows the right empty states for every user.
+
+  Phase 2: implement POST /api/trainer/application and
+          POST /api/trainer/application/withdraw + admin-side approve/reject.
+          → "Apply to become a coach" button starts working end-to-end.
+
+  Phase 3: implement
+            POST /api/account/trainer-code/redeem
+            POST /api/account/trainer-code/cancel
+            POST /api/trainer/requests/:athleteId/approve
+            POST /api/trainer/requests/:athleteId/reject
+            POST /api/trainer/clients/:athleteId/remove
+          → athlete ↔ coach linking goes live.
+
+  Phase 4: implement notifications (Section 7) + short-code replies (Section 8).
+
+================================================================================
+12. SUMMARY TABLE
+================================================================================
+
+| Method | Path                                          | Caller          |
+|--------|-----------------------------------------------|-----------------|
+| GET    | /api/account/profile                          | any auth        |
+| PATCH  | /api/account/profile?contact=<u>              | self            |
+| POST   | /api/account/trainer-code/redeem              | athlete         |
+| POST   | /api/account/trainer-code/cancel              | athlete         |
+| POST   | /api/trainer/application                      | self            |
+| POST   | /api/trainer/application/withdraw             | self            |
+| GET    | /api/trainer/requests                         | PT              |
+| POST   | /api/trainer/requests/:athleteId/approve      | PT              |
+| POST   | /api/trainer/requests/:athleteId/reject       | PT              |
+| POST   | /api/trainer/clients/:athleteId/remove        | athlete or PT   |
+| POST   | /api/admin/trainer/applications/:id/approve   | admin           |
+| POST   | /api/admin/trainer/applications/:id/reject    | admin           |
+
+================================================================================

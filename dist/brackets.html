@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Brackets | The Tracker App - Fitness Competitions</title>
+    <meta name="description" content="Live tournament brackets for fitness competitions. Watch groups and personal trainer teams compete head-to-head." />
+    <meta name="theme-color" content="#000000" />
+
+    <link rel="canonical" href="https://thetrackerapp.io/brackets" />
+    <link rel="icon" href="/favicon.svg?v=5" type="image/svg+xml" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+    <script type="module" crossorigin src="/assets/brackets-94sUk4bq.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-DdFyKP1d.js">
+    <link rel="stylesheet" crossorigin href="/assets/brackets-DVEKfkMV.css">
+  </head>
+  <body>
+    <div id="bracketApp">
+      <!-- Header Bar -->
+      <header class="bracket-header">
+        <a href="/" class="bracket-logo">The Tracker App</a>
+        <div class="bracket-toggle">
+          <button class="toggle-btn active" data-type="groups">Groups</button>
+          <button class="toggle-btn" data-type="trainers">Personal Trainers</button>
+        </div>
+        <div class="bracket-meta">
+          <span class="live-badge"><span class="live-dot"></span>LIVE</span>
+          <select id="competitionSelect" class="competition-select">
+            <option value="weekly">Weekly Challenge</option>
+            <option value="monthly">Monthly Championship</option>
+            <option value="special">Special Event</option>
+          </select>
+        </div>
+      </header>
+
+      <!-- Full Screen Bracket -->
+      <main class="bracket-container">
+        <canvas id="bracketCanvas" class="bracket-canvas"></canvas>
+        
+        <!-- Bracket Info Overlay -->
+        <div class="bracket-info">
+          <div class="info-item">
+            <span class="info-label">Participants</span>
+            <span class="info-value" id="participantCount">16</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Round</span>
+            <span class="info-value" id="currentRound">Quarter Finals</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Prize Pool</span>
+            <span class="info-value" id="prizePool">$500</span>
+          </div>
+        </div>
+
+        <!-- Match Details Panel (shows on hover/click) -->
+        <div id="matchDetails" class="match-details" hidden>
+          <button class="close-details">&times;</button>
+          <h3 id="matchTitle">Match Details</h3>
+          <div class="match-competitors">
+            <div class="competitor" id="competitor1">
+              <span class="competitor-name">Team A</span>
+              <span class="competitor-score">1,250 pts</span>
+              <div class="competitor-stats">
+                <span>Workouts: 45</span>
+                <span>Streak: 12 days</span>
+              </div>
+            </div>
+            <span class="vs">VS</span>
+            <div class="competitor" id="competitor2">
+              <span class="competitor-name">Team B</span>
+              <span class="competitor-score">1,180 pts</span>
+              <div class="competitor-stats">
+                <span>Workouts: 42</span>
+                <span>Streak: 8 days</span>
+              </div>
+            </div>
+          </div>
+          <div class="match-progress">
+            <span class="progress-label">Match Progress</span>
+            <div class="progress-bar">
+              <div class="progress-fill" id="matchProgress" style="width: 65%"></div>
+            </div>
+            <span class="progress-time" id="matchTime">3 days remaining</span>
+          </div>
+        </div>
+      </main>
+
+      <!-- Bottom Controls -->
+      <footer class="bracket-footer">
+        <button class="footer-btn" id="zoomOutBtn">−</button>
+        <button class="footer-btn" id="zoomInBtn">+</button>
+        <button class="footer-btn" id="resetViewBtn">Reset View</button>
+        <div class="footer-spacer"></div>
+        <a href="/win" class="footer-link">Win $$$</a>
+        <a href="/" class="footer-link">Home</a>
+      </footer>
+    </div>
+
+  </body>
+</html>

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Leaderboard | The Tracker App</title>
+    <meta name="description" content="Live fitness leaderboard. See top lifters, runners, calisthenics athletes, and streak holders across The Tracker App. Click any name to see their full profile, badges, and recent activity." />
+    <meta name="theme-color" content="#0a0a0c" />
+
+    <link rel="canonical" href="https://thetrackerapp.io/leaderboard" />
+    <link rel="icon" href="/favicon.svg?v=5" type="image/svg+xml" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="leaderboard.css" />
+  </head>
+  <body>
+    <header class="lb-page-header">
+      <div class="lb-page-header-inner">
+        <a class="lb-logo" href="/">The Tracker App</a>
+        <nav class="lb-nav">
+          <a href="/" data-feature="footer.home">Home</a>
+          <a href="/pricing" data-feature="footer.pricing">Pricing</a>
+          <a href="/community">Community</a>
+          <a href="/personal-trainers" data-feature="personalTrainers">Coaches</a>
+          <a href="https://dashboard.thetrackerapp.io/dashboard">Dashboard</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="lb-page">
+      <section class="lb-hero">
+        <h1>Leaderboard</h1>
+        <p>Top athletes across The Tracker App. Click any name to see their stats, badges, and recent activity.</p>
+      </section>
+
+      <section class="lb-toolbar" aria-label="Leaderboard filters">
+        <div class="lb-categories" role="tablist" aria-label="Category">
+          <!-- Categories populated by JS -->
+        </div>
+        <div class="lb-secondary-toolbar">
+          <div class="lb-metrics" role="tablist" aria-label="Metric"></div>
+          <div class="lb-ranges" role="tablist" aria-label="Time range">
+            <button type="button" class="lb-range-btn" data-range="7d">7D</button>
+            <button type="button" class="lb-range-btn active" data-range="30d">30D</button>
+            <button type="button" class="lb-range-btn" data-range="90d">90D</button>
+            <button type="button" class="lb-range-btn" data-range="1y">1Y</button>
+            <button type="button" class="lb-range-btn" data-range="all">All</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="lb-table-wrap" aria-label="Leaderboard">
+        <table class="lb-table">
+          <thead>
+            <tr>
+              <th class="col-rank">#</th>
+              <th class="col-name">Athlete</th>
+              <th class="col-flair">Flair</th>
+              <th class="col-coach">Coach</th>
+              <th class="col-trend">Trend</th>
+              <th class="col-value">Value</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboardBody">
+            <tr><td colspan="6" class="lb-loading">Loading leaderboard…</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="lb-pagination">
+        <button type="button" id="lbPrevBtn" class="lb-page-btn" disabled>← Prev</button>
+        <span id="lbPageLabel" class="lb-page-label">Page 1</span>
+        <button type="button" id="lbNextBtn" class="lb-page-btn" disabled>Next →</button>
+      </section>
+    </main>
+
+    <footer class="lb-page-footer">
+      <div class="footer-row">
+        <a data-feature="footer.contact" href="mailto:contact@thetrackerapp.io">contact@thetrackerapp.io</a>
+        <a data-feature="footer.privacy" href="/privacy">Privacy</a>
+        <a data-feature="footer.terms" href="/terms">Terms</a>
+        <a data-feature="footer.status" href="/status">Status</a>
+        <a data-feature="footer.trust" href="/trust">Trust</a>
+      </div>
+    </footer>
+
+    <script type="module" src="src/leaderboard.js"></script>
+  </body>
+</html>

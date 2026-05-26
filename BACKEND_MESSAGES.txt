@@ -1,0 +1,375 @@
+================================================================================
+BACKEND MESSAGES — Open items to communicate to api.thetrackerapp.io team
+================================================================================
+
+Last updated: 2026-05-22
+
+Purpose: this file is a hand-off snapshot of every open item the frontend
+needs from the backend RIGHT NOW. Anything still pending from earlier specs
+is reproduced here so the backend team only needs to read one file. Deeper
+schemas / state machines live in the other docs listed at the bottom.
+
+For every endpoint: respond with `Content-Type: application/json`, set
+`{ ok: true }` on success and `{ ok:false, error:"..." }` on failure.
+
+================================================================================
+PRIORITY 0 — DATA ACCURACY BUGS (please investigate these first)
+================================================================================
+
+The frontend has NO hardcoded fitness data. Every value the dashboard renders
+comes straight from the backend. Two specific anomalies reported by users:
+
+  1. fierylion weight = 176.5 lb appears on the chart but the user says they
+     never logged that.
+     - Path: /api/chart/data?contact=fierylion&range=all → chartData.weight
+     - Likely culprits to check:
+         * Wearable / scale sync writing rows the user doesn't realise exist
+         * Test / seed rows that survived the recent cleanup
+         * "Last value" being a rolling-average / smoothed value that
+           differs from any single logged row (the frontend just reads
+           metrics.stats.last.value verbatim — see PERSONAL_TRAINERS_AND_LEADERBOARD_SPEC.txt § Chart Data API)
+
+  2. fierylion calories on 2026-05-12 ≈ 6,000 kcal (Stats tab → "Calories —
+     this week" bar) — user says they didn't eat that much.
+     - Path: /api/chart/data?contact=fierylion&range=30d → chartData.calories
+     - Likely culprits:
+         * Double-counting a meal logged via two services (iMessage + Telegram)
+         * Day-boundary off by one (UTC vs the user's local TZ)
+         * AI parser misreading "600" → "6000" or "60 g" → "6000 calories"
+         * Rolling 24h aggregation summing partial days
+
+  Asks:
+   a) Verify those specific rows in the raw nutrition_logs / body_metrics tables.
+   b) Document the aggregation rule for chartData.calories (per calendar day in
+      whose timezone? sum of meals or sum of meals + snacks?). Frontend can
+      then display the same caveat where appropriate.
+   c) Add a `source` field to each chart data point when known:
+        chartData.calories: [
+          { date:"2026-05-12", value:2418, source:"imessage" },
+          { date:"2026-05-12", value:312,  source:"manual-edit" }
+        ]
+      The frontend can then split duplicates by source on hover.
+
+================================================================================
+PRIORITY 1 — CACHE / FRESHNESS
+================================================================================
+
+The frontend now sends `Cache-Control: no-cache`, `Pragma: no-cache`, and a
+`?_=<timestamp>` cache-buster on every /api/chart/data fetch. Please also set
+appropriate response headers so any intermediate proxy / Cloudflare layer
+respects this:
+
+   Cache-Control: private, no-store, max-age=0
+   Vary: Authorization
+
+Also: when a user opens the Stats tab the frontend always refetches. Please
+make sure /api/chart/data is cheap enough to call ~every navigation (target:
+< 300 ms p50). If it's expensive, consider caching server-side keyed by
+(user_id, range) with a 60 s TTL.
+
+================================================================================
+PRIORITY 2 — NEW PROFILE FIELDS (writes from the dashboard)
+================================================================================
+
+PATCH /api/account/profile?contact=<username>
+The dashboard now PATCHes the following fields. All are optional and any
+subset may appear in a single request body. Treat any field ending in `Goal`
+as a target / aspiration, not an actual measurement.
+
+```jsonc
+{
+  // Profile basics
+  "fitnessGoal":    "Maintain | Lose | Gain | Recomp | Bulk | Cut",
+  "height":         70,            // inches (rarely changes)
+
+  // Nutrition / activity goals (already shipping)
+  "calorieGoal":    2400,
+  "proteinGoal":    180,
+  "carbsGoal":      250,
+  "fatsGoal":       70,
+  "stepsGoal":      10000,
+  "waterGoal":      128,            // oz
+
+  // === NEW: per-body-measurement goals ===
+  // The Stats tab "Body Measurements" cards each show "+ Set goal" buttons
+  // that PATCH one of these fields. Persist them and return them on the next
+  // /api/chart/data response under `targets.*` (same key, without "Goal" suffix).
+  "weightGoal":           175,      // lb
+  "bodyFatGoal":          12,       // %
+  "bicepLGoal":           16,       // in   ← all of these are inches
+  "bicepRGoal":           16,
+  "forearmLGoal":         13,
+  "forearmRGoal":         13,
+  "chestGoal":            44,
+  "shouldersGoal":        50,
+  "neckGoal":             16,
+  "latsGoal":             46,
+  "trapsGoal":            19,
+  "serratusAnteriorGoal": 12,
+  "waistGoal":            31,
+  "absGoal":              32,
+  "obliquesGoal":         33,
+  "quadLGoal":            26,
+  "quadRGoal":            26,
+  "calfLGoal":            16,
+  "calfRGoal":            16,
+  "glutesGoal":           42,
+
+  // PT-side settings (only writable when isPersonalTrainer === true)
+  "trainerSettings": {
+    "publicProfile":    true,
+    "acceptingClients": true,
+    "bio":              "..."
+  }
+}
+```
+
+Return shape of GET /api/account/profile must include the saved goals under
+both their dedicated keys AND inside the `targets` object so the chart
+endpoint can mirror them (see Priority 3).
+
+================================================================================
+PRIORITY 3 — /api/chart/data RESPONSE EXTRAS
+================================================================================
+
+The dashboard "Body Measurements" panel now hydrates entirely from
+/api/chart/data (because /api/body-measures isn't always populated yet).
+For this to work fully, the response should include:
+
+   targets: {
+     calories:         <num>,
+     protein:          <num>, carbs:    <num>, fats:    <num>,
+     water:            <num>, steps:    <num>,
+     weight:           <num>,
+     bodyFat:          <num>,
+     bicepL:           <num>, bicepR:   <num>,
+     forearmL:         <num>, forearmR: <num>,
+     chest:            <num>, shoulders:<num>,
+     neck:             <num>, lats:     <num>, traps: <num>,
+     serratusAnterior: <num>,
+     waist:            <num>, abs:      <num>, obliques: <num>,
+     quadL:            <num>, quadR:    <num>,
+     calfL:            <num>, calfR:    <num>,
+     glutes:           <num>,
+     height:           <num>      // optional - rarely changes
+   }
+
+   metrics[*].stats.count        // total entries the user has logged for that metric (already documented)
+   metrics[*].stats.last.date    // ISO date of latest entry           (already documented)
+   metrics[*].stats.last.value   // value of latest entry              (already documented)
+
+Each measurement card on the Stats tab now displays
+    "last May 19 · 12 entries"
+under the value. Both come from metrics[*].stats — please make sure
+`count` is the actual user-entered logs (not a derived count).
+
+If a metric has no entries, omit it from `metrics[]` or set
+`available:false` AND `chartData[key]: []`. Don't return zero-value
+placeholders — the frontend treats `0` as a real datum.
+
+================================================================================
+PRIORITY 4 — DASHBOARD SIDEBAR TABS (controlled by /api/control)
+================================================================================
+
+GET /api/control already returns `dashboardTabs.{personalTrainer,groups,runClubs}`.
+The dashboard now correctly hides each tab when the flag is `false`. Currently
+your endpoint returns:
+
+   "dashboardTabs": { "personalTrainer":false, "groups":false, "runClubs":false }
+
+Result on the live site: all three tabs hidden.
+
+When you're ready to ship a tab, flip its flag to `true`. The frontend already
+ships graceful empty states for each — no further frontend work needed once
+the endpoint says `true`.
+
+Once enabled, each tab needs the corresponding backend endpoints listed in
+Priority 5 below.
+
+================================================================================
+PRIORITY 5 — PERSONAL TRAINER FLOW (only when dashboardTabs.personalTrainer=true)
+================================================================================
+
+Public sign-up form is live at /personal-trainers#apply. It POSTs to:
+
+   POST /api/trainer/application/public        [PUBLIC — no auth]
+   Body: { fullName, email, city, experienceYears, credentials[],
+           specialties[], bio, portfolioUrl, agreeTerms }
+
+Logged-in athletes / coaches use the dashboard panel which POSTs to:
+
+   POST /api/trainer/application               [auth]
+   Same body, minus `email` and `city` (taken from session).
+
+Approving an application (admin-side):
+   POST /api/admin/trainer/applications/:id/approve
+     → mints `trainerCode`, flips `isPersonalTrainer:true`, fires welcome text.
+   POST /api/admin/trainer/applications/:id/reject
+
+Athlete <-> coach linking (all from the dashboard):
+
+   POST  /api/account/trainer-code/redeem        body:{ code }        [auth, athlete]
+   POST  /api/account/trainer-code/cancel        body:{}              [auth, athlete]
+   GET   /api/trainer/requests                                        [auth, PT-only]
+   POST  /api/trainer/requests/:athleteId/approve                     [auth, PT-only]
+   POST  /api/trainer/requests/:athleteId/reject body:{ reason? }     [auth, PT-only]
+   POST  /api/trainer/clients/:athleteId/remove  body:{}              [auth, athlete OR PT]
+
+Required additions to GET /api/account/profile:
+
+   "isPersonalTrainer":        <bool>
+   "personalTrainerStatus":    "none | pending | linked | rejected | removed"
+   "trainerApplicationStatus": "none | pending | approved | rejected"
+   "personalTrainer":          null | { id, username, displayName, avatar, since, trainerCode }
+   "trainerCodePending":       null | { trainerUsername, submittedAt }
+   "trainerCode":              "RIVER-9X4P"          // present when isPersonalTrainer
+   "clientsAsTrainer":         []                    // present when isPersonalTrainer
+   "trainerSettings":          { publicProfile, acceptingClients, bio }
+
+Trainer-code format: `WORD-XXXX`, case-insensitive, hyphen-flex on input.
+Use a curated word list (RIVER, FORGE, SUMMIT, TIDE, GRIT, KETTLE, BARBELL…)
+followed by 4 chars from `ABCDEFGHJKLMNPQRSTUVWXYZ23456789` (no 0/O/1/I).
+
+State machines + DB shape: PERSONAL_TRAINER_BACKEND.txt sections 2, 3, 9.
+
+================================================================================
+PRIORITY 6 — COMMUNITIES (only when dashboardTabs.groups OR runClubs = true)
+================================================================================
+
+Add `communities[]` to GET /api/account/profile:
+
+```jsonc
+"communities": [
+  {
+    "id":          "tg_morning_lifters",
+    "kind":        "telegram | imessage | group | run-club | bracket",
+    "name":        "Morning Lifters",
+    "emoji":       "🏋️",
+    "memberCount": 156,
+    "role":        "member | admin | owner",
+    "since":       "2026-02-10",
+    "url":         "https://t.me/morninglifters",
+    "isPublic":    true,
+    "location":    null            // run-club only
+  }
+]
+```
+
+Mutation endpoints:
+   POST /api/communities/:id/join                body:{}        // public groups
+   POST /api/communities/:id/leave               body:{}
+   POST /api/communities/:id/request-join        body:{}        // private groups
+
+================================================================================
+PRIORITY 6.5 — AI CHATBOT WIDGET (new)
+================================================================================
+
+The frontend now ships a floating chatbot launcher in the bottom-right of every
+page (src/chatbot.js). It is gated by `/api/control → chatbotEnabled: true`
+and renders nothing otherwise.
+
+Conversations are stateless on the frontend — the backend owns history keyed
+by `sessionId`. The widget supports an AI mode (default) and a human-agent
+mode that the user can opt into by clicking "Talk to a human" or typing
+"agent" / "human" / "support" / "representative".
+
+Endpoints (all PUBLIC; honour an Authorization bearer when present so the AI
+has user context):
+
+  POST /api/chat/message
+       Body:  { sessionId?, contact?, message, context: { page, url } }
+       Reply: { ok, sessionId, reply, mode:"ai"|"agent", handedOff,
+                suggestedActions?: [ { label, url, kind } ], agentName? }
+
+  POST /api/chat/request-agent
+       Body:  { sessionId?, contact?, reason? }
+       Reply: { ok, sessionId, mode:"agent", eta?, greeting? }
+       (also: ping the on-call human via Slack/Telegram/email/SMS)
+
+  GET  /api/chat/messages?sessionId=…&since=<iso>
+       Reply: { ok, mode, closed, messages: [
+                  { id, role:"ai"|"agent"|"user"|"system",
+                    text, agentName?, ts } ] }
+       Polled every 6 s once a session has been handed off.
+
+Anti-abuse: rate-limit /api/chat/message to ~30 req/min per sessionId+IP.
+Don't return PII (other users' info, raw credit-card numbers, 2FA codes)
+through the AI even if it's asked.
+
+================================================================================
+PRIORITY 7 — /api/control HOUSEKEEPING
+================================================================================
+
+Things the frontend is reading from /api/control today. Most are already in
+the live response — listing them here so nothing gets accidentally dropped:
+
+  maintenanceMode (bool) + maintenanceMessage (string)
+  chatbotEnabled (bool)
+  Page-level flags:
+    blog, press, products, brackets, win, runClubs, personalTrainers,
+    pebbleApp, macApps, workoutResources, pricing, workoutGroups,
+    liveActivityFeed, testimonials, faq, iphoneMockup, stepTape,
+    bodyMeasurements, multiMetricCharts, narrative
+  Sub-objects:
+    tools.{tdeeCalculator,bmiCalculator,aiMealPlanner,foodDiary}    (bool)
+    dashboardTabs.{personalTrainer,groups,runClubs}                  (bool)
+    footer.{contact,pricing,community,blog,press,guide,status,trust,
+            llmsTxt,privacy,terms,home,pebbleApp,macApps,freeTools,
+            groups,workoutResources,win,products,runClubs,
+            personalTrainers,brackets}                               (bool)
+    socials.{x,twitter,threads,instagram,facebook,tiktok,snapchat,
+             linkedin,bluesky,youtube,rumble,twitch,kick,bitchute,
+             pinterest,gbp,reddit,discord,telegram,mastodon,spotify,
+             appleMusic,podcast,medium,substack,patreon,kofi,github,
+             website}                                                (URL string; "" hides icon)
+    billing.monthlyTier {name,price,interval,features[]}             (object — pricing card)
+    billing.yearlyTier  {name,price,interval,yearlyEquivalent,features[]}
+
+Anything else returned (the old freeTier / weeklyTier / proTier / premiumTier)
+is now ignored by the frontend — safe to keep or drop, your call.
+
+Edge cache: /api/control is proxied through Vercel with `s-maxage=300`
+(5 minutes) by default. Vercel hits the upstream backend once per region per
+5 min regardless of traffic. Tunable via env var `CONTROL_CACHE_SECONDS`
+(min 10, default 300).
+
+================================================================================
+PRIORITY 8 — REFERENCES
+================================================================================
+
+Already-written documents this file points to:
+
+  PERSONAL_TRAINER_BACKEND.txt              ← full PT state machines + DB shape
+  PERSONAL_TRAINERS_AND_LEADERBOARD_SPEC.txt ← /api/leaderboard + /api/u/:username
+  LEADERBOARD_ENDPOINTS.txt                 ← /api/public-leaderboard wiring
+  BACKEND_REQUIREMENTS.txt                  ← master endpoint index
+  BACKEND_TODO.md                           ← original detailed spec
+
+================================================================================
+CHECKLIST — copy/paste into your ticket tracker
+================================================================================
+
+  [ ] P0  Investigate fierylion 176.5 lb weight row (chart shows it; user
+          says they didn't log it).
+  [ ] P0  Investigate fierylion 6,000-ish kcal on 2026-05-12 (looks like
+          double-counted meal or AI mis-parse).
+  [ ] P0  Document chartData.calories aggregation rule (per-day in whose TZ,
+          sum vs avg, etc.).
+  [ ] P1  Add `Cache-Control: private, no-store` to /api/chart/data responses.
+  [ ] P2  Accept the new `*Goal` PATCH fields on /api/account/profile
+          (full list in section "PRIORITY 2").
+  [ ] P3  Mirror every saved goal under `targets.*` in /api/chart/data.
+  [ ] P3  Ensure metrics[*].stats.count and metrics[*].stats.last.{date,value}
+          are populated for every body-measurement metric.
+  [ ] P4  Decide rollout date for dashboardTabs.{personalTrainer,groups,runClubs}.
+  [ ] P5  Implement the PT endpoints once tab flag flips to true.
+  [ ] P6  Add `communities[]` to GET /api/account/profile.
+  [ ] P6.5 AI chatbot:
+            * POST /api/chat/message
+            * POST /api/chat/request-agent
+            * GET  /api/chat/messages?sessionId=…&since=…
+            Frontend gates this off `/api/control → chatbotEnabled`. Current
+            response already has `chatbotEnabled:true`, so widget will appear
+            as soon as the three endpoints exist.
+
+================================================================================

@@ -1,0 +1,164 @@
+================================================================================
+INSTANT CONTROL-FLAG PROPAGATION — Backend hand-off
+================================================================================
+
+GOAL
+  Today /api/control is edge-cached by Vercel for 5 minutes, so changes you
+  make in the admin panel take up to ~5 min to reach users.
+
+  We want a backend → frontend webhook so that the moment you toggle any flag
+  in `/control` the website refreshes its cached copy and all open browser
+  sessions see the new value within seconds.
+
+  This document is everything the backend needs to do. The frontend will
+  ship the matching pieces once these endpoints exist.
+
+================================================================================
+1. WHEN TO FIRE THE WEBHOOK
+================================================================================
+
+Fire it any time the JSON returned by `GET https://api.thetrackerapp.io/control`
+would change. In practice that means:
+
+  - An admin saves edits in the control panel
+  - A scheduled job toggles maintenance mode on/off
+  - Stripe webhooks update billing prices via your sync job
+  - Any other backend mutation that affects /control's response
+
+If multiple changes land in quick succession, you can debounce and fire once
+per ~1–2 seconds. It's cheap (single small HTTPS POST) but no need to spam.
+
+================================================================================
+2. WHERE TO POST
+================================================================================
+
+  POST https://thetrackerapp.io/api/control-invalidate
+
+  Headers:
+    Authorization: Bearer <CONTROL_WEBHOOK_SECRET>
+    Content-Type:  application/json
+
+  Body (all fields optional):
+    {
+      "reason":  "admin_save",     // free-form; logged for debugging
+      "actorId": "admin_42",       // who/what triggered the change
+      "changed": ["billing.monthlyTier.price", "footer.guide"]
+                                   // OPTIONAL list of dotted paths that changed.
+                                   // We don't use it for routing yet, just logged.
+    }
+
+  Expected response:
+    200 { "ok": true, "version": "<new version string>" }   // success
+    401 { "ok": false, "error": "unauthorized" }             // bad secret
+    405 { "ok": false, "error": "method_not_allowed" }       // anything but POST
+    500 { "ok": false, "error": "<message>" }                // server-side problem
+
+  Idempotency: safe to call any number of times. Each call bumps the version
+  to `Date.now()` (or similar monotonic value); duplicate calls in the same
+  millisecond are coalesced.
+
+================================================================================
+3. SHARED SECRET
+================================================================================
+
+We will set an env var on Vercel:
+
+    CONTROL_WEBHOOK_SECRET=<long random string>
+
+Please use the same value on your side as `BEARER` token in the
+`Authorization` header. Pick a 32+ character random string; rotate yearly or
+when staff turnover requires it.
+
+Frontend will reject the call if:
+  * The header is missing
+  * The token doesn't match
+  * The method isn't POST
+
+================================================================================
+4. HOW IT WORKS UNDER THE HOOD (FYI — no work for backend)
+================================================================================
+
+The /api/control-invalidate endpoint we'll ship does these three things:
+
+  1. Verify the Bearer secret. Drop with 401 if it doesn't match.
+
+  2. Bump a server-side "version" counter (monotonic timestamp).
+     Stored in Vercel KV when available; falls back to in-memory + module
+     state when KV isn't configured.
+
+  3. Pre-warm the upstream by issuing a fresh `GET /control` so the next
+     user request is served from a warm function instance.
+
+The frontend will piggyback on this in two ways:
+
+  a) On every page load it will request /api/control with the latest known
+     version as a cache-buster query string (`?v=<version>`). When the
+     version changes, the URL changes, and Vercel's CDN cannot serve the
+     stale entry — it fetches fresh.
+
+  b) It will poll a lightweight /api/control-version endpoint every 20–30 s.
+     When the version it sees is newer than the one it used last, it refetches
+     /api/control immediately so already-open browser tabs catch up in ~30 s
+     even without a navigation.
+
+You don't need to do anything for these two flows — they're entirely
+client-side and Vercel-side. Your only obligation is to POST the webhook
+every time the JSON your `/control` endpoint returns would change.
+
+================================================================================
+5. TESTING CHECKLIST
+================================================================================
+
+After the webhook is wired:
+
+  [ ] curl -X POST https://thetrackerapp.io/api/control-invalidate \
+          -H "Authorization: Bearer $CONTROL_WEBHOOK_SECRET" \
+          -H "Content-Type: application/json" \
+          -d '{"reason":"smoke_test"}'
+      → expect HTTP 200 with { ok: true, version: "..." }
+
+  [ ] Same call with a bad token → expect HTTP 401.
+
+  [ ] Same call with GET instead of POST → expect HTTP 405.
+
+  [ ] Toggle a flag in the admin panel (e.g. flip chatbotEnabled). Confirm
+      the webhook fires (we can verify on our side via Vercel logs).
+
+  [ ] On a browser already open to the site, see the flag take effect within
+      ~30 s without a manual reload.
+
+================================================================================
+6. FAILURE MODES (what to do if /api/control-invalidate is unreachable)
+================================================================================
+
+  - Treat the webhook as fire-and-forget; do NOT block the admin save on a
+    successful 200.
+  - Log non-200 responses for monitoring but otherwise ignore them.
+  - The frontend's existing 5-minute Vercel CDN cache + 60-second browser
+    cache continue to work even when the webhook is down — the only thing
+    you lose is the instant-propagation benefit. The site is never broken
+    by a webhook failure.
+
+================================================================================
+7. ENV VAR SUMMARY (backend side)
+================================================================================
+
+  CONTROL_WEBHOOK_URL    = https://thetrackerapp.io/api/control-invalidate
+  CONTROL_WEBHOOK_SECRET = <shared random string>            (also set on Vercel)
+
+================================================================================
+8. ASK
+================================================================================
+
+Please confirm:
+
+  1. Backend will POST to the URL above with the Bearer secret any time the
+     `/control` JSON output would change.
+  2. Backend will share the secret value with us (or generate one we both
+     install).
+
+Once those two are in place we'll ship /api/control-invalidate +
+/api/control-version on the frontend side and instant flag propagation
+will work end-to-end.
+
+================================================================================

@@ -1,0 +1,343 @@
+================================================================================
+AI CHATBOT — Backend implementation guide
+================================================================================
+
+Last updated: 2026-05-22
+
+The frontend is shipped (src/chatbot.js + styles in styles.css). When
+`/api/control → chatbotEnabled === true` a floating teal launcher appears
+in the bottom-right of every page on the site. Until the three endpoints
+below exist the widget surfaces a graceful inline error and tells users to
+email support@thetrackerapp.io.
+
+This is a single-page hand-off — everything you need is here. Long-form
+reference is in BACKEND_REQUIREMENTS.txt → "PART D2 · CHATBOT".
+
+================================================================================
+1. ROLES & STATES
+================================================================================
+
+A session has one of two modes at any time:
+
+  "ai"     – the assistant is answering. Default for every new session.
+  "agent"  – a human has taken over. Frontend polls /api/chat/messages every 6 s.
+
+Transitions:
+
+  ai  ─► agent : user clicks "Talk to a human" OR types
+                 /^(agent|human|talk to (a |an )?(person|agent|human)|support|representative)\b/i
+                 The frontend hits POST /api/chat/request-agent.
+                 Backend should ping the on-call human via Slack / Telegram /
+                 SMS / email and start storing their replies in the session.
+
+  agent ─► ai  : agent ends the conversation. Set `closed: true` in the next
+                 /api/chat/messages response and the frontend stops polling.
+                 New user messages start a fresh session.
+
+================================================================================
+2. PERSISTENCE MODEL
+================================================================================
+
+Frontend persists only:
+  - sessionId       (localStorage key: tracker.chat.session)
+  - last 50 messages (localStorage key: tracker.chat.transcript)
+
+Backend owns:
+  - The authoritative conversation history (every message, role, ts, agent name)
+  - Session metadata (createdAt, mode, handedOffAt, closedAt, contact, ip)
+  - Rate-limit counters
+
+Suggested table:
+
+  chat_sessions (
+    id                  text PK     -- e.g. "chat_8aZb…" (random ID, NOT a UUID
+                                    --   to keep visible footprint small)
+    contact             text        -- nullable; populated when the user is
+                                    --   signed-in (taken from auth token or
+                                    --   the `contact` field in the request)
+    mode                text        -- ai | agent
+    handed_off_at       timestamptz
+    closed_at           timestamptz
+    last_message_at     timestamptz
+    user_agent          text
+    ip                  inet
+    created_at          timestamptz default now()
+  )
+
+  chat_messages (
+    id          text PK             -- "msg_…"
+    session_id  text references chat_sessions(id)
+    role        text  CHECK (role IN ('user','ai','agent','system'))
+    text        text
+    agent_name  text                -- nullable
+    ts          timestamptz default now()
+  )
+
+  chat_agents (
+    user_id     text PK             -- internal staff id
+    display     text                -- "Sarah"
+    on_call     bool
+    queue_size  int  default 0
+  )
+
+================================================================================
+3. ENDPOINTS
+================================================================================
+
+All are PUBLIC (no auth required) so logged-out visitors can chat.
+If a bearer token is provided AND a `contact` field is in the body, attach
+the resolved user to the session so the AI has context.
+
+CORS: must include `Access-Control-Allow-Headers: Content-Type, Authorization`.
+Do NOT require any custom headers (the frontend explicitly avoids them to
+prevent CORS preflight failures — same lesson as /api/chart/data).
+
+────────────────────────────────────────────────────────────────────────────────
+POST /api/chat/message
+────────────────────────────────────────────────────────────────────────────────
+
+Request:
+  {
+    "sessionId": "chat_8aZb…",          // OPTIONAL on the very first message
+    "contact":   "fierylion",            // OPTIONAL; present when signed-in
+    "message":   "How do I log a workout?",
+    "context":   { "page": "/", "url": "https://thetrackerapp.io/" }
+  }
+
+Behaviour:
+  1. If sessionId is missing/unknown → mint a new chat_sessions row, mode="ai".
+  2. Store the user message in chat_messages.
+  3. If mode === "ai":
+       Call the LLM with system prompt + last N messages from this session +
+       any context fields. Return the model's reply.
+  4. If mode === "agent":
+       Store the user message, push it to the human agent's channel
+       (Slack/Telegram/etc.), and return a short acknowledgement like
+       "Sent — Sarah will reply shortly." The agent's reply lands via
+       GET /api/chat/messages (see below).
+  5. Anti-abuse: rate limit by (sessionId + IP) to 30 requests / minute.
+     Refuse messages > 4 000 chars with HTTP 413.
+
+Response:
+  {
+    "ok":        true,
+    "sessionId": "chat_8aZb…",                  // always echoed back
+    "reply":     "Just text the Tracker bot…",  // empty string when in agent mode
+    "mode":      "ai",                          // "ai" | "agent"
+    "handedOff": false,                         // true on the first reply after
+                                                // a hand-off so frontend starts polling
+    "agentName": null,                          // populated when mode === "agent"
+    "suggestedActions": [                       // OPTIONAL inline pill CTAs
+      { "label": "Open the user guide", "url": "/guide", "kind": "link" },
+      { "label": "Email support",       "url": "mailto:support@thetrackerapp.io" }
+    ]
+  }
+
+Errors:
+  - 400 when `message` is missing / empty / non-string
+  - 413 when message length > 4 000 chars
+  - 429 when rate limit exceeded → frontend already shows a graceful inline
+        error; just return `{ ok:false, error:"rate_limit" }`
+
+────────────────────────────────────────────────────────────────────────────────
+POST /api/chat/request-agent
+────────────────────────────────────────────────────────────────────────────────
+
+Request:
+  {
+    "sessionId": "chat_8aZb…",                 // OPTIONAL — mint one if absent
+    "contact":   "fierylion",                  // OPTIONAL
+    "reason":    "I need help with billing"    // OPTIONAL; the user's typed
+                                               //   text that triggered the
+                                               //   escalation. Use it as the
+                                               //   first context line for the
+                                               //   agent's view.
+  }
+
+Behaviour:
+  1. Flip the session's mode to "agent", set handed_off_at = now().
+  2. Notify the on-call human (Slack / Telegram / SMS / email).
+  3. Insert a system message in chat_messages summarising what the user has
+     asked so far so the agent has context.
+  4. Optionally estimate an ETA based on queue size and return it.
+
+Response:
+  {
+    "ok":        true,
+    "sessionId": "chat_8aZb…",
+    "mode":      "agent",
+    "eta":       "2 minutes",                    // OPTIONAL — shown in the header
+    "greeting":  "Got it — Sarah is on her way."  // OPTIONAL — shown as a system message
+  }
+
+────────────────────────────────────────────────────────────────────────────────
+GET /api/chat/messages?sessionId=<id>&since=<iso>
+────────────────────────────────────────────────────────────────────────────────
+
+The frontend polls this every 6 s once a session has been handed off.
+
+Query params:
+  - sessionId   required
+  - since       optional ISO-8601 timestamp. When present, return only
+                messages with ts > since.
+
+Response:
+  {
+    "ok":     true,
+    "mode":   "agent",        // current session mode
+    "closed": false,          // true once the agent ends the chat;
+                              //   frontend will stop polling
+    "messages": [
+      {
+        "id":         "msg_88",
+        "role":       "agent",
+        "agentName":  "Sarah",
+        "text":       "How can I help today?",
+        "ts":         "2026-05-22T17:01:00Z"
+      }
+    ]
+  }
+
+Notes:
+  - Return only NEW messages since `since`. Frontend dedupes by `id` defensively.
+  - Returning user echoes is fine but not required (the frontend already shows them).
+  - Setting `closed:true` permanently disables the session — the next POST
+    /api/chat/message from this user should mint a new session.
+
+================================================================================
+4. AI PROMPTING GUIDELINES
+================================================================================
+
+System prompt should include (or equivalent):
+
+  You are the Tracker App support assistant. Help users with:
+  - Logging workouts, nutrition, water, body measurements via text message
+  - Connecting iMessage / SMS / Telegram
+  - Billing & pricing (Monthly $10 / Yearly $96 / Premium tiers)
+  - Personal trainer matching and coach codes
+  - Wearables and integrations
+  - Troubleshooting (data not showing up, sync issues, etc.)
+
+  Tone: friendly, concise, second-person ("you"). One short paragraph or up
+  to 3 bullet points. No emoji unless echoing what the user wrote.
+
+  When uncertain or when the user explicitly asks for help that requires
+  account access (refunds, password resets, deleting data, anything involving
+  PII), respond: "Let me get a human on this." That triggers automatic
+  escalation to /api/chat/request-agent.
+
+  Never repeat back PII (full credit card, 2FA, address, password). Strip
+  those before logging.
+
+Helpful context the model should consume on each call:
+  - The session's last 6 message turns
+  - `context.page` and `context.url` so the AI knows what the user is looking at
+  - When `contact` is present: the user's recent activity summary (last 7-day
+    logs, current streak, current plan). Pre-compute this server-side so the
+    AI prompt stays cheap.
+
+When the model outputs a recommendation that maps to a known URL, include it
+as `suggestedActions` so the user can tap-through. Examples:
+
+  - "How do I see my charts?"
+      → { label: "Open dashboard", url: "https://dashboard.thetrackerapp.io/dashboard?view=stats" }
+  - "Where's the pricing?"
+      → { label: "View pricing", url: "/pricing" }
+  - "Can I become a coach?"
+      → { label: "Apply", url: "/personal-trainers#apply" }
+
+================================================================================
+5. AGENT-SIDE WORKFLOW (suggested)
+================================================================================
+
+Two patterns work; pick what's easiest.
+
+  A) Slack bot
+       - Each new session that calls /api/chat/request-agent creates a thread
+         in #support-live and pings the on-call team.
+       - Agents reply in-thread. A small webhook turns those replies into
+         chat_messages rows that the polling endpoint surfaces to the user.
+       - `eta` can be a static "5 minutes" until you have queue data.
+
+  B) Dashboard tab for staff
+       - Build /admin/chat that lists open sessions.
+       - Agents type into a textarea, backend inserts into chat_messages.
+       - Same polling endpoint feeds the user.
+
+Either way, when the agent closes the conversation:
+
+  UPDATE chat_sessions SET mode='ai', closed_at = now()
+   WHERE id = $1;
+
+The next /api/chat/messages call will return `closed:true` and the user can
+start a fresh session.
+
+================================================================================
+6. SECURITY / RATE LIMITING CHECKLIST
+================================================================================
+
+  [ ] Rate-limit POST /api/chat/message            : 30/min per (sessionId|IP)
+  [ ] Rate-limit POST /api/chat/request-agent      : 5/hour per (sessionId|IP)
+  [ ] Reject `message.length > 4000` with HTTP 413
+  [ ] Strip obvious PII before logging the message body in any internal log:
+        credit-card-like patterns (\d{4}[ -]?\d{4}[ -]?\d{4}[ -]?\d{4})
+        SSN-like (\d{3}-\d{2}-\d{4})
+        2FA-like 6-digit codes immediately after "code" or "OTP" keywords
+  [ ] Sanitise the LLM reply against prompt-injection: do not let the model
+      change the system prompt, dump other users' data, or call internal
+      tools without server-side guards.
+  [ ] When `contact` is in the body, REQUIRE a valid bearer token to attach
+      the contact to the session — otherwise drop the `contact` value silently
+      so anyone can't impersonate a username in their context.
+  [ ] Set `Access-Control-Allow-Origin: https://thetrackerapp.io,
+      https://dashboard.thetrackerapp.io` (or `*` if you don't yet enforce
+      origins) and `Access-Control-Allow-Headers: Content-Type, Authorization`.
+      Do NOT require any custom headers — the frontend doesn't send any.
+  [ ] Set `Cache-Control: no-store` on every chat endpoint response.
+
+================================================================================
+7. CONTROL-PANEL TOGGLE
+================================================================================
+
+Already present in your /api/control response:
+
+  "chatbotEnabled": true
+
+  - When `true` the widget appears on every page.
+  - When `false` the frontend tears down any existing widget and never
+    mounts it on future page loads.
+
+No other knobs are needed today, but you can extend the contract if helpful:
+
+  "chatbot": {
+    "enabled":     true,
+    "openByDefault": false,         // auto-pop the panel on first visit
+    "welcomeText": "Hi! I'm the…",  // override the launcher's first message
+    "hoursLabel":  "Mon-Fri 9-5 PT" // shown in the panel header when set
+  }
+
+If you ship that richer shape later, the frontend will pick it up via
+`flags.chatbot.enabled` instead of the flat `chatbotEnabled` boolean —
+recommend keeping the flat key as a back-compat alias for at least one
+release.
+
+================================================================================
+8. CHECKLIST — copy/paste into your tracker
+================================================================================
+
+  [ ] DB tables: chat_sessions, chat_messages, chat_agents
+  [ ] POST /api/chat/message              (AI reply + escalation passthrough)
+  [ ] POST /api/chat/request-agent        (notify on-call human)
+  [ ] GET  /api/chat/messages             (polling for new agent messages)
+  [ ] LLM system prompt + per-session context payload
+  [ ] Slack / Telegram / SMS / email handoff for /api/chat/request-agent
+  [ ] Agent-side reply pipeline (Slack thread OR /admin/chat)
+  [ ] Rate limits + 4 KB message cap
+  [ ] CORS: Allow-Origin (production + dashboard subdomain),
+            Allow-Headers (Content-Type, Authorization)
+  [ ] PII scrubber on internal logs
+  [ ] `chatbotEnabled` flag in /api/control already returns `true` ✓
+  [ ] Smoke test: send a question from a logged-out browser and confirm
+      sessionId is minted, AI reply renders, escalation works.
+
+================================================================================

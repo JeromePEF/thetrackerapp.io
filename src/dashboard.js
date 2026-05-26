@@ -1,5 +1,13 @@
 import { inject } from "@vercel/analytics";
 import { initGoogleAnalytics } from "./google-analytics.js";
+import { initFeatureFlags } from "./feature-flags.js";
+import { attachInlineEditMeasurements, hydrateInlineEditMeasurements } from "./inline-edit-measurements.js";
+import { initDashboardCharts } from "./dashboard-charts.js";
+import {
+  initPersonalTrainerTab,
+  initGroupsTab,
+  initRunClubsTab,
+} from "./dashboard-coach-community.js";
 import {
   API_BASE,
   affiliateAgreement,
@@ -44,7 +52,7 @@ const STRIPE_CHECKOUT_SUCCESS_URL =
 const STRIPE_CHECKOUT_CANCEL_URL = "https://thetrackerapp.io/dashboard?billing=cancelled&contact={CONTACT}";
 const AFFILIATE_AGREEMENT_POLL_MS = 4000;
 
-const TAB_IDS = ["account", "stats", "export", "goals", "billing", "integrate", "ai", "sheet", "personal-trainer", "affiliate"];
+const TAB_IDS = ["account", "stats", "export", "goals", "billing", "integrate", "ai", "sheet", "personal-trainer", "groups", "run-clubs", "affiliate"];
 const RANGE_IDS = ["today", "week", "month", "year", "all"];
 const RANGE_LABELS = {
   today: "D",
@@ -1123,6 +1131,32 @@ function setActiveTab(tabId, updateUrl = true) {
   if (updateUrl) {
     updateViewParam(targetTab);
   }
+
+  // Re-init the Stats charts whenever the user lands on the Stats tab. This
+  // refetches /api/chart/data so any new logs (or backend cleanup) show up
+  // immediately without a full page reload.
+  if (targetTab === "stats") {
+    initBodyMeasurementCharts();
+  }
+
+  // Lazy-init (and refresh on every reopen) the PT / Groups / Run Clubs tabs
+  // so each visit pulls a fresh /api/account/profile.
+  if (targetTab === "personal-trainer") {
+    const body = document.getElementById("personalTrainerPanelBody");
+    if (body) {
+      initPersonalTrainerTab(body).catch((e) => console.warn("personal-trainer tab failed:", e));
+    }
+  } else if (targetTab === "groups") {
+    const body = document.getElementById("groupsPanelBody");
+    if (body) {
+      initGroupsTab(body).catch((e) => console.warn("groups tab failed:", e));
+    }
+  } else if (targetTab === "run-clubs") {
+    const body = document.getElementById("runClubsPanelBody");
+    if (body) {
+      initRunClubsTab(body).catch((e) => console.warn("run-clubs tab failed:", e));
+    }
+  }
 }
 
 function wireTabEvents() {
@@ -1142,31 +1176,18 @@ function createAffiliateLink(user) {
   return seed ? `https://thetrackerapp.io/signup?ref=${encodeURIComponent(seed)}` : "";
 }
 
-function renderPersonalTrainer(user) {
-  const visible = Boolean(user?.hasPersonalTrainer);
-
-  if (els.navPersonalTrainer) {
-    els.navPersonalTrainer.hidden = !visible;
-  }
-
-  if (els.personalTrainerPanel) {
-    els.personalTrainerPanel.hidden = !visible;
-  }
-
-  if (!visible) {
-    if (state.activeTab === "personal-trainer") {
-      setActiveTab("stats");
-    }
-    return;
-  }
-
-  if (els.personalTrainerStatusValue) {
-    els.personalTrainerStatusValue.textContent = "Attached";
-  }
-
-  if (els.personalTrainerNameValue) {
-    els.personalTrainerNameValue.textContent = user?.personalTrainerName || "Assigned";
-  }
+/**
+ * Visibility of the Personal Trainer tab is now driven by the
+ * `dashboardTabs.personalTrainer` feature flag (data-feature attribute) and
+ * the tab's content is rendered by initPersonalTrainerTab(). The old
+ * `hasPersonalTrainer` short-circuit is no longer needed — even users without
+ * a coach should still see the tab so they can apply or redeem a code.
+ *
+ * This function is kept for binary compatibility with the existing call sites
+ * but is intentionally a no-op.
+ */
+function renderPersonalTrainer(_user) {
+  // intentional no-op (see comment above)
 }
 
 function syncEditableAccountInputs(user) {
@@ -5319,6 +5340,131 @@ function init() {
   });
 }
 
+// ============================================
+// ENHANCED BODY MEASUREMENTS & GRAFANA CHARTS
+// ============================================
+
+// Populate the static measurement spans in dashboard.html from the most-recent
+// body-measure entry in `state.bodyMeasures`. This runs after the existing
+// `loadBodyMeasuresAndRender()` finishes loading. The chart code now lives in
+// `src/dashboard-charts.js` and is invoked separately via expand button.
+function renderEnhancedBodyMeasurements() {
+  const entries = state.bodyMeasures || [];
+  if (!entries.length) return;
+  const latest = entries[entries.length - 1] || {};
+  const previous = entries.length > 1 ? entries[entries.length - 2] : null;
+
+  const fields = {
+    measureHeight: latest.height,
+    measureWeight: latest.weight || latest.bodyweight,
+    measureBodyFat: latest.bodyFat,
+    measureDate: latest.date ? new Date(latest.date).toLocaleDateString() : null,
+    measureBicepL: latest.bicepL || latest.bicepLeft,
+    measureBicepR: latest.bicepR || latest.bicepRight,
+    measureForearmL: latest.forearmL || latest.forearmLeft,
+    measureForearmR: latest.forearmR || latest.forearmRight,
+    measureChest: latest.chest,
+    measureShoulders: latest.shoulders,
+    measureNeck: latest.neck,
+    measureLats: latest.lats,
+    measureTraps: latest.traps,
+    measureSerratus: latest.serratus || latest.serratusAnterior,
+    measureWaist: latest.waist,
+    measureAbs: latest.abs,
+    measureObliques: latest.obliques,
+    measureQuadL: latest.quadL || latest.quadLeft,
+    measureQuadR: latest.quadR || latest.quadRight,
+    measureCalfL: latest.calfL || latest.calfLeft,
+    measureCalfR: latest.calfR || latest.calfRight,
+    measureGlutes: latest.glutes || latest.glute,
+  };
+
+  for (const [id, value] of Object.entries(fields)) {
+    const el = document.getElementById(id);
+    if (!el || value === undefined || value === null || value === "") continue;
+    // Re-render display while preserving the unit suffix that inline-edit looks
+    // for (`<span class="value">` + `<span class="unit">`).
+    const unit = el.dataset?.unit || "";
+    if (el.classList.contains("measurement-value")) {
+      el.innerHTML = `<span class="value">${typeof value === "number" ? value.toFixed(1) : value}</span><span class="unit">${unit}</span>`;
+    } else {
+      el.textContent = typeof value === "number" ? value.toFixed(1) : value;
+    }
+  }
+
+  const deltaEl = document.getElementById("measureWeightDelta");
+  if (deltaEl && latest.weight && previous?.weight) {
+    const delta = latest.weight - previous.weight;
+    deltaEl.textContent = `${delta >= 0 ? "+" : ""}${delta.toFixed(1)} lb`;
+    deltaEl.className = `stat-delta ${delta > 0 ? "positive" : delta < 0 ? "negative" : ""}`;
+  }
+}
+
+// Auto-initialise the Grafana-style chart panel at the top of the Stats tab.
+// The container is now visible by default (no expand toggle); the module
+// fetches /api/chart/data and renders the spotlight + quick + advanced view.
+// We intentionally re-init on every call so the Stats data refreshes whenever
+// the user navigates back to this tab (no stale-data on tab-switch surprises).
+function initBodyMeasurementCharts() {
+  const chartsContainer = document.getElementById("progressChartsContainer");
+  if (!chartsContainer) return;
+  initDashboardCharts(chartsContainer).catch((err) => {
+    console.warn("initDashboardCharts failed:", err);
+  });
+}
+
+// Initialize on page load
+function initEnhancedDashboard() {
+  renderEnhancedBodyMeasurements();
+  initBodyMeasurementCharts();
+  // Apply backend-driven feature flags so dashboardTabs.* / footer.* / etc.
+  // take effect on this page. Without this call the Stats / Personal Trainer /
+  // Groups / Run Clubs tab buttons ignore the `data-feature` attribute and
+  // always render visible. After flags resolve, if the URL pointed at a tab
+  // that just got hidden, snap back to Stats so the user isn't stranded on
+  // an invisible panel.
+  initFeatureFlags()
+    .then(() => {
+      const activeBtn = document.querySelector(`[data-tab="${state.activeTab}"]`);
+      if (activeBtn?.hidden) setActiveTab("stats");
+    })
+    .catch((e) => console.warn("initFeatureFlags failed:", e));
+  // Wire up click-to-edit on every measurement value, goal, height, date and
+  // qualitative-assessment journal in the Body Measurements panel.
+  const panel = document.getElementById("bodyMeasurementsSection");
+  if (panel) {
+    attachInlineEditMeasurements(panel);
+    // Also fetch the consolidated measurements + journals + goal endpoint so
+    // qualitative-assessment text and the goal badge are populated on load.
+    // The existing /api/body-measures fetch only returns the measurements
+    // array, not journals/goal/etc.
+    fetchAuthedApi(`${API_BASE}/api/user/measurements`)
+      .then((res) => (res && res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) hydrateInlineEditMeasurements(data, panel);
+      })
+      .catch(() => {
+        // Endpoint may not exist yet on the backend - the panel is still
+        // editable, just without pre-populated journals.
+      });
+  }
+}
+
+// Hook into existing body measures load after init
+function enhanceBodyMeasuresAfterLoad() {
+  const origLoad = loadBodyMeasuresAndRender;
+  window.loadBodyMeasuresAndRender = async function() {
+    await origLoad();
+    renderEnhancedBodyMeasurements();
+    const panel = document.getElementById("bodyMeasurementsSection");
+    if (panel) attachInlineEditMeasurements(panel);
+  };
+}
+
 inject();
 initGoogleAnalytics();
 init();
+setTimeout(() => {
+  initEnhancedDashboard();
+  renderEnhancedBodyMeasurements();
+}, 500);

@@ -1,0 +1,433 @@
+/* Status Page Styles */
+
+:root {
+  --bg: #0a0a0c;
+  --bg-card: rgba(255, 255, 255, 0.03);
+  --accent: #38ffd3;
+  --operational: #10b981;
+  --degraded: #f59e0b;
+  --outage: #ef4444;
+  --text: #e8f0f8;
+  --text-muted: #7a8a9a;
+  --border: rgba(166, 193, 225, 0.15);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+.status-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.status-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.status-logo {
+  font-family: "Orbitron", sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.status-title {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+/* Overall Status Banner */
+.status-banner {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 2rem;
+}
+
+.status-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.status-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.status-icon.operational {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--operational);
+}
+
+.status-icon.degraded {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--degraded);
+}
+
+.status-icon.outage {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--outage);
+}
+
+.status-text h1 {
+  font-family: "Orbitron", sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.status-updated {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* Sections */
+.status-main section {
+  margin-bottom: 2rem;
+}
+
+.status-main h2 {
+  font-family: "Orbitron", sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+}
+
+/* Services Grid */
+.services-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.service-card {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.service-info h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.15rem;
+}
+
+.service-status {
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-dot.operational { background: var(--operational); }
+.status-dot.degraded { background: var(--degraded); }
+.status-dot.outage { background: var(--outage); }
+
+.service-uptime {
+  text-align: right;
+}
+
+.uptime-percent {
+  font-family: "Orbitron", sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--operational);
+}
+
+.uptime-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  display: block;
+}
+
+.service-graph {
+  display: flex;
+  gap: 2px;
+  align-items: flex-end;
+  height: 30px;
+}
+
+.graph-bar {
+  width: 4px;
+  border-radius: 2px;
+  min-height: 4px;
+}
+
+.graph-bar.operational { background: var(--operational); }
+.graph-bar.degraded { background: var(--degraded); }
+.graph-bar.outage { background: var(--outage); }
+
+/* Response Stats */
+.response-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.response-stat {
+  padding: 1.25rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-align: center;
+}
+
+.response-value {
+  display: block;
+  font-family: "Orbitron", sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 0.25rem;
+}
+
+.response-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Incidents */
+.incidents-list {
+  padding: 1.25rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.no-incidents {
+  color: var(--text-muted);
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.incident-item {
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.incident-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.incident-item:first-child {
+  padding-top: 0;
+}
+
+.incident-title {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.incident-date {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Uptime History */
+.uptime-grid {
+  display: flex;
+  gap: 3px;
+  padding: 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow-x: auto;
+}
+
+.uptime-day {
+  width: 16px;
+  height: 40px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.uptime-day:hover {
+  transform: scaleY(1.1);
+}
+
+.uptime-day.operational { background: var(--operational); }
+.uptime-day.degraded { background: var(--degraded); }
+.uptime-day.outage { background: var(--outage); }
+
+.uptime-legend {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 0.75rem;
+  justify-content: center;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.legend-dot.operational { background: var(--operational); }
+.legend-dot.degraded { background: var(--degraded); }
+.legend-dot.outage { background: var(--outage); }
+
+/* Footer */
+.status-footer {
+  margin-top: auto;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+.footer-links a {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.15s;
+}
+
+.footer-links a:hover {
+  color: var(--accent);
+}
+
+.footer-note {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  .status-page {
+    padding: 1.5rem 1rem;
+  }
+  
+  .status-banner {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .response-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .service-card {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .service-uptime {
+    text-align: left;
+  }
+}
+
+
+/* Footer social icons (rendered by src/footer-socials.js, controlled by /api/control → socials.*) */
+.footer-socials {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  margin-top: 0.65rem;
+}
+
+@media (min-width: 720px) {
+  .footer-socials {
+    position: absolute;
+    right: 1.25rem;
+    bottom: 0.65rem;
+    margin-top: 0;
+    max-width: 60%;
+    justify-content: flex-end;
+  }
+}
+
+.footer-social {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  color: #ffffff;
+  background: transparent;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+  text-decoration: none;
+}
+
+.footer-social svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.footer-social:hover,
+.footer-social:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+  color: #38ffd3;
+  transform: translateY(-1px);
+  outline: none;
+}
+
+footer.trust-footer,
+footer.lb-page-footer,
+.status-footer { position: relative; }
+

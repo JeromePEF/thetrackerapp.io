@@ -378,6 +378,13 @@ Log new body measurements. **Requires auth.**
 ### GET `/api/user/charts`
 Get chart data for all metrics. **Requires auth.**
 
+Frontend uses this to populate Grafana-style charts on dashboard. Data comes from user's logged nutrition, workouts, body measurements, and wearable integrations.
+
+**Query Params:**
+- `from` (string): Start date (YYYY-MM-DD), default 30 days ago
+- `to` (string): End date (YYYY-MM-DD), default today
+- `metrics` (string): Comma-separated list of metrics to return (optional, returns all if omitted)
+
 **Response:**
 ```json
 {
@@ -396,16 +403,34 @@ Get chart data for all metrics. **Requires auth.**
   "water": [...],
   "steps": [...],
   "restingHR": [...],
-  "creatine": [...],
   "sugars": [...],
   "sodium": [...],
   "cholesterol": [...],
-  "vitamins": [...],
-  "minerals": [...],
-  "tongkatAli": [...],
-  "otherSupps": [...]
+  "fiber": [...],
+  "caffeine": [...],
+  "alcohol": [...],
+  "supplements": {
+    "creatine": [
+      { "date": "2024-01-01", "value": 5, "unit": "g" }
+    ],
+    "tongkatAli": [...],
+    "ashwagandha": [...],
+    "vitaminD": [...],
+    "omega3": [...],
+    "magnesium": [...],
+    "zinc": [...],
+    "custom": [
+      { "date": "2024-01-01", "name": "Beta-Alanine", "value": 3.2, "unit": "g" }
+    ]
+  }
 }
 ```
+
+**Notes:**
+- `supplements` object contains tracked supplements/enhancers from user's nutrition logging
+- When user texts "took 5g creatine" or "creatine 5g", it should populate `supplements.creatine`
+- Custom supplements the system doesn't recognize go into `supplements.custom` array
+- Vitamins (A, B, C, D, E, K) can be individual fields or aggregated based on frontend needs
 
 ---
 

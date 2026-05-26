@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Win $$$ | The Tracker App - Impromptu Fitness Competitions</title>
+    <meta name="description" content="Win real money in impromptu fitness competitions. Be the first to complete challenges and claim cash prizes. Live competitions powered by The Tracker App." />
+    <meta name="keywords" content="win money fitness, cash prize workout, fitness challenge money, workout competition prize" />
+    <meta name="theme-color" content="#000000" />
+
+    <link rel="canonical" href="https://thetrackerapp.io/win" />
+    <link rel="icon" href="/favicon.svg?v=5" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3" sizes="180x180" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Win $$$ | The Tracker App" />
+    <meta property="og:description" content="Win real money in impromptu fitness competitions. Be the first to complete challenges!" />
+    <meta property="og:url" content="https://thetrackerapp.io/win" />
+    <meta property="og:image" content="https://thetrackerapp.io/og-image.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+    <script type="module" crossorigin src="/assets/win-DCGfml8f.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-DdFyKP1d.js">
+    <link rel="modulepreload" crossorigin href="/assets/feature-flags-CpbHEPVM.js">
+    <link rel="stylesheet" crossorigin href="/assets/win-Dc5kFXwZ.css">
+    <link rel="stylesheet" crossorigin href="/assets/info-pages-iuJ7kj43.css">
+  </head>
+  <body>
+    <div id="appShell">
+      <header class="site-header">
+        <div class="container header-row">
+          <nav class="app-links" aria-label="Navigation">
+            <a href="/">Home</a>
+            <a href="/brackets">Brackets</a>
+            <a href="/win" class="active">Win $$$</a>
+            <a href="/products">Products</a>
+          </nav>
+          <div class="header-auth">
+            <a id="loginLink" class="login-link" href="/login">Login</a>
+            <a id="dashboardLink" class="dashboard-link" href="https://dashboard.thetrackerapp.io/dashboard" hidden>Dashboard</a>
+          </div>
+        </div>
+      </header>
+
+      <main class="container page-content">
+        <section class="page-hero win-hero">
+          <div class="prize-amount-display">
+            <span class="prize-currency">$</span>
+            <span id="currentPrizePool" class="prize-value">0</span>
+          </div>
+          <h1>Win Cash Prizes</h1>
+          <p class="hero-subtitle">Impromptu fitness competitions with real money prizes. Be the first to complete the challenge!</p>
+        </section>
+
+        <!-- Active Challenge -->
+        <section id="activeChallengeSection" class="active-challenge-section">
+          <div class="challenge-status">
+            <p class="live-indicator challenge-live"><span class="live-dot" aria-hidden="true"></span>LIVE CHALLENGE</p>
+          </div>
+          
+          <div id="activeChallenge" class="active-challenge-card">
+            <p class="loading-state">Checking for active challenges...</p>
+          </div>
+
+          <div id="noActiveChallenge" class="no-challenge-card" hidden>
+            <div class="no-challenge-icon">⏳</div>
+            <h3>No Active Challenge</h3>
+            <p>Check back soon! Challenges are announced randomly throughout the day.</p>
+            <p class="next-challenge-hint">Enable notifications to be alerted when a new challenge goes live.</p>
+            <button id="enableNotificationsBtn" class="btn-primary">Enable Notifications</button>
+          </div>
+        </section>
+
+        <!-- Challenge Leaderboard -->
+        <section id="challengeLeaderboardSection" class="challenge-leaderboard-section" hidden>
+          <h2>Live Leaderboard</h2>
+          <div class="leaderboard-timer">
+            <span>Time Remaining:</span>
+            <span id="challengeTimer" class="timer-value">00:00:00</span>
+          </div>
+          <ol id="challengeLeaderboard" class="challenge-leaderboard">
+            <!-- Leaderboard entries rendered here -->
+          </ol>
+        </section>
+
+        <!-- How It Works -->
+        <section class="how-it-works-section">
+          <h2>How It Works</h2>
+          <div class="steps-grid">
+            <div class="step-card">
+              <div class="step-number">1</div>
+              <h3>Challenge Announced</h3>
+              <p>We announce a surprise challenge via push notification and on this page. Challenges can be anything: 100 burpees, 5k run, 500 calories burned, etc.</p>
+            </div>
+            <div class="step-card">
+              <div class="step-number">2</div>
+              <h3>Complete First</h3>
+              <p>Use The Tracker App to log your completion. Your data is verified through our SMS, iMessage, or Telegram tracking, plus wearable integrations.</p>
+            </div>
+            <div class="step-card">
+              <div class="step-number">3</div>
+              <h3>Claim Prize</h3>
+              <p>First verified completion wins! Prize money is sent directly to your linked payment account within 24 hours.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Past Winners -->
+        <section class="past-winners-section">
+          <h2>Recent Winners</h2>
+          <div id="pastWinnersList" class="past-winners-list">
+            <p class="loading-state">Loading recent winners...</p>
+          </div>
+        </section>
+
+        <!-- Rules -->
+        <section class="rules-section">
+          <h2>Competition Rules</h2>
+          <ul class="rules-list">
+            <li>Must have an active Tracker App account with verified tracking method</li>
+            <li>Completion must be logged through official tracking channels (SMS, iMessage, Telegram, or synced wearable)</li>
+            <li>One entry per challenge per user</li>
+            <li>Ties decided by timestamp of completion submission</li>
+            <li>Prizes paid via PayPal, Venmo, or bank transfer within 24 hours</li>
+            <li>Staff and family members of The Tracker App are not eligible</li>
+          </ul>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        <div class="container footer-row">
+          <a data-feature="footer.contact" href="mailto:contact@thetrackerapp.io">contact@thetrackerapp.io</a>
+          <a data-feature="footer.blog" href="/blog">Blog</a>
+          <a data-feature="footer.press" href="/press">Press</a>
+          <a data-feature="footer.privacy" href="/privacy">Privacy Policy</a>
+          <a data-feature="footer.terms" href="/terms">Terms</a>
+        </div>
+      </footer>
+    </div>
+
+  </body>
+</html>

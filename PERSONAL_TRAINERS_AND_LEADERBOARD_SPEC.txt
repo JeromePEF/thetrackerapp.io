@@ -1,0 +1,477 @@
+================================================================================
+PERSONAL TRAINERS · RUN CLUBS · GROUPS · PUBLIC LEADERBOARD
+Backend integration spec for the new dashboard sections + leaderboard/profile pages
+================================================================================
+
+Last updated: 2026-05-22
+
+The frontend is being extended with three concepts that need backend support:
+
+  1. PERSONAL TRAINERS  – approve-based 1:N coach <-> client links, PT-only code
+                         redemption, "become a PT" application flow.
+  2. GROUPS + RUN CLUBS – memberships shown on every user's dashboard and
+                         profile. (Telegram / iMessage / Run-Club types.)
+  3. PUBLIC LEADERBOARD – a public /leaderboard page with category filters,
+                         a click-through public profile at /u/<username>.
+
+All endpoints below live on api.thetrackerapp.io and require
+`Authorization: Bearer <session>` UNLESS marked `[public]`.
+
+================================================================================
+PART A · PERSONAL TRAINERS
+================================================================================
+
+ROLES
+-----
+- "Athlete"          – default role, can be coached by 0 or 1 PTs at a time.
+- "Personal Trainer" – approved by site admin; gets a unique `trainerCode`
+                       (e.g. `RIVER-9X4P`). Can be coaching N athletes.
+
+A user can be BOTH an athlete and a PT (a PT may also have a coach).
+
+DATA MODEL THE FRONTEND EXPECTS
+-------------------------------
+On every authenticated profile response (e.g. `/api/account/profile`):
+
+```jsonc
+{
+  // ... existing fields ...
+
+  "isPersonalTrainer":     false,            // approved-as-PT flag
+  "personalTrainerStatus": "none",           // see status enum below
+  "personalTrainer": null,                   // when user IS coached by a PT
+  //                                        {
+  //   "id":            "user_abc",
+  //   "username":      "coachJay",
+  //   "displayName":   "Coach Jay",
+  //   "avatar":        "https://.../avatar.png",
+  //   "since":         "2026-04-12",
+  //   "trainerCode":   "RIVER-9X4P"
+  // }
+  "trainerCode":           "RIVER-9X4P",     // present when isPersonalTrainer
+  "trainerCodePending":    null,             // when an athlete entered a code
+                                              // but the PT hasn't approved yet:
+                                              // { "trainerUsername":"coachJay",
+                                              //   "submittedAt":"2026-05-22T01:23Z" }
+  "trainerApplicationStatus":"none",         // PT-application status (see enum)
+  "clientsAsTrainer": [],                    // present when isPersonalTrainer
+  //   [
+  //     {
+  //       "id": "user_xyz",
+  //       "username": "fierylion",
+  //       "displayName": "🔥 Fierylion",
+  //       "since": "2026-04-20",
+  //       "lastLog": "2026-05-22",
+  //       "status": "active"          // active | pending | removed
+  //     }
+  //   ]
+  "trainerSettings": {                       // PT-owned settings (only on PT):
+    "publicProfile": true,
+    "acceptingClients": true,
+    "bio": "10 yrs NSCA, hybrid lifter."
+  }
+}
+```
+
+ENUMS
+-----
+`personalTrainerStatus`:
+  "none"                – user has no coach and no pending request
+  "pending"             – user submitted a trainerCode, waiting for PT approval
+  "linked"              – PT approved; `personalTrainer` is populated
+  "rejected"            – PT rejected the request (frontend offers retry)
+  "removed"             – previously linked, then unlinked by either party
+
+`trainerApplicationStatus`:
+  "none"                – not applied
+  "pending"             – application submitted, awaiting site-admin review
+  "approved"            – application approved; `isPersonalTrainer:true`,
+                          `trainerCode` now present
+  "rejected"            – application rejected (frontend can show note + retry)
+
+ENDPOINTS
+---------
+
+[auth] GET /api/account/profile
+  Already exists; just add the fields listed in DATA MODEL above.
+
+[auth] POST /api/account/trainer-code/redeem
+  Body: { "code": "RIVER-9X4P" }
+  Behaviour:
+    - Look up the PT whose `trainerCode` matches (case-insensitive, hyphen-flex).
+    - If not found → 404 { ok:false, error:"Code not found" }.
+    - If user already has a `linked` PT → 409 { ok:false, error:"Already linked" }.
+    - Otherwise create a link request:
+        { athleteId, trainerId, status:"pending", submittedAt:<now> }
+      and notify the PT (text + push). Set the athlete's
+      `personalTrainerStatus = "pending"` and `trainerCodePending`.
+    - Returns the updated profile slice:
+        { ok:true, personalTrainerStatus:"pending",
+          trainerCodePending:{ trainerUsername, submittedAt } }
+
+[auth] POST /api/account/trainer-code/cancel
+  Body: {}
+  Behaviour: athlete can withdraw their pending request before the PT acts.
+  Returns: { ok:true, personalTrainerStatus:"none", trainerCodePending:null }
+
+[auth] POST /api/trainer/requests/:athleteId/approve   (PT-only)
+  Behaviour:
+    - PT confirms the pending link.
+    - Sets the athlete's `personalTrainerStatus="linked"` and populates
+      `personalTrainer={…PT info…}`. PT's `clientsAsTrainer` gains the entry.
+  Returns: { ok:true, client:{ id, username, displayName, since:<today> } }
+
+[auth] POST /api/trainer/requests/:athleteId/reject    (PT-only)
+  Body: { "reason"?: "string" }
+  Sets athlete's `personalTrainerStatus="rejected"` and clears pending state.
+  Returns: { ok:true }
+
+[auth] POST /api/trainer/clients/:athleteId/remove     (PT-only OR self)
+  Either party may break an existing link. Sets `personalTrainerStatus="removed"`.
+
+[auth] GET  /api/trainer/requests   (PT-only)
+  Returns pending requests waiting for this PT:
+    { ok:true, requests:[
+        { athleteId, username, displayName, submittedAt, avatar }
+    ] }
+
+[auth] POST /api/trainer/application
+  Body:
+    {
+      "fullName":  "River Park",
+      "bio":       "10 yrs NSCA, hybrid lifter.",
+      "credentials":["NSCA-CPT","RDN"],
+      "experienceYears": 10,
+      "specialties":["Hybrid","Strength","Endurance"],
+      "portfolioUrl":"https://...",
+      "agreeTerms": true
+    }
+  Creates a pending application that an admin must approve out of band.
+  Returns: { ok:true, trainerApplicationStatus:"pending" }
+
+[auth] POST /api/trainer/application/withdraw
+  Cancels a pending application. Returns { ok:true, trainerApplicationStatus:"none" }.
+
+[admin] POST /api/admin/trainer/applications/:id/approve
+[admin] POST /api/admin/trainer/applications/:id/reject
+  Admin-only endpoints to flip a user to `isPersonalTrainer:true` and mint
+  their `trainerCode`. Not consumed by the public frontend.
+
+================================================================================
+PART B · GROUPS, RUN CLUBS, COMMUNITIES
+================================================================================
+
+The frontend treats Telegram chat groups, iMessage group chats, and Run Clubs
+uniformly – they all show up in a "Communities" rail on the dashboard and
+profile page.
+
+DATA MODEL ON /api/account/profile
+----------------------------------
+
+```jsonc
+{
+  "communities": [
+    {
+      "id":          "tg_morning_lifters",
+      "kind":        "telegram",      // telegram | imessage | run-club | bracket
+      "name":        "Morning Lifters",
+      "emoji":       "🏋️",
+      "memberCount": 156,
+      "role":        "member",        // member | admin | owner
+      "since":       "2026-02-10",
+      "url":         "https://t.me/morninglifters",
+      "isPublic":    true,
+      "location":    null             // run-clubs only: "Austin, TX"
+    },
+    {
+      "id":          "rc_austin",
+      "kind":        "run-club",
+      "name":        "Austin Sunrise Runners",
+      "emoji":       "🏃",
+      "memberCount": 42,
+      "role":        "member",
+      "since":       "2026-03-05",
+      "url":         "/run-clubs/austin-sunrise",
+      "isPublic":    true,
+      "location":    "Austin, TX"
+    }
+  ]
+}
+```
+
+ENDPOINTS
+---------
+
+[auth] GET /api/account/profile  – includes `communities` array (above).
+
+[auth] POST /api/communities/:id/leave        – self-leave a community.
+[auth] POST /api/communities/:id/join         – self-join (public only).
+[auth] POST /api/communities/:id/request-join – request invite (private groups).
+
+The existing /api/groups + /api/run-clubs endpoints continue to power their
+discovery pages.
+
+================================================================================
+PART C · PUBLIC LEADERBOARD PAGE + USER PROFILES
+================================================================================
+
+The new /leaderboard page is public (works for signed-out visitors too). Click
+a username and you land on /u/<username> which is also public unless the user
+has flipped privacy off.
+
+PAGE URLs
+---------
+  /leaderboard                         – page is already routed; HTML new
+  /u/<username>                        – via Vercel rewrite to /u.html?u=<username>
+
+ENDPOINTS
+---------
+
+[public, edge-cached 60 s] GET /api/leaderboard
+  Query:
+    category   string – strength | calisthenics | streaks | steps | calories |
+                        sleep | miles | runclub:<clubId> | bracket:<bracketId>
+    range      string – 7d | 30d | 90d | 1y | all   (default: 30d)
+    metric     string – optional sub-metric (e.g. "bench", "pushups", "deadlift")
+    limit      int    – default 50, max 200
+    offset     int    – pagination
+    region     string – optional "US" / "EU" / "ALL"
+    runclub    string – filter to a specific run-club id
+    bracket    string – filter to a specific bracket id
+
+  Response:
+    {
+      "ok": true,
+      "category": "strength",
+      "metric":   "bench",
+      "range":    "30d",
+      "total":    1284,
+      "entries": [
+        {
+          "rank":          1,
+          "username":      "fierylion",
+          "displayName":   "🔥 Fierylion",
+          "emoji":         "🔥",
+          "score":         315,
+          "unit":          "lb",
+          "valueLabel":    "315 lb",
+          "country":       "US",
+          "flair": {                       // see "Flairs" section below
+            "primary":   "Bench 3pl",
+            "color":     "#ff8585",
+            "rarity":    "rare",
+            "badges":   ["Streak-100","Bracket-Winner-2026Q1"]
+          },
+          "personalTrainer": {              // null if none
+            "username":"coachJay",
+            "displayName":"Coach Jay"
+          },
+          "trend":         "+25 lb 30d",
+          "lastLog":       "2026-05-22"
+        }
+      ]
+    }
+
+[public, edge-cached 60 s] GET /api/u/:username
+  Returns the full public profile shape:
+
+    {
+      "ok": true,
+      "user": {
+        "username":      "fierylion",
+        "displayName":   "🔥 Fierylion",
+        "avatar":        "https://...",
+        "joinedAt":      "2024-08-12",
+        "country":       "US",
+        "isPublic":      true,
+        "isPersonalTrainer": false,
+        "personalTrainer": {                // null if none
+          "username":"coachJay",
+          "displayName":"Coach Jay"
+        },
+        "communities": [ /* same shape as PART B */ ],
+        "flair": {
+          "primary":     "Bench 3pl",      // big visible flair under name
+          "secondary":   "100-day streak",
+          "color":       "#ff8585",
+          "rarity":      "rare",           // common|uncommon|rare|epic|legendary
+          "badges": [
+            {
+              "id":"bracket-q1-2026-champion",
+              "label":"Bracket Q1 2026 Champion",
+              "emoji":"🏆",
+              "earnedAt":"2026-03-31"
+            },
+            {
+              "id":"streak-100",
+              "label":"100-day streak",
+              "emoji":"🔥",
+              "earnedAt":"2025-12-30"
+            }
+          ]
+        }
+      },
+      "ranks": [                            // user's current standings
+        { "category":"strength.bench","rank":1,"total":1284,"valueLabel":"315 lb" },
+        { "category":"streaks","rank":7,"total":2210,"valueLabel":"202 days" }
+      ],
+      "stats": {
+        "totalWorkouts":       582,
+        "totalDaysLogged":     469,
+        "longestStreakDays":   202,
+        "currentStreakDays":   202,
+        "totalDistanceMiles":  1240.6,
+        "totalCalories":       1872400,
+        "totalWaterGallons":   388,
+        "personalRecords": {
+          "bench":     { "value":315, "unit":"lb", "date":"2026-05-21" },
+          "squat":     { "value":425, "unit":"lb", "date":"2026-05-19" },
+          "deadlift":  { "value":495, "unit":"lb", "date":"2026-05-15" },
+          "pushups":   { "value":455, "unit":"reps","date":"2026-04-30" }
+        }
+      },
+      "recentActivity": [
+        {
+          "id":        "evt_001",
+          "type":      "workout",
+          "icon":      "🏋️",
+          "summary":   "Bench Press 5×5 @ 315 lb",
+          "valueLabel":"5×5 · 315 lb",
+          "category":  "strength",
+          "timestamp": "2026-05-21T17:42:00Z",
+          "service":   "imessage"
+        }
+      ],
+      "trends": {                           // optional 30-day sparklines
+        "weight":   [ { "date":"2026-04-22","value":174 } ],
+        "calories": [ { "date":"2026-04-22","value":2410 } ],
+        "steps":    [ { "date":"2026-04-22","value":11201 } ]
+      }
+    }
+
+  Notes:
+  - When the requested user has `isPublic:false`, return 200 with
+    `{ ok:true, user:{username,...}, private:true }` and omit stats/activity.
+  - `recentActivity` should respect the user's privacy settings (e.g. they may
+    have hidden nutrition events).
+  - `trends.*` arrays are optional; include them so the profile sparklines
+    render without an extra fetch.
+
+[public] GET /api/u/:username/exists
+  Lightweight existence check used by the dashboard "is this username taken"
+  validators. Returns { ok:true, exists:true }.
+
+FLAIRS  (tagpro-style)
+----------------------
+Flairs are user decorations earned by hitting milestones or winning brackets.
+The frontend reads them from `user.flair` and renders:
+
+  - `primary`   – short text shown as a coloured pill under the username.
+  - `secondary` – optional second pill.
+  - `color`     – hex used for the pill background tint.
+  - `rarity`    – common | uncommon | rare | epic | legendary.
+                  Maps to a CSS class for glow/animation strength.
+  - `badges[]`  – earned medals; rendered as a grid on the profile page and
+                  the highest-rarity 3 are shown next to the leaderboard row.
+
+Suggested badge ids (anything else is fine, frontend just renders label/emoji):
+
+  streak-7, streak-30, streak-100, streak-365,
+  bracket-q1-2026-champion, bracket-q2-2026-champion, ...,
+  bench-2pl, bench-3pl, bench-4pl,
+  squat-3pl, squat-4pl, squat-5pl,
+  deadlift-3pl, deadlift-4pl, deadlift-5pl,
+  marathon-finisher, ultra-finisher,
+  100-workouts, 365-workouts, 1000-workouts,
+  founding-member, beta-tester,
+  pt-approved, top-coach-2026
+
+================================================================================
+PART D · TOUCH POINTS THE FRONTEND ALREADY EXPECTS
+================================================================================
+
+These changes need to flow through endpoints we already use:
+
+1. `/api/account/profile` (GET + PATCH)
+   - GET adds: isPersonalTrainer, personalTrainerStatus, personalTrainer,
+               trainerCode, trainerCodePending, trainerApplicationStatus,
+               clientsAsTrainer, trainerSettings, communities, flair, ranks.
+   - PATCH accepts any subset of these on PT-side updates:
+       trainerSettings.publicProfile (bool)
+       trainerSettings.acceptingClients (bool)
+       trainerSettings.bio (string)
+
+2. `/api/chart/data` (already documented)
+   - No change required for PT/leaderboard, but we'll start sending
+     `&forUser=<otherUsername>` for the profile page's sparklines:
+       GET /api/chart/data?contact=<viewer>&forUser=<profile>&range=30d
+     The backend should authorize this: a viewer can request charts for
+     another user only if that user is public OR is one of their clients
+     (when viewer is a PT) OR is their PT.
+
+3. `/api/public-leaderboard`
+   - No change needed for homepage panels; we keep them on the existing
+     `/api/public-site-snapshot` upstream.
+
+================================================================================
+PART E · NOTIFICATIONS (out-of-band suggestions)
+================================================================================
+
+Whenever any of the following happen the backend should fire a text message
+(via the user's preferred service – iMessage/SMS/Telegram):
+
+  - Athlete redeems a PT code           → PT gets "X wants you to coach them.
+                                          Reply YES to approve or NO to reject."
+  - PT approves                          → Athlete gets "You're now linked with
+                                          <PT> 🏋️ Tap to view their profile:
+                                          https://thetrackerapp.io/u/<pt>"
+  - PT rejects                           → Athlete gets a polite "Not a match
+                                          this time — try another code anytime."
+  - PT application approved              → User gets "You're a coach now! Your
+                                          PT code is RIVER-9X4P. Share it and
+                                          we'll text you when athletes redeem."
+  - PT application rejected              → User gets reason + reapply CTA.
+  - Bracket / streak badge earned        → Athlete + the PT both get a hype text.
+
+================================================================================
+PART F · SUMMARY ENDPOINTS TABLE
+================================================================================
+
+| Method | Path                                          | Auth   | Cache |
+|--------|-----------------------------------------------|--------|-------|
+| GET    | /api/account/profile                          | bearer | none  |
+| PATCH  | /api/account/profile?contact=<u>              | bearer | none  |
+| POST   | /api/account/trainer-code/redeem              | bearer | none  |
+| POST   | /api/account/trainer-code/cancel              | bearer | none  |
+| POST   | /api/trainer/application                      | bearer | none  |
+| POST   | /api/trainer/application/withdraw             | bearer | none  |
+| GET    | /api/trainer/requests                         | bearer | none  |
+| POST   | /api/trainer/requests/:athleteId/approve      | bearer | none  |
+| POST   | /api/trainer/requests/:athleteId/reject       | bearer | none  |
+| POST   | /api/trainer/clients/:athleteId/remove        | bearer | none  |
+| POST   | /api/communities/:id/join                     | bearer | none  |
+| POST   | /api/communities/:id/leave                    | bearer | none  |
+| POST   | /api/communities/:id/request-join             | bearer | none  |
+| GET    | /api/leaderboard                              | public | 60 s  |
+| GET    | /api/u/:username                              | public | 60 s  |
+| GET    | /api/u/:username/exists                       | public | 60 s  |
+
+================================================================================
+PART G · TIMELINE & ROLLOUT
+================================================================================
+
+The frontend will ship a "soft" version first:
+
+  v1 (now) – profile / leaderboard / dashboard PT panels render whatever the
+             backend sends today (empty arrays + status:"none") so the new
+             pages don't crash before the backend lands.
+  v2       – wire up the PT redeem / apply flows once endpoints in PART A are
+             reachable (the buttons will just POST and surface backend errors
+             until they succeed).
+  v3       – flairs + badges grid + sparklines once /api/u/:username returns
+             the optional fields in PART C.
+
+If any endpoint isn't ready, the frontend degrades gracefully (skips that
+section instead of erroring).
+
+================================================================================
