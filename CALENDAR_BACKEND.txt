@@ -1,0 +1,372 @@
+================================================================================
+CALENDAR TAB — Backend spec for planned workouts, actual completion,
+               adherence %, and weekly commit days.
+================================================================================
+
+The frontend is adding a new Calendar tab to the dashboard. It shows:
+
+  • A month grid (Sun → Sat columns) with two layers per day:
+        1. PLANNED  — what the user said they'd do (from their schedule)
+        2. ACTUAL   — what they actually logged that day
+
+  • Today's adherence %, current week's commit-days ("4/7 days hit" or
+    "3/3 committed days hit").
+
+  • A weekly schedule sidebar so users can edit their plan inline
+    ("Mon: Push, Tue: Pull, Wed: Legs, …").
+
+  • A streak / consistency summary ("longest streak this month: 6 days").
+
+This doc is the wire spec — every field is OPTIONAL, the frontend hides any
+section whose data is absent. Backend can ship the endpoints in any order.
+
+================================================================================
+1. WEEKLY SCHEDULE  (user's plan / commit pattern)
+================================================================================
+
+This is the user's stated commitment. Two shapes are supported — pick whichever
+matches how the user expressed their plan:
+
+  PATTERN A — fixed weekdays:
+      "I work out Mon / Wed / Fri."           → committedWeekdays: [1, 3, 5]
+      "I lift 5 days a week, M-F."            → committedWeekdays: [1, 2, 3, 4, 5]
+
+  PATTERN B — frequency-only:
+      "I work out 3 days a week (any day)."   → targetDaysPerWeek: 3
+      "I want to be active every day."        → targetDaysPerWeek: 7
+
+Both can coexist; if both are present, frontend prefers the named weekdays
+and treats `targetDaysPerWeek` as a fallback adherence denominator.
+
+ADD endpoint:
+
+  GET /api/calendar/schedule?contact=<u>
+
+  Response:
+  {
+    "contact": "alice",
+    "timezone": "America/New_York",
+    "schedule": {
+      "committedWeekdays": [1, 3, 5],     // 0=Sun..6=Sat, optional
+      "targetDaysPerWeek": 3,             // 1..7, optional
+      "weekdayPlan": {                    // optional per-weekday detail
+         "1": { "label": "Push",  "type": "strength",
+                "exercises": ["bench", "ohp", "dips"],
+                "notes": "Keep RPE 7-8" },
+         "3": { "label": "Pull",  "type": "strength",
+                "exercises": ["deadlift", "rows", "pullups"] },
+         "5": { "label": "Legs",  "type": "strength",
+                "exercises": ["squat", "rdl", "calf"] }
+      },
+      "restDayPolicy": "specific",        // "specific" | "flexible" | "none"
+      "createdAt":  "2026-05-01T00:00:00Z",
+      "updatedAt":  "2026-05-15T00:00:00Z"
+    }
+  }
+
+  When the user has no schedule yet, return:
+      { "contact": "alice", "schedule": null }
+  Frontend then shows an inline "Set up your workout schedule →" CTA.
+
+ADD endpoint for inline editing:
+
+  PATCH /api/calendar/schedule
+    body: { contact, schedule: { ...partial fields above... } }
+    Returns the merged result. Pass `null` for a field to clear it.
+
+CREATE-FROM-CHAT path (optional but recommended):
+
+  The bot already accepts natural language ("I work out MWF doing push pull
+  legs"). When it parses one, POST it via:
+
+    POST /api/calendar/schedule/from-text
+      body: { contact, text }
+      Response: same as GET above.
+
+================================================================================
+2. DAILY COMPLETION GRID
+================================================================================
+
+The frontend renders a 6-row × 7-col month grid. For each visible date it
+needs to know (a) was this a committed day? (b) did the user log a workout?
+(c) optional thumbnail of what they did.
+
+ADD endpoint:
+
+  GET /api/calendar/month?contact=<u>&month=YYYY-MM
+
+  Response:
+  {
+    "contact": "alice",
+    "month": "2026-05",
+    "timezone": "America/New_York",
+    "days": [
+      {
+        "date":         "2026-05-01",
+        "weekday":      5,                    // 0=Sun..6=Sat (server local)
+        "isCommitted":  true,                 // matches committedWeekdays
+        "planned": {
+          "label":      "Legs",
+          "type":       "strength",
+          "exercises":  ["squat", "rdl"]
+        },
+        "actual": {
+          "workouts":   3,                    // logged sessions count
+          "categories": ["strength"],         // distinct categories logged
+          "exercises":  ["squat", "rdl", "calf-raise"],
+          "totalReps":  72,
+          "totalSets":  12,
+          "totalVolumeLb": 18420,
+          "cardioMinutes": 0,
+          "logged":     true                  // shortcut for "any activity"
+        },
+        "status":       "hit",                // hit | partial | missed | rest | future
+        "notes":        ""                    // optional, e.g. "Travel day, 30m walk"
+      },
+      ...
+    ],
+    "summary": {
+      "daysWithActivity":  18,
+      "committedDays":     13,
+      "committedHits":     11,
+      "longestStreak":     6,
+      "currentStreak":     2,
+      "adherencePct":      0.846              // committedHits / committedDays
+    }
+  }
+
+STATUS SEMANTICS:
+
+  hit       Committed day AND user logged a workout that matches the plan
+            (or any workout when no per-day plan is set).
+  partial   Committed day with SOME activity but not the planned type (e.g.
+            cardio when plan said strength).
+  missed    Committed day, no activity logged, AND date < today.
+  rest     Non-committed day (or restDayPolicy="flexible" and user took
+            the day off intentionally).
+  future    date > today — show as faint outline only.
+
+If the backend can't classify, send `status: null` and the frontend will
+infer from `isCommitted` + `actual.logged`.
+
+================================================================================
+3. WEEK SUMMARY  (the "3/7" tile)
+================================================================================
+
+ADD endpoint:
+
+  GET /api/calendar/week?contact=<u>&weekStart=YYYY-MM-DD
+
+    weekStart is optional; default = the start of the user's current week
+    in their timezone (treating Sunday as day 0 — match Apple Calendar).
+
+  Response:
+  {
+    "weekStart":   "2026-05-17",          // ISO Sunday
+    "weekEnd":     "2026-05-23",
+    "committedDays": 3,                   // e.g. M/W/F → 3
+    "committedHits": 2,                   // M and W hit, F still pending
+    "totalDaysHit":  4,                   // any activity at all
+    "targetDaysPerWeek": 3,
+    "adherencePct":  0.667,               // committedHits / committedDays
+    "perDay": [
+      { "date":"2026-05-17", "weekday":0, "isCommitted":false, "logged":false, "status":"rest" },
+      { "date":"2026-05-18", "weekday":1, "isCommitted":true,  "logged":true,  "status":"hit",
+        "planned":{"label":"Push"}, "actualLabel":"Push (bench, ohp, dips)" },
+      { "date":"2026-05-19", "weekday":2, "isCommitted":false, "logged":true,  "status":"rest",
+        "actualLabel":"30 min walk" },
+      { "date":"2026-05-20", "weekday":3, "isCommitted":true,  "logged":true,  "status":"hit",
+        "planned":{"label":"Pull"}, "actualLabel":"Pull (deadlift, rows)" },
+      { "date":"2026-05-21", "weekday":4, "isCommitted":false, "logged":false, "status":"rest" },
+      { "date":"2026-05-22", "weekday":5, "isCommitted":true,  "logged":false, "status":"future",
+        "planned":{"label":"Legs"} },
+      { "date":"2026-05-23", "weekday":6, "isCommitted":false, "logged":false, "status":"future" }
+    ]
+  }
+
+The frontend renders:
+
+   This week — 2/3 committed days hit · 4/7 total active
+   M  T  W  T  F  S  S
+   ●  ·  ●  ·  ○  ·  ·            (● = committed-hit, ○ = committed-pending,
+                                    · = rest day or non-committed)
+
+================================================================================
+4. ADHERENCE OVER TIME
+================================================================================
+
+For the top-of-tab adherence tile + a small trend line:
+
+  GET /api/calendar/adherence?contact=<u>&range=30d|90d|6mo|1y
+
+  Response:
+  {
+    "range": "30d",
+    "adherencePct": 0.78,                 // weighted avg over the range
+    "weeks": [
+      { "weekStart":"2026-04-26", "hits":3, "committed":3, "pct":1.0   },
+      { "weekStart":"2026-05-03", "hits":2, "committed":3, "pct":0.667 },
+      { "weekStart":"2026-05-10", "hits":3, "committed":3, "pct":1.0   },
+      { "weekStart":"2026-05-17", "hits":2, "committed":3, "pct":0.667 }
+    ],
+    "bestWeek":  { "weekStart":"2026-04-26", "pct":1.0 },
+    "worstWeek": { "weekStart":"2026-05-03", "pct":0.667 }
+  }
+
+================================================================================
+5. PLANNED-VS-ACTUAL CLASSIFIER (server-side)
+================================================================================
+
+Logic the backend should run when computing `status`:
+
+   IF date > today:
+       status = "future"
+   ELIF isCommitted:
+       IF actual.logged AND plannedMatches(actual, planned):
+           status = "hit"
+       ELIF actual.logged:
+           status = "partial"
+       ELSE:
+           status = "missed"
+   ELSE:                                  # rest day
+       status = "rest"
+
+`plannedMatches` is forgiving:
+
+   - If `planned.type == "strength"` and `actual.categories` includes
+     "strength", count it as a hit (don't require exact exercise overlap).
+   - If `planned.type == "cardio"` and `actual.cardioMinutes >= 15`, hit.
+   - If no `planned` block is set but the day is committed, ANY activity = hit.
+
+================================================================================
+6. WRITE / EDIT FLOWS
+================================================================================
+
+When a user edits their schedule inline in the calendar UI (drag a workout
+type onto a different weekday, tap "Make Tuesday a rest day", etc.) we'll
+PATCH the schedule:
+
+  PATCH /api/calendar/schedule
+    body: {
+      contact,
+      schedule: {
+        committedWeekdays: [1, 3, 5],
+        weekdayPlan: {
+          "1": { "label":"Push", "type":"strength" },
+          "3": { "label":"Pull", "type":"strength" },
+          "5": { "label":"Legs", "type":"strength" }
+        }
+      }
+    }
+
+When a user logs a workout from the calendar UI ("today was push"), we'll
+hit the existing /api/workouts/log endpoint and then ask for a recompute:
+
+  POST /api/calendar/recompute
+    body: { contact, date: "2026-05-22" }   // optional; default = today
+    Response: { day: <one entry from /api/calendar/month> }
+
+================================================================================
+7. WHERE THE FRONTEND USES EACH FIELD
+================================================================================
+
+  Field                                     UI location
+  ──────────────────────────────────────────────────────────────────────────
+  schedule.committedWeekdays                Weekday legend dots, M/W/F highlight
+  schedule.targetDaysPerWeek                Adherence denominator fallback
+  schedule.weekdayPlan[d].label             Day cell title ("Push", "Pull")
+  schedule.weekdayPlan[d].exercises         Tooltip + day-detail drawer
+  schedule.restDayPolicy                    Affects "rest" vs "missed" colour
+
+  month.days[].isCommitted                  Cell border treatment
+  month.days[].planned                      Top-left cell glyph
+  month.days[].actual.workouts              Number badge in cell
+  month.days[].actual.exercises             Tooltip on hover
+  month.days[].status                       Cell background colour:
+                                              hit     = green  rgba
+                                              partial = amber  rgba
+                                              missed  = red    rgba
+                                              rest    = grey   rgba
+                                              future  = transparent w/ border
+  month.summary.adherencePct                Big % tile at top
+  month.summary.currentStreak               "🔥 N day streak" tile
+  month.summary.longestStreak               "Best run this month: N" sub-line
+
+  week.committedHits / week.committedDays   "2/3 days hit this week" tile
+  week.totalDaysHit                         "4/7 active" secondary tile
+  week.perDay[].planned.label               Per-day pill in week strip
+
+  adherence.weeks[]                         Mini-sparkline beneath month grid
+  adherence.bestWeek / worstWeek            Hover detail on sparkline
+
+================================================================================
+8. ROLLOUT ORDER (frontend can ship without any of these — each lights up
+                  a different section)
+================================================================================
+
+  Phase 1 — `GET /api/calendar/schedule` + `PATCH /api/calendar/schedule`
+            (read + edit the user's commitment pattern)
+            UI: weekly schedule sidebar lights up, "3 days/week" tile.
+
+  Phase 2 — `GET /api/calendar/month`
+            UI: the full month grid renders planned vs actual cells.
+
+  Phase 3 — `GET /api/calendar/week`
+            UI: this-week tile + per-day pills.
+
+  Phase 4 — `GET /api/calendar/adherence`
+            UI: trend sparkline + best/worst week annotations.
+
+  Phase 5 — `POST /api/calendar/schedule/from-text` and `POST /api/calendar/recompute`
+            UI: natural-language schedule editor + log-from-calendar.
+
+================================================================================
+9. ASKS  (copy/paste into the tracker)
+================================================================================
+
+  [ ] Define a schedule object on the user record with committedWeekdays[],
+      targetDaysPerWeek, weekdayPlan{}, restDayPolicy, timezone.
+  [ ] GET    /api/calendar/schedule        → returns schedule | null
+  [ ] PATCH  /api/calendar/schedule        → partial merge, returns full
+  [ ] POST   /api/calendar/schedule/from-text { contact, text } → parses NL
+                                              ("MWF push pull legs") and stores.
+  [ ] GET    /api/calendar/month?month=YYYY-MM
+                                            → days[] with isCommitted, planned,
+                                              actual, status; plus summary{}.
+  [ ] GET    /api/calendar/week?weekStart=YYYY-MM-DD
+                                            → committed/hits + perDay[] strip.
+  [ ] GET    /api/calendar/adherence?range= → weeks[] sparkline + best/worst.
+  [ ] POST   /api/calendar/recompute { contact, date? }
+                                            → recompute a single day after a
+                                              log (returns the updated day entry).
+
+  [ ] Implement the plannedMatches() classifier described in section 5.
+  [ ] Honor the user's timezone for week boundaries (Sun→Sat by default;
+      consider exposing `weekStartsOn` on the schedule for power users).
+
+================================================================================
+10. EDGE CASES THE BACKEND NEEDS TO HANDLE
+================================================================================
+
+  • User changes their schedule mid-month → recompute historical `status`?
+        Recommendation: NO. Historical days keep the schedule that was active
+        when they were logged. Add `scheduleSnapshot` to each day entry if
+        you want to show it. Frontend will display "Schedule changed on
+        2026-05-15 →" if it sees varying snapshots in a month.
+
+  • User logs 3 workouts on one day → `actual.workouts: 3` but counts as
+        one "hit" for adherence. Volume/reps still aggregate.
+
+  • Travel days the user marks as PTO → support a per-day override flag
+        `excused: true`. Frontend renders these as grey-with-✈️ glyph and
+        EXCLUDES them from adherence denominator.
+
+  • DST transitions → use the user's local date, not UTC, for the date key
+        in `days[].date`. Confirmed by sending the user's timezone in every
+        response so frontend can sanity-check.
+
+  • No committed weekdays set, but targetDaysPerWeek=3 → frontend renders a
+        "ghost" 3/7 progress ring instead of named-weekday pills. Backend
+        still computes `committedHits` as "first 3 active days hit this week".
+
+================================================================================

@@ -153,6 +153,27 @@ const QUICK_METRICS = ["weight", "calories", "protein", "water"];
 // "Cannot read properties of undefined (reading 'includes')" at runtime.
 const SUB_VIEWS = ["all", "workouts", "nutrition", "water"];
 
+// Semantic color palette for Nutrition combined chart. The "All" tab still
+// uses the default PALETTE (cycled by index) because metrics there span
+// every category. Nutrition gets meaningful hues so a 10-line combined chart
+// stays readable at a glance.
+const NUTRITION_COLORS = {
+  calories: "#ffb74d",            // amber — energy
+  protein: "#64b5f6",             // blue — muscle/dumbbell
+  carbs: "#81c784",               // green — grains
+  fats: "#ffd54f",                // butter yellow
+  saturatedFat: "#ef5350",        // red — limit
+  polyunsaturatedFat: "#26a69a",  // teal — heart-healthy
+  monounsaturatedFat: "#66bb6a",  // good-green
+  transFat: "#d81b60",            // crimson — avoid
+  sugars: "#f48fb1",              // pink
+  sodium: "#9575cd",              // purple
+  cholesterol: "#ff8a65",         // orange-red
+  fiber: "#a1887f",               // brown
+  caffeine: "#7e57c2",            // dark purple
+  creatine: "#4dd0e1",            // cyan
+};
+
 const state = {
   range: "30d",
   data: null,
@@ -162,6 +183,11 @@ const state = {
   inflight: null,
   contact: "",
   advancedOpen: false,
+  // Per-sub-view chart mode: "combined" (one mono chart, default) or
+  // "individual" (per-metric quick-charts grid). Reduces visual clutter so
+  // users see one chart with everything overlaid by default and only expand
+  // to individual cards when they want to drill in.
+  chartMode: { all: "combined", workouts: "combined", nutrition: "combined", water: "combined" },
   // Stats sub-tab: "all" (default) | "workouts" | "nutrition" | "water"
   // Drives which sections / quick charts render. Sub-tab choice persists via
   // URL hash on the dashboard so users can deep-link or share an isolated view.
@@ -378,7 +404,11 @@ function renderAll() {
     bodyHtml = `
       ${renderSpotlight(availableMap)}
       ${renderInfoStrips(availableMap)}
-      ${renderQuickCharts(availableMap)}
+      ${renderCombinedChartPanel(QUICK_METRICS.filter((k) => availableMap.has(k)), {
+        subView: "all",
+        title: "Quick view",
+        subtitle: `Your most important metrics over ${state.range.toUpperCase()}. Toggle Individual to see each on its own chart.`,
+      })}
       <div class="advanced-toggle-row">
         <button type="button" class="advanced-toggle ${state.advancedOpen ? "is-open" : ""}" id="advancedToggle" aria-expanded="${state.advancedOpen}">
           <span class="advanced-toggle-icon">${state.advancedOpen ? "−" : "+"}</span>
@@ -1524,6 +1554,127 @@ function formatShortDate(iso) {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
+// Pick a color for a given metric key. Nutrition view uses the semantic
+// NUTRITION_COLORS map so callers in nutrition context get e.g. red Trans Fat
+// regardless of metric ordering. Falls back to indexed PALETTE.
+function colorForMetric(key, index, opts = {}) {
+  if (opts.subView === "nutrition" && NUTRITION_COLORS[key]) {
+    return NUTRITION_COLORS[key];
+  }
+  return colorFor(key, index);
+}
+
+/**
+ * Combined-chart panel: a single grafana-style multi-line chart with all
+ * supplied metric keys overlaid, plus a "Combined / Individual" toggle that
+ * swaps to the existing per-metric quick-charts grid when the user wants to
+ * drill in. Used by every Stats sub-view to reduce clutter and let users
+ * see how metrics move together.
+ *
+ * @param {string[]} keys    Metric keys to plot.
+ * @param {object}   opts
+ * @param {string}   opts.subView   "all" | "workouts" | "nutrition" | "water"
+ * @param {string}   opts.title     Panel title.
+ * @param {string}   opts.subtitle  Optional sub-line under the title.
+ * @param {boolean}  opts.singleSeriesAuto  When only one key is supplied,
+ *                   skip the toggle (combined == individual).
+ */
+function renderCombinedChartPanel(keys, opts = {}) {
+  const subView = opts.subView || "all";
+  const dedup = Array.from(new Set(keys || [])).filter((k) => {
+    const points = state.data.chartData?.[k];
+    return Array.isArray(points) && points.length > 0;
+  });
+  if (!dedup.length) return "";
+
+  const mode = state.chartMode[subView] || "combined";
+  const showToggle = !opts.singleSeriesAuto && dedup.length > 1;
+  const safeView = escapeAttr(subView);
+
+  // Build the legend / pills so the chart is self-documenting. Each entry
+  // colour-matches the line and is clickable to toggle visibility (handled
+  // by bindCombinedToggles below).
+  const legend = dedup
+    .map((key, i) => {
+      const m = (state.data.metrics || []).find((x) => x.key === key) || { label: key, unit: "" };
+      const allIdx = (state.data.metrics || []).findIndex((x) => x.key === key);
+      const color = colorForMetric(key, allIdx >= 0 ? allIdx : i, { subView });
+      return `
+        <button type="button" class="combined-legend-item" data-combined-key="${escapeAttr(key)}"
+                data-view="${safeView}" style="--metric-color:${color}"
+                aria-pressed="true" title="Hide ${escapeHtml(m.label || key)}">
+          <span class="combined-legend-swatch"></span>
+          <span class="combined-legend-name">${escapeHtml(m.label || key)}</span>
+          ${m.unit ? `<span class="combined-legend-unit">${escapeHtml(m.unit)}</span>` : ""}
+        </button>
+      `;
+    })
+    .join("");
+
+  // Individual mode body — reuse the existing quick-charts grid markup so
+  // sub-tab specific colour overrides apply.
+  const individualCards = dedup
+    .map((key) => {
+      const m = (state.data.metrics || []).find((x) => x.key === key);
+      if (!m) return "";
+      const i = (state.data.metrics || []).findIndex((x) => x.key === key);
+      const color = colorForMetric(key, i >= 0 ? i : 0, { subView });
+      const safe = escapeAttr(key);
+      return `
+        <article class="metric-card" data-metric="${safe}" style="--metric-color:${color}">
+          <header class="metric-card-head">
+            <span class="metric-dot"></span>
+            <span class="metric-card-label">${escapeHtml(m.label || key)}</span>
+            <span class="metric-card-unit">${escapeHtml(m.unit || "")}</span>
+            <span class="metric-card-last">${formatNum(m.stats?.last?.value)}</span>
+          </header>
+          <div class="chart-wrapper">
+            <canvas id="combined-ind-${safeView}-${safe}" class="grafana-canvas" data-h="170"></canvas>
+            <div class="chart-tooltip" id="combined-ind-tip-${safeView}-${safe}" hidden></div>
+          </div>
+          ${renderStatsTable([m], { mode: "single" })}
+        </article>`;
+    })
+    .join("");
+
+  return `
+    <section class="grafana-panel combined-chart-panel" data-combined-view="${safeView}" data-combined-mode="${mode}">
+      <header class="panel-header combined-panel-header">
+        <div>
+          <h3>${escapeHtml(opts.title || "Charts")}</h3>
+          ${opts.subtitle ? `<p class="panel-sub">${escapeHtml(opts.subtitle)}</p>` : ""}
+        </div>
+        ${
+          showToggle
+            ? `<div class="chart-mode-toggle" role="tablist" aria-label="Chart display mode">
+                <button type="button" class="chart-mode-btn ${mode === "combined" ? "is-active" : ""}"
+                        data-chart-mode="combined" data-view="${safeView}" role="tab" aria-selected="${mode === "combined"}">
+                  Combined
+                </button>
+                <button type="button" class="chart-mode-btn ${mode === "individual" ? "is-active" : ""}"
+                        data-chart-mode="individual" data-view="${safeView}" role="tab" aria-selected="${mode === "individual"}">
+                  Individual
+                </button>
+              </div>`
+            : ""
+        }
+      </header>
+
+      <div class="combined-chart-body" ${mode === "combined" ? "" : "hidden"}>
+        <div class="chart-wrapper combined-chart-wrapper">
+          <canvas id="combined-canvas-${safeView}" class="grafana-canvas" data-h="320"></canvas>
+          <div class="chart-tooltip" id="combined-tooltip-${safeView}" hidden></div>
+        </div>
+        ${dedup.length > 1 ? `<div class="combined-legend" data-view="${safeView}">${legend}</div>` : ""}
+      </div>
+
+      <div class="combined-individual-body" ${mode === "individual" ? "" : "hidden"}>
+        <div class="quick-charts-grid">${individualCards}</div>
+      </div>
+    </section>
+  `;
+}
+
 // Default quick-look charts (weight, calories, protein, water). Renders a 2×2
 // grid on desktop, single column on mobile.
 function renderQuickCharts(availableMap) {
@@ -1624,13 +1775,23 @@ function renderWorkoutsView(availableMap, metricsByCategory) {
         }
       </article>
 
-      ${renderQuickChartsFor(strengthMetrics.map((m) => m.key))}
+      ${renderCombinedChartPanel(strengthMetrics.map((m) => m.key), {
+        subView: "workouts",
+        title: "Lift progress",
+        subtitle: `All lifts over ${state.range.toUpperCase()}. Toggle Individual for one chart per lift.`,
+      })}
     </section>
   `;
 }
 
 function renderNutritionView(availableMap, metricsByCategory) {
-  const nutritionKeys = ["calories", "protein", "carbs", "fats", "sugars", "sodium", "cholesterol", "fiber", "caffeine", "creatine"];
+  // Include the new fat sub-types (Saturated/Poly/Mono/Trans) so they appear
+  // on the combined chart with their semantic NUTRITION_COLORS swatches.
+  const nutritionKeys = [
+    "calories", "protein", "carbs", "fats",
+    "saturatedFat", "polyunsaturatedFat", "monounsaturatedFat", "transFat",
+    "sugars", "sodium", "cholesterol", "fiber", "caffeine", "creatine",
+  ];
   const present = nutritionKeys.filter((k) => availableMap.has(k));
   const today = todayIso();
   const value = (key) =>
@@ -1654,7 +1815,11 @@ function renderNutritionView(availableMap, metricsByCategory) {
       </div>
 
       ${renderCaloriesStrip(availableMap)}
-      ${renderQuickChartsFor(present)}
+      ${renderCombinedChartPanel(present, {
+        subView: "nutrition",
+        title: "Nutrition trends",
+        subtitle: `All nutrition metrics over ${state.range.toUpperCase()}. Color-coded by macro — toggle Individual to see each on its own.`,
+      })}
     </section>
   `;
 }
@@ -1693,7 +1858,12 @@ function renderWaterView(availableMap, metricsByCategory) {
       </div>
 
       ${renderWaterStrip(availableMap)}
-      ${renderQuickChartsFor(["water"])}
+      ${renderCombinedChartPanel(["water"], {
+        subView: "water",
+        title: "Hydration",
+        subtitle: `Water intake over ${state.range.toUpperCase()}.`,
+        singleSeriesAuto: true,
+      })}
     </section>
   `;
 }
@@ -2062,13 +2232,122 @@ function groupAvailableByCategory(metricsByCategory, availableMap) {
 // ---------- canvas drawing ----------
 
 function drawAllCharts(availableMap) {
-  drawQuickCharts(availableMap);
+  // Render every combined-chart panel currently in the DOM. Each panel
+  // tracks its own mode (combined vs individual) so we just draw whichever
+  // canvas(es) exist for that mode.
+  drawAllCombinedPanels(availableMap);
   if (state.advancedOpen) {
     drawAggregateChart(availableMap);
     drawSymmetryCharts(availableMap);
     drawIndividualCharts(availableMap);
   }
   attachChartTooltips(availableMap);
+  bindCombinedToggles(availableMap);
+}
+
+// Walk every combined-chart panel in the DOM and draw it according to its
+// current mode. Reads metric keys from the legend swatches (combined mode)
+// or the individual cards (individual mode).
+function drawAllCombinedPanels(availableMap) {
+  if (!rootEl) return;
+  rootEl.querySelectorAll(".combined-chart-panel").forEach((panel) => {
+    const view = panel.dataset.combinedView || "all";
+    const mode = panel.dataset.combinedMode || "combined";
+    // Resolve keys: legend items always exist when there's >1 metric; for
+    // single-series we read from the individual card data-metric attribute.
+    const keys =
+      Array.from(panel.querySelectorAll(".combined-legend-item"))
+        .map((el) => el.dataset.combinedKey)
+        .filter(Boolean);
+    const fallbackKeys =
+      keys.length
+        ? keys
+        : Array.from(panel.querySelectorAll(".metric-card[data-metric]"))
+            .map((el) => el.dataset.metric)
+            .filter(Boolean);
+
+    if (mode === "combined") {
+      drawCombinedChart(panel, view, fallbackKeys, availableMap);
+    } else {
+      drawCombinedIndividualCharts(panel, view, fallbackKeys, availableMap);
+    }
+  });
+}
+
+function drawCombinedChart(panel, view, keys, availableMap) {
+  const canvas = panel.querySelector(`#combined-canvas-${cssEscape(view)}`);
+  if (!canvas) return;
+  // Filter to only currently-visible legend entries (user can toggle off).
+  const hiddenSet = new Set(
+    Array.from(panel.querySelectorAll('.combined-legend-item[aria-pressed="false"]')).map(
+      (el) => el.dataset.combinedKey
+    )
+  );
+  const series = keys
+    .filter((k) => !hiddenSet.has(k))
+    .map((key, i) => {
+      const m = availableMap.get(key) || (state.data.metrics || []).find((x) => x.key === key);
+      if (!m) return null;
+      const allIdx = (state.data.metrics || []).findIndex((x) => x.key === key);
+      const color = colorForMetric(key, allIdx >= 0 ? allIdx : i, { subView: view });
+      const points = (state.data.chartData[key] || []).slice().sort((a, b) => a.date.localeCompare(b.date));
+      return { key, label: m.label, unit: m.unit, color, points };
+    })
+    .filter(Boolean);
+  drawLineChart(canvas, series, { height: 320, multi: true });
+}
+
+function drawCombinedIndividualCharts(panel, view, keys, availableMap) {
+  keys.forEach((key, i) => {
+    const canvas = panel.querySelector(`#combined-ind-${cssEscape(view)}-${cssEscape(key)}`);
+    if (!canvas) return;
+    const m = availableMap.get(key) || (state.data.metrics || []).find((x) => x.key === key);
+    if (!m) return;
+    const allIdx = (state.data.metrics || []).findIndex((x) => x.key === key);
+    const color = colorForMetric(key, allIdx >= 0 ? allIdx : i, { subView: view });
+    const points = (state.data.chartData[key] || []).slice().sort((a, b) => a.date.localeCompare(b.date));
+    drawLineChart(canvas, [{ key, label: m.label, unit: m.unit, color, points }], { height: 170, multi: false });
+  });
+}
+
+// Wire the Combined/Individual toggle + legend visibility toggles. Bound
+// each render — guarded by a data-flag so re-renders don't double-bind.
+function bindCombinedToggles(availableMap) {
+  if (!rootEl) return;
+  rootEl.querySelectorAll(".chart-mode-btn").forEach((btn) => {
+    if (btn.dataset.bound === "1") return;
+    btn.dataset.bound = "1";
+    btn.addEventListener("click", () => {
+      const view = btn.dataset.view;
+      const mode = btn.dataset.chartMode;
+      if (!view || !mode) return;
+      state.chartMode[view] = mode;
+      const panel = btn.closest(".combined-chart-panel");
+      if (!panel) return;
+      panel.dataset.combinedMode = mode;
+      // Toggle sibling buttons + bodies
+      panel.querySelectorAll(".chart-mode-btn").forEach((b) => {
+        b.classList.toggle("is-active", b.dataset.chartMode === mode);
+        b.setAttribute("aria-selected", b.dataset.chartMode === mode ? "true" : "false");
+      });
+      const combinedBody = panel.querySelector(".combined-chart-body");
+      const individualBody = panel.querySelector(".combined-individual-body");
+      if (combinedBody) combinedBody.hidden = mode !== "combined";
+      if (individualBody) individualBody.hidden = mode !== "individual";
+      // Redraw the now-visible mode (canvas needs layout to compute width).
+      requestAnimationFrame(() => drawAllCombinedPanels(availableMap));
+    });
+  });
+  rootEl.querySelectorAll(".combined-legend-item").forEach((el) => {
+    if (el.dataset.bound === "1") return;
+    el.dataset.bound = "1";
+    el.addEventListener("click", () => {
+      const cur = el.getAttribute("aria-pressed") === "true";
+      el.setAttribute("aria-pressed", cur ? "false" : "true");
+      el.classList.toggle("is-hidden", cur);
+      requestAnimationFrame(() => drawAllCombinedPanels(availableMap));
+    });
+  });
 }
 
 function drawQuickCharts(availableMap) {

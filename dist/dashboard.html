@@ -43,14 +43,14 @@
         window.location.replace("https://thetrackerapp.io/login?next=" + next);
       })();
     </script>
-    <script type="module" crossorigin src="/assets/dashboard-CjW5aH3_.js"></script>
+    <script type="module" crossorigin src="/assets/dashboard-CSvfWbj_.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-BQdWdB5M.js">
     <link rel="modulepreload" crossorigin href="/assets/feature-flags-UIimNFJF.js">
     <link rel="modulepreload" crossorigin href="/assets/affiliate-shape-CbCjCOr6.js">
     <link rel="modulepreload" crossorigin href="/assets/google-analytics-BtHxdyHL.js">
     <link rel="modulepreload" crossorigin href="/assets/api-DCiD4VV-.js">
     <link rel="stylesheet" crossorigin href="/assets/affiliate-shape-DgSJ5ZLv.css">
-    <link rel="stylesheet" crossorigin href="/assets/dashboard-CxD2NMSb.css">
+    <link rel="stylesheet" crossorigin href="/assets/dashboard-h-Ihb-TQ.css">
     <link rel="stylesheet" crossorigin href="/assets/auth-pages-so5Bh94e.css">
   </head>
   <body class="dashboard-page">
@@ -220,8 +220,11 @@
 
               <!-- Body Part Measurements Grid -->
               <div class="measurements-grid" id="measurementsGrid">
-                <div class="measurement-category">
-                  <h4>Upper Body</h4>
+                <!-- Collapsed by default to declutter the Stats tab. Users click
+                     to expand and fill in. Each section is a <details> so the
+                     state is preserved without JS. -->
+                <details class="measurement-category">
+                  <summary><h4>Upper Body</h4><span class="measurement-summary-hint">10 fields</span></summary>
                   <div class="measurement-cards">
                     <div class="measurement-card"><span class="measurement-label">Bicep (L)</span><span class="measurement-value" id="measureBicepL" data-edit="measurement" data-field="bicepL" data-type="number" data-unit="in">--</span></div>
                     <div class="measurement-card"><span class="measurement-label">Bicep (R)</span><span class="measurement-value" id="measureBicepR" data-edit="measurement" data-field="bicepR" data-type="number" data-unit="in">--</span></div>
@@ -234,17 +237,17 @@
                     <div class="measurement-card"><span class="measurement-label">Traps</span><span class="measurement-value" id="measureTraps" data-edit="measurement" data-field="traps" data-type="number" data-unit="in">--</span></div>
                     <div class="measurement-card"><span class="measurement-label">Serratus</span><span class="measurement-value" id="measureSerratus" data-edit="measurement" data-field="serratusAnterior" data-type="number" data-unit="in">--</span></div>
                   </div>
-                </div>
-                <div class="measurement-category">
-                  <h4>Core</h4>
+                </details>
+                <details class="measurement-category">
+                  <summary><h4>Core</h4><span class="measurement-summary-hint">3 fields</span></summary>
                   <div class="measurement-cards">
                     <div class="measurement-card"><span class="measurement-label">Waist</span><span class="measurement-value" id="measureWaist" data-edit="measurement" data-field="waist" data-type="number" data-unit="in">--</span></div>
                     <div class="measurement-card"><span class="measurement-label">Abs</span><span class="measurement-value" id="measureAbs" data-edit="measurement" data-field="abs" data-type="number" data-unit="in">--</span></div>
                     <div class="measurement-card"><span class="measurement-label">Obliques</span><span class="measurement-value" id="measureObliques" data-edit="measurement" data-field="obliques" data-type="number" data-unit="in">--</span></div>
                   </div>
-                </div>
-                <div class="measurement-category">
-                  <h4>Lower Body</h4>
+                </details>
+                <details class="measurement-category">
+                  <summary><h4>Lower Body</h4><span class="measurement-summary-hint">5 fields</span></summary>
                   <div class="measurement-cards">
                     <div class="measurement-card"><span class="measurement-label">Quad (L)</span><span class="measurement-value" id="measureQuadL" data-edit="measurement" data-field="quadL" data-type="number" data-unit="in">--</span></div>
                     <div class="measurement-card"><span class="measurement-label">Quad (R)</span><span class="measurement-value" id="measureQuadR" data-edit="measurement" data-field="quadR" data-type="number" data-unit="in">--</span></div>
@@ -252,14 +255,15 @@
                     <div class="measurement-card"><span class="measurement-label">Calf (R)</span><span class="measurement-value" id="measureCalfR" data-edit="measurement" data-field="calfR" data-type="number" data-unit="in">--</span></div>
                     <div class="measurement-card"><span class="measurement-label">Glutes</span><span class="measurement-value" id="measureGlutes" data-edit="measurement" data-field="glutes" data-type="number" data-unit="in">--</span></div>
                   </div>
-                </div>
+                </details>
               </div>
 
               <!-- (Progress Charts moved to top of Stats tab) -->
 
-              <!-- Qualitative Assessments / Journal -->
-              <div class="qualitative-assessments" id="qualitativeAssessments">
-                <h4>Qualitative Assessments</h4>
+              <!-- Qualitative Assessments / Journal — collapsed by default,
+                   user clicks to expand and add free-form notes per body part. -->
+              <details class="qualitative-assessments" id="qualitativeAssessments">
+                <summary><h4>Qualitative Assessments</h4><span class="measurement-summary-hint">12 body parts</span></summary>
                 <div class="journal-entries" id="journalEntries">
                   <div class="journal-entry" data-edit="journal" data-part="abs" data-display="Abs"><h5>Abs</h5><p class="journal-content"><em>Click to add assessment...</em></p></div>
                   <div class="journal-entry" data-edit="journal" data-part="arms" data-display="Arms"><h5>Arms</h5><p class="journal-content"><em>Click to add assessment...</em></p></div>
@@ -274,7 +278,7 @@
                   <div class="journal-entry" data-edit="journal" data-part="shoulders" data-display="Shoulders"><h5>Shoulders</h5><p class="journal-content"><em>Click to add assessment...</em></p></div>
                   <div class="journal-entry" data-edit="journal" data-part="traps" data-display="Traps"><h5>Traps</h5><p class="journal-content"><em>Click to add assessment...</em></p></div>
                 </div>
-              </div>
+              </details>
             </section>
 
             <p class="stats-meta">Generated: <span id="statsGeneratedAtValue">-</span></p>
