@@ -1,6 +1,11 @@
 import { inject } from "@vercel/analytics";
 import { initGoogleAnalytics } from "./google-analytics.js";
 import { initFeatureFlags, getCachedFlags } from "./feature-flags.js";
+import {
+  getBillingPrices,
+  getBillingPricesSync,
+  subscribeBillingPrices,
+} from "./billing-prices.js";
 import { initChecklist } from "./dashboard-checklist.js";
 import { attachInlineEditMeasurements, hydrateInlineEditMeasurements } from "./inline-edit-measurements.js";
 import { initDashboardCharts } from "./dashboard-charts.js";
@@ -4053,7 +4058,15 @@ function applyBillingPayload(payload) {
     els.billingStatusValue.textContent = status;
   }
   if (plan && els.billingPlanValue) {
-    els.billingPlanValue.textContent = plan;
+    // Append the Stripe-formatted price when we know it for this plan so
+    // the user sees "weekly · $3/week" / "monthly · $10/month" / etc.
+    // Weekly subscribers still see their price here even though weekly is
+    // hidden from the /pricing page.
+    const norm = normalizePlanKey(plan);
+    const priced = getBillingPricesSync()?.[norm];
+    els.billingPlanValue.textContent = priced?.formatted
+      ? `${plan} · ${priced.formatted}`
+      : plan;
   }
   if (els.billingLastPaymentValue) {
     els.billingLastPaymentValue.textContent = formatBillingDate(lastPaymentDate) || "-";
@@ -4111,10 +4124,13 @@ function applyBillingPayload(payload) {
 
 // ---------- Upgrade tier cards ----------
 //
-// Reads control flags (billing.{monthly,yearly,premium,premiumYearly}Tier) and
-// renders cards showing the plans the user can move TO from their current
-// plan. Each card has price, savings badge, key features, and an Upgrade
-// button that fires Stripe checkout with the appropriate `plan` parameter.
+// Renders cards showing the plans the user can move TO from their current
+// plan. ALL prices come from /api/billing/stripe-prices (Stripe → backend
+// 15-min cache → this client). NEVER hardcode a price string here — if you
+// want to change what users see, change the Stripe Price object.
+//
+// Feature bullet copy still comes from the /control billing block (admins
+// can tune it without touching Stripe).
 
 const PLAN_ALIAS_MAP = {
   monthly: "monthly", "monthlyTier": "monthly", "month": "monthly",
@@ -4131,9 +4147,10 @@ function normalizePlanKey(raw) {
 }
 
 // Which tiers a user on `currentPlan` can upgrade INTO. Ordered by recommended
-// path (cheaper switch first). Free users see everything; weekly/monthly can
-// move to yearly or premium; yearly can move to premium yearly; premium users
-// only see Premium Yearly as an upgrade.
+// path. Weekly is intentionally NEVER offered as an upgrade target — it's a
+// downgrade in disguise and the product rule is "weekly isn't on the pricing
+// page". Free / weekly subscribers still get the monthly / yearly / premium
+// paths.
 function upgradePathsFor(currentPlan) {
   const cur = normalizePlanKey(currentPlan);
   if (cur === "free" || cur === "" || cur === "-") {
@@ -4147,80 +4164,82 @@ function upgradePathsFor(currentPlan) {
   return ["yearly", "premium", "premiumYearly"];
 }
 
-function tierFlagKey(planKey) {
-  // map normalized → control-flag tier key
-  return ({
-    monthly: "monthlyTier",
-    yearly: "yearlyTier",
-    premium: "premiumTier",
-    premiumYearly: "premiumYearlyTier",
-    weekly: "weeklyTier",
-    free: "freeTier",
-  })[planKey];
+// Resolve feature bullets for a given plan key. Backend's /control billing
+// block carries admin-tunable copy under billing.<key>Tier.features[].
+function featuresForPlan(planKey) {
+  const flags = getCachedFlags();
+  const billing = flags?.billing || {};
+  const tier =
+    billing[
+      ({
+        monthly: "monthlyTier",
+        yearly: "yearlyTier",
+        premium: "premiumTier",
+        premiumYearly: "premiumYearlyTier",
+        weekly: "weeklyTier",
+      })[planKey]
+    ];
+  return Array.isArray(tier?.features) ? tier.features.slice(0, 4) : [];
 }
 
-function renderBillingUpgrades({ currentPlan, hasActiveSub }) {
+function isPremiumPlan(planKey) {
+  return planKey === "premium" || planKey === "premiumYearly";
+}
+
+function planDisplayName(planKey) {
+  return ({
+    weekly: "Weekly",
+    monthly: "Monthly",
+    yearly: "Yearly",
+    premium: "Premium",
+    premiumYearly: "Premium Yearly",
+  })[planKey] || planKey;
+}
+
+async function renderBillingUpgrades({ currentPlan, hasActiveSub }) {
   const grid = document.getElementById("billingUpgradeGrid");
   const section = document.getElementById("billingUpgradeSection");
   if (!grid || !section) return;
 
-  const flags = getCachedFlags();
-  const billing = flags?.billing || {};
   const paths = upgradePathsFor(currentPlan);
+  if (!paths.length) {
+    section.hidden = true;
+    return;
+  }
 
-  // Compute monthly-equivalent of the current plan so we can show savings.
-  const currentMonthly = (() => {
-    const cur = normalizePlanKey(currentPlan);
-    const t = billing[tierFlagKey(cur)];
-    if (!t) return null;
-    if (t.interval === "year") {
-      const yearly = Number(t.yearlyEquivalent ?? t.price / 12);
-      return Number.isFinite(yearly) ? yearly : null;
+  // Ensure we have prices BEFORE we render so we never paint a card without
+  // a price. Sync getter returns localStorage/fallback for immediate paint;
+  // background fetch updates if stale.
+  const prices = getBillingPricesSync();
+  // Kick a fresh fetch in the background. When it lands we re-render.
+  getBillingPrices().then((fresh) => {
+    if (fresh && fresh !== prices) {
+      // Re-render only if the panel is still in the DOM (user might've
+      // navigated away).
+      if (document.getElementById("billingUpgradeGrid")) {
+        renderBillingUpgrades({ currentPlan, hasActiveSub });
+      }
     }
-    if (t.interval === "week") {
-      return Number(t.price) * 4.33;
-    }
-    return Number(t.price);
-  })();
+  }).catch(() => {});
 
   const cards = paths
     .map((plan) => {
-      const tier = billing[tierFlagKey(plan)];
-      if (!tier || !tier.name) return null;
-      const interval = tier.interval || "month";
-      const price = Number(tier.price);
-      if (!Number.isFinite(price)) return null;
-      const isPremium = tier.tierType === "premium" || /premium/i.test(tier.name);
-
-      // Monthly-equivalent for savings math.
-      const monthlyEq =
-        interval === "year"
-          ? Number(tier.yearlyEquivalent ?? price / 12)
-          : interval === "week"
-          ? price * 4.33
-          : price;
-      const saveBadge =
-        currentMonthly && Number.isFinite(monthlyEq) && monthlyEq < currentMonthly
-          ? `Save $${Math.round((currentMonthly - monthlyEq) * 12)}/yr`
-          : interval === "year" && price < 12 * 10
-          ? "Best value"
-          : "";
-
-      const priceLine =
-        interval === "year"
-          ? `$${price}<span class="bill-card-interval">/yr</span><span class="bill-card-mo-eq">≈ $${monthlyEq.toFixed(2)}/mo</span>`
-          : interval === "week"
-          ? `$${price}<span class="bill-card-interval">/week</span>`
-          : `$${price}<span class="bill-card-interval">/mo</span>`;
-
-      const features = Array.isArray(tier.features) ? tier.features.slice(0, 4) : [];
+      const p = prices?.[plan];
+      if (!p?.formatted) return null;
+      const isPremium = isPremiumPlan(plan);
+      const features = featuresForPlan(plan);
+      const name = planDisplayName(plan);
+      const saveBadge = p.savingsVsMonthlyFormatted || "";
+      const monthlyEqLine = p.perMonthFormatted
+        ? `<span class="bill-card-mo-eq">${escapeHtmlAttr(p.perMonthFormatted)}</span>`
+        : "";
 
       return `
         <article class="billing-upgrade-card ${isPremium ? "is-premium" : ""}" data-plan="${escapeHtmlAttr(plan)}">
           ${saveBadge ? `<span class="billing-upgrade-badge">${escapeHtmlAttr(saveBadge)}</span>` : ""}
           ${isPremium ? `<span class="billing-upgrade-tier">Premium</span>` : ""}
-          <h4 class="billing-upgrade-name">${escapeHtmlAttr(tier.name)}</h4>
-          <div class="billing-upgrade-price">${priceLine}</div>
+          <h4 class="billing-upgrade-name">${escapeHtmlAttr(name)}</h4>
+          <div class="billing-upgrade-price">${escapeHtmlAttr(p.formatted)}${monthlyEqLine}</div>
           ${
             features.length
               ? `<ul class="billing-upgrade-features">${features
@@ -4229,7 +4248,7 @@ function renderBillingUpgrades({ currentPlan, hasActiveSub }) {
               : ""
           }
           <button type="button" class="btn-primary billing-upgrade-btn" data-action="upgrade" data-plan="${escapeHtmlAttr(plan)}">
-            ${hasActiveSub ? `Switch to ${tier.name}` : `Start ${tier.name}`}
+            ${hasActiveSub ? `Switch to ${name}` : `Start ${name}`}
           </button>
         </article>
       `;
