@@ -11,13 +11,15 @@
 // shows it to active weekly subscribers — but the public /pricing page only
 // surfaces monthly + yearly + premium + premium-yearly.
 
-import { fetchFeatureFlags } from "./feature-flags.js";
+import { fetchFeatureFlags, applyFeatureFlags } from "./feature-flags.js";
 import { getBillingPrices, subscribeBillingPrices } from "./billing-prices.js";
 
 const container = document.getElementById("pricingContainer");
 const subtitle = document.getElementById("pricingSubtitle");
 
-// Plans we surface on the public pricing page, in display order.
+// Plans we surface on the public pricing page, in display order. Weekly is
+// intentionally excluded — it's only accessible via text-onboarding + the
+// dashboard for active weekly subscribers.
 const PUBLIC_PLAN_ORDER = ["monthly", "yearly", "premium", "premiumYearly"];
 
 // Map a public plan key to the `flags.billing.<XYZ>Tier` key where its
@@ -37,6 +39,61 @@ const DEFAULT_NAMES = {
   premiumYearly: "Premium Yearly",
   weekly: "Weekly",
 };
+
+// Stale-bullet markers — when the /control admin features array contains
+// any of these tokens, we ignore it and fall back to CANONICAL_FEATURES.
+// Mirrors dashboard.js — we keep the two lists in sync.
+const STALE_BULLET_TOKENS = [
+  "everything in pro",
+  "api access",
+  "white-label",
+  "white label",
+  "custom goals",
+];
+
+// Canonical feature bullets per plan key. Used when the /control admin
+// flag's features[] is empty OR contains stale tokens. Matches the
+// backend handoff doc explicitly.
+const CANONICAL_FEATURES = {
+  monthly: [
+    "Unlimited workout, nutrition & water logging",
+    "Body measurements & progress charts",
+    "Leaderboards, brackets & streaks",
+    "Wearable integrations",
+    "Cancel anytime",
+  ],
+  yearly: [
+    "Everything in Monthly",
+    "2 months free vs monthly",
+    "Priority support",
+    "Early access to new features",
+  ],
+  premium: [
+    "Image-based meal logging — snap a photo, AI logs calories + macros",
+    "Image-based scale logging",
+    "Image-based workout logging",
+    "Nutrition-label scanning",
+    "Priority AI processing",
+  ],
+  premiumYearly: [
+    "Everything in Premium",
+    "Save vs monthly Premium",
+    "Priority AI processing",
+    "Early access to new features",
+  ],
+};
+
+function hasStaleBullet(features) {
+  return features.some((f) =>
+    STALE_BULLET_TOKENS.some((token) => String(f).toLowerCase().includes(token))
+  );
+}
+
+function resolveFeatures(planKey, tierFlag) {
+  const admin = Array.isArray(tierFlag?.features) ? tierFlag.features : [];
+  if (admin.length && !hasStaleBullet(admin)) return admin.slice(0, 5);
+  return (CANONICAL_FEATURES[planKey] || []).slice(0, 5);
+}
 
 function escapeHtml(s) {
   return String(s ?? "")
@@ -61,6 +118,10 @@ async function loadAndRender() {
       fetchFeatureFlags(),
       getBillingPrices(),
     ]);
+    // Apply data-feature visibility to nav + footer links so Home/Community/
+    // Blog only appear when /control flags them on. Otherwise they stay
+    // hidden (HTML default) so we never flash links to disabled sections.
+    applyFeatureFlags(flags || {});
     render({ flags: flags || {}, prices: prices || {} });
   } catch (err) {
     console.warn("Failed to load pricing:", err);
@@ -98,7 +159,7 @@ function render({ flags, prices }) {
       formatted: stripe.formatted,
       perMonth: stripe.perMonthFormatted || null,
       savings: stripe.savingsVsMonthlyFormatted || null,
-      features: Array.isArray(tierFlag?.features) ? tierFlag.features : [],
+      features: resolveFeatures(planKey, tierFlag),
       isPremium: isPremium(planKey),
       isYearly: isYearly(planKey),
     };

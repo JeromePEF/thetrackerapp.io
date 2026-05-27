@@ -1223,13 +1223,21 @@ function pushStepTapeEvents(events) {
   stepsTapeState.events = stepsTapeState.events.slice(0, STEPS_TAPE_MAX_ROWS);
 }
 
+// Cached step-tape flag — populated by main.js's flag-fetch sequence. Defaults
+// to `false` so the panel stays hidden until /api/control explicitly says
+// otherwise. Prevents the step-tape from flashing visible on page load.
+let stepTapeFeatureEnabled = false;
+
 function setStepsTapeVisibility(visible) {
+  // Honor the stepTape control flag — if the admin has turned it off, we
+  // NEVER show the panel, regardless of whether live data is available.
+  const effective = visible && stepTapeFeatureEnabled;
   if (els.stepsCounterPanel) {
-    els.stepsCounterPanel.hidden = !visible;
+    els.stepsCounterPanel.hidden = !effective;
   }
 
   if (els.mainContent) {
-    els.mainContent.classList.toggle("steps-panel-hidden", !visible);
+    els.mainContent.classList.toggle("steps-panel-hidden", !effective);
   }
 
   requestViewportFit();
@@ -2795,21 +2803,33 @@ async function handleLiveFeedVisibility() {
     const liveFeed = document.getElementById("heroLiveFeed");
     const iphoneFrame = document.getElementById("iphoneFrame");
     const rightColumn = document.getElementById("heroRightColumn");
-    
-    if (flags.liveActivityFeed === false) {
-      // Hide live feed
-      if (liveFeed) liveFeed.style.display = "none";
-      // Expand iPhone to fill the space
-      if (iphoneFrame) {
-        iphoneFrame.classList.add("iphone-frame-expanded");
+
+    // RULE: show ONLY when flag is explicitly true. Anything else (false,
+    // undefined, null, missing flag entirely) → keep hidden. Matches the
+    // dashboard's flag policy and stops the live feed from flashing before
+    // /api/control replies.
+    const liveFeedEnabled = flags.liveActivityFeed === true;
+
+    if (!liveFeedEnabled) {
+      if (liveFeed) {
+        liveFeed.style.display = "none";
+        liveFeed.hidden = true;
       }
-      if (rightColumn) {
-        rightColumn.classList.add("hero-right-column-expanded");
-      }
+      if (iphoneFrame) iphoneFrame.classList.add("iphone-frame-expanded");
+      if (rightColumn) rightColumn.classList.add("hero-right-column-expanded");
     } else {
-      // Show live feed and initialize it
-      if (liveFeed) liveFeed.style.display = "";
+      if (liveFeed) {
+        liveFeed.style.display = "";
+        liveFeed.hidden = false;
+      }
       initHeroLiveFeed();
+    }
+
+    // Same rule for the step-tape panel. Cache the value so the data-driven
+    // setStepsTapeVisibility() can honor it later when step events arrive.
+    stepTapeFeatureEnabled = flags.stepTape === true;
+    if (els.stepsCounterPanel && !stepTapeFeatureEnabled) {
+      els.stepsCounterPanel.hidden = true;
     }
   } catch (e) {
     // Default: show live feed

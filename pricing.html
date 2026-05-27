@@ -20,9 +20,12 @@
       <header class="pricing-header">
         <a href="/" class="logo">The Tracker App</a>
         <nav class="pricing-nav">
-          <a href="/">Home</a>
-          <a href="/community">Community</a>
-          <a href="/blog">Blog</a>
+          <!-- Each link starts with `hidden` so /pricing doesn't flash links
+               for sections the user can't visit. Feature-flags applier shows
+               them when /api/control returns the matching footer.* flag = true. -->
+          <a href="/" data-feature="footer.home" hidden>Home</a>
+          <a href="/community" data-feature="footer.community" hidden>Community</a>
+          <a href="/blog" data-feature="footer.blog" hidden>Blog</a>
         </nav>
         <a href="/login" class="login-btn">Login</a>
       </header>

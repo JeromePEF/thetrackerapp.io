@@ -188,6 +188,15 @@ body {
   flex-direction: column;
   position: relative;
   transition: transform 0.2s, border-color 0.2s;
+  /* Ensure long bullet copy ("Save $40/year vs monthly Premium ($240 →
+     $200)") wraps inside the card border instead of overflowing into the
+     neighbor card. min-width:0 lets the flex item shrink below its content
+     intrinsic size when the grid track is narrow. */
+  box-sizing: border-box;
+  min-width: 0;
+  overflow: hidden;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
 }
 
 .pricing-card:hover {
@@ -259,9 +268,14 @@ body {
   font-size: 0.9rem;
   color: var(--text);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.5rem;
+  /* Long bullets (>40 chars) need to wrap and stay inside the card. */
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
 }
+.tier-features li::before { flex-shrink: 0; line-height: 1.4; }
 
 .tier-features li::before {
   content: "✓";

@@ -316,8 +316,9 @@
             </div>
           </div>
 
-          <!-- Live Activity Feed -->
-          <div class="hero-live-feed" id="heroLiveFeed" data-feature="liveActivityFeed">
+          <!-- Live Activity Feed — hidden until /api/control confirms
+               liveActivityFeed:true to prevent flashing on first paint. -->
+          <div class="hero-live-feed" id="heroLiveFeed" data-feature="liveActivityFeed" hidden>
             <div class="live-feed-header">
               <span class="pulse-dot"></span>
               <span class="live-feed-title">Live Activity</span>
@@ -341,7 +342,7 @@
           </div>
         </div>
 
-        <aside id="stepsCounterPanel" class="steps-tape-panel" aria-label="Realtime step counter activity" hidden>
+        <aside id="stepsCounterPanel" class="steps-tape-panel" aria-label="Realtime step counter activity" data-feature="stepTape" hidden>
           <section class="steps-tape-card">
             <h3>Step Counter</h3>
             <p class="steps-tape-sources">Sourced from Pebble, Fitbit, Garmin, and Oura Ring (Pebble recommended + Oura).</p>
