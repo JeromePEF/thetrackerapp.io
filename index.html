@@ -107,15 +107,18 @@
       <header class="site-header">
         <div class="container header-row">
           <nav class="app-links" aria-label="App downloads">
-            <a href="/pricing" data-feature="pricing">Pricing</a>
-            <a href="/pebble-app" data-feature="pebbleApp">Pebble App</a>
-            <a href="/mac-apps" data-feature="macApps">Mac Apps</a>
-            <a href="/workout-resources" data-feature="workoutResources">Workout Resources</a>
-            <a href="/products" data-feature="products">Products</a>
+            <!-- Pricing always renders. No data-feature attribute so the
+                 feature-flags applier never touches it, even if backend
+                 toggles `pricing:false` in /control. -->
+            <a href="/pricing">Pricing</a>
+            <a href="/pebble-app" data-feature="pebbleApp" hidden>Pebble App</a>
+            <a href="/mac-apps" data-feature="macApps" hidden>Mac Apps</a>
+            <a href="/workout-resources" data-feature="workoutResources" hidden>Workout Resources</a>
+            <a href="/products" data-feature="products" hidden>Products</a>
             <a id="runClubsNavLink" href="/run-clubs" data-feature="runClubs" hidden>Run Clubs</a>
             <a id="personalTrainersNavLink" href="/personal-trainers" data-feature="personalTrainers" hidden>Personal Trainers</a>
-            <a href="/brackets" data-feature="brackets">Brackets</a>
-            <a href="/win" data-feature="win">Win $$$</a>
+            <a href="/brackets" data-feature="brackets" hidden>Brackets</a>
+            <a href="/win" data-feature="win" hidden>Win $$$</a>
           </nav>
           <div class="header-stats" aria-label="Usage counters">
             <p>
@@ -229,7 +232,7 @@
             <p id="streakLiveCallout" class="streak-live-callout" role="status" aria-live="polite"></p>
           </section>
 
-          <a class="group-join-button" href="/groups" data-feature="workoutGroups">Join a Workout Group</a>
+          <a class="group-join-button" href="/groups" data-feature="workoutGroups" hidden>Join a Workout Group</a>
         </aside>
 
         <!-- AUTHENTICATED VIEW: Brackets preview (only shows for logged-in users) -->
@@ -376,22 +379,25 @@
 
       <footer class="site-footer">
         <div class="container footer-row">
-          <a href="mailto:contact@thetrackerapp.io" data-feature="footer.contact">contact@thetrackerapp.io</a>
-          <a href="/pricing" data-feature="footer.pricing">Pricing</a>
-          <a href="/community" data-feature="footer.community">Community & FAQ</a>
-          <a href="/blog" data-feature="footer.blog">Blog</a>
-          <a href="/press" data-feature="footer.press">Press</a>
-          <a href="/guide" data-feature="footer.guide">Guide</a>
-          <a href="/status" data-feature="footer.status">Status</a>
-          <a href="/trust" data-feature="footer.trust">Trust</a>
-          <a href="/llms.txt" data-feature="footer.llmsTxt">llms.txt</a>
-          <a href="/privacy" data-feature="footer.privacy">Privacy</a>
-          <a href="/terms" data-feature="footer.terms">Terms</a>
+          <!-- Pricing always renders (no data-feature → applier ignores it).
+               All other footer links wait for /api/control to flip their
+               flag to true. -->
+          <a href="mailto:contact@thetrackerapp.io" data-feature="footer.contact" hidden>contact@thetrackerapp.io</a>
+          <a href="/pricing">Pricing</a>
+          <a href="/community" data-feature="footer.community" hidden>Community & FAQ</a>
+          <a href="/blog" data-feature="footer.blog" hidden>Blog</a>
+          <a href="/press" data-feature="footer.press" hidden>Press</a>
+          <a href="/guide" data-feature="footer.guide" hidden>Guide</a>
+          <a href="/status" data-feature="footer.status" hidden>Status</a>
+          <a href="/trust" data-feature="footer.trust" hidden>Trust</a>
+          <a href="/llms.txt" data-feature="footer.llmsTxt" hidden>llms.txt</a>
+          <a href="/privacy" data-feature="footer.privacy" hidden>Privacy</a>
+          <a href="/terms" data-feature="footer.terms" hidden>Terms</a>
         </div>
         <div class="container mobile-download-links" aria-label="App downloads">
-          <a href="/pebble-app" data-feature="footer.pebbleApp">Pebble App</a>
-          <a href="/mac-apps" data-feature="footer.macApps">Mac Apps</a>
-          <a href="/tools/tdee-calculator" data-feature="footer.freeTools">Free Tools</a>
+          <a href="/pebble-app" data-feature="footer.pebbleApp" hidden>Pebble App</a>
+          <a href="/mac-apps" data-feature="footer.macApps" hidden>Mac Apps</a>
+          <a href="/tools/tdee-calculator" data-feature="footer.freeTools" hidden>Free Tools</a>
         </div>
       </footer>
     </div>

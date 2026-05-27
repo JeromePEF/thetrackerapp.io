@@ -383,7 +383,9 @@ export function applyFeatureFlags(flags = cachedFlags || DEFAULT_FLAGS) {
     pebbleApp: ['a[href="/pebble-app"]', 'a[href*="/pebble-app"]'],
     macApps: ['a[href="/mac-apps"]', 'a[href*="/mac-apps"]'],
     workoutResources: ['a[href="/workout-resources"]', 'a[href*="/workout-resources"]'],
-    pricing: ['a[href="/pricing"]', 'a[href*="/pricing"]'],
+    // `pricing` intentionally NOT in this map — pricing is always visible
+    // regardless of /control state. If we ever need to hide it, the right
+    // move is removing the link entirely.
     workoutGroups: ['a[href="/groups"]', 'a[href*="/groups"]', '.group-join-button'],
   };
 
