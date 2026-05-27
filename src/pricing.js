@@ -69,9 +69,9 @@ const CANONICAL_FEATURES = {
     "Early access to new features",
   ],
   premium: [
-    "Image-based meal logging — snap a photo, AI logs calories + macros",
-    "Image-based scale logging",
-    "Image-based workout logging",
+    "📷 Photo-based meal logging (AI calories + macros)",
+    "📷 Photo-based scale logging",
+    "📷 Photo-based workout logging",
     "Nutrition-label scanning",
     "Priority AI processing",
   ],
