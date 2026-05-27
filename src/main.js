@@ -112,8 +112,11 @@ const els = {
   serviceIdentityInput: document.getElementById("serviceIdentityInput"),
   serviceIdentityLabel: document.getElementById("serviceIdentityLabel"),
   telegramLinkBox: document.getElementById("telegramLinkBox"),
-  emailInput: document.getElementById("emailInput"),
-  emailLabel: document.querySelector('label[for="emailInput"]'),
+  // Email collection was removed from the hero onboarding form — email is
+  // captured + verified during text onboarding instead. Refs kept as null
+  // so any straggling references no-op rather than throw.
+  emailInput: null,
+  emailLabel: null,
   consentWrap: document.getElementById("consentWrap"),
   consentCheckbox: document.getElementById("consentCheckbox"),
   signupStatus: document.getElementById("signupStatus"),
@@ -1343,9 +1346,7 @@ function syncServiceInputRequirements() {
   if (els.serviceIdentityLabel) {
     els.serviceIdentityLabel.hidden = isTelegram;
   }
-  if (els.emailLabel) {
-    els.emailLabel.hidden = isTelegram;
-  }
+  // Email field removed — nothing to toggle here.
   if (els.signupForm) {
     const submitBtn = els.signupForm.querySelector('button[type="submit"]');
     if (submitBtn) {
@@ -1781,7 +1782,6 @@ function validateForm() {
   }
 
   const identityRaw = els.serviceIdentityInput.value.trim();
-  const email = els.emailInput.value.trim();
   const needsSmsConsent = service.identityKind === "phone";
 
   if (!identityRaw) {
@@ -1818,10 +1818,6 @@ function validateForm() {
     }
   }
 
-  if (email && !validEmail(email)) {
-    return { ok: false, message: "Enter a valid email address or leave it blank." };
-  }
-
   if (needsSmsConsent && !els.consentCheckbox.checked) {
     return { ok: false, message: "Consent is required for phone onboarding (10DLC/A2P)." };
   }
@@ -1832,7 +1828,6 @@ function validateForm() {
       payload: {
         provider: "iMessage",
         contact,
-        email: email || null,
       },
     };
   }
@@ -1843,7 +1838,6 @@ function validateForm() {
       provider: service.provider,
       phone,
       username,
-      email: email || null,
       sms_consent_10dlc: needsSmsConsent ? true : false,
       source: "hero_onboarding",
       requested_at: new Date().toISOString(),

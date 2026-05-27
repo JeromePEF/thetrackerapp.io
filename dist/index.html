@@ -96,7 +96,7 @@
       href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
-    <script type="module" crossorigin src="/assets/main-DnAl_7X0.js"></script>
+    <script type="module" crossorigin src="/assets/main-BwRyfYwm.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-BQdWdB5M.js">
     <link rel="modulepreload" crossorigin href="/assets/feature-flags-ijnqwsP4.js">
     <link rel="modulepreload" crossorigin href="/assets/google-analytics-BtHxdyHL.js">
@@ -274,11 +274,9 @@
                 <small id="serviceIdentityHelp" class="field-help">Required for the selected service.</small>
               </label>
 
-              <label for="emailInput">
-                Email (optional)
-                <input id="emailInput" name="email" type="email" autocomplete="email" placeholder="you@example.com" />
-                <small class="field-help">Add email for receipts and account recovery.</small>
-              </label>
+              <!-- Email is intentionally NOT collected here. We verify email
+                   during text onboarding once the user is reachable on their
+                   chosen channel — front-page collection was redundant. -->
 
               <div id="telegramLinkBox" class="telegram-link-box" hidden>
                 <p>To onboard via Telegram, message our bot:</p>

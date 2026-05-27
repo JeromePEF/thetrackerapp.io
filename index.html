@@ -270,11 +270,9 @@
                 <small id="serviceIdentityHelp" class="field-help">Required for the selected service.</small>
               </label>
 
-              <label for="emailInput">
-                Email (optional)
-                <input id="emailInput" name="email" type="email" autocomplete="email" placeholder="you@example.com" />
-                <small class="field-help">Add email for receipts and account recovery.</small>
-              </label>
+              <!-- Email is intentionally NOT collected here. We verify email
+                   during text onboarding once the user is reachable on their
+                   chosen channel — front-page collection was redundant. -->
 
               <div id="telegramLinkBox" class="telegram-link-box" hidden>
                 <p>To onboard via Telegram, message our bot:</p>
