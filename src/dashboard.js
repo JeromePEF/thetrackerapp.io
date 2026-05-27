@@ -290,6 +290,13 @@ const els = {
   billingResumeButton: document.getElementById("billingResumeButton"),
   billingCancelNotice: document.getElementById("billingCancelNotice"),
   billingActionStatus: document.getElementById("billingActionStatus"),
+  billingPlanRow: document.getElementById("billingPlanRow"),
+  billingLastPaymentRow: document.getElementById("billingLastPaymentRow"),
+  billingNextBillingRow: document.getElementById("billingNextBillingRow"),
+  billingCheckoutPendingCard: document.getElementById("billingCheckoutPendingCard"),
+  billingCheckoutPendingMsg: document.getElementById("billingCheckoutPendingMsg"),
+  billingResumeCheckoutBtn: document.getElementById("billingResumeCheckoutBtn"),
+  billingAbandonCheckoutBtn: document.getElementById("billingAbandonCheckoutBtn"),
 
   integrationCards: document.getElementById("integrationCards"),
   integrateStatus: document.getElementById("integrateStatus"),
@@ -4045,6 +4052,47 @@ function persistBillingOverview(status, plan = "", lastPaymentDate = "", nextBil
   }
 }
 
+// Set of subscription statuses that mean "actually subscribed". Anything
+// outside this set (checkout_pending, incomplete, etc.) is treated as
+// NOT-subscribed — the dashboard hides plan/billing-date and shows the
+// checkout-in-progress card instead. Matches backend handoff doc.
+const ACTIVE_SUB_STATUSES = new Set(["active", "trialing", "past_due"]);
+
+// Set of statuses that mean "you started checkout but haven't completed
+// payment yet". When the user lands in any of these, we render a clear
+// "Checkout in progress" card with a button to resume the existing Stripe
+// session (or start a new one if we don't have a URL stored).
+const CHECKOUT_PENDING_STATUSES = new Set([
+  "checkout_pending",
+  "incomplete",
+  "incomplete_expired",
+  "trialing_pending_payment",
+  "requires_payment_method",
+  "unpaid",
+]);
+
+// Pull the Stripe Checkout URL the backend may have stashed when the user
+// initiated checkout. Looks at the obvious places first, then falls back to
+// the membership block if present.
+function deriveCheckoutUrl(payload) {
+  if (!payload || typeof payload !== "object") return "";
+  const sources = [
+    payload.checkoutUrl,
+    payload.checkout_url,
+    payload.membership?.checkoutUrl,
+    payload.membership?.checkout_url,
+    payload.subscription?.checkoutUrl,
+    payload.stripe?.checkoutUrl,
+    payload.stripe?.checkout_url,
+    payload.checkoutSessionUrl,
+  ];
+  for (const v of sources) {
+    const s = String(v || "").trim();
+    if (s && /^https?:\/\//i.test(s)) return s;
+  }
+  return "";
+}
+
 function applyBillingPayload(payload) {
   const status = deriveBillingStatus(payload);
   const plan = deriveBillingPlan(payload);
@@ -4053,11 +4101,26 @@ function applyBillingPayload(payload) {
   const currentPeriodEnd = deriveCurrentPeriodEnd(payload);
   const lastPaymentDate = deriveLastPaymentDate(payload);
   const nextBillingDate = deriveNextBillingDate(payload);
+  const checkoutUrl = deriveCheckoutUrl(payload);
+
+  const normalizedStatus = String(status || "").toLowerCase();
+  const hasActiveSub = ACTIVE_SUB_STATUSES.has(normalizedStatus);
+  const isCheckoutPending = CHECKOUT_PENDING_STATUSES.has(normalizedStatus);
 
   if (status && els.billingStatusValue) {
-    els.billingStatusValue.textContent = status;
+    els.billingStatusValue.textContent = isCheckoutPending
+      ? "checkout pending"
+      : status;
   }
-  if (plan && els.billingPlanValue) {
+
+  // Plan + billing-date rows hidden while checkout is pending so the user
+  // doesn't see "Current Plan: yearly · $96/year" while their payment is
+  // actually still incomplete (the exact fierylion bug from the backend doc).
+  if (els.billingPlanRow) els.billingPlanRow.hidden = isCheckoutPending;
+  if (els.billingLastPaymentRow) els.billingLastPaymentRow.hidden = isCheckoutPending;
+  if (els.billingNextBillingRow) els.billingNextBillingRow.hidden = isCheckoutPending;
+
+  if (plan && els.billingPlanValue && !isCheckoutPending) {
     // Append the Stripe-formatted price when we know it for this plan so
     // the user sees "weekly · $3/week" / "monthly · $10/month" / etc.
     // Weekly subscribers still see their price here even though weekly is
@@ -4076,17 +4139,30 @@ function applyBillingPayload(payload) {
   }
   if (els.billingManageLink) {
     const hasPortalUrl = Boolean(portalUrl);
-    els.billingManageLink.hidden = !hasPortalUrl;
+    els.billingManageLink.hidden = !hasPortalUrl || isCheckoutPending;
     els.billingManageLink.href = hasPortalUrl ? portalUrl : "#";
   }
   state.billingPortalUrl = portalUrl || state.billingPortalUrl || "";
+  state.billingCheckoutUrl = checkoutUrl || "";
+  state.billingPendingPlan = isCheckoutPending ? plan : "";
   syncAffiliateBillingButton();
 
-  const normalizedStatus = String(status || "").toLowerCase();
-  const hasActiveSub =
-    normalizedStatus === "active" ||
-    normalizedStatus === "trialing" ||
-    normalizedStatus === "past_due";
+  // Show the checkout-in-progress card when status is in the pending set.
+  if (els.billingCheckoutPendingCard) {
+    els.billingCheckoutPendingCard.hidden = !isCheckoutPending;
+    if (isCheckoutPending && els.billingCheckoutPendingMsg) {
+      const planLabel = plan ? ` for ${plan}` : "";
+      els.billingCheckoutPendingMsg.textContent = checkoutUrl
+        ? `You started checkout${planLabel} but haven't completed payment yet. Resume below to finish.`
+        : `You started checkout${planLabel} but haven't completed payment yet. Choose a plan below or click resume.`;
+    }
+    if (els.billingResumeCheckoutBtn) {
+      // If we have the existing checkout URL, the button just opens it.
+      // Otherwise, fire a new checkout-session for the pending plan.
+      els.billingResumeCheckoutBtn.hidden = false;
+    }
+  }
+
   const scheduledForCancel = cancelAtPeriodEnd === true && hasActiveSub;
 
   if (els.billingCancelNotice) {
@@ -4104,7 +4180,7 @@ function applyBillingPayload(payload) {
 
   if (els.billingYearlyButton) {
     // Hide "Start Monthly Checkout" if there's already an active/trialing subscription.
-    els.billingYearlyButton.hidden = hasActiveSub;
+    els.billingYearlyButton.hidden = hasActiveSub || isCheckoutPending;
   }
   if (els.billingCancelButton) {
     els.billingCancelButton.hidden = !(hasActiveSub && !scheduledForCancel);
@@ -4113,10 +4189,15 @@ function applyBillingPayload(payload) {
     els.billingResumeButton.hidden = !scheduledForCancel;
   }
 
-  // Render upgrade tier cards. Pulls the `billing` block from /api/control
-  // (cached via feature-flags module) and filters to upgrades that make
-  // sense given the user's current plan.
-  renderBillingUpgrades({ currentPlan: plan, hasActiveSub });
+  // Render upgrade tier cards. Hidden when checkout is pending so the user
+  // focuses on completing payment rather than picking a different plan
+  // (they can still hit "Choose a different plan" to abandon and re-pick).
+  if (isCheckoutPending) {
+    const upgradeSection = document.getElementById("billingUpgradeSection");
+    if (upgradeSection) upgradeSection.hidden = true;
+  } else {
+    renderBillingUpgrades({ currentPlan: plan, hasActiveSub });
+  }
 
   persistBillingOverview(status, plan, lastPaymentDate, nextBillingDate);
   return status;
@@ -4164,8 +4245,59 @@ function upgradePathsFor(currentPlan) {
   return ["yearly", "premium", "premiumYearly"];
 }
 
+// Canonical feature bullets per plan key — used when the /control admin
+// flags don't include features OR include stale ones ("Pro", "API access",
+// "White-label"). The backend doc explicitly listed Premium's real bullets
+// (image-based logging, AI vision, etc.), so the frontend keeps a copy as
+// a safety net. Admins can still tune via /control once the flag's
+// features[] is curated.
+const STALE_BULLET_TOKENS = ["everything in pro", "api access", "white-label", "custom goals"];
+
+const CANONICAL_FEATURES = {
+  monthly: [
+    "Unlimited workout, nutrition & water logging",
+    "Body measurements & progress charts",
+    "Leaderboards, brackets & streaks",
+    "Wearable integrations",
+    "Cancel anytime",
+  ],
+  yearly: [
+    "Everything in Monthly",
+    "2 months free vs monthly",
+    "Priority support",
+    "Early access to new features",
+  ],
+  premium: [
+    "Image-based meal logging — snap a photo, AI logs calories + macros",
+    "Image-based scale logging",
+    "Image-based workout logging",
+    "Nutrition-label scanning",
+    "Priority AI processing",
+  ],
+  premiumYearly: [
+    "Everything in Premium",
+    "Save vs monthly Premium",
+    "Priority AI processing",
+    "Early access to new features",
+  ],
+  weekly: [
+    "All Premium features",
+    "Unlimited history",
+    "Cancel anytime — no commitment",
+  ],
+};
+
+function hasStaleBullet(features) {
+  return features.some((f) =>
+    STALE_BULLET_TOKENS.some((token) => String(f).toLowerCase().includes(token))
+  );
+}
+
 // Resolve feature bullets for a given plan key. Backend's /control billing
 // block carries admin-tunable copy under billing.<key>Tier.features[].
+// Falls back to CANONICAL_FEATURES when admin features are empty OR contain
+// stale tokens (Pro / API access / White-label) — that way the dashboard
+// never shows "API access" for users who don't actually get an API.
 function featuresForPlan(planKey) {
   const flags = getCachedFlags();
   const billing = flags?.billing || {};
@@ -4179,7 +4311,12 @@ function featuresForPlan(planKey) {
         weekly: "weeklyTier",
       })[planKey]
     ];
-  return Array.isArray(tier?.features) ? tier.features.slice(0, 4) : [];
+  const adminFeatures = Array.isArray(tier?.features) ? tier.features : [];
+  // Use admin copy only when it's both non-empty AND free of stale tokens.
+  if (adminFeatures.length && !hasStaleBullet(adminFeatures)) {
+    return adminFeatures.slice(0, 5);
+  }
+  return (CANONICAL_FEATURES[planKey] || []).slice(0, 5);
 }
 
 function isPremiumPlan(planKey) {
@@ -4770,6 +4907,40 @@ function wireBilling() {
   if (els.billingResumeButton) {
     els.billingResumeButton.addEventListener("click", () => {
       void runBillingAction("resume");
+    });
+  }
+
+  // Resume an in-progress Stripe Checkout when the user lands back on the
+  // dashboard mid-payment. If backend gave us the existing checkout URL we
+  // open it directly; otherwise we POST a fresh checkout-session for the
+  // pending plan so they don't have to re-pick.
+  if (els.billingResumeCheckoutBtn) {
+    els.billingResumeCheckoutBtn.addEventListener("click", () => {
+      const existingUrl = state.billingCheckoutUrl || "";
+      if (existingUrl) {
+        setStatus(els.billingActionStatus, "Resuming checkout…", "is-success");
+        window.location.assign(existingUrl);
+        return;
+      }
+      const plan = state.billingPendingPlan || "monthly";
+      void startStripeCheckoutForPlan(plan, els.billingResumeCheckoutBtn);
+    });
+  }
+
+  // Abandon the pending checkout and reveal the upgrade-options grid so the
+  // user can pick a different plan. We can't cancel the existing Stripe
+  // session client-side (it expires on its own); we just bring the picker
+  // back into view.
+  if (els.billingAbandonCheckoutBtn) {
+    els.billingAbandonCheckoutBtn.addEventListener("click", () => {
+      if (els.billingCheckoutPendingCard) els.billingCheckoutPendingCard.hidden = true;
+      // Re-render upgrades treating the user as fresh (no active sub).
+      renderBillingUpgrades({ currentPlan: "", hasActiveSub: false });
+      // Scroll to the grid so it's obvious where the next step is.
+      document.getElementById("billingUpgradeSection")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
     });
   }
 }

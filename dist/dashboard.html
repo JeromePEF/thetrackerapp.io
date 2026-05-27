@@ -43,7 +43,7 @@
         window.location.replace("https://thetrackerapp.io/login?next=" + next);
       })();
     </script>
-    <script type="module" crossorigin src="/assets/dashboard-W8WsMzve.js"></script>
+    <script type="module" crossorigin src="/assets/dashboard-C2LqRa8u.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-BQdWdB5M.js">
     <link rel="modulepreload" crossorigin href="/assets/feature-flags-ijnqwsP4.js">
     <link rel="modulepreload" crossorigin href="/assets/affiliate-shape-CbCjCOr6.js">
@@ -51,7 +51,7 @@
     <link rel="modulepreload" crossorigin href="/assets/api-DCiD4VV-.js">
     <link rel="modulepreload" crossorigin href="/assets/billing-prices-Ca2N1vbS.js">
     <link rel="stylesheet" crossorigin href="/assets/affiliate-shape-DgSJ5ZLv.css">
-    <link rel="stylesheet" crossorigin href="/assets/dashboard-DyiLGu5O.css">
+    <link rel="stylesheet" crossorigin href="/assets/dashboard-DtI89xni.css">
     <link rel="stylesheet" crossorigin href="/assets/auth-pages-so5Bh94e.css">
   </head>
   <body class="dashboard-page">
@@ -410,10 +410,29 @@
             </header>
             <div class="panel-stack">
               <p><strong>Current Status:</strong> <span id="billingStatusValue">-</span></p>
-              <p><strong>Current Plan:</strong> <span id="billingPlanValue">-</span></p>
-              <p><strong>Last Payment:</strong> <span id="billingLastPaymentValue">-</span></p>
-              <p><strong>Next Billing Date:</strong> <span id="billingNextBillingValue">-</span></p>
+              <p id="billingPlanRow"><strong>Current Plan:</strong> <span id="billingPlanValue">-</span></p>
+              <p id="billingLastPaymentRow"><strong>Last Payment:</strong> <span id="billingLastPaymentValue">-</span></p>
+              <p id="billingNextBillingRow"><strong>Next Billing Date:</strong> <span id="billingNextBillingValue">-</span></p>
               <p id="billingCancelNotice" class="stats-status is-error" hidden></p>
+            </div>
+
+            <!-- Checkout-in-progress card. Renders when membership.status is
+                 one of: checkout_pending / incomplete / incomplete_expired /
+                 trialing_pending_payment / requires_payment_method / unpaid.
+                 The plan + next-billing rows are hidden in those states so
+                 the user doesn't think they're already subscribed. -->
+            <div id="billingCheckoutPendingCard" class="billing-checkout-pending" hidden>
+              <div class="billing-checkout-pending-icon" aria-hidden="true">⏳</div>
+              <div class="billing-checkout-pending-body">
+                <h3 class="billing-checkout-pending-title">Checkout in progress</h3>
+                <p class="billing-checkout-pending-msg" id="billingCheckoutPendingMsg">
+                  Complete payment to activate your subscription.
+                </p>
+                <div class="billing-checkout-pending-actions">
+                  <button type="button" id="billingResumeCheckoutBtn" class="btn-primary">Resume checkout</button>
+                  <button type="button" id="billingAbandonCheckoutBtn" class="btn-secondary">Choose a different plan</button>
+                </div>
+              </div>
             </div>
 
             <!-- Upgrade tier cards. Populated by renderBillingUpgrades() in
