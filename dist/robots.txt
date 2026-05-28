@@ -1,6 +1,9 @@
 # robots.txt for thetrackerapp.io
 User-agent: *
 Allow: /
+# Public-facing legal pages — indexable so they appear in search.
+Allow: /privacy
+Allow: /terms
 
 # Sitemap location
 Sitemap: https://thetrackerapp.io/sitemap.xml
@@ -11,3 +14,6 @@ Disallow: /authorize
 Disallow: /dashboard
 Disallow: /affiliate/dashboard
 Disallow: /affiliate/connect
+
+# Status page is transient — don't index outage snapshots.
+Disallow: /status

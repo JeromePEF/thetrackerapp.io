@@ -1,0 +1,228 @@
+/* Legal pages (/privacy, /terms) — overlay on top of info-pages.css.
+   Adds a sticky table-of-contents rail on desktop, a hero meta line,
+   the Section 5 (ToS) auto-renewal callout, and a footer strip. */
+
+/* ============================================================================
+   Two-column layout: ToC left rail, article right.
+   Below 880px the ToC collapses to a non-sticky top block.
+   ============================================================================ */
+.legal-layout-with-toc {
+  display: grid;
+  grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
+  gap: 1.6rem;
+  margin-top: 1rem;
+  max-width: 1080px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (max-width: 880px) {
+  .legal-layout-with-toc {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ToC rail ─────────────────────────────────────────────────────────────── */
+.legal-toc {
+  position: sticky;
+  top: 1rem;
+  align-self: start;
+  padding: 1rem 1.1rem;
+  background: var(--panel, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.08));
+  border-radius: 14px;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+}
+
+@media (max-width: 880px) {
+  .legal-toc {
+    position: static;
+    max-height: none;
+  }
+}
+
+.legal-toc-title {
+  margin: 0 0 0.55rem;
+  font-family: "Orbitron", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-muted, #93a5b8);
+}
+
+.legal-toc ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  counter-reset: toc;
+}
+
+.legal-toc ol li {
+  counter-increment: toc;
+  padding: 0;
+  margin: 0;
+  color: var(--ink-muted, #93a5b8);
+  line-height: 1.4;
+}
+
+.legal-toc ol li a {
+  display: block;
+  padding: 0.32rem 0.4rem;
+  border-radius: 6px;
+  color: var(--ink, #ebf4ff);
+  text-decoration: none;
+  font-size: 0.84rem;
+  transition: background 0.15s, color 0.15s;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+
+.legal-toc ol li a::before {
+  content: counter(toc) ". ";
+  color: var(--ink-muted, #93a5b8);
+  font-weight: 600;
+  margin-right: 0.2rem;
+}
+
+.legal-toc ol li a:hover,
+.legal-toc ol li a:focus-visible {
+  background: rgba(56, 255, 211, 0.08);
+  color: #38ffd3;
+  outline: none;
+}
+
+/* Highlight the Section 5 (Subscriptions) entry on /terms so the
+   auto-renewal section is visually emphasized in the ToC, per the
+   Stripe disclosure requirement. */
+.legal-toc-highlight a {
+  color: #38ffd3 !important;
+  font-weight: 600;
+}
+
+/* ============================================================================
+   Article hero + template banner
+   ============================================================================ */
+.legal-article {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  min-width: 0;
+}
+
+.legal-hero {
+  scroll-margin-top: 1rem;
+}
+
+.legal-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.6rem;
+  font-size: 0.82rem;
+  color: var(--ink-muted, #93a5b8);
+  margin: 0.45rem 0 0.9rem !important;
+}
+
+.legal-template-banner {
+  margin-top: 0.9rem;
+  padding: 0.75rem 0.95rem;
+  border-radius: 10px;
+  background: rgba(255, 184, 0, 0.08);
+  border-left: 3px solid rgba(255, 184, 0, 0.6);
+  color: #ffd680 !important;
+  font-size: 0.83rem;
+  line-height: 1.5;
+}
+
+.legal-template-banner strong {
+  color: #ffd680;
+}
+
+/* ============================================================================
+   Article body
+   ============================================================================ */
+.legal-copy h2 {
+  scroll-margin-top: 1.2rem;
+  margin-top: 1.6rem;
+  font-size: 1.08rem;
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 700;
+  color: var(--ink, #ebf4ff);
+}
+
+.legal-copy h2:first-of-type {
+  margin-top: 0;
+}
+
+.legal-copy ul {
+  margin: 0.55rem 0 0;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.legal-copy ul li {
+  line-height: 1.6;
+}
+
+.legal-copy code {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  background: rgba(0, 0, 0, 0.3);
+  color: #38ffd3;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+/* ============================================================================
+   Section 5 (auto-renewal) callout — visual emphasis for Stripe disclosure.
+   ============================================================================ */
+.legal-section-highlight {
+  color: #38ffd3 !important;
+}
+
+.legal-callout {
+  margin-top: 0.6rem;
+  padding: 0.85rem 1rem;
+  background: rgba(56, 255, 211, 0.08);
+  border-left: 3px solid #38ffd3;
+  border-radius: 10px;
+}
+
+.legal-callout p {
+  margin: 0 !important;
+  color: var(--ink, #ebf4ff) !important;
+  font-size: 0.93rem;
+  line-height: 1.55;
+}
+
+.legal-callout strong {
+  color: #38ffd3;
+}
+
+/* ============================================================================
+   Footer (legal pages only)
+   ============================================================================ */
+.legal-footer {
+  margin-top: 2.5rem;
+  padding: 1.25rem 0;
+  border-top: 1px solid var(--line, rgba(255, 255, 255, 0.08));
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--ink-muted, #93a5b8);
+}
+
+.legal-footer a {
+  color: var(--ink, #ebf4ff);
+  text-decoration: none;
+  margin: 0 0.25rem;
+}
+
+.legal-footer a:hover {
+  color: #38ffd3;
+}

@@ -3,11 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>System Status | The Tracker App</title>
-    <meta name="description" content="Real-time system status and uptime for The Tracker App services." />
+    <title>System Status | TheTrackerApp</title>
+    <meta name="description" content="Real-time system status for TheTrackerApp services — chatbot, payments, iMessage delivery, and web dashboard." />
     <meta name="theme-color" content="#000000" />
+    <!-- Status page is transient — don't index outage states. -->
+    <meta name="robots" content="noindex, follow" />
 
-    <link rel="canonical" href="https://status.thetrackerapp.io/" />
+    <link rel="canonical" href="https://thetrackerapp.io/status" />
     <link rel="icon" href="/favicon.svg?v=5" type="image/svg+xml" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -18,81 +20,49 @@
   <body>
     <div class="status-page">
       <header class="status-header">
-        <a href="/" class="status-logo">The Tracker App</a>
+        <a href="/" class="status-logo">TheTrackerApp</a>
         <span class="status-title">System Status</span>
       </header>
 
       <main class="status-main">
-        <!-- Overall Status Banner -->
-        <section class="status-banner" id="overallStatus">
-          <div class="status-icon operational">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-              <polyline points="22 4 12 14.01 9 11.01"></polyline>
-            </svg>
+        <!-- Overall status banner. data-tone is set by status.js based on
+             the response from /api/status. Each tone (operational / degraded
+             / partial / major / maintenance) maps to a colored band in
+             status.css, paired with a unicode glyph + label so we never
+             rely on color alone (WCAG AA). -->
+        <section class="status-banner" id="overallStatus" data-tone="operational" role="status">
+          <div class="status-icon" data-tone="operational" aria-hidden="true">
+            <span>✓</span>
           </div>
           <div class="status-text">
-            <h1>All Systems Operational</h1>
-            <p class="status-updated">Last updated: <span id="lastUpdated">--</span></p>
+            <h1>Loading status…</h1>
+            <p class="status-updated">Last updated: <span id="lastUpdated">—</span></p>
           </div>
         </section>
 
-        <!-- Services Grid -->
-        <section class="services-section">
-          <h2>Services</h2>
+        <!-- Per-component status list (Chatbot, Payments, iMessage, Web).
+             Populated by status.js from /api/status's components[] array. -->
+        <section class="services-section" aria-label="Component status">
+          <h2>Components</h2>
           <div class="services-grid" id="servicesGrid">
-            <!-- Populated by JS -->
+            <div class="status-skeleton"></div>
+            <div class="status-skeleton"></div>
+            <div class="status-skeleton"></div>
+            <div class="status-skeleton"></div>
           </div>
         </section>
 
-        <!-- Response Time -->
-        <section class="response-section">
-          <h2>Response Time</h2>
-          <div class="response-stats">
-            <div class="response-stat">
-              <span class="response-value" id="avgResponseTime">--</span>
-              <span class="response-label">Avg Response</span>
-            </div>
-            <div class="response-stat">
-              <span class="response-value" id="p95ResponseTime">--</span>
-              <span class="response-label">P95 Response</span>
-            </div>
-            <div class="response-stat">
-              <span class="response-value" id="requestsToday">--</span>
-              <span class="response-label">Requests Today</span>
-            </div>
-          </div>
-        </section>
-
-        <!-- Recent Incidents -->
-        <section class="incidents-section">
-          <h2>Recent Notices</h2>
-          <div class="incidents-list" id="incidentsList">
-            <p class="no-incidents">No incidents reported in the past 7 days</p>
-          </div>
-        </section>
-
-        <!-- Uptime History -->
-        <section class="history-section">
-          <h2>30-Day Uptime History</h2>
-          <div class="uptime-grid" id="uptimeGrid">
-            <!-- Populated by JS -->
-          </div>
-          <div class="uptime-legend">
-            <span class="legend-item"><span class="legend-dot operational"></span> Operational</span>
-            <span class="legend-item"><span class="legend-dot degraded"></span> Degraded</span>
-            <span class="legend-item"><span class="legend-dot outage"></span> Outage</span>
-          </div>
-        </section>
+        <p class="status-support" id="statusSupport">Questions? <a href="mailto:support@thetrackerapp.io">support@thetrackerapp.io</a></p>
       </main>
 
       <footer class="status-footer">
         <div class="footer-links">
-          <a data-feature="footer.home" href="/">Home</a>
-          <a data-feature="footer.trust" href="/trust">Trust Center</a>
+          <a href="/">Home</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
           <a href="mailto:support@thetrackerapp.io">Contact</a>
         </div>
-        <p class="footer-note">Status updates every 60 seconds</p>
+        <p class="footer-note">Status refreshes every 60 seconds · © 2026 TheTrackerApp</p>
       </footer>
     </div>
 

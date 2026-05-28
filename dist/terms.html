@@ -3,11 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Terms of Service | The Tracker App</title>
+    <title>Terms of Service | TheTrackerApp</title>
     <meta
       name="description"
-      content="Terms of Service for The Tracker App, including account, billing, and acceptable use terms."
+      content="The Terms of Service that govern your use of TheTrackerApp — including subscriptions, billing, auto-renewal, content rights, and disclaimers."
     />
+    <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://thetrackerapp.io/terms" />
     <link rel="icon" href="/favicon.svg?v=3" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3" sizes="180x180" />
@@ -19,66 +20,239 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" crossorigin href="/assets/info-pages-iuJ7kj43.css">
+    <link rel="stylesheet" crossorigin href="/assets/legal-pages-CVj5hUFN.css">
   </head>
   <body>
     <div class="info-shell">
       <header class="info-nav">
-        <p class="info-brand">The Tracker App</p>
+        <p class="info-brand">TheTrackerApp</p>
         <nav class="info-links" aria-label="Primary">
           <a href="/">Home</a>
           <a href="/privacy">Privacy</a>
+          <a href="/status">Status</a>
           <a href="/login">Dashboard</a>
         </nav>
       </header>
 
-      <main class="legal-layout">
-        <section class="info-hero">
-          <p class="info-kicker">Terms</p>
-          <h1>Terms of Service</h1>
-          <p>
-            These terms govern access to The Tracker App. Questions can be sent to
-            <a href="mailto:contact@thetrackerapp.io">contact@thetrackerapp.io</a>.
-          </p>
-        </section>
+      <main class="legal-layout legal-layout-with-toc">
+        <aside class="legal-toc" aria-label="Table of contents">
+          <p class="legal-toc-title">On this page</p>
+          <ol>
+            <li><a href="#acceptance">Acceptance of terms</a></li>
+            <li><a href="#eligibility">Eligibility</a></li>
+            <li><a href="#accounts">Accounts & access</a></li>
+            <li><a href="#acceptable-use">Acceptable use</a></li>
+            <!-- Section 5 surfaced prominently per Stripe auto-renewal rules -->
+            <li class="legal-toc-highlight"><a href="#subscriptions">Subscriptions, billing & cancellation</a></li>
+            <li><a href="#ai-and-content">AI processing & your content</a></li>
+            <li><a href="#intellectual-property">Intellectual property</a></li>
+            <li><a href="#third-parties">Third-party services</a></li>
+            <li><a href="#disclaimers">Disclaimers (incl. not medical advice)</a></li>
+            <li><a href="#liability">Limitation of liability</a></li>
+            <li><a href="#indemnification">Indemnification</a></li>
+            <li><a href="#termination">Termination</a></li>
+            <li><a href="#governing-law">Governing law & disputes</a></li>
+            <li><a href="#changes">Changes to these terms</a></li>
+            <li><a href="#account-deletion">Delete your account</a></li>
+            <li><a href="#contact">Contact</a></li>
+          </ol>
+        </aside>
 
-        <section class="legal-copy">
-          <p class="legal-note">Last updated: May 13, 2026</p>
+        <article class="legal-article">
+          <header class="info-hero legal-hero">
+            <p class="info-kicker">Legal</p>
+            <h1>Terms of Service</h1>
+            <p class="legal-meta">
+              <span><strong>Last Updated:</strong> May 28, 2026</span>
+              <span aria-hidden="true">·</span>
+              <span><strong>Effective Date:</strong> May 28, 2026</span>
+            </p>
+            <p>
+              These Terms ("Terms") govern your use of TheTrackerApp. By creating an account or using the
+              service, you agree to them. Read them carefully — Section 5 covers subscriptions and
+              auto-renewal, and Section 9 lays out important disclaimers (including that this is <strong>not
+              medical advice</strong>).
+            </p>
+            <p class="legal-template-banner" role="note">
+              <strong>Template pending counsel review.</strong> This page reflects how the product operates today
+              but awaits final legal-counsel sign-off before being treated as the definitive legal document.
+            </p>
+          </header>
 
-          <h2>Use of the Service</h2>
-          <p>
-            You may use The Tracker App only in compliance with these terms and applicable law. You are responsible for
-            activity conducted through your account and for keeping your login methods secure.
-          </p>
+          <section class="legal-copy">
+            <h2 id="acceptance">1. Acceptance of terms</h2>
+            <p>
+              By creating an account, signing up via text or web, or using TheTrackerApp in any other way, you agree
+              to be bound by these Terms and our <a href="/privacy">Privacy Policy</a>. If you don't agree, don't use
+              the service.
+            </p>
 
-          <h2>Accounts</h2>
-          <p>
-            You agree to provide accurate account information and to keep your profile data reasonably current. We may
-            suspend or terminate access for abuse, fraud, platform misuse, or other harmful behavior.
-          </p>
+            <h2 id="eligibility">2. Eligibility</h2>
+            <p>
+              You must be at least 13 years old to use TheTrackerApp. If you're between 13 and 18, you confirm that
+              a parent or guardian has reviewed these Terms with you. The service is not designed for, and you
+              must not use it for, minors under 13.
+            </p>
 
-          <h2>Billing and Paid Features</h2>
-          <p>
-            Paid subscriptions, renewals, cancellations, and refunds are handled subject to the billing terms shown at
-            checkout and any payment processor requirements. Access to certain features may depend on an active paid
-            plan.
-          </p>
+            <h2 id="accounts">3. Accounts & access</h2>
+            <ul>
+              <li>You're responsible for keeping your phone number, iMessage identity, or email address current. We do not unlock, transfer, or recover an account where the verified identity is no longer accessible.</li>
+              <li>One account per person. Don't impersonate someone else or share login credentials.</li>
+              <li>We may suspend or terminate accounts that violate these Terms (Section 12).</li>
+            </ul>
 
-          <h2>Affiliate Program</h2>
-          <p>
-            Affiliate access, referral attribution, payout timing, reversals, holds, and eligibility may depend on
-            separate program rules, Stripe Connect onboarding, and successful account verification.
-          </p>
+            <h2 id="acceptable-use">4. Acceptable use</h2>
+            <p>You agree not to:</p>
+            <ul>
+              <li>Use the service for illegal activity, harassment, or impersonation.</li>
+              <li>Attempt to reverse-engineer, scrape, or circumvent rate limits.</li>
+              <li>Submit content you don't have the right to submit (copyrighted, defamatory, etc.).</li>
+              <li>Interfere with other users' experience (spam, leaderboard manipulation, etc.).</li>
+              <li>Use the service to send unsolicited bulk messages.</li>
+            </ul>
 
-          <h2>Availability</h2>
-          <p>
-            We may update, pause, or remove features at any time. We do not guarantee uninterrupted availability or
-            error-free operation.
-          </p>
+            <!-- Section 5 surfaced prominently per Stripe auto-renewal disclosure rules -->
+            <h2 id="subscriptions" class="legal-section-highlight">5. Subscriptions, billing & cancellation</h2>
+            <div class="legal-callout">
+              <p>
+                <strong>Subscriptions auto-renew.</strong> When you start a paid plan you authorize us (via Stripe)
+                to charge your chosen payment method at the end of each billing period until you cancel. You will
+                not receive a separate notice before each renewal.
+              </p>
+            </div>
+            <ul>
+              <li><strong>Plans available:</strong> Monthly, Yearly, Premium Monthly, Premium Yearly. Current prices live on the <a href="/pricing">pricing page</a> and are fetched from Stripe at runtime — they always reflect what Stripe will actually charge.</li>
+              <li><strong>Auto-renewal:</strong> all paid plans auto-renew at the listed price for the chosen interval until cancelled.</li>
+              <li><strong>How to cancel:</strong> open the Billing tab in your dashboard and click "Cancel Subscription", or text the bot <code>/billing</code> to receive a Stripe Customer Portal link. Cancellation takes effect at the end of the current billing period; you keep access until then.</li>
+              <li><strong>Refunds:</strong> we do not offer pro-rated refunds for unused time within a billing period. If you believe you were charged in error, email <a href="mailto:support@thetrackerapp.io">support@thetrackerapp.io</a> within 30 days.</li>
+              <li><strong>Price changes:</strong> we may change plan prices. Active subscribers receive at least 30 days notice before a price change takes effect, on the channel they signed up through. Continuing your subscription after a price change is acceptance of the new price.</li>
+              <li><strong>Failed payments:</strong> we'll retry per Stripe's standard schedule (4 attempts over ~3 weeks). If recovery fails, the subscription will lapse and you'll lose access to paid features until you update your payment method.</li>
+              <li><strong>Taxes:</strong> all prices are exclusive of sales tax / VAT, which Stripe Tax will add at checkout where required.</li>
+            </ul>
 
-          <h2>Contact</h2>
-          <p>Questions about these terms can be sent to <a href="mailto:contact@thetrackerapp.io">contact@thetrackerapp.io</a>.</p>
-        </section>
+            <h2 id="ai-and-content">6. AI processing & your content</h2>
+            <p>
+              You retain ownership of the workout logs, nutrition entries, and other content you submit ("Your
+              Content"). You grant us a limited license to process Your Content as needed to operate the
+              service — including sending message text to Google Gemini for AI parsing (see Section 4 of the
+              <a href="/privacy">Privacy Policy</a>).
+            </p>
+            <p>
+              We do not own Your Content and we do not use it to train AI models. Your Content remains yours;
+              you can export or delete it at any time.
+            </p>
+
+            <h2 id="intellectual-property">7. Intellectual property</h2>
+            <p>
+              The TheTrackerApp software, brand, design, marketing copy, and documentation are owned by us and
+              protected by copyright and trademark law. You may not reuse, redistribute, or create derivative
+              works of these without our written permission.
+            </p>
+
+            <h2 id="third-parties">8. Third-party services</h2>
+            <p>
+              The service integrates with Stripe (billing), Twilio (SMS/WhatsApp), Apple iMessage, Telegram,
+              Google Gemini (AI), and various wearable platforms (Pebble, Fitbit, Whoop, Oura, Apple Watch).
+              Your use of those services is governed by their own terms; we're not responsible for outages or
+              policy changes on their side.
+            </p>
+
+            <!-- VERBATIM per backend handoff (AGENTS.md). Do not soften
+                 or rephrase — counsel reviews this exact wording. -->
+            <h2 id="disclaimers">9. Not medical, nutritional, or professional advice</h2>
+            <p>
+              TheTrackerApp is a fitness and lifestyle tracking product. The information, features, AI
+              responses, and any content surfaced through the service are for informational and entertainment
+              purposes only. They are <strong>not</strong> medical, nutritional, psychological, or other
+              professional advice, diagnosis, or treatment. We do not have a doctor-patient, dietitian-client,
+              or trainer-client relationship with you.
+            </p>
+            <p>
+              Always seek the advice of a qualified physician, registered dietitian, or other licensed
+              healthcare professional with any questions you may have regarding a medical condition, dietary
+              needs, supplement use, exercise program, or mental health. Never disregard professional medical
+              advice or delay seeking it because of something you read, saw, or were told through
+              TheTrackerApp.
+            </p>
+            <p>
+              <strong>If you think you are having a medical or mental-health emergency, call your local
+              emergency number immediately.</strong> In the United States, dial <strong>911</strong> for
+              medical emergencies, or <strong>988</strong> for the Suicide & Crisis Lifeline. Do not rely on
+              TheTrackerApp for emergency communication — the service makes no guarantee that an inbound
+              message will reach a human, be acted upon, or be delivered at all.
+            </p>
+            <p>
+              The service is provided <strong>"as is"</strong> and <strong>"as available"</strong> with no
+              warranty, express or implied, including merchantability, fitness for a particular purpose, or
+              non-infringement.
+            </p>
+
+            <h2 id="liability">10. Limitation of liability</h2>
+            <p>
+              To the maximum extent permitted by law, TheTrackerApp's total liability arising out of these
+              Terms or your use of the service is limited to the greater of (a) the amount you paid us in the
+              12 months before the event giving rise to the claim, or (b) US $100. We are not liable for
+              indirect, incidental, consequential, special, exemplary, or punitive damages.
+            </p>
+
+            <h2 id="indemnification">11. Indemnification</h2>
+            <p>
+              You agree to indemnify and hold harmless TheTrackerApp, its operators, and its subprocessors
+              against any claims arising out of (a) your use of the service, (b) Your Content, or (c) your
+              violation of these Terms or applicable law.
+            </p>
+
+            <h2 id="termination">12. Termination</h2>
+            <p>
+              You can stop using the service at any time. We can suspend or terminate access if you violate
+              these Terms, fail to pay, abuse the service, or for legal or safety reasons. On termination,
+              your right to use the service ends immediately. Sections that by their nature should survive
+              termination (e.g. ownership, disclaimers, liability) will survive.
+            </p>
+
+            <h2 id="governing-law">13. Governing law & disputes</h2>
+            <p>
+              These Terms are governed by the laws of the State of Delaware, USA, without regard to conflict
+              of laws principles. Disputes will be resolved in the state or federal courts located in
+              Delaware, and you consent to personal jurisdiction there. Nothing here prevents you from
+              bringing a claim in small-claims court where eligible.
+            </p>
+
+            <h2 id="changes">14. Changes to these terms</h2>
+            <p>
+              We'll update the "Last Updated" date when these Terms change. For material changes we'll notify
+              active users on their primary channel. Continuing to use the service after a change means you
+              accept the updated Terms.
+            </p>
+
+            <h2 id="account-deletion">15. Delete your account</h2>
+            <p>
+              To delete your account and associated data, email
+              <a href="mailto:support@thetrackerapp.io">support@thetrackerapp.io</a> from the email on your
+              account (or text the bot <code>/delete</code> from your verified phone). We will delete or
+              anonymize personal data within 30 days of confirming the request, except where retention is
+              legally required.
+            </p>
+
+            <h2 id="contact">16. Contact</h2>
+            <p>
+              Questions about these Terms:
+              <a href="mailto:support@thetrackerapp.io">support@thetrackerapp.io</a>.
+            </p>
+
+            <p class="legal-note legal-meta">
+              <strong>Last Updated:</strong> May 28, 2026 ·
+              <a href="/privacy">Privacy Policy</a> ·
+              <a href="/status">System Status</a> ·
+              <a href="mailto:support@thetrackerapp.io">Contact support</a>
+            </p>
+          </section>
+        </article>
       </main>
+
+      <footer class="legal-footer">
+        <p>© 2026 TheTrackerApp · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/status">Status</a></p>
+      </footer>
     </div>
   </body>
 </html>

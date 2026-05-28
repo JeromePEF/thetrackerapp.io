@@ -1,192 +1,158 @@
-// Status Page JavaScript
+// Status page — reads /api/status (LIVE, no auth, public).
+//
+// Response shape (LEGAL_AND_UX_POLISH spec §3):
+//   {
+//     status:       "operational" | "degraded" | "partial_outage" |
+//                    "major_outage" | "maintenance",
+//     statusLabel:  "All Systems Operational",
+//     components:   [ { name, id, status } ],
+//     lastUpdated:  "2026-05-28T16:24:10.591Z",
+//     support:      { statusPageHint, contactEmail }
+//   }
+//
+// Per-component / overall status colors (WCAG AA compliant — each pairs
+// color with an icon and a text label so we never rely on color alone):
+//
+//   operational     green   ✓   "Operational"
+//   degraded        amber   ⚠   "Degraded performance"
+//   partial_outage  orange  ⚠   "Partial outage"
+//   major_outage    red     ✗   "Major outage"
+//   maintenance     blue    ⏱   "Scheduled maintenance"
+//
+// Refresh cadence: 60 s (backend Cache-Control: public, max-age=30).
 
 const API_BASE = "https://api.thetrackerapp.io";
+const REFRESH_INTERVAL_MS = 60_000;
 
-// Services to monitor
-const SERVICES = [
-  { id: "website", name: "Website", url: "https://thetrackerapp.io" },
-  { id: "api", name: "Tracker API", url: "https://api.thetrackerapp.io" },
-  { id: "dashboard", name: "Dashboard", url: "https://dashboard.thetrackerapp.io" },
-  { id: "telegram", name: "Telegram Bot", url: null },
-  { id: "imessage", name: "iMessage Service", url: null },
-  { id: "sms", name: "SMS Service", url: null },
-];
+const STATUS_META = {
+  operational:    { icon: "✓", label: "Operational",           tone: "operational", bannerCopy: "All systems operational" },
+  degraded:       { icon: "⚠", label: "Degraded performance",  tone: "degraded",    bannerCopy: "Some systems are degraded" },
+  partial_outage: { icon: "⚠", label: "Partial outage",        tone: "partial",     bannerCopy: "Partial system outage" },
+  major_outage:   { icon: "✗", label: "Major outage",          tone: "major",       bannerCopy: "Major outage in progress" },
+  maintenance:    { icon: "⏱", label: "Scheduled maintenance", tone: "maintenance", bannerCopy: "Scheduled maintenance in progress" },
+};
 
-// Simulated status data (replace with real API)
-function generateMockStatus() {
-  return SERVICES.map(service => ({
-    ...service,
-    status: "operational",
-    uptime: 99.9 + Math.random() * 0.1,
-    history: Array.from({ length: 30 }, () => 
-      Math.random() > 0.02 ? "operational" : Math.random() > 0.5 ? "degraded" : "outage"
-    ),
-  }));
+const SUPPORT_EMAIL_FALLBACK = "support@thetrackerapp.io";
+
+function escapeHtml(s) {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
-function generateMockStats() {
-  return {
-    avgResponseTime: Math.floor(180 + Math.random() * 100),
-    p95ResponseTime: Math.floor(350 + Math.random() * 150),
-    requestsToday: Math.floor(50000 + Math.random() * 30000),
-  };
+function metaFor(status) {
+  return STATUS_META[String(status || "").toLowerCase()] || STATUS_META.maintenance;
+}
+
+function relativeTime(iso) {
+  const t = Date.parse(iso || "");
+  if (!Number.isFinite(t)) return "—";
+  const seconds = Math.max(0, Math.round((Date.now() - t) / 1000));
+  if (seconds < 60) return `${seconds} second${seconds === 1 ? "" : "s"} ago`;
+  const m = Math.round(seconds / 60);
+  if (m < 60) return `${m} minute${m === 1 ? "" : "s"} ago`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h} hour${h === 1 ? "" : "s"} ago`;
+  return new Date(iso).toLocaleString();
 }
 
 async function fetchStatus() {
   try {
-    const res = await fetch(`${API_BASE}/api/status`);
-    if (res.ok) {
-      return await res.json();
-    }
+    const res = await fetch(`${API_BASE}/api/status`, {
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) throw new Error(`status ${res.status}`);
+    return await res.json();
   } catch (e) {
-    console.warn("Could not fetch status:", e);
+    console.warn("Could not fetch /api/status:", e);
+    // Return a degraded surface — show a fetch-failure banner without
+    // pretending all is well.
+    return {
+      status: "degraded",
+      statusLabel: "Status data temporarily unavailable",
+      components: [],
+      lastUpdated: new Date().toISOString(),
+      support: { contactEmail: SUPPORT_EMAIL_FALLBACK },
+      __fetchFailed: true,
+    };
   }
-  
-  // Return mock data
-  return {
-    services: generateMockStatus(),
-    stats: generateMockStats(),
-    incidents: [],
-    overall: "operational",
-  };
 }
 
-function renderServices(services) {
-  const grid = document.getElementById("servicesGrid");
-  if (!grid) return;
-  
-  grid.innerHTML = services.map(service => `
-    <div class="service-card">
-      <div class="service-info">
-        <h3>${service.name}</h3>
-        <div class="service-status">
-          <span class="status-dot ${service.status}"></span>
-          <span>${formatStatus(service.status)}</span>
-        </div>
-      </div>
-      <div class="service-graph">
-        ${service.history.slice(-30).map(day => 
-          `<div class="graph-bar ${day}" style="height: ${day === 'operational' ? 100 : day === 'degraded' ? 60 : 30}%"></div>`
-        ).join('')}
-      </div>
-      <div class="service-uptime">
-        <span class="uptime-percent">${service.uptime.toFixed(1)}%</span>
-        <span class="uptime-label">uptime</span>
-      </div>
-    </div>
-  `).join('');
-}
-
-function renderStats(stats) {
-  const avgEl = document.getElementById("avgResponseTime");
-  const p95El = document.getElementById("p95ResponseTime");
-  const reqEl = document.getElementById("requestsToday");
-  
-  if (avgEl) avgEl.textContent = `${stats.avgResponseTime}ms`;
-  if (p95El) p95El.textContent = `${stats.p95ResponseTime}ms`;
-  if (reqEl) reqEl.textContent = formatNumber(stats.requestsToday);
-}
-
-function renderOverallStatus(status) {
+function renderBanner(data) {
   const banner = document.getElementById("overallStatus");
   if (!banner) return;
-  
+  const meta = metaFor(data.status);
+  // Update tone class so CSS picks the right color band.
+  banner.dataset.tone = meta.tone;
+  banner.setAttribute("aria-live", "polite");
+
   const icon = banner.querySelector(".status-icon");
   const h1 = banner.querySelector("h1");
-  
+  const updated = document.getElementById("lastUpdated");
+
+  // Icon (text glyph — no SVG fetch, paired with .sr-only text for AT).
   if (icon) {
-    icon.className = `status-icon ${status}`;
+    icon.dataset.tone = meta.tone;
+    icon.innerHTML = `<span aria-hidden="true">${meta.icon}</span><span class="sr-only">${escapeHtml(meta.label)}</span>`;
   }
-  
   if (h1) {
-    h1.textContent = status === "operational" 
-      ? "All Systems Operational"
-      : status === "degraded"
-      ? "Some Systems Degraded"
-      : "System Outage";
+    h1.textContent = data.statusLabel || meta.bannerCopy;
+  }
+  if (updated) {
+    updated.textContent = relativeTime(data.lastUpdated);
+    updated.title = data.lastUpdated || "";
   }
 }
 
-function renderUptimeHistory(services) {
-  const grid = document.getElementById("uptimeGrid");
-  if (!grid) return;
-  
-  // Combine all services for overall daily status
-  const days = 30;
-  const history = [];
-  
-  for (let i = 0; i < days; i++) {
-    const dayStatuses = services.map(s => s.history[i] || "operational");
-    if (dayStatuses.includes("outage")) {
-      history.push("outage");
-    } else if (dayStatuses.includes("degraded")) {
-      history.push("degraded");
-    } else {
-      history.push("operational");
-    }
-  }
-  
-  grid.innerHTML = history.map((status, i) => {
-    const date = new Date();
-    date.setDate(date.getDate() - (days - 1 - i));
-    return `<div class="uptime-day ${status}" title="${date.toLocaleDateString()}"></div>`;
-  }).join('');
-}
-
-function renderIncidents(incidents) {
-  const list = document.getElementById("incidentsList");
-  if (!list) return;
-  
-  if (!incidents || incidents.length === 0) {
-    list.innerHTML = '<p class="no-incidents">No incidents reported in the past 7 days</p>';
+function renderComponents(components) {
+  const host = document.getElementById("servicesGrid");
+  if (!host) return;
+  const list = Array.isArray(components) ? components : [];
+  if (!list.length) {
+    host.innerHTML = `<p class="status-empty">No component data available right now.</p>`;
     return;
   }
-  
-  list.innerHTML = incidents.map(incident => `
-    <div class="incident-item">
-      <div class="incident-title">${escapeHtml(incident.title)}</div>
-      <div class="incident-date">${new Date(incident.date).toLocaleDateString()}</div>
-    </div>
-  `).join('');
+  host.innerHTML = list
+    .map((c) => {
+      const meta = metaFor(c.status);
+      return `
+        <article class="service-card" data-tone="${meta.tone}" data-component="${escapeHtml(c.id || "")}">
+          <div class="service-info">
+            <h3 class="service-name">${escapeHtml(c.name || c.id || "Component")}</h3>
+            <div class="service-status" data-tone="${meta.tone}">
+              <span class="service-status-icon" aria-hidden="true">${meta.icon}</span>
+              <span class="service-status-label">${escapeHtml(meta.label)}</span>
+            </div>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
 }
 
-function updateLastUpdated() {
-  const el = document.getElementById("lastUpdated");
-  if (el) {
-    el.textContent = new Date().toLocaleTimeString();
-  }
-}
-
-function formatStatus(status) {
-  return status.charAt(0).toUpperCase() + status.slice(1);
-}
-
-function formatNumber(num) {
-  if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
-  if (num >= 1000) return (num / 1000).toFixed(1) + "K";
-  return num.toString();
-}
-
-function escapeHtml(str) {
-  if (!str) return "";
-  return str.replace(/[&<>"']/g, c => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-  })[c]);
+function renderSupportLine(data) {
+  const supportEl = document.getElementById("statusSupport");
+  if (!supportEl) return;
+  const email = data?.support?.contactEmail || SUPPORT_EMAIL_FALLBACK;
+  supportEl.innerHTML = `Questions? <a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>`;
 }
 
 async function refresh() {
   const data = await fetchStatus();
-  
-  renderOverallStatus(data.overall);
-  renderServices(data.services);
-  renderStats(data.stats);
-  renderUptimeHistory(data.services);
-  renderIncidents(data.incidents);
-  updateLastUpdated();
+  renderBanner(data);
+  renderComponents(data.components);
+  renderSupportLine(data);
 }
 
 // Initial load
 refresh();
 
-// Refresh every 60 seconds
-setInterval(refresh, 60000);
+// Re-fetch every minute. Backend caches at 30s so this is well-mannered.
+setInterval(refresh, REFRESH_INTERVAL_MS);
+
+// Manual refresh on focus (in case user left the tab and came back).
+window.addEventListener("focus", () => refresh());

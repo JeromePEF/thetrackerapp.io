@@ -119,6 +119,9 @@ const els = {
   emailLabel: null,
   consentWrap: document.getElementById("consentWrap"),
   consentCheckbox: document.getElementById("consentCheckbox"),
+  termsConsentCheckbox: document.getElementById("termsConsentCheckbox"),
+  aiConsentCheckbox: document.getElementById("aiConsentCheckbox"),
+  aiConsentWrap: document.getElementById("aiConsentWrap"),
   signupStatus: document.getElementById("signupStatus"),
   liveWorkoutToast: document.getElementById("liveWorkoutToast"),
   liveWorkoutToastMessage: document.getElementById("liveWorkoutToastMessage"),
@@ -1822,12 +1825,35 @@ function validateForm() {
     return { ok: false, message: "Consent is required for phone onboarding (10DLC/A2P)." };
   }
 
+  // Legal consent — required for everyone. Backend stores this on the user
+  // profile so we have an audit trail of who accepted which version of
+  // the ToS / Privacy Policy.
+  if (!els.termsConsentCheckbox?.checked) {
+    return {
+      ok: false,
+      message: "Please agree to the Terms of Service and Privacy Policy before signing up.",
+    };
+  }
+
+  // Consent block sent with every signup so backend can persist the
+  // user's choices (Terms version, AI processing opt-in/out). Version
+  // string lets us prompt for re-consent later if the ToS materially
+  // changes.
+  const consent = {
+    tos: true,
+    privacy: true,
+    aiProcessing: !!els.aiConsentCheckbox?.checked,
+    acceptedAt: new Date().toISOString(),
+    version: "v1",
+  };
+
   if (service.provider === "iMessage") {
     return {
       ok: true,
       payload: {
         provider: "iMessage",
         contact,
+        consent,
       },
     };
   }
@@ -1839,6 +1865,7 @@ function validateForm() {
       phone,
       username,
       sms_consent_10dlc: needsSmsConsent ? true : false,
+      consent,
       source: "hero_onboarding",
       requested_at: new Date().toISOString(),
     },

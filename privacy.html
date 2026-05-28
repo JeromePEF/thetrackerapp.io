@@ -3,11 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Privacy Policy | The Tracker App</title>
+    <title>Privacy Policy | TheTrackerApp</title>
     <meta
       name="description"
-      content="Privacy Policy for The Tracker App, including account data, workout logs, and support contact details."
+      content="How TheTrackerApp collects, uses, stores, and protects your data — phone numbers, emails, workout logs, nutrition entries, payment metadata, and AI-processed messages."
     />
+    <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://thetrackerapp.io/privacy" />
     <link rel="icon" href="/favicon.svg?v=3" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3" sizes="180x180" />
@@ -19,75 +20,211 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="info-pages.css" />
+    <link rel="stylesheet" href="legal-pages.css" />
   </head>
   <body>
     <div class="info-shell">
       <header class="info-nav">
-        <p class="info-brand">The Tracker App</p>
+        <p class="info-brand">TheTrackerApp</p>
         <nav class="info-links" aria-label="Primary">
           <a href="/">Home</a>
           <a href="/terms">Terms</a>
+          <a href="/status">Status</a>
           <a href="/login">Dashboard</a>
         </nav>
       </header>
 
-      <main class="legal-layout">
-        <section class="info-hero">
-          <p class="info-kicker">Privacy</p>
-          <h1>Privacy Policy</h1>
-          <p>
-            This page describes the data categories The Tracker App uses to operate the service. Questions can be sent
-            to <a href="mailto:contact@thetrackerapp.io">contact@thetrackerapp.io</a>.
-          </p>
-        </section>
+      <main class="legal-layout legal-layout-with-toc">
+        <!-- Sticky table of contents (desktop) / collapsed at top (mobile).
+             Keyboard-navigable; anchors auto-target each <h2> by id. -->
+        <aside class="legal-toc" aria-label="Table of contents">
+          <p class="legal-toc-title">On this page</p>
+          <ol>
+            <li><a href="#information-we-collect">Information we collect</a></li>
+            <li><a href="#how-we-use">How we use data</a></li>
+            <li><a href="#sharing">Sharing & service providers</a></li>
+            <li><a href="#ai-processing">AI processing of your messages</a></li>
+            <li><a href="#retention">Data retention</a></li>
+            <li><a href="#security">Security</a></li>
+            <li><a href="#your-rights">Your rights & choices</a></li>
+            <li><a href="#cookies">Cookies & analytics</a></li>
+            <li><a href="#children">Children's data</a></li>
+            <li><a href="#international">International transfers</a></li>
+            <li><a href="#california">California / state-specific rights</a></li>
+            <li><a href="#changes">Changes to this policy</a></li>
+            <li><a href="#not-medical-advice">Not medical advice</a></li>
+            <li><a href="#contact">Contact</a></li>
+          </ol>
+        </aside>
 
-        <section class="legal-copy">
-          <p class="legal-note">Last updated: May 13, 2026</p>
+        <article class="legal-article">
+          <header class="info-hero legal-hero">
+            <p class="info-kicker">Privacy</p>
+            <h1>Privacy Policy</h1>
+            <p class="legal-meta">
+              <span><strong>Last Updated:</strong> May 28, 2026</span>
+              <span aria-hidden="true">·</span>
+              <span><strong>Effective Date:</strong> May 28, 2026</span>
+            </p>
+            <p>
+              This policy explains in plain language what TheTrackerApp ("we," "us") collects, how we use it,
+              and the choices you have. Questions? Email
+              <a href="mailto:support@thetrackerapp.io">support@thetrackerapp.io</a>.
+            </p>
+            <p class="legal-template-banner" role="note">
+              <strong>Template pending counsel review.</strong> This page is accurate to how data actually flows in
+              the product but is awaiting final legal-counsel sign-off before being treated as the definitive
+              legal document.
+            </p>
+          </header>
 
-          <h2>Information We Collect</h2>
-          <p>
-            We may collect account information such as phone number, primary email address, any additional confirmed
-            email address you provide for signup or confirmations, username, age, billing status, subscription
-            metadata, Google Sheet links, workout history, nutrition entries, hydration logs, body measurements, and
-            related support or analytics data needed to operate the product.
-          </p>
+          <section class="legal-copy">
+            <h2 id="information-we-collect">1. Information we collect</h2>
+            <p>We collect only what's needed to run the service:</p>
+            <ul>
+              <li><strong>Account identifiers</strong> — phone number (for SMS / iMessage / WhatsApp users), email address (optional, captured during text onboarding), username, age (when provided), and account creation timestamps.</li>
+              <li><strong>Workout, nutrition, hydration, and body-measurement logs</strong> — anything you text, type, or send via image to the bot, plus values from connected wearables (Pebble, Fitbit, Whoop, Oura, Apple Watch) when you authorize the integration.</li>
+              <li><strong>Subscription & billing metadata</strong> — Stripe customer ID, subscription status, plan key, last payment date, next billing date. We never see or store full card numbers — Stripe handles that.</li>
+              <li><strong>Affiliate & community data</strong> — referral codes, group memberships, leaderboard opt-in state, and PT/coach relationships.</li>
+              <li><strong>Support & operational logs</strong> — message timestamps, parse outcomes, AI invocation traces, and error reports. Used to debug issues and improve reliability.</li>
+            </ul>
 
-          <h2>How We Use Data</h2>
-          <p>
-            We use collected data to create and manage accounts, authenticate users, personalize dashboard views, power
-            billing and affiliate workflows, provide AI coaching context, improve product reliability, and respond to
-            support requests.
-          </p>
+            <h2 id="how-we-use">2. How we use data</h2>
+            <p>We use the data above to:</p>
+            <ul>
+              <li>Authenticate you and route messages back to the right account.</li>
+              <li>Parse your logs and render them in the dashboard and weekly snapshots.</li>
+              <li>Process payments (via Stripe) and handle subscription changes.</li>
+              <li>Provide AI-assisted parsing and coaching when you opt in (see Section 4).</li>
+              <li>Surface leaderboards, brackets, and community features when you opt in.</li>
+              <li>Respond to support requests and detect abuse.</li>
+            </ul>
 
-          <h2>Sharing</h2>
-          <p>
-            We may share necessary data with service providers that help us operate the product, such as hosting,
-            analytics, messaging, billing, and payments infrastructure. We do not sell personal information.
-          </p>
+            <h2 id="sharing">3. Sharing & service providers</h2>
+            <p>
+              We share necessary data with the third-party services that power the product. We do <strong>not</strong>
+              sell personal information. Subprocessors we currently use:
+            </p>
+            <ul>
+              <li><strong>Stripe</strong> — billing, subscription management, payment processing.</li>
+              <li><strong>Twilio</strong> — SMS and WhatsApp delivery (where you've chosen those channels).</li>
+              <li><strong>Apple iMessage / Telegram</strong> — message delivery on those networks.</li>
+              <li><strong>Google Gemini</strong> — AI parsing of your messages when you opt in (Section 4).</li>
+              <li><strong>Vercel</strong> — hosting for the marketing site and dashboard frontend.</li>
+              <li><strong>Cloudflare</strong> — DDoS protection and CDN.</li>
+            </ul>
+            <p>We disclose data when legally required (subpoena, court order) and will notify you when permitted to do so.</p>
 
-          <h2>Retention</h2>
-          <p>
-            We retain account and product data for as long as reasonably necessary to operate the service, comply with
-            legal obligations, resolve disputes, and enforce agreements.
-          </p>
+            <h2 id="ai-processing">4. AI processing of your messages</h2>
+            <p>
+              TheTrackerApp uses Google Gemini to parse natural-language messages ("I had a chicken bowl",
+              "deadlifted 315x5", "took 5g creatine") into structured logs. By default this happens
+              automatically. Two important details:
+            </p>
+            <ul>
+              <li><strong>Opt-out (EEA / UK):</strong> if you're in the EEA, UK, or Switzerland, AI processing is opt-in. You'll see a separate consent checkbox at signup. If you decline, you can still log entries using slash commands (<code>/water 20</code>, <code>/log Bench 3x10 at 185</code>) — those work without AI.</li>
+              <li><strong>What gets sent to Gemini:</strong> only the inbound message text. We do not include your full history, identity, or other users' data in the prompt. Gemini responses are not used to train Google's models when called via the paid API tier we use.</li>
+              <li><strong>Image processing (Premium):</strong> when you snap a photo of a meal/scale/workout, the image is sent to Gemini Vision for parsing and then deleted from our servers within 24 hours.</li>
+            </ul>
 
-          <h2>Your Choices</h2>
-          <p>
-            You can contact us to request account updates or deletion requests. Some information may need to be retained
-            for security, billing, fraud prevention, or legal reasons.
-          </p>
+            <h2 id="retention">5. Data retention</h2>
+            <p>We retain account and product data for as long as your account is active and as long as reasonably necessary to:</p>
+            <ul>
+              <li>Operate the service and provide your historical logs.</li>
+              <li>Comply with tax, accounting, and other legal obligations.</li>
+              <li>Resolve disputes and enforce agreements.</li>
+            </ul>
+            <p>
+              On account deletion (Section 7), we delete or anonymize personal data within 30 days, except where
+              retention is legally required (e.g. financial records for 7 years).
+            </p>
 
-          <h2>Account Recovery</h2>
-          <p>
-            We do not unlock, transfer, or recover an account for someone who no longer has access to the verified phone
-            number or confirmed email address on that account. Keep your phone access current and keep any recovery or
-            confirmation email on file up to date.
-          </p>
+            <h2 id="security">6. Security</h2>
+            <p>
+              We use industry-standard safeguards: TLS in transit, encrypted at rest, hashed credentials,
+              least-privilege access, audit logging, and regular dependency updates. No system is perfectly
+              secure, and we don't claim ours is. If you suspect your account was compromised, email
+              <a href="mailto:support@thetrackerapp.io">support@thetrackerapp.io</a> immediately.
+            </p>
 
-          <h2>Contact</h2>
-          <p>Questions about this policy can be sent to <a href="mailto:contact@thetrackerapp.io">contact@thetrackerapp.io</a>.</p>
-        </section>
+            <h2 id="your-rights">7. Your rights & choices</h2>
+            <p>You can, at any time:</p>
+            <ul>
+              <li><strong>Access</strong> — request a copy of the data we hold on you.</li>
+              <li><strong>Correct</strong> — fix anything inaccurate via the dashboard or by emailing support.</li>
+              <li><strong>Delete</strong> — request account and data deletion. We do not unlock or transfer an account where the phone number / confirmed email is no longer accessible — keep these current.</li>
+              <li><strong>Export</strong> — download your data via the Export tab in the dashboard.</li>
+              <li><strong>Opt out</strong> — pause outbound messages with <code>/stop</code>, resume with <code>/resume</code>.</li>
+            </ul>
+
+            <h2 id="cookies">8. Cookies & analytics</h2>
+            <p>
+              The marketing site uses essential cookies only (e.g. auth session, feature-flag cache). The
+              dashboard uses localStorage for performance reasons (caching prices, supplement lists, etc).
+              We do not use third-party tracking or advertising cookies.
+            </p>
+
+            <h2 id="children">9. Children's data</h2>
+            <p>
+              TheTrackerApp is not directed at children under 13 and we do not knowingly collect data from
+              them. If you believe a child has signed up, contact us and we'll delete their data.
+            </p>
+
+            <h2 id="international">10. International transfers</h2>
+            <p>
+              Our infrastructure is hosted in the United States. If you use the service from outside the US,
+              your data will be transferred to and processed in the US. Where required, we use standard
+              contractual clauses with our subprocessors to safeguard cross-border transfers.
+            </p>
+
+            <h2 id="california">11. California & state-specific rights</h2>
+            <p>
+              California residents have additional rights under the CCPA/CPRA, including the right to know,
+              delete, correct, opt-out of sale (we do not sell), and non-discrimination. Other US states with
+              comparable laws (Virginia, Colorado, Connecticut, Utah) extend similar rights. To exercise any
+              of these, email <a href="mailto:support@thetrackerapp.io">support@thetrackerapp.io</a> with the
+              subject "Privacy Request".
+            </p>
+
+            <h2 id="changes">12. Changes to this policy</h2>
+            <p>
+              We'll update the "Last Updated" date at the top whenever we change this policy. For material
+              changes we'll also notify you by message on your primary channel. Continued use of the service
+              after a change means you accept the updated policy.
+            </p>
+
+            <!-- VERBATIM per backend handoff (AGENTS.md). Do not soften,
+                 abbreviate, or rephrase. -->
+            <h2 id="not-medical-advice">13. Not medical advice</h2>
+            <p>
+              TheTrackerApp is a fitness and lifestyle tracking product. It is not a medical device, nor a
+              substitute for professional medical, nutritional, or psychological advice, diagnosis, or
+              treatment. Always seek the advice of a qualified physician or other licensed healthcare provider
+              with any questions about a medical condition, dietary needs, supplement use, or fitness program.
+              If you think you are having a medical emergency, call your local emergency number immediately
+              (in the US: 911 or 988 for mental-health crises). Do not rely on TheTrackerApp for emergency
+              communication.
+            </p>
+
+            <h2 id="contact">14. Contact</h2>
+            <p>
+              Privacy questions, data requests, or anything else:
+              <a href="mailto:support@thetrackerapp.io">support@thetrackerapp.io</a>.
+            </p>
+
+            <p class="legal-note legal-meta">
+              <strong>Last Updated:</strong> May 28, 2026 ·
+              <a href="/terms">Terms of Service</a> ·
+              <a href="/status">System Status</a> ·
+              <a href="mailto:support@thetrackerapp.io">Contact support</a>
+            </p>
+          </section>
+        </article>
       </main>
+
+      <footer class="legal-footer">
+        <p>© 2026 TheTrackerApp · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/status">Status</a></p>
+      </footer>
     </div>
   </body>
 </html>
