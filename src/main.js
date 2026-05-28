@@ -2275,11 +2275,20 @@ const MOCKUP_CONVERSATIONS = MOCKUP_CONVERSATION_SETS[Math.floor(Math.random() *
 // Users can also mute permanently via the speaker toggle (renderMockupSoundToggle
 // below) — that preference is persisted in localStorage.
 const MOCKUP_SOUND_PREF_KEY = "tracker.mockup.soundMuted";
+// Sound is OFF by default. Users explicitly opt in via the speaker
+// toggle on the iPhone mockup. Once they do, the choice persists in
+// localStorage and they're not asked again.
+//   - localStorage value "0" → user explicitly unmuted
+//   - localStorage value "1" → user explicitly muted
+//   - no value (default)     → muted (safe default for autoplay sensitivity)
 let mockupSoundMuted = (() => {
   try {
-    return localStorage.getItem(MOCKUP_SOUND_PREF_KEY) === "1";
+    const v = localStorage.getItem(MOCKUP_SOUND_PREF_KEY);
+    if (v === "0") return false;
+    if (v === "1") return true;
+    return true; // default: off
   } catch {
-    return false;
+    return true;
   }
 })();
 
@@ -2593,7 +2602,21 @@ function escapeForComposer(s) {
     .replace(/\n/g, " ");
 }
 
+// Mobile breakpoint matches the styles.css rule that sets
+// .hero-right-column { display:none } at ≤768px. Used to short-circuit the
+// iPhone mockup animation entirely so it doesn't tick / synth audio / spin
+// timers on phones where the visual element isn't even rendered.
+const MOBILE_BREAKPOINT_PX = 768;
+function isMobileViewport() {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT_PX}px)`).matches;
+}
+
 function initIPhoneMockup() {
+  // Skip both mockups on mobile — the right-column container is
+  // display:none at this breakpoint so there's nothing to animate and we
+  // save the timer + Web-Audio setup overhead.
+  if (isMobileViewport()) return;
   // Initialize hero mockup (inline next to form)
   initMockupAnimation("heroMockupMessages");
   // Initialize section mockup (below fold)
@@ -2601,8 +2624,11 @@ function initIPhoneMockup() {
 }
 
 async function initFeatureSections() {
-  // Always initialize the hero mockup (inline next to form)
-  initMockupAnimation("heroMockupMessages");
+  // Initialize the hero mockup unless we're on a mobile viewport where
+  // the iPhone column is hidden via CSS (display:none under 768px).
+  if (!isMobileViewport()) {
+    initMockupAnimation("heroMockupMessages");
+  }
 
   try {
     const flags = await fetchFeatureFlags();
@@ -2628,10 +2654,19 @@ async function initFeatureSections() {
     const testimonialsSection = document.getElementById("testimonialsSection");
     const faqSection = document.getElementById("faqSection");
 
-    if (flags.iphoneMockup && iphoneSection) {
+    if (flags.iphoneMockup && iphoneSection && !isMobileViewport()) {
       iphoneSection.hidden = false;
-      // Initialize section mockup (below fold)
+      // Initialize section mockup (below fold). Skipped on mobile so the
+      // animation never runs on phones — saves battery and prevents any
+      // chance of synthesized audio firing on a touch tap that elsewhere
+      // triggered the audio-context unlock.
       initMockupAnimation("mockupMessages");
+    } else if (iphoneSection && isMobileViewport()) {
+      // Belt-and-suspenders: hide the section element on mobile even if
+      // the flag is true. styles.css already hides the right-column
+      // version of the mockup at this breakpoint, but the below-fold
+      // section has its own visibility rules.
+      iphoneSection.hidden = true;
     }
 
     if (flags.testimonials && testimonialsSection) {

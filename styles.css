@@ -1331,6 +1331,24 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
   color: #5f6e82;
 }
 
+/* Validation highlight — added by main.js when the user submits with a
+   blank required field. Removed automatically on next input/change so
+   the user gets immediate feedback when they start fixing it. */
+.signup-form input.is-error,
+.signup-form select.is-error {
+  border-color: #ff5f5f !important;
+  background: #ffeaea !important;
+  animation: input-shake 0.32s ease;
+}
+.signup-form input.is-error::placeholder {
+  color: #d97777;
+}
+@keyframes input-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+
 .field-help {
   display: block;
   min-height: 2.1rem;
@@ -1366,13 +1384,65 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
   transition: opacity 180ms ease, visibility 180ms ease;
 }
 
-.consent-row input {
-  width: 16px;
-  height: 16px;
-  margin-top: 0.15rem;
-  border: 0;
+/* Checkbox needs explicit overrides because .signup-form input above is
+   forcing every input to width:100%, min-height:44px, padding:0.7rem and
+   a 2px border, which would push the checkbox to its own full-width row
+   and stack the consent text below it. */
+.consent-row input[type="checkbox"] {
+  width: 18px !important;
+  height: 18px !important;
+  min-height: 0 !important;
+  min-width: 0;
+  padding: 0 !important;
+  margin: 0;
+  margin-top: 0.18rem;
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  background: transparent;
+  border-radius: 4px;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
   box-shadow: none;
   flex-shrink: 0;
+  position: relative;
+  transition: border-color 0.15s, background 0.15s;
+}
+.consent-row input[type="checkbox"]:checked {
+  background: #38ffd3;
+  border-color: #38ffd3;
+}
+.consent-row input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 0px;
+  width: 6px;
+  height: 11px;
+  border: solid #08111c;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.consent-row input[type="checkbox"]:focus-visible {
+  outline: 2px solid #38ffd3;
+  outline-offset: 2px;
+}
+
+/* Validation: when the user submits without checking the box, the label
+   gets .is-error which paints the checkbox + text in red so they can
+   see exactly which field they missed. Same idea for empty text inputs
+   below — see .signup-form input.is-error. */
+.consent-row.is-error input[type="checkbox"] {
+  border-color: #ff5f5f;
+  background: rgba(255, 95, 95, 0.12);
+  animation: consent-shake 0.32s ease;
+}
+.consent-row.is-error .consent-row-text {
+  color: #ff8585;
+}
+@keyframes consent-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
 }
 
 /* The label's text content lives inside this span so it's a SINGLE flex
