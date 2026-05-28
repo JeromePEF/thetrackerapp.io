@@ -284,38 +284,18 @@
               </div>
             </div>
 
+            <!-- Single consent checkbox covers SMS / 10DLC. ToS + Privacy
+                 acceptance is implicit by signing up — the disclosure lives
+                 on /terms and /privacy themselves rather than a separate
+                 checkbox here. AI processing consent is handled the same
+                 way (covered in the Privacy Policy). -->
             <label id="consentWrap" class="consent-row" for="consentCheckbox">
               <input id="consentCheckbox" name="consentCheckbox" type="checkbox" />
-              <span class="consent-row-text">I consent to receive onboarding text messages and agree to 10DLC/A2P messaging terms.</span>
-            </label>
-
-            <!-- Legal consent — required for every signup. Links open in a
-                 new tab so users don't lose form progress. Stored on the
-                 user profile as { tos:true, privacy:true, aiProcessing:<bool>,
-                 acceptedAt:ISO, version:'v1' } per the backend spec.
-                 The text + links MUST live inside one <span> child so the
-                 flex parent treats them as a single, naturally-flowing item
-                 — otherwise each <a> becomes its own flex item and the line
-                 stacks awkwardly. -->
-            <label id="termsConsentWrap" class="consent-row" for="termsConsentCheckbox">
-              <input id="termsConsentCheckbox" name="termsConsentCheckbox" type="checkbox" />
               <span class="consent-row-text">
-                I agree to the
+                I consent to receive onboarding text messages and agree to the
                 <a href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a>
                 and
                 <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
-              </span>
-            </label>
-
-            <!-- AI-processing consent. Shown to everyone (defaults checked
-                 outside the EEA/UK). EEA/UK users will see it default
-                 unchecked when the CF-IPCountry hint resolves to a
-                 GDPR jurisdiction (handled in main.js). -->
-            <label id="aiConsentWrap" class="consent-row" for="aiConsentCheckbox">
-              <input id="aiConsentCheckbox" name="aiConsentCheckbox" type="checkbox" checked />
-              <span class="consent-row-text">
-                I consent to TheTrackerApp processing my message content with third-party AI (Google Gemini) to power smart logging.
-                <small class="field-help">Optional. If unchecked, you can still log via slash commands like <code>/water 20</code>.</small>
               </span>
             </label>
 

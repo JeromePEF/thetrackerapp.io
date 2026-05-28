@@ -119,9 +119,12 @@ const els = {
   emailLabel: null,
   consentWrap: document.getElementById("consentWrap"),
   consentCheckbox: document.getElementById("consentCheckbox"),
-  termsConsentCheckbox: document.getElementById("termsConsentCheckbox"),
-  aiConsentCheckbox: document.getElementById("aiConsentCheckbox"),
-  aiConsentWrap: document.getElementById("aiConsentWrap"),
+  // Terms / Privacy / AI checkboxes were removed from the hero form — the
+  // single consent checkbox now covers SMS opt-in + implicit ToS/Privacy
+  // acceptance (those disclosures live on the respective pages).
+  termsConsentCheckbox: null,
+  aiConsentCheckbox: null,
+  aiConsentWrap: null,
   signupStatus: document.getElementById("signupStatus"),
   liveWorkoutToast: document.getElementById("liveWorkoutToast"),
   liveWorkoutToastMessage: document.getElementById("liveWorkoutToastMessage"),
@@ -1367,12 +1370,16 @@ function syncServiceInputRequirements() {
     els.formFlow.hidden = isTelegram;
   }
 
-  els.consentWrap.classList.toggle("is-inactive", !needsSmsConsent || isTelegram);
-  els.consentWrap.setAttribute("aria-hidden", needsSmsConsent && !isTelegram ? "false" : "true");
-  els.consentCheckbox.required = needsSmsConsent && !isTelegram;
-  els.consentCheckbox.disabled = !needsSmsConsent || isTelegram;
-
-  if (!needsSmsConsent || isTelegram) {
+  // Consent checkbox now covers BOTH SMS opt-in AND ToS/Privacy acceptance,
+  // so it must remain visible + required for EVERY channel — including
+  // iMessage and Telegram users (the ToS/Privacy half applies regardless).
+  // We hide it only when the form itself is hidden (e.g. Telegram bot-link
+  // flow takes over).
+  els.consentWrap.classList.toggle("is-inactive", isTelegram);
+  els.consentWrap.setAttribute("aria-hidden", isTelegram ? "true" : "false");
+  els.consentCheckbox.required = !isTelegram;
+  els.consentCheckbox.disabled = isTelegram;
+  if (isTelegram) {
     els.consentCheckbox.checked = false;
   }
 
@@ -1821,28 +1828,27 @@ function validateForm() {
     }
   }
 
-  if (needsSmsConsent && !els.consentCheckbox.checked) {
-    return { ok: false, message: "Consent is required for phone onboarding (10DLC/A2P)." };
-  }
-
-  // Legal consent — required for everyone. Backend stores this on the user
-  // profile so we have an audit trail of who accepted which version of
-  // the ToS / Privacy Policy.
-  if (!els.termsConsentCheckbox?.checked) {
+  // Single consent checkbox now covers BOTH the 10DLC/A2P SMS opt-in AND
+  // the ToS/Privacy acceptance. The label text on /index makes both
+  // explicit. We always require it (even for iMessage/Telegram users)
+  // because the ToS/Privacy half applies regardless of channel.
+  if (!els.consentCheckbox?.checked) {
     return {
       ok: false,
-      message: "Please agree to the Terms of Service and Privacy Policy before signing up.",
+      message: needsSmsConsent
+        ? "Please confirm SMS consent and agree to the Terms + Privacy Policy."
+        : "Please agree to the Terms of Service and Privacy Policy before signing up.",
     };
   }
 
-  // Consent block sent with every signup so backend can persist the
-  // user's choices (Terms version, AI processing opt-in/out). Version
-  // string lets us prompt for re-consent later if the ToS materially
-  // changes.
+  // Consent record persisted on the user profile for audit. AI processing
+  // defaults to allowed because the disclosure lives in the Privacy Policy
+  // — users who don't want AI parsing can text /stop or change the
+  // preference from their account settings later.
   const consent = {
     tos: true,
     privacy: true,
-    aiProcessing: !!els.aiConsentCheckbox?.checked,
+    aiProcessing: true,
     acceptedAt: new Date().toISOString(),
     version: "v1",
   };
