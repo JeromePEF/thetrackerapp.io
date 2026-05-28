@@ -96,12 +96,12 @@
       href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
-    <script type="module" crossorigin src="/assets/main-yUzLnS5P.js"></script>
+    <script type="module" crossorigin src="/assets/main-CMB4SiFP.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-BQdWdB5M.js">
     <link rel="modulepreload" crossorigin href="/assets/feature-flags-BWod2bkx.js">
     <link rel="modulepreload" crossorigin href="/assets/google-analytics-BtHxdyHL.js">
     <link rel="modulepreload" crossorigin href="/assets/api-DCiD4VV-.js">
-    <link rel="stylesheet" crossorigin href="/assets/shared-sections-gWQSzcxO.css">
+    <link rel="stylesheet" crossorigin href="/assets/shared-sections-C8zOAuog.css">
   </head>
   <body>
     <!-- Skip to main content link for keyboard users (ADA compliance) -->
@@ -290,19 +290,25 @@
 
             <label id="consentWrap" class="consent-row" for="consentCheckbox">
               <input id="consentCheckbox" name="consentCheckbox" type="checkbox" />
-              I consent to receive onboarding text messages and agree to 10DLC/A2P messaging terms.
+              <span class="consent-row-text">I consent to receive onboarding text messages and agree to 10DLC/A2P messaging terms.</span>
             </label>
 
             <!-- Legal consent — required for every signup. Links open in a
                  new tab so users don't lose form progress. Stored on the
                  user profile as { tos:true, privacy:true, aiProcessing:<bool>,
-                 acceptedAt:ISO, version:'v1' } per the backend spec. -->
+                 acceptedAt:ISO, version:'v1' } per the backend spec.
+                 The text + links MUST live inside one <span> child so the
+                 flex parent treats them as a single, naturally-flowing item
+                 — otherwise each <a> becomes its own flex item and the line
+                 stacks awkwardly. -->
             <label id="termsConsentWrap" class="consent-row" for="termsConsentCheckbox">
               <input id="termsConsentCheckbox" name="termsConsentCheckbox" type="checkbox" />
-              I agree to the
-              <a href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a>
-              and
-              <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
+              <span class="consent-row-text">
+                I agree to the
+                <a href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+                and
+                <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
+              </span>
             </label>
 
             <!-- AI-processing consent. Shown to everyone (defaults checked
@@ -311,8 +317,10 @@
                  GDPR jurisdiction (handled in main.js). -->
             <label id="aiConsentWrap" class="consent-row" for="aiConsentCheckbox">
               <input id="aiConsentCheckbox" name="aiConsentCheckbox" type="checkbox" checked />
-              I consent to TheTrackerApp processing my message content with third-party AI (Google Gemini) to power smart logging.
-              <small class="field-help">Optional. If unchecked, you can still log via slash commands like <code>/water 20</code>.</small>
+              <span class="consent-row-text">
+                I consent to TheTrackerApp processing my message content with third-party AI (Google Gemini) to power smart logging.
+                <small class="field-help">Optional. If unchecked, you can still log via slash commands like <code>/water 20</code>.</small>
+              </span>
             </label>
 
             <div class="cta-row">

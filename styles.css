@@ -1375,6 +1375,38 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
   flex-shrink: 0;
 }
 
+/* The label's text content lives inside this span so it's a SINGLE flex
+   child — keeps inline links flowing naturally next to the surrounding
+   text instead of breaking onto their own lines. */
+.consent-row-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: block;
+  line-height: 1.4;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+.consent-row-text a {
+  color: #38ffd3;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.consent-row-text a:hover { color: #6affe2; }
+.consent-row-text .field-help {
+  display: block;
+  margin-top: 0.25rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.7rem;
+}
+.consent-row-text code {
+  background: rgba(0, 0, 0, 0.3);
+  color: #38ffd3;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.72rem;
+}
+
 .consent-row.is-inactive {
   opacity: 0;
   visibility: hidden;
