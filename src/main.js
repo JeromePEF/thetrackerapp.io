@@ -1795,7 +1795,19 @@ function validateForm() {
   const needsSmsConsent = service.identityKind === "phone";
 
   if (!identityRaw) {
-    return { ok: false, message: service.identityKind === "phone" ? "Enter a valid phone number." : "Enter a valid username." };
+    // Channel-specific empty-field message. The contact field changes its
+    // meaning based on which service the user picked (phone for SMS,
+    // phone-or-email for iMessage, username for legacy Telegram), so the
+    // error needs to match what we're actually asking them for.
+    const emptyMessages = {
+      phone: "Enter your phone number.",
+      "imessage-contact": "Enter your iMessage phone number or email.",
+      username: "Enter your username.",
+    };
+    return {
+      ok: false,
+      message: emptyMessages[service.identityKind] || "Enter your contact.",
+    };
   }
 
   let phone = null;
