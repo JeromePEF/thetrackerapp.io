@@ -29,125 +29,104 @@ const CACHE_MAX_AGE = Math.max(
 // so users never wait for the upstream fetch even right after a key expires.
 const STALE_WHILE_REVALIDATE = Math.max(30, Math.floor(CACHE_MAX_AGE / 2));
 
-// Fallback flags returned if the upstream is unreachable. These should mirror
-// the structure documented in BACKEND_TODO.md and src/feature-flags.js so the
-// frontend never has to handle a missing key.
+// Fallback flags returned if the upstream is unreachable. SAFE-BY-DEFAULT:
+// every gated nav link, section, footer entry, and dashboard tab is FALSE so
+// the frontend's "show only on enabled === true" rule keeps them hidden.
+// When upstream is unreachable we'd rather show users a minimal, accurate
+// view (Pricing + iPhone mockup + always-visible UI) than a fake page where
+// flag-disabled tabs appear to work.
+//
+// Pricing is intentionally true because:
+//   1. The user's UX rule is "always assume pricing is true"
+//   2. The pricing anchor in HTML doesn't even carry data-feature, so this
+//      value is academic for the link — but it does matter for any tooling
+//      that reads flags.pricing programmatically.
+//
+// iphoneMockup is true because it's a static visual element, not gated
+// content. Same for the always-on tools.
 const FALLBACK_FLAGS = {
-  blog: true,
-  press: true,
-  products: true,
+  // Pages — gated, default OFF.
+  blog: false,
+  press: false,
+  products: false,
   brackets: false,
   win: false,
-  runClubs: true,
-  personalTrainers: true,
-  pebbleApp: true,
-  macApps: true,
-  workoutResources: true,
-  pricing: true,
-  workoutGroups: true,
-  testimonials: true,
-  faq: true,
-  iphoneMockup: true,
-  stepTape: true,
-  liveActivityFeed: true,
-  bodyMeasurements: true,
-  multiMetricCharts: true,
-  narrative: true,
+  runClubs: false,
+  personalTrainers: false,
+  pebbleApp: false,
+  macApps: false,
+  workoutResources: false,
+  pricing: true,                    // ALWAYS visible
+  workoutGroups: false,
+  // Sections — gated, default OFF.
+  testimonials: false,
+  faq: false,
+  iphoneMockup: true,               // visual element, not gated
+  stepTape: false,
+  liveActivityFeed: false,
+  bodyMeasurements: false,
+  multiMetricCharts: false,
+  narrative: false,
+  // Maintenance — default OFF.
   maintenanceMode: false,
   maintenanceMessage: "",
+  // Chatbot — default OFF (cheaper for us when we can't confirm).
   chatbotEnabled: false,
+  // Free tools — these don't gate any user-visible UI, so default ON keeps
+  // the marketing pages functional even when upstream is down.
   tools: {
     tdeeCalculator: true,
     bmiCalculator: true,
     aiMealPlanner: true,
     foodDiary: true,
   },
+  // Dashboard sidebar tabs — default OFF so users don't see tabs we can't
+  // confirm are ready.
   dashboardTabs: {
-    personalTrainer: true,
-    groups: true,
-    runClubs: true,
+    personalTrainer: false,
+    groups: false,
+    runClubs: false,
+    calendar: false,
+    shortcuts: false,
   },
+  // Social links — empty strings hide each icon.
   socials: {
-    x: "",
-    twitter: "",
-    threads: "",
-    instagram: "",
-    facebook: "",
-    tiktok: "",
-    snapchat: "",
-    linkedin: "",
-    bluesky: "",
-    youtube: "",
-    rumble: "",
-    twitch: "",
-    kick: "",
-    bitchute: "",
-    pinterest: "",
-    gbp: "",
-    reddit: "",
-    discord: "",
-    telegram: "",
-    mastodon: "",
-    spotify: "",
-    appleMusic: "",
-    podcast: "",
-    medium: "",
-    substack: "",
-    patreon: "",
-    kofi: "",
-    github: "",
-    website: "",
+    x: "", twitter: "", threads: "", instagram: "", facebook: "", tiktok: "",
+    snapchat: "", linkedin: "", bluesky: "", youtube: "", rumble: "", twitch: "",
+    kick: "", bitchute: "", pinterest: "", gbp: "", reddit: "", discord: "",
+    telegram: "", mastodon: "", spotify: "", appleMusic: "", podcast: "",
+    medium: "", substack: "", patreon: "", kofi: "", github: "", website: "",
   },
+  // Footer links — gated, default OFF. Pricing always on (mirrors top nav).
   footer: {
-    contact: true,
-    pricing: true,
-    community: true,
-    blog: true,
-    press: true,
-    guide: true,
-    status: true,
-    trust: true,
-    llmsTxt: true,
-    privacy: true,
-    terms: true,
-    home: true,
-    pebbleApp: true,
-    macApps: true,
-    freeTools: true,
-    groups: true,
-    workoutResources: true,
+    contact: false,
+    pricing: true,                  // ALWAYS visible
+    community: false,
+    blog: false,
+    press: false,
+    guide: false,
+    status: false,
+    trust: false,
+    llmsTxt: false,
+    privacy: false,
+    terms: false,
+    home: false,
+    pebbleApp: false,
+    macApps: false,
+    freeTools: false,
+    groups: false,
+    workoutResources: false,
     win: false,
-    products: true,
-    runClubs: true,
-    personalTrainers: true,
+    products: false,
+    runClubs: false,
+    personalTrainers: false,
     brackets: false,
   },
-  billing: {
-    monthlyTier: {
-      name: "Monthly",
-      price: 10,
-      interval: "month",
-      features: [
-        "Unlimited workout, nutrition & water logging",
-        "Body measurements & progress charts",
-        "Leaderboards, brackets & streaks",
-        "Wearable integrations",
-        "Cancel anytime",
-      ],
-    },
-    yearlyTier: {
-      name: "Yearly",
-      price: 96,
-      interval: "year",
-      yearlyEquivalent: 8,
-      features: [
-        "Everything in Monthly",
-        "2 months free vs monthly",
-        "Priority support",
-        "Early access to new features",
-      ],
-    },
-  },
+  // Billing — empty so the pricing page renders nothing rather than fake
+  // tiers when we can't confirm what's actually for sale. The pricing page
+  // also fetches /api/billing/stripe-prices separately, so it can still
+  // render valid cards even when /control falls through.
+  billing: {},
 };
 
 // Deep-merge two plain objects, with `override` winning over `base`. Used to

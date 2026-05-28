@@ -1,16 +1,43 @@
 ================================================================================
-STATUS ENDPOINT — Backend action required
+CLOUDFLARE WAF — Backend action required (URGENT)
 ================================================================================
 
 SUMMARY
 -------
-The new /status page at https://thetrackerapp.io/status is showing
-"Status data temporarily unavailable" because GET /api/status returns
-HTTP 403 from Cloudflare's WAF/Bot Fight challenge. The frontend's
-fallback message ("temporarily unavailable") is what users see.
+Cloudflare WAF / Bot Fight Mode is returning HTTP 403 to every
+server-to-server request hitting api.thetrackerapp.io. This breaks
+THREE production paths right now:
 
-We need the endpoint to be reachable from the browser (and from the
-public marketing site) with no challenge interstitial.
+  1. /status page → fetches /api/status from the BROWSER. Returns 403.
+     User sees "Status data temporarily unavailable" banner.
+
+  2. /api/control → the Vercel serverless proxy at thetrackerapp.io/
+     api/control tries to fetch https://api.thetrackerapp.io/control
+     from the SERVER (Vercel). Gets 403. Proxy falls back to safe-default
+     flags, and the WHOLE main page renders with everything hidden by
+     default — users see nav links / sections / footer entries flipped
+     OFF that were actually meant to be ON (or vice versa).
+
+  3. /api/billing/stripe-prices → same WAF block from Vercel's IPs.
+     Currently masked by the frontend's 15-min localStorage cache and
+     STARTER_REGISTRY fallback, but once that expires, billing UI shows
+     fallback prices instead of the live Stripe values.
+
+Verified with curl from outside Cloudflare (and reproduced with
+browser-shaped User-Agent + Sec-Fetch-* headers + Origin):
+
+   $ curl -sS -o /dev/null -w "%{http_code}\n" \
+       -H "Origin: https://thetrackerapp.io" \
+       https://api.thetrackerapp.io/api/status            → 403
+   $ curl -sS -o /dev/null -w "%{http_code}\n" \
+       https://api.thetrackerapp.io/control               → 403
+   $ curl -sS -o /dev/null -w "%{http_code}\n" \
+       https://api.thetrackerapp.io/api/billing/stripe-prices  → 403
+
+Every request returns the Cloudflare "Sorry, you have been blocked" HTML
+interstitial. That's the symptom of Bot Fight Mode or Super Bot Fight
+Mode treating outside-of-browser callers as "Likely Automated" with the
+"Challenge" action that pure JSON clients can't solve.
 
 
 REPRODUCING THE FAILURE
@@ -50,34 +77,48 @@ pretend everything is operational when we can't get a response.
 WHAT BACKEND NEEDS TO DO
 ------------------------
 
-Option A — RECOMMENDED — Whitelist /api/status at the Cloudflare WAF.
+Option A — RECOMMENDED — One Cloudflare Custom Rule covering all four
+public endpoints. Takes 2 minutes.
 
-   1. Cloudflare Dashboard → Security → WAF → Custom Rules.
-   2. Add a "Skip" rule:
-        Field:    URI Path
-        Operator: starts_with
-        Value:    /api/status
-        Action:   Skip → "All remaining custom rules"
-                       + "Bot Fight Mode"
-                       + "Super Bot Fight Mode (if enabled)"
-   3. Repeat for the other public endpoints the marketing site needs:
-        /api/control
-        /api/billing/stripe-prices
-        /api/billing/plans
-   4. Save. New rule applies within ~30 seconds.
+   1. Cloudflare Dashboard → Security → WAF → Custom Rules → Create rule.
+   2. Rule expression (use the Edit-Expression view):
 
-   Verify with:
+        (starts_with(http.request.uri.path, "/api/status"))
+        or (starts_with(http.request.uri.path, "/api/control"))
+        or (starts_with(http.request.uri.path, "/control"))
+        or (starts_with(http.request.uri.path, "/api/billing/"))
+
+   3. Action: **Skip**
+        ✓ All remaining custom rules
+        ✓ Super Bot Fight Mode
+        ✓ Bot Fight Mode
+
+   4. Save → Deploy. Applies within ~30 seconds.
+
+   Verify with curl from outside Cloudflare:
+
         curl -i -H "Origin: https://thetrackerapp.io" \
              https://api.thetrackerapp.io/api/status
+        curl -i -H "Origin: https://thetrackerapp.io" \
+             https://api.thetrackerapp.io/control
+        curl -i -H "Origin: https://thetrackerapp.io" \
+             https://api.thetrackerapp.io/api/billing/stripe-prices
 
-   Expect: HTTP/2 200 + JSON body matching the response shape in
-   LEGAL_AND_UX_POLISH §3.
+   Expect each: HTTP/2 200 + JSON body + CORS headers.
 
-Option B — Move /api/status to a separate, less-aggressive subdomain.
+   While verifying, also confirm the matching Vercel routes are healthy:
 
-   E.g. https://status-api.thetrackerapp.io/api/status with the same
-   response shape. If that subdomain isn't behind Bot Fight Mode the
-   request will succeed. Frontend can switch the base URL via env var.
+        curl -i "https://thetrackerapp.io/api/control?nocache=$(date +%s)" \
+             | grep -i x-control-source
+        # Want:   x-control-source: upstream
+        # Have:   x-control-source: fallback    ← current state
+
+Option B — Move the four public endpoints behind a sub-path that has
+its own WAF policy (e.g. "/public/*") and apply a relaxed managed
+ruleset there. Same end result, more configuration.
+
+Option C — Disable Bot Fight Mode entirely on api.thetrackerapp.io.
+Not recommended — it's a useful layer for authed endpoints.
 
 
 REQUIRED RESPONSE SHAPE (already documented, just confirming)
@@ -117,35 +158,40 @@ ACCEPTABLE STATUS CODES
                                     unavailable"
 
 
-WHILE BACKEND FIXES THIS
-------------------------
-The frontend already handles the failure gracefully:
-   - Banner reads "Status data temporarily unavailable" (amber)
-   - Components grid is empty (no false "all operational" lie)
-   - Support email surfaces beneath
-   - Page re-fetches every 60s and on window focus, so the moment
-     the WAF rule is updated, users with the page open will see it
-     light up correctly within a minute (no page reload required)
+FRONTEND MITIGATIONS ALREADY SHIPPED
+------------------------------------
+While backend fixes the WAF, the frontend now degrades safely:
 
-So there's no "rush" frontend fix needed — once the Cloudflare rule
-exists the page works immediately.
+   1. /api/control proxy fallback flipped to SAFE-BY-DEFAULT: every gated
+      nav link, section, footer entry, and dashboard tab is FALSE when
+      upstream is unreachable. Combined with the "show only on
+      enabled === true" rule, the page renders with only always-visible
+      UI (Pricing, leaderboards, the hero, iPhone mockup) rather than
+      ALL gated items flashing visible.
+
+   2. After receiving a fallback response from the proxy, the browser
+      tries a direct fetch to https://api.thetrackerapp.io/control. Real
+      browsers usually clear Cloudflare's bot challenge with cookies +
+      browser UA, so users get the actual flags even when Vercel's
+      server-side fetch is blocked. This is a workaround, not a fix —
+      please add the WAF rule below so the proxy is the source of truth
+      again.
+
+   3. /status page banner reads "Status data temporarily unavailable"
+      and the components grid renders empty (no false "all operational"
+      lie). Re-fetches every 60s + on window focus.
+
+So as soon as the WAF rule lands, every open browser session picks up
+the real flags within ≤60 s with no reload.
 
 
-SAME CLOUDFLARE ISSUE WILL HIT (eventually)
--------------------------------------------
-   - /api/control                  (15-min cached client-side, masks the
-                                     failure until cache expiry)
-   - /api/billing/stripe-prices    (same — 15-min client cache)
-   - Any other PUBLIC endpoint the marketing site calls without a logged-
-     in user session.
-
-Recommend applying the same WAF-skip rule to all of /api/control,
-/api/billing/*, /api/status at the same time so this doesn't recur.
-
-Logged-in dashboard endpoints (/api/account/profile, /api/chart/data, etc)
-are presumably fine because they carry Bearer tokens that the WAF treats
-as trusted. If you do see auth-token endpoints getting 403 from the
-WAF, ping us and we'll diagnose.
+LOGGED-IN DASHBOARD ENDPOINTS — likely fine but please verify
+-------------------------------------------------------------
+Endpoints carrying Bearer tokens (/api/account/profile, /api/chart/data,
+/api/calendar/*, /api/nutrition/*) usually clear the WAF because authed
+requests have higher trust scores. If you see logged-in users with
+inexplicable 403s, ping us and we'll diagnose. Right now the failure is
+isolated to PUBLIC marketing-site endpoints.
 
 
 ASKS (copy/paste into your tracker)

@@ -15,51 +15,59 @@ const CACHE_KEY = "tracker.featureFlags";
 const CACHE_TTL = 60 * 1000; // 60 seconds (Vercel edge handles longer caching)
 
 // Default flags (fallback if API unavailable)
+// SAFE-BY-DEFAULT: this is what the frontend uses when fetchFeatureFlags()
+// fails entirely (network error, no /api/control reachable). Every gated
+// flag is FALSE so the "show only on enabled === true" applier keeps
+// gated content hidden — better to show users a minimal accurate page
+// than a fake one where flag-disabled tabs appear to work.
+//
+// Pricing is true because the UX rule is "pricing always renders".
+// iphoneMockup is true because it's a visual element, not a gated feature.
+// Tools are true so the calculator/meal-planner pages still work when
+// upstream is unreachable (they're harmless static utilities).
 const DEFAULT_FLAGS = {
-  // Pages
-  blog: true,
-  press: true,
-  products: true,
+  // Pages — gated, default OFF.
+  blog: false,
+  press: false,
+  products: false,
   brackets: false,
   win: false,
-  runClubs: true,
-  personalTrainers: true,
-  pebbleApp: true,
-  macApps: true,
-  workoutResources: true,
-  pricing: true,
-  workoutGroups: true,
-  // Sections
-  testimonials: true,
-  faq: true,
-  iphoneMockup: true,
-  stepTape: true,
-  liveActivityFeed: true,
-  bodyMeasurements: true,
-  multiMetricCharts: true,
-  narrative: true,
+  runClubs: false,
+  personalTrainers: false,
+  pebbleApp: false,
+  macApps: false,
+  workoutResources: false,
+  pricing: true,                    // ALWAYS visible
+  workoutGroups: false,
+  // Sections — gated, default OFF.
+  testimonials: false,
+  faq: false,
+  iphoneMockup: true,               // visual element, not gated
+  stepTape: false,
+  liveActivityFeed: false,
+  bodyMeasurements: false,
+  multiMetricCharts: false,
+  narrative: false,
   // Maintenance
   maintenanceMode: false,
   maintenanceMessage: "",
-  // Floating AI chatbot widget (bottom-right of every page). When true, the
-  // assistant answers questions; users can escalate to a human via the
-  // "Talk to a human" button or by typing "agent".
+  // Floating AI chatbot widget — default OFF when we can't confirm config.
   chatbotEnabled: false,
-  // Tools
+  // Free tools — harmless static utilities, default ON so calculators work
+  // even when upstream is unreachable.
   tools: {
     tdeeCalculator: true,
     bmiCalculator: true,
     aiMealPlanner: true,
     foodDiary: true,
   },
-  // Dashboard sidebar tabs that can be toggled independently.
-  // Frontend reads `data-feature="dashboardTabs.personalTrainer"` etc. on each
-  // <button> + <article> pair. When `false`, the button hides and the panel
-  // is removed from navigation.
+  // Dashboard sidebar tabs — default OFF.
   dashboardTabs: {
-    personalTrainer: true,
-    groups: true,
-    runClubs: true,
+    personalTrainer: false,
+    groups: false,
+    runClubs: false,
+    calendar: false,
+    shortcuts: false,
   },
   // Social links rendered as white SVG icons in the bottom-right of every footer.
   // Each key is a URL (or empty string to hide). Add new platforms as plain
@@ -95,29 +103,29 @@ const DEFAULT_FLAGS = {
     github: "",
     website: "",
   },
-  // Footer links (each toggleable independently)
+  // Footer links — gated, default OFF. Pricing always on (matches top nav rule).
   footer: {
-    contact: true,
-    pricing: true,
-    community: true,
-    blog: true,
-    press: true,
-    guide: true,
-    status: true,
-    trust: true,
-    llmsTxt: true,
-    privacy: true,
-    terms: true,
-    home: true,
-    pebbleApp: true,
-    macApps: true,
-    freeTools: true,
-    groups: true,
-    workoutResources: true,
+    contact: false,
+    pricing: true,                  // ALWAYS visible
+    community: false,
+    blog: false,
+    press: false,
+    guide: false,
+    status: false,
+    trust: false,
+    llmsTxt: false,
+    privacy: false,
+    terms: false,
+    home: false,
+    pebbleApp: false,
+    macApps: false,
+    freeTools: false,
+    groups: false,
+    workoutResources: false,
     win: false,
-    products: true,
-    runClubs: true,
-    personalTrainers: true,
+    products: false,
+    runClubs: false,
+    personalTrainers: false,
     brackets: false,
   },
   // Pricing/Billing (controlled by backend). Only Monthly + Yearly are shown.
@@ -283,7 +291,13 @@ export async function fetchFeatureFlags() {
     knownVersion = await fetchControlVersion();
   }
 
-  // Fetch from API
+  // Fetch from API. The same-origin /api/control hits the Vercel server-side
+  // proxy which fetches https://api.thetrackerapp.io/control. When that
+  // server-side fetch is blocked (Cloudflare WAF returns 403 to Vercel's
+  // IPs), the proxy returns FALLBACK_FLAGS with header `x-control-source:
+  // fallback`. In that case we attempt a direct-from-browser fetch since
+  // real-user browsers usually clear Cloudflare's bot challenge.
+  let flags = null;
   try {
     const response = await fetch(controlUrlForVersion(knownVersion), {
       method: "GET",
@@ -296,7 +310,33 @@ export async function fetchFeatureFlags() {
       throw new Error(`HTTP ${response.status}`);
     }
 
-    const flags = await response.json();
+    flags = await response.json();
+
+    // Proxy is serving fallback (upstream unreachable from Vercel). Try a
+    // direct browser fetch — real users carry CF bot-check cookies + a
+    // browser UA so this usually succeeds even when the proxy can't.
+    const source = response.headers.get("x-control-source");
+    if (source === "fallback") {
+      try {
+        const direct = await fetch("https://api.thetrackerapp.io/control", {
+          method: "GET",
+          headers: { Accept: "application/json" },
+          cache: "no-store",
+          credentials: "omit",
+        });
+        if (direct.ok) {
+          const directFlags = await direct.json();
+          if (directFlags && typeof directFlags === "object") {
+            flags = directFlags;
+          }
+        }
+      } catch (e) {
+        // Direct upstream also unreachable. Keep the fallback flags — they're
+        // safe-by-default so the page just hides gated content.
+        console.warn("control direct upstream also unavailable:", e?.message || e);
+      }
+    }
+
     cachedFlags = flags;
     lastFetch = now;
 
