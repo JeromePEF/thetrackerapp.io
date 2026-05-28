@@ -1878,6 +1878,68 @@ function validateForm() {
   };
 }
 
+// Apply / clear red-glow error highlighting on a field. Adds the .is-error
+// class and a one-shot listener that removes it the moment the user
+// changes the value, so the error melts away as they fix it.
+function markFieldError(field) {
+  if (!field) return;
+  // The consent checkbox lives inside <label class="consent-row"> — mark
+  // the label so the surrounding text + glow show together. Text inputs
+  // get the class directly so .is-error rules in CSS fire.
+  if (field.type === "checkbox") {
+    const wrap = field.closest(".consent-row") || field;
+    wrap.classList.add("is-error");
+    const clear = () => {
+      wrap.classList.remove("is-error");
+      field.removeEventListener("change", clear);
+    };
+    field.addEventListener("change", clear);
+  } else {
+    field.classList.add("is-error");
+    const clear = () => {
+      field.classList.remove("is-error");
+      field.removeEventListener("input", clear);
+      field.removeEventListener("change", clear);
+    };
+    field.addEventListener("input", clear);
+    field.addEventListener("change", clear);
+  }
+}
+
+function clearAllFieldErrors() {
+  document.querySelectorAll(".signup-form .is-error").forEach((el) =>
+    el.classList.remove("is-error"),
+  );
+}
+
+// Walk the form and flag every required field that's still empty / unchecked.
+// Returns true when at least one field was flagged (so caller can shift focus
+// to the first one). Called BEFORE the structural validateForm() so the user
+// sees red glow on every empty field at once, not just the first error.
+function highlightEmptyRequiredFields() {
+  clearAllFieldErrors();
+  let firstBad = null;
+
+  // Identity input (phone / iMessage handle / Telegram nothing-needed)
+  const identity = els.serviceIdentityInput;
+  if (identity && !identity.disabled && !identity.value.trim()) {
+    markFieldError(identity);
+    firstBad ||= identity;
+  }
+
+  // Consent checkbox — required for every channel that's not Telegram
+  const consent = els.consentCheckbox;
+  if (consent && !consent.disabled && !consent.checked) {
+    markFieldError(consent);
+    firstBad ||= consent;
+  }
+
+  if (firstBad && typeof firstBad.focus === "function") {
+    try { firstBad.focus({ preventScroll: false }); } catch { /* ignore */ }
+  }
+  return !!firstBad;
+}
+
 async function handleSignup(event) {
   event.preventDefault();
 
@@ -1886,10 +1948,15 @@ async function handleSignup(event) {
     return;
   }
   if (!validation.ok) {
+    // Paint every empty required field red so the user sees exactly which
+    // ones to fill in (not just the first error in the cascade).
+    highlightEmptyRequiredFields();
     setStatus(els.signupStatus, validation.message, "error");
     return;
   }
 
+  // All good — drop any prior error highlights before the network call.
+  clearAllFieldErrors();
   setStatus(els.signupStatus, "Submitting signup...", "");
 
   try {
