@@ -1,0 +1,164 @@
+================================================================================
+STATUS ENDPOINT — Backend action required
+================================================================================
+
+SUMMARY
+-------
+The new /status page at https://thetrackerapp.io/status is showing
+"Status data temporarily unavailable" because GET /api/status returns
+HTTP 403 from Cloudflare's WAF/Bot Fight challenge. The frontend's
+fallback message ("temporarily unavailable") is what users see.
+
+We need the endpoint to be reachable from the browser (and from the
+public marketing site) with no challenge interstitial.
+
+
+REPRODUCING THE FAILURE
+-----------------------
+   $ curl -sS -o /dev/null -w "%{http_code}\n" \
+       -H "Origin: https://thetrackerapp.io" \
+       -H "Accept: application/json" \
+       https://api.thetrackerapp.io/api/status
+
+   → 403   (Cloudflare "Sorry, you have been blocked" HTML response)
+
+Browser-shaped requests (User-Agent + Sec-Fetch-* headers + Origin) hit
+the same 403. CORS preflight (OPTIONS) also returns 403, so even when a
+browser DOES negotiate the request it can't get past WAF.
+
+The same WAF policy is currently blocking /api/billing/stripe-prices
+and /api/control too, but those endpoints have client caching so the
+visible impact is delayed. /api/status is fetched fresh every minute so
+the block surfaces immediately.
+
+
+WHAT THE FRONTEND IS DOING (no changes needed here)
+---------------------------------------------------
+   GET https://api.thetrackerapp.io/api/status
+       Accept: application/json
+       Origin:  https://thetrackerapp.io
+       Cache:   no-store
+
+   On non-200 OR on network failure, the page shows:
+       "Status data temporarily unavailable"   (banner)
+       components grid renders an empty state with the support email
+
+This is the safe fallback per LEGAL_AND_UX_POLISH spec — we DO NOT
+pretend everything is operational when we can't get a response.
+
+
+WHAT BACKEND NEEDS TO DO
+------------------------
+
+Option A — RECOMMENDED — Whitelist /api/status at the Cloudflare WAF.
+
+   1. Cloudflare Dashboard → Security → WAF → Custom Rules.
+   2. Add a "Skip" rule:
+        Field:    URI Path
+        Operator: starts_with
+        Value:    /api/status
+        Action:   Skip → "All remaining custom rules"
+                       + "Bot Fight Mode"
+                       + "Super Bot Fight Mode (if enabled)"
+   3. Repeat for the other public endpoints the marketing site needs:
+        /api/control
+        /api/billing/stripe-prices
+        /api/billing/plans
+   4. Save. New rule applies within ~30 seconds.
+
+   Verify with:
+        curl -i -H "Origin: https://thetrackerapp.io" \
+             https://api.thetrackerapp.io/api/status
+
+   Expect: HTTP/2 200 + JSON body matching the response shape in
+   LEGAL_AND_UX_POLISH §3.
+
+Option B — Move /api/status to a separate, less-aggressive subdomain.
+
+   E.g. https://status-api.thetrackerapp.io/api/status with the same
+   response shape. If that subdomain isn't behind Bot Fight Mode the
+   request will succeed. Frontend can switch the base URL via env var.
+
+
+REQUIRED RESPONSE SHAPE (already documented, just confirming)
+-------------------------------------------------------------
+   {
+     "status": "operational",   // | degraded | partial_outage |
+                                //   major_outage | maintenance
+     "statusLabel": "All Systems Operational",
+     "components": [
+       { "name": "Chatbot & Tracker AI", "id": "ai",       "status": "operational" },
+       { "name": "Payments (Stripe)",    "id": "payments", "status": "operational" },
+       { "name": "iMessage Delivery",    "id": "imessage", "status": "operational" },
+       { "name": "Web Dashboard",        "id": "web",      "status": "operational" }
+     ],
+     "lastUpdated": "2026-05-28T16:24:10.591Z",
+     "support": {
+       "statusPageHint": "https://thetrackerapp.io/status",
+       "contactEmail":   "support@thetrackerapp.io"
+     }
+   }
+
+REQUIRED HEADERS
+----------------
+   Content-Type:                 application/json
+   Access-Control-Allow-Origin:  *        (or echo Origin)
+   Access-Control-Allow-Methods: GET, OPTIONS
+   Cache-Control:                public, max-age=30
+   Vary:                         Origin
+
+ACCEPTABLE STATUS CODES
+-----------------------
+   200  → render normally
+   503  → frontend will still render the response (use this for genuine
+          system-wide outage when you want users to see the response
+          AND know the status endpoint itself is degraded)
+   anything else (including 403) → frontend shows fallback "temporarily
+                                    unavailable"
+
+
+WHILE BACKEND FIXES THIS
+------------------------
+The frontend already handles the failure gracefully:
+   - Banner reads "Status data temporarily unavailable" (amber)
+   - Components grid is empty (no false "all operational" lie)
+   - Support email surfaces beneath
+   - Page re-fetches every 60s and on window focus, so the moment
+     the WAF rule is updated, users with the page open will see it
+     light up correctly within a minute (no page reload required)
+
+So there's no "rush" frontend fix needed — once the Cloudflare rule
+exists the page works immediately.
+
+
+SAME CLOUDFLARE ISSUE WILL HIT (eventually)
+-------------------------------------------
+   - /api/control                  (15-min cached client-side, masks the
+                                     failure until cache expiry)
+   - /api/billing/stripe-prices    (same — 15-min client cache)
+   - Any other PUBLIC endpoint the marketing site calls without a logged-
+     in user session.
+
+Recommend applying the same WAF-skip rule to all of /api/control,
+/api/billing/*, /api/status at the same time so this doesn't recur.
+
+Logged-in dashboard endpoints (/api/account/profile, /api/chart/data, etc)
+are presumably fine because they carry Bearer tokens that the WAF treats
+as trusted. If you do see auth-token endpoints getting 403 from the
+WAF, ping us and we'll diagnose.
+
+
+ASKS (copy/paste into your tracker)
+-----------------------------------
+   [ ] Add a Cloudflare WAF "Skip" rule for /api/status, /api/control,
+       and /api/billing/* matching the recipe in Option A above.
+   [ ] Confirm a curl from outside Cloudflare returns 200 + the JSON
+       shape, with CORS headers.
+   [ ] (Optional) Set Cache-Control: public, max-age=30 on the response
+       so /status doesn't hammer the API.
+   [ ] Reply with "fixed" and we'll smoke-test https://thetrackerapp.io/status.
+
+
+================================================================================
+END
+================================================================================
