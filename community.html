@@ -34,7 +34,7 @@
       <main class="container community-page">
         <!-- Hero -->
         <section class="community-hero">
-          <h1>Our Community</h1>
+          <h1>The Tracker App Community</h1>
           <p class="hero-subtitle">Real people. Real results. Join thousands making fitness tracking effortless.</p>
         </section>
 
@@ -94,10 +94,13 @@
     </div>
 
     <!-- Maintenance Overlay -->
+    <!-- Demoted h1 → h2: only one h1 per page is the SEO convention,
+         and crawlers see this element in the DOM even though it's hidden
+         by default. The page's real h1 lives in the .info-hero section. -->
     <div id="maintenanceOverlay" class="maintenance-overlay" hidden>
       <div class="maintenance-content">
         <div class="maintenance-icon">🔧</div>
-        <h1>We'll Be Right Back</h1>
+        <h2>We'll Be Right Back</h2>
         <p id="maintenanceMessage">We're making some improvements. Check back soon!</p>
       </div>
     </div>

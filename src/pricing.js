@@ -146,10 +146,29 @@ function tierFromFlags(flags, planKey) {
   return flags?.billing?.[FLAG_TIER_KEY[planKey]] || null;
 }
 
+// Admin tier-visibility toggle from /api/control.
+//   flags.billing.tierVisibility = { weekly, monthly, yearly, premium, premiumYearly }
+// A tier is shown ONLY when its visibility flag is true. When the
+// tierVisibility block is missing entirely (older /control responses or
+// safe-default fallback), we treat the tier as visible — the existing
+// PUBLIC_PLAN_ORDER list + Stripe price availability still govern display.
+function isTierVisible(flags, planKey) {
+  const v = flags?.billing?.tierVisibility;
+  if (!v || typeof v !== "object") return true;
+  // Explicit false hides it. Anything else (true, undefined, missing key)
+  // is treated as visible. This way new tiers added in the future don't
+  // silently disappear when the admin hasn't toggled them yet.
+  return v[planKey] !== false;
+}
+
 function render({ flags, prices }) {
-  // Build the list of public cards: only plans Stripe currently exposes
-  // with a non-zero formatted price. Weekly is excluded per product rule.
+  // Build the list of public cards in three filter stages:
+  //   1. PUBLIC_PLAN_ORDER  — product rule (weekly never on /pricing).
+  //   2. tierVisibility     — admin can hide a tier without removing it
+  //                           from Stripe (e.g. Premium currently hidden).
+  //   3. Stripe price       — only render tiers Stripe is actually selling.
   const cards = PUBLIC_PLAN_ORDER.map((planKey) => {
+    if (!isTierVisible(flags, planKey)) return null;
     const stripe = prices?.[planKey];
     if (!stripe?.formatted) return null;
     const tierFlag = tierFromFlags(flags, planKey);

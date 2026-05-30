@@ -4333,12 +4333,24 @@ function planDisplayName(planKey) {
   })[planKey] || planKey;
 }
 
+// Honor admin's `flags.billing.tierVisibility.<plan>` toggle so the dashboard
+// stops offering a hidden tier as an upgrade target. Same rule as the
+// /pricing page — false hides, anything else shows.
+function isUpgradeTierVisible(planKey) {
+  const flags = getCachedFlags();
+  const v = flags?.billing?.tierVisibility;
+  if (!v || typeof v !== "object") return true;
+  return v[planKey] !== false;
+}
+
 async function renderBillingUpgrades({ currentPlan, hasActiveSub }) {
   const grid = document.getElementById("billingUpgradeGrid");
   const section = document.getElementById("billingUpgradeSection");
   if (!grid || !section) return;
 
-  const paths = upgradePathsFor(currentPlan);
+  // First filter: upgrade-path logic (yearly > monthly, premium > yearly, ...)
+  // Second filter: admin tier-visibility toggle from /control.
+  const paths = upgradePathsFor(currentPlan).filter((p) => isUpgradeTierVisible(p));
   if (!paths.length) {
     section.hidden = true;
     return;

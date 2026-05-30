@@ -1,12 +1,15 @@
 # robots.txt for thetrackerapp.io
+# Strategy: open everything except auth-gated/utility routes. Explicitly
+# greenlight AI crawlers because AEO (answer-engine optimization) is now
+# half the SEO game — ChatGPT/Claude/Perplexity citations are the new SERP.
+
 User-agent: *
 Allow: /
 # Public-facing legal pages — indexable so they appear in search.
 Allow: /privacy
 Allow: /terms
-
-# Sitemap location
-Sitemap: https://thetrackerapp.io/sitemap.xml
+# llms.txt is the AI-crawler entry point.
+Allow: /llms.txt
 
 # Disallow internal/utility pages
 Disallow: /logout
@@ -14,6 +17,63 @@ Disallow: /authorize
 Disallow: /dashboard
 Disallow: /affiliate/dashboard
 Disallow: /affiliate/connect
+# API surface — not content, no SEO value, costs us crawl budget.
+Disallow: /api/
 
 # Status page is transient — don't index outage snapshots.
 Disallow: /status
+
+# ─── AI / LLM crawlers ────────────────────────────────────────────────
+# We WANT these. Explicit allow makes our stance unambiguous and
+# survives any future site-wide default-deny experiments.
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: cohere-ai
+Allow: /
+
+User-agent: Meta-ExternalAgent
+Allow: /
+
+User-agent: DuckAssistBot
+Allow: /
+
+User-agent: Diffbot
+Allow: /
+
+# ─── Sitemap (must come last per spec for max compatibility) ──────────
+Sitemap: https://thetrackerapp.io/sitemap.xml

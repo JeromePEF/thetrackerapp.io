@@ -7,6 +7,16 @@
       "permanent": false
     },
     {
+      "source": "/home",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/signup",
+      "destination": "/",
+      "permanent": true
+    },
+    {
       "source": "/",
       "has": [
         {

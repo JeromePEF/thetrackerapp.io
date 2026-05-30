@@ -77,16 +77,34 @@
       "@context": "https://schema.org",
       "@type": "Organization",
       "name": "The Tracker App",
+      "alternateName": [
+        "TheTrackerApp",
+        "thetrackerapp.io",
+        "Tracker App",
+        "The Tracker"
+      ],
       "url": "https://thetrackerapp.io",
       "logo": "https://thetrackerapp.io/apple-touch-icon.png",
+      "description": "Text-based fitness and health tracking. Log workouts, nutrition, water, and body measurements via iMessage, SMS, Telegram, Discord, WhatsApp, or Signal — no app download required.",
       "contactPoint": {
         "@type": "ContactPoint",
         "email": "contact@thetrackerapp.io",
-        "contactType": "customer service"
+        "contactType": "customer service",
+        "availableLanguage": ["English"]
       },
       "sameAs": [
         "https://t.me/TheTrackerAppBot"
       ]
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "The Tracker App",
+      "alternateName": "TheTrackerApp",
+      "url": "https://thetrackerapp.io",
+      "publisher": { "@type": "Organization", "name": "The Tracker App" }
     }
     </script>
 
@@ -181,6 +199,18 @@
       </header>
 
       <main class="hero-fullscreen-layout" id="main-content">
+        <!-- Screen-reader / SEO H1.
+             The visual design is a 3-column hero with no natural headline
+             real estate, but every page needs exactly one H1 for Google's
+             topic + brand signal extraction. We render it sr-only so the
+             layout is untouched while crawlers + assistive tech still see
+             the page's single most important phrase. Brand name comes
+             first, then the value prop spanning every channel + vertical
+             we want to rank for. -->
+        <h1 class="sr-only">
+          The Tracker App — Track Calories, Workouts, Nutrition, Water, and Steps via iMessage, SMS, Telegram, Discord, WhatsApp, and Signal
+        </h1>
+
         <!-- LEFT: Leaderboards -->
         <aside class="leaderboard-panel" aria-label="Workout leaderboard">
           <section class="leaderboard-section">
