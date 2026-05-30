@@ -114,9 +114,14 @@ function init() {
 
 async function loadAndRender() {
   try {
+    // Force a fresh fetch on every page load (and on the 5-min interval
+    // below). Admin tier-visibility toggles in /control should appear on
+    // /pricing within seconds of a reload, not after a 15-min cache
+    // expiry. The billing-prices module's localStorage cache still
+    // provides instant first paint while the network call runs.
     const [flags, prices] = await Promise.all([
       fetchFeatureFlags(),
-      getBillingPrices(),
+      getBillingPrices({ force: true }),
     ]);
     // Apply data-feature visibility to nav + footer links so Home/Community/
     // Blog only appear when /control flags them on. Otherwise they stay

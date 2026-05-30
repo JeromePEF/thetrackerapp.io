@@ -235,6 +235,17 @@ function startVersionPolling() {
       } catch {
         /* optional */
       }
+      // Billing tier visibility + Stripe price changes are kept in sync
+      // with /control by the backend, so when /control version bumps we
+      // also force-refresh the stripe-prices cache. Pricing page +
+      // dashboard billing tab subscribe to the price-update event and
+      // re-render automatically.
+      try {
+        const { refreshBillingPrices } = await import("./billing-prices.js");
+        refreshBillingPrices().catch(() => {});
+      } catch {
+        /* optional */
+      }
     } catch {
       /* swallow — next tick will retry */
     }

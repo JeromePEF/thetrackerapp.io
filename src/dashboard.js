@@ -4358,10 +4358,11 @@ async function renderBillingUpgrades({ currentPlan, hasActiveSub }) {
 
   // Ensure we have prices BEFORE we render so we never paint a card without
   // a price. Sync getter returns localStorage/fallback for immediate paint;
-  // background fetch updates if stale.
+  // background fetch (force:true) updates with fresh tierVisibility + price
+  // values so admin toggles in /control show up here within seconds, not
+  // 15-min cache cycles.
   const prices = getBillingPricesSync();
-  // Kick a fresh fetch in the background. When it lands we re-render.
-  getBillingPrices().then((fresh) => {
+  getBillingPrices({ force: true }).then((fresh) => {
     if (fresh && fresh !== prices) {
       // Re-render only if the panel is still in the DOM (user might've
       // navigated away).

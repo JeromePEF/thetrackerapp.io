@@ -25,7 +25,12 @@
 const API_BASE = "https://api.thetrackerapp.io";
 const ENDPOINT = `${API_BASE}/api/billing/stripe-prices`;
 const STORAGE_KEY = "tracker.billing.prices";
-const TTL_MS = 15 * 60 * 1000; // 15 minutes, matches backend cache TTL.
+// Client cache is short (2 min) so admin toggles in the control panel
+// (tierVisibility, price changes in Stripe, etc.) propagate quickly to
+// open browsers. The backend has its own 15-min cache on top of Stripe,
+// so dropping the client TTL doesn't increase load on Stripe itself —
+// it just trims the worst-case stale-view window from 15 min to 2 min.
+const TTL_MS = 2 * 60 * 1000;
 
 // Fallback shape used when the endpoint is unreachable on first paint.
 // These values come from the spec; they're a sane starter but will be
