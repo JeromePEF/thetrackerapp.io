@@ -1,0 +1,353 @@
+{
+  "$schema": "./selectors.schema.json",
+  "version": "1.0.0",
+  "description": "Machine-readable manifest of every user-facing element a smoke-test bot needs to validate the site. Tool-agnostic (Playwright / Puppeteer / Selenium can all consume this). Pair with automation/README.md.",
+  "meta": {
+    "marketingBaseUrl": "https://thetrackerapp.io",
+    "dashboardBaseUrl": "https://dashboard.thetrackerapp.io",
+    "lastAudited": "2026-05-31",
+    "selectorStrategy": "Prefer #id where present; fall back to [data-tab=...] / [data-range=...] / [href=...]. CSS selectors only \u2014 no XPath."
+  },
+
+  "env": {
+    "TRACKER_TEST_CREDENTIAL": {
+      "description": "Phone (E.164), email, or @telegram handle of a dedicated test account.",
+      "required": true,
+      "example": "+15551234567"
+    },
+    "TRACKER_TEST_OTP": {
+      "description": "Static OTP returned by the backend for the test account when TRACKER_TEST_MODE is enabled. REQUIRES backend bypass \u2014 see automation/README.md \u00a7 'Backend bypass'.",
+      "required": true,
+      "example": "ABCD1234"
+    },
+    "TRACKER_TEST_MODE_HEADER": {
+      "description": "Optional header the bot adds to every request (e.g. 'x-tracker-test: 1') so the backend skips real SMS/email send and accepts TRACKER_TEST_OTP. Backend must implement this.",
+      "required": false,
+      "example": "x-tracker-test: 1"
+    }
+  },
+
+  "pages": {
+    "marketing": {
+      "url": "/",
+      "file": "index.html",
+      "elements": {
+        "loginLink":        { "selector": "#loginLink",        "role": "navigate-to-login" },
+        "dashboardLink":    { "selector": "#dashboardLink",    "role": "shown-when-authed", "note": "Starts with `hidden` attribute; only visible if a session cookie/token exists." },
+        "unitToggleButton": { "selector": "#unitToggleButton", "role": "toggle-imperial-metric" },
+        "signupForm":       { "selector": "#signupForm",       "role": "onboarding-form" },
+        "serviceSelect":    { "selector": "#serviceSelect",    "role": "service-channel-dropdown" },
+        "serviceIdentityInput": { "selector": "#serviceIdentityInput", "role": "phone-email-or-handle" },
+        "consentCheckbox":  { "selector": "#consentCheckbox",  "role": "tos-consent" },
+        "signupSubmitButton": { "selector": "#signupSubmitButton", "role": "submit-onboarding" },
+        "signupStatus":     { "selector": "#signupStatus",     "role": "status-message" }
+      }
+    },
+
+    "login": {
+      "url": "/login",
+      "file": "login.html",
+      "elements": {
+        "requestCodeForm":      { "selector": "#requestCodeForm",      "role": "form-root" },
+        "credentialFieldLabel": { "selector": "#credentialFieldLabel", "role": "dynamic-label" },
+        "credentialInput":      { "selector": "#credentialInput",      "role": "phone-email-or-handle", "attrs": { "name": "credential" } },
+        "credentialHint":       { "selector": "#credentialHint",       "role": "hint-text" },
+        "requestCodeButton":    { "selector": "#requestCodeButton",    "role": "submit-request-otp" },
+        "recoveryToggleButton": { "selector": "#recoveryToggleButton", "role": "switch-to-email-recovery" },
+        "requestStatus":        { "selector": "#requestStatus",        "role": "status-message" },
+        "navHome":              { "selector": ".auth-links a[href='/']" },
+        "navWorkoutResources":  { "selector": ".auth-links a[href='/workout-resources']" },
+        "navDashboard":         { "selector": ".auth-links a[href*='dashboard']" }
+      }
+    },
+
+    "authorize": {
+      "url": "/authorize",
+      "file": "authorize.html",
+      "description": "Step 2 of login. User enters the 8-character OTP delivered via the chosen channel.",
+      "elements": {
+        "verifyCodeForm":        { "selector": "#verifyCodeForm",        "role": "form-root" },
+        "deviceCodeInput":       { "selector": "#deviceCodeInput",       "role": "otp-input", "attrs": { "maxlength": "8", "autocomplete": "one-time-code" } },
+        "otpSlots":              { "selector": ".otp-slot",               "role": "visual-only", "count": 8 },
+        "requestedTargetValue":  { "selector": "#requestedTargetValue" },
+        "requestedDeviceValue":  { "selector": "#requestedDeviceValue" },
+        "deviceSessionValue":    { "selector": "#deviceSessionValue" },
+        "requestedAtValue":      { "selector": "#requestedAtValue" },
+        "verifyCodeButton":      { "selector": "#verifyCodeButton",       "role": "submit-otp" },
+        "resendCodeButton":      { "selector": "#resendCodeButton",       "role": "resend-otp" },
+        "editIdentifierButton":  { "selector": "#editIdentifierButton",   "role": "back-to-step-1" },
+        "verifyStatus":          { "selector": "#verifyStatus",           "role": "status-message" }
+      }
+    },
+
+    "dashboard": {
+      "url": "https://dashboard.thetrackerapp.io/dashboard",
+      "file": "dashboard.html",
+      "description": "Authenticated SPA. Sidebar tabs swap the visible panel without a page reload.",
+
+      "topNav": {
+        "homeLink":   { "selector": ".auth-links a[href='https://thetrackerapp.io/']" },
+        "logoutLink": { "selector": "#dashboardLogoutLink", "role": "logout" }
+      },
+
+      "sidebarTabs": {
+        "account":         { "selector": "#navAccount",         "dataTab": "account",          "panel": "#tabAccount" },
+        "stats":           { "selector": "#navStats",           "dataTab": "stats",            "panel": "#tabStats",          "defaultActive": true },
+        "calendar":        { "selector": "#navCalendar",        "dataTab": "calendar",         "panel": "#tabCalendar",       "featureGated": true },
+        "shortcuts":       { "selector": "#navShortcuts",       "dataTab": "shortcuts",        "panel": "#tabShortcuts",      "featureGated": true },
+        "personalTrainer": { "selector": "#navPersonalTrainer", "dataTab": "personal-trainer", "panel": "#tabPersonalTrainer","featureGated": true },
+        "groups":          { "selector": "#navGroups",          "dataTab": "groups",           "panel": "#tabGroups",         "featureGated": true },
+        "runClubs":        { "selector": "#navRunClubs",        "dataTab": "run-clubs",        "panel": "#tabRunClubs",       "featureGated": true },
+        "export":          { "selector": "#navExport",          "dataTab": "export",           "panel": "#tabExport" },
+        "goals":           { "selector": "#navGoals",           "dataTab": "goals",            "panel": "#tabGoals",          "featureGated": true },
+        "billing":         { "selector": "#navBilling",         "dataTab": "billing",          "panel": "#tabBilling" },
+        "integrate":       { "selector": "#navIntegrate",       "dataTab": "integrate",        "panel": "#tabIntegrate",      "featureGated": true },
+        "ai":              { "selector": "#navAi",              "dataTab": "ai",               "panel": "#tabAi" },
+        "sheet":           { "selector": "#navSheet",           "dataTab": "sheet",            "panel": "#tabSheet" },
+        "affiliate":       { "selector": "#navAffiliate",       "dataTab": "affiliate",        "panel": "#tabAffiliate" }
+      },
+
+      "panels": {
+        "stats": {
+          "leaderboardLink":         { "selector": "#leaderboardLink" },
+          "statsSheetLink":          { "selector": "#statsSheetLink",         "role": "external-link", "expectAttr": "href" },
+          "rangeButtonDay":          { "selector": ".stats-range-btn[data-range='day']" },
+          "rangeButtonWeek":         { "selector": ".stats-range-btn[data-range='week']" },
+          "rangeButtonMonth":        { "selector": ".stats-range-btn[data-range='month']" },
+          "rangeButtonYear":         { "selector": ".stats-range-btn[data-range='year']" },
+          "rangeButtonAllTime":      { "selector": ".stats-range-btn[data-range='all']" },
+          "fromDate":                { "selector": "#statsFromDate" },
+          "toDate":                  { "selector": "#statsToDate" },
+          "applyCustomRangeButton":  { "selector": "#applyCustomRangeButton" },
+          "toggleMilestonesButton":  { "selector": "#toggleMilestonesButton" }
+        },
+
+        "account": {
+          "emailInput":              { "selector": "#accountEmailInput" },
+          "saveEmailButton":         { "selector": "#saveAccountEmailButton" },
+          "verifyEmailButton":       { "selector": "#verifyAccountEmailButton" },
+          "usernameInput":           { "selector": "#accountUsernameInput" },
+          "saveUsernameButton":      { "selector": "#saveAccountUsernameButton" },
+          "ageInput":                { "selector": "#accountAgeInput" },
+          "saveAgeButton":           { "selector": "#saveAccountAgeButton" },
+          "accountIdValue":          { "selector": "#accountIdValue",         "role": "readonly-display" },
+          "accountMethodValue":      { "selector": "#accountMethodValue",     "role": "readonly-display" },
+          "accountContactValue":     { "selector": "#accountContactValue",    "role": "readonly-display" },
+          "accountLoginAtValue":     { "selector": "#accountLoginAtValue",    "role": "readonly-display" }
+        },
+
+        "export": {
+          "exportCsvButton":         { "selector": "#exportCsvButton",        "role": "download-trigger" },
+          "exportJsonButton":        { "selector": "#exportJsonButton",       "role": "download-trigger" }
+        },
+
+        "goals": {
+          "goalWeightInput":         { "selector": "#goalWeightInput" },
+          "goalBodyFatInput":        { "selector": "#goalBodyFatInput" },
+          "planDayButtons":          { "selector": ".plan-day-btn",           "role": "toggle-group", "count": 7, "dataAttr": "data-days" },
+          "workoutPlanInput":        { "selector": "#goalWorkoutPlanInput" },
+          "saveGoalsButton":         { "selector": "#saveGoalsButton" }
+        },
+
+        "billing": {
+          "statusValue":             { "selector": "#billingStatusValue",     "role": "readonly-display" },
+          "planValue":               { "selector": "#billingPlanValue",       "role": "readonly-display" },
+          "planRow":                 { "selector": "#billingPlanRow" },
+          "lastPaymentValue":        { "selector": "#billingLastPaymentValue","role": "readonly-display" },
+          "nextBillingValue":        { "selector": "#billingNextBillingValue","role": "readonly-display" },
+          "cancelNotice":            { "selector": "#billingCancelNotice" },
+          "checkoutPendingCard":     { "selector": "#billingCheckoutPendingCard" },
+          "resumeCheckoutButton":    { "selector": "#billingResumeCheckoutBtn" },
+          "abandonCheckoutButton":   { "selector": "#billingAbandonCheckoutBtn" },
+          "upgradeSection":          { "selector": "#billingUpgradeSection" },
+          "upgradeGrid":             { "selector": "#billingUpgradeGrid",     "role": "dynamic-children" },
+          "manageLink":              { "selector": "#billingManageLink",      "role": "external-link", "expectAttr": "href", "target": "_blank", "note": "Stripe customer portal." },
+          "yearlyButton":            { "selector": "#billingYearlyButton",    "role": "checkout-trigger" },
+          "resumeButton":            { "selector": "#billingResumeButton" },
+          "cancelButton":            { "selector": "#billingCancelButton" },
+          "actionStatus":            { "selector": "#billingActionStatus",    "role": "status-message" }
+        },
+
+        "ai": {
+          "newSessionButton":        { "selector": "#aiNewSessionButton" },
+          "quickPrompts":            { "selector": ".ai-prompt",              "role": "preset-buttons", "dataAttr": "data-prompt" },
+          "chatForm":                { "selector": "#aiChatForm" },
+          "questionInput":           { "selector": "#aiQuestionInput" },
+          "askButton":               { "selector": "#askAiButton" }
+        },
+
+        "sheet": {
+          "databaseLink":            { "selector": "#sheetDatabaseLink",      "role": "external-link", "expectAttr": "href", "target": "_blank", "note": "Opens the user's Google Sheet." },
+          "status":                  { "selector": "#sheetStatus",            "role": "status-message" }
+        },
+
+        "groups": {
+          "openGroupsLink":          { "selector": "#tabGroups a.btn-primary[href='/groups']" },
+          "createGroupLink":         { "selector": "#tabGroups a.btn-secondary[href='/groups#create']" }
+        },
+
+        "runClubs": {
+          "openRunClubsLink":        { "selector": "#tabRunClubs a.btn-primary[href='/run-clubs']" },
+          "createRunClubLink":       { "selector": "#tabRunClubs a.btn-secondary[href='/run-clubs#create']" }
+        },
+
+        "affiliate": {
+          "applyForm":               { "selector": "#affiliateApplyForm" },
+          "firstNameInput":          { "selector": "#affiliateFirstNameInput" },
+          "lastNameInput":           { "selector": "#affiliateLastNameInput" },
+          "emailInput":              { "selector": "#affiliateEmailInput" },
+          "confirmEmailInput":       { "selector": "#affiliateConfirmEmailInput" },
+          "phoneInput":              { "selector": "#affiliatePhoneInput" },
+          "applyButton":             { "selector": "#affiliateApplyButton" },
+          "openBillingButton":       { "selector": "#affiliateOpenBillingButton" },
+          "agreementLink":           { "selector": "#affiliateAgreementLink",     "role": "external-link", "expectAttr": "href" },
+          "agreementResendButton":   { "selector": "#affiliateAgreementResendButton" },
+          "tabLinkInput":            { "selector": "#affiliateTabLinkInput",      "role": "readonly-display" },
+          "tabConnectButton":        { "selector": "#affiliateTabConnectButton" },
+          "referralsRows":           { "selector": "#affiliateReferralsRows",     "role": "dynamic-children" },
+          "copyButton":              { "selector": ".affiliate-copy[data-copy-target='affiliateTabLinkInput']" }
+        }
+      }
+    }
+  },
+
+  "journeys": [
+    {
+      "name": "marketing-page-smoke",
+      "description": "Verify the public landing page renders all interactive controls.",
+      "auth": "none",
+      "steps": [
+        { "action": "navigate", "url": "/" },
+        { "action": "expectVisible", "page": "marketing", "element": "loginLink" },
+        { "action": "expectVisible", "page": "marketing", "element": "unitToggleButton" },
+        { "action": "expectVisible", "page": "marketing", "element": "signupForm" },
+        { "action": "expectVisible", "page": "marketing", "element": "signupSubmitButton" },
+        { "action": "click",         "page": "marketing", "element": "unitToggleButton" },
+        { "action": "expectNoConsoleErrors" }
+      ]
+    },
+
+    {
+      "name": "login-request-code",
+      "description": "Submit the credential and confirm an OTP request is accepted by the backend.",
+      "auth": "none",
+      "steps": [
+        { "action": "navigate", "url": "/login" },
+        { "action": "expectVisible", "page": "login", "element": "credentialInput" },
+        { "action": "fill",          "page": "login", "element": "credentialInput", "valueFromEnv": "TRACKER_TEST_CREDENTIAL" },
+        { "action": "click",         "page": "login", "element": "requestCodeButton" },
+        { "action": "expectUrl",     "matches": "/authorize" },
+        { "action": "expectVisible", "page": "authorize", "element": "deviceCodeInput" }
+      ]
+    },
+
+    {
+      "name": "login-verify-otp",
+      "description": "Enter the test OTP and reach the dashboard. Requires backend test bypass (see README).",
+      "auth": "none",
+      "steps": [
+        { "action": "fill",  "page": "authorize", "element": "deviceCodeInput", "valueFromEnv": "TRACKER_TEST_OTP" },
+        { "action": "click", "page": "authorize", "element": "verifyCodeButton" },
+        { "action": "expectUrl",     "matches": "dashboard.thetrackerapp.io/dashboard" },
+        { "action": "expectVisible", "page": "dashboard", "scope": "topNav", "element": "logoutLink" }
+      ]
+    },
+
+    {
+      "name": "dashboard-tab-traversal",
+      "description": "Click every visible sidebar tab and assert its panel becomes the active one.",
+      "auth": "required",
+      "steps": [
+        { "action": "navigate", "url": "https://dashboard.thetrackerapp.io/dashboard" },
+        { "action": "forEachVisible", "page": "dashboard", "scope": "sidebarTabs", "do": [
+          { "action": "click",  "useCurrent": true },
+          { "action": "expectVisible", "selectorFromCurrent": "panel" },
+          { "action": "expectNoConsoleErrors" }
+        ]}
+      ]
+    },
+
+    {
+      "name": "external-link-billing",
+      "description": "Open the Stripe customer-portal link from the BILLING tab and confirm it resolves with HTTP 200.",
+      "auth": "required",
+      "steps": [
+        { "action": "click",          "page": "dashboard", "scope": "sidebarTabs", "element": "billing" },
+        { "action": "expectVisible",  "page": "dashboard", "scope": "panels.billing", "element": "manageLink" },
+        { "action": "expectAttrSet",  "page": "dashboard", "scope": "panels.billing", "element": "manageLink", "attr": "href" },
+        { "action": "fetchHref",      "page": "dashboard", "scope": "panels.billing", "element": "manageLink", "expectStatusIn": [200, 301, 302] }
+      ]
+    },
+
+    {
+      "name": "external-link-google-sheet",
+      "description": "Open the user's Google Sheet link from the SHEET tab and confirm it resolves.",
+      "auth": "required",
+      "steps": [
+        { "action": "click",          "page": "dashboard", "scope": "sidebarTabs", "element": "sheet" },
+        { "action": "expectVisible",  "page": "dashboard", "scope": "panels.sheet", "element": "databaseLink" },
+        { "action": "expectAttrMatches", "page": "dashboard", "scope": "panels.sheet", "element": "databaseLink", "attr": "href", "pattern": "^https://docs\\.google\\.com/spreadsheets/" },
+        { "action": "fetchHref",      "page": "dashboard", "scope": "panels.sheet", "element": "databaseLink", "expectStatusIn": [200, 301, 302] }
+      ]
+    },
+
+    {
+      "name": "external-link-leaderboard",
+      "description": "Validate the Stats-tab leaderboard link points at the public leaderboard page.",
+      "auth": "required",
+      "steps": [
+        { "action": "click",          "page": "dashboard", "scope": "sidebarTabs", "element": "stats" },
+        { "action": "expectAttrMatches", "page": "dashboard", "scope": "panels.stats", "element": "leaderboardLink", "attr": "href", "pattern": "leaderboard" }
+      ]
+    },
+
+    {
+      "name": "billing-controls-present",
+      "description": "Confirm billing UI is wired up regardless of subscription state.",
+      "auth": "required",
+      "steps": [
+        { "action": "click",         "page": "dashboard", "scope": "sidebarTabs", "element": "billing" },
+        { "action": "expectVisible", "page": "dashboard", "scope": "panels.billing", "element": "statusValue" },
+        { "action": "expectVisible", "page": "dashboard", "scope": "panels.billing", "element": "planValue" },
+        { "action": "expectVisible", "page": "dashboard", "scope": "panels.billing", "element": "upgradeSection" }
+      ]
+    },
+
+    {
+      "name": "account-tab-readwrite",
+      "description": "Confirm account-tab inputs and save buttons are interactive.",
+      "auth": "required",
+      "steps": [
+        { "action": "click",         "page": "dashboard", "scope": "sidebarTabs", "element": "account" },
+        { "action": "expectEnabled", "page": "dashboard", "scope": "panels.account", "element": "emailInput" },
+        { "action": "expectEnabled", "page": "dashboard", "scope": "panels.account", "element": "saveEmailButton" },
+        { "action": "expectEnabled", "page": "dashboard", "scope": "panels.account", "element": "usernameInput" },
+        { "action": "expectVisible", "page": "dashboard", "scope": "panels.account", "element": "accountIdValue" }
+      ]
+    },
+
+    {
+      "name": "logout",
+      "description": "Click logout and confirm we return to the marketing site.",
+      "auth": "required",
+      "steps": [
+        { "action": "click",     "page": "dashboard", "scope": "topNav", "element": "logoutLink" },
+        { "action": "expectUrl", "matches": "thetrackerapp.io" }
+      ]
+    }
+  ],
+
+  "actions": {
+    "navigate":           "Open the URL (relative paths resolve against marketingBaseUrl unless absolute).",
+    "fill":               "Set the value of an input.",
+    "click":              "Click the element.",
+    "expectVisible":      "Assert the element exists and is visible (not display:none / hidden attr / aria-hidden).",
+    "expectEnabled":      "Assert the element is not disabled.",
+    "expectUrl":          "Assert location.href contains `matches`.",
+    "expectAttrSet":      "Assert the named attribute is present and non-empty.",
+    "expectAttrMatches":  "Assert attr value matches a regex (`pattern`).",
+    "expectNoConsoleErrors": "Fail if any console.error fired during the previous block.",
+    "fetchHref":          "HTTP HEAD/GET the element's href and assert status is in `expectStatusIn`. Do NOT actually open a new tab \u2014 just verify reachability.",
+    "forEachVisible":     "Iterate every visible child of `scope` and run `do` with the current element bound."
+  }
+}
