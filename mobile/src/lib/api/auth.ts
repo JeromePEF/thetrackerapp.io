@@ -69,6 +69,14 @@ export async function requestLoginCode(rawCredential: string): Promise<{
   throw lastErr instanceof Error ? lastErr : new Error("Could not request login code");
 }
 
+/** DELETE /api/account — irreversible account deletion (both stores require this). */
+export async function deleteAccount(reason?: string): Promise<{ ok: true; deletedAt: string }> {
+  return api<{ ok: true; deletedAt: string }>("/api/account", {
+    method: "DELETE",
+    body: { confirmation: "DELETE", reason: reason ?? null },
+  });
+}
+
 export async function verifyLoginCode(args: {
   method: LoginMethod;
   identifier: string;

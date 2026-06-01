@@ -62,9 +62,9 @@
             <p class="info-kicker">Privacy</p>
             <h1>Privacy Policy</h1>
             <p class="legal-meta">
-              <span><strong>Last Updated:</strong> May 28, 2026</span>
+              <span><strong>Last Updated:</strong> June 1, 2026</span>
               <span aria-hidden="true">·</span>
-              <span><strong>Effective Date:</strong> May 28, 2026</span>
+              <span><strong>Effective Date:</strong> June 1, 2026</span>
             </p>
             <p>
               This policy explains in plain language what TheTrackerApp ("we," "us") collects, how we use it,
@@ -147,7 +147,7 @@
             <ul>
               <li><strong>Access</strong> — request a copy of the data we hold on you.</li>
               <li><strong>Correct</strong> — fix anything inaccurate via the dashboard or by emailing support.</li>
-              <li><strong>Delete</strong> — request account and data deletion. We do not unlock or transfer an account where the phone number / confirmed email is no longer accessible — keep these current.</li>
+              <li><strong>Delete</strong> — delete your account in-app (Account tab → "Delete account" on iOS / Android, or <a href="/delete-account">/delete-account</a> on the web). Deletion is permanent: we revoke all sessions, scrub identifiers, detach Stripe, and disconnect your Google Sheet. We do not unlock or transfer an account where the phone number / confirmed email is no longer accessible — keep these current.</li>
               <li><strong>Export</strong> — download your data via the Export tab in the dashboard.</li>
               <li><strong>Opt out</strong> — pause outbound messages with <code>/stop</code>, resume with <code>/resume</code>.</li>
             </ul>
@@ -201,14 +201,56 @@
               communication.
             </p>
 
-            <h2 id="contact">14. Contact</h2>
+            <h2 id="mobile-apps">14. Mobile applications (iOS and Android)</h2>
+            <p>
+              Our iOS and Android apps (bundle id <code>io.thetrackerapp.app</code>) are read-only
+              companions to the web dashboard. The following disclosures apply specifically to the
+              mobile apps and supplement everything above.
+            </p>
+            <ul>
+              <li><strong>What the apps collect:</strong> exactly the same data the web dashboard
+                reads — your phone number / email / username (whichever you signed in with), your
+                workout, calorie, water, weight, and body-fat logs, your subscription status, and
+                your linked Google Sheet URL. The apps do not ask for additional permissions
+                (no location, no contacts, no camera, no microphone, no health-kit integration in v1).</li>
+              <li><strong>On-device storage:</strong> after you sign in, the apps store one item
+                locally: your bearer session token, plus a small snapshot of your account profile
+                so screens render before the network responds. On iOS this is stored in the iOS
+                Keychain; on Android in the Android Keystore. Both are encrypted by the operating
+                system and tied to your device unlock. Signing out wipes both immediately.</li>
+              <li><strong>No tracking:</strong> the apps do not include third-party analytics
+                SDKs, advertising SDKs, or attribution SDKs. Apple's App Tracking Transparency
+                (ATT) prompt is not shown because we do not track. No data is shared with data
+                brokers or used for advertising on other apps/sites.</li>
+              <li><strong>External browser links:</strong> tapping "Manage subscription" opens the
+                Stripe customer-portal URL in an in-app Safari View Controller (iOS) or Custom
+                Tab (Android). Tapping "Open Sheet" opens your Google Sheet URL the same way.
+                These are short-lived URLs scoped to your account; we do not pass any other
+                identifying data to Stripe or Google through these links beyond what the URL
+                contains.</li>
+              <li><strong>Network endpoints:</strong> all mobile traffic goes to
+                <code>https://api.thetrackerapp.io</code> over TLS 1.2+, authenticated with a
+                bearer token in the <code>Authorization</code> header. No cookies are used by the
+                apps.</li>
+              <li><strong>Deletion from mobile:</strong> the Account tab includes a "Delete
+                account" button that calls <code>DELETE /api/account</code> and permanently
+                deletes your data as described in Section 7. Uninstalling the app alone does
+                <em>not</em> delete your data — you must use the in-app button or
+                <a href="/delete-account">/delete-account</a> on the web.</li>
+              <li><strong>Crash reports:</strong> v1 ships with no third-party crash reporting.
+                Apple's App Store Connect and Google Play Console show us anonymized crash
+                statistics (device type, OS version, stack trace) that we use to fix bugs; we
+                cannot tie these to individual users.</li>
+            </ul>
+
+            <h2 id="contact">15. Contact</h2>
             <p>
               Privacy questions, data requests, or anything else:
               <a href="mailto:support@thetrackerapp.io">support@thetrackerapp.io</a>.
             </p>
 
             <p class="legal-note legal-meta">
-              <strong>Last Updated:</strong> May 28, 2026 ·
+              <strong>Last Updated:</strong> June 1, 2026 ·
               <a href="/terms">Terms of Service</a> ·
               <a href="/status">System Status</a> ·
               <a href="mailto:support@thetrackerapp.io">Contact support</a>

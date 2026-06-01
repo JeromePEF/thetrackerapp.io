@@ -1,0 +1,149 @@
+================================================================================
+ACCOUNT DELETION — Backend Contract
+================================================================================
+Last updated: 2026-06-01
+Owner: mobile + privacy compliance
+
+Required by:
+  - Apple App Store Review Guideline 5.1.1(v) (June 2022) — apps that allow
+    account creation MUST allow in-app deletion of the account and associated
+    data. Otherwise: rejection on first submission.
+  - Google Play Account Deletion policy (December 2023) — same requirement;
+    must also expose a web-based deletion path linked from the listing.
+  - GDPR Art. 17 / CCPA — pre-existing right to erasure.
+
+This endpoint is the single mechanism the iOS app, Android app, and web
+dashboard will all call. No separate mobile-only path.
+
+================================================================================
+ENDPOINT
+================================================================================
+
+DELETE  /api/account
+
+Headers:
+  Authorization: Bearer <session_token>      [required]
+  Content-Type:  application/json            [required when body present]
+
+Body (optional, all fields optional):
+  {
+    "confirmation": "DELETE",      // client-side guard; backend should NOT
+                                   //   require this — UI uses it as a typed
+                                   //   confirmation, server may verify only
+                                   //   to defend against accidental DELETEs
+    "reason": "string, optional"   // free-text feedback for analytics
+  }
+
+Success response  (HTTP 200):
+  {
+    "ok": true,
+    "deletedAt": "2026-06-01T18:23:00Z"
+  }
+
+Auth failure  (HTTP 401):
+  { "ok": false, "error": "auth_required" }
+
+Forbidden  (HTTP 403, e.g. admin/system account):
+  { "ok": false, "error": "deletion_not_permitted",
+    "message": "Contact support to delete this account." }
+
+Conflict  (HTTP 409, e.g. active Stripe subscription still billing):
+  { "ok": false, "error": "active_subscription",
+    "message": "Cancel your subscription before deleting your account." }
+
+================================================================================
+SEMANTICS — what "delete" actually means
+================================================================================
+
+Phase 1 (synchronous, must complete before 200):
+  1. Revoke every session token belonging to this account (the calling token
+     included — the client expects 401 on its next request).
+  2. Mark the account row as `deleted_at = NOW()` and scrub PII columns:
+       phone_number, email, telegram_username, telegram_chat_id, full_name,
+       avatar_url, stripe_customer_id (after Stripe-side detach below).
+  3. Detach the Stripe customer (`stripe.customers.del(customer_id)`) IF the
+     subscription is in a terminal state (`canceled`, `incomplete_expired`).
+     If it's still active, return HTTP 409 — do NOT silently delete a paying
+     customer's record.
+  4. Revoke the affiliate referral code if one was issued.
+  5. Disconnect the Google Sheet (revoke the sharing entry so the app can no
+     longer read it). The user's copy of the sheet is theirs to keep.
+
+Phase 2 (async, can complete within 30 days per GDPR Art. 17):
+  6. Purge log/audit tables of the account's rows.
+  7. Purge body-measurement, workout, food, and supplement-log rows.
+  8. Purge AI chat history.
+  9. Remove rows from the leaderboard cache.
+ 10. Remove the account from group / run-club / personal-trainer linkage
+     tables.
+
+It is acceptable to do (6)-(10) in a nightly job. The client only requires
+that (1)-(5) have completed when the 200 returns.
+
+================================================================================
+NON-DELETION (legal hold)
+================================================================================
+
+If the account is subject to a legal hold (chargeback under dispute, fraud
+investigation), respond with HTTP 403 `deletion_not_permitted` and surface
+a support contact in `message`. Do NOT silently soft-delete.
+
+================================================================================
+RATE LIMITING
+================================================================================
+
+This endpoint should be rate-limited to 1 successful call per account ever
+(idempotent — second call returns the same `deletedAt`) plus 5 failed calls
+per IP per hour. Deletion is destructive; aggressive throttling is fine.
+
+================================================================================
+WEB-BASED DELETION (Play Store policy requirement)
+================================================================================
+
+Google Play requires a web URL where users can request deletion *without*
+installing the app. Two options, pick one:
+
+  Option A: a static page at https://thetrackerapp.io/delete-account that
+            requires sign-in (same OTP flow as /login) and then hits the
+            same DELETE /api/account endpoint.
+
+  Option B: a documented support email path at support@thetrackerapp.io
+            that completes deletion within 30 days. Less work, but slower
+            and Google ranks the listing slightly lower for it.
+
+Recommend Option A — symmetric with the in-app flow, no manual support load,
+and the page is ~150 LOC against the existing auth surface.
+
+================================================================================
+TEST CHECKLIST
+================================================================================
+
+Backend must verify before shipping:
+  [ ] Deleting an account with an active subscription returns 409, not 200.
+  [ ] Deleting an account with a canceled subscription returns 200 and
+      detaches the Stripe customer.
+  [ ] After deletion, the same phone number / email can register again as a
+      brand-new account (the canonical id is recycled or freshly minted).
+  [ ] After deletion, the old session token returns 401 on any authenticated
+      endpoint.
+  [ ] Calling DELETE /api/account twice in a row returns 200 idempotently
+      with the same `deletedAt`.
+  [ ] The bot (SMS/iMessage/Telegram) reflects the deletion within 60s —
+      messages from the deleted account get a "no account found" reply.
+  [ ] Audit log records `event=account_deleted, accountId=..., reason=...`.
+
+================================================================================
+MOBILE INTEGRATION (already shipped in mobile/ commit ead5763)
+================================================================================
+
+Mobile app expects:
+  - DELETE method (not POST). Both stores' review docs check this.
+  - Bearer token in Authorization header.
+  - 200 with `ok:true` is treated as success → client wipes SecureStore +
+    redirects to /(auth)/login.
+  - Any 4xx surfaces the `message` field if present, else a generic
+    "Could not delete account" string.
+
+The mobile button lives in src/app/(tabs)/account.tsx with a two-step
+typed-confirmation dialog ("type DELETE to confirm"). See that file for the
+exact client-side flow.

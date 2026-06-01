@@ -64,17 +64,43 @@ Reserve these in App Store Connect and Play Console *before* your first EAS buil
 
 ## Building for the stores (EAS)
 
+`eas.json` is already configured with three profiles: `development`, `preview`, `production`.
+
 After accounts are approved:
 
 ```bash
 npm install -g eas-cli
-eas login                          # use the Expo account you'll own the app under
-eas build:configure                # one-time: creates eas.json
-eas build --platform ios --profile preview     # internal TestFlight build
-eas build --platform android --profile preview # internal Google Play closed-test build
-eas submit -p ios --latest         # uploads to App Store Connect → TestFlight
-eas submit -p android --latest     # uploads to Play Console
+eas login                                       # use the Expo account that will own the app
+eas init                                        # generates extra.eas.projectId in app.json
+
+# One-time setup per platform
+eas credentials                                 # creates iOS dist cert + Android upload key
+
+# Builds
+eas build --profile development --platform all  # local sim/emulator dev client
+eas build --profile preview --platform all      # internal TestFlight + Play internal track
+eas build --profile production --platform all   # store-ready, auto-increments build number
+
+# Submissions
+eas submit --profile production --platform ios       # → App Store Connect / TestFlight
+eas submit --profile production --platform android   # → Play Console internal track (draft)
 ```
+
+### Required placeholder edits in `eas.json` before first submit
+
+| Field | Where to find it |
+| --- | --- |
+| `submit.production.ios.appleTeamId` | App Store Connect → Membership → Team ID |
+| `submit.production.ios.ascAppId` | App Store Connect → your app → App Information → Apple ID |
+| `submit.production.android.serviceAccountKeyPath` | Play Console → API access → create a service account, download the JSON key, save as `mobile/play-service-account.json` (gitignored) |
+
+### OTA updates (no store review required for JS changes)
+
+```bash
+eas update --channel production --message "Fix sheet link copy"
+```
+
+Three channels are pre-wired in `eas.json`: `development`, `preview`, `production`. Each store build is tied to a channel and pulls JS updates from that channel on launch.
 
 Apple requires the Apple Developer Program membership active before `eas submit -p ios` works. Google requires the Play Console account paid + identity-verified.
 

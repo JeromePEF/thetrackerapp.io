@@ -1,7 +1,19 @@
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { deleteAccount } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
 import { fetchPortal } from "@/lib/api/portal";
 import type { PortalResponse } from "@/lib/api/types";
@@ -14,6 +26,50 @@ export default function AccountScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const onDelete = useCallback(async () => {
+    if (confirmText.trim().toUpperCase() !== "DELETE" || deleteBusy) return;
+    setDeleteBusy(true);
+    setDeleteError(null);
+    try {
+      await deleteAccount();
+      // Deliberately do not show a success message — sign-out and route to
+      // the login screen is the visible confirmation.
+      await signOut();
+    } catch (err) {
+      const msg =
+        err instanceof ApiError
+          ? `${err.message}${err.status ? ` (HTTP ${err.status})` : ""}`
+          : err instanceof Error
+          ? err.message
+          : "Could not delete account.";
+      setDeleteError(msg);
+      setDeleteBusy(false);
+    }
+  }, [confirmText, deleteBusy, signOut]);
+
+  const openDelete = useCallback(() => {
+    Alert.alert(
+      "Delete account?",
+      "This permanently removes your account, your sessions, and your tracking history. Your Google Sheet stays in your Drive but will be disconnected from us. This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Continue",
+          style: "destructive",
+          onPress: () => {
+            setConfirmText("");
+            setDeleteError(null);
+            setDeleteOpen(true);
+          },
+        },
+      ],
+    );
+  }, []);
 
   const load = useCallback(async () => {
     if (!contact) return;
@@ -75,7 +131,60 @@ export default function AccountScreen() {
         >
           <Text style={styles.signOutLabel}>Sign out</Text>
         </Pressable>
+
+        <Pressable
+          onPress={openDelete}
+          style={({ pressed }) => [styles.delete, pressed && { opacity: 0.85 }]}
+        >
+          <Text style={styles.deleteLabel}>Delete account</Text>
+        </Pressable>
       </ScrollView>
+
+      <Modal visible={deleteOpen} transparent animationType="fade" onRequestClose={() => setDeleteOpen(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Confirm deletion</Text>
+            <Text style={styles.modalBody}>
+              Type <Text style={styles.modalCode}>DELETE</Text> to permanently delete your account, all sessions, and your tracking history.
+            </Text>
+            <TextInput
+              value={confirmText}
+              onChangeText={setConfirmText}
+              placeholder="DELETE"
+              placeholderTextColor="#5b6a7a"
+              autoCapitalize="characters"
+              autoCorrect={false}
+              style={styles.modalInput}
+              editable={!deleteBusy}
+            />
+            {deleteError ? <Text style={styles.error}>{deleteError}</Text> : null}
+            <View style={styles.modalRow}>
+              <Pressable
+                onPress={() => setDeleteOpen(false)}
+                disabled={deleteBusy}
+                style={({ pressed }) => [styles.modalCancel, pressed && { opacity: 0.85 }]}
+              >
+                <Text style={styles.modalCancelLabel}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={onDelete}
+                disabled={confirmText.trim().toUpperCase() !== "DELETE" || deleteBusy}
+                style={({ pressed }) => [
+                  styles.modalConfirm,
+                  (confirmText.trim().toUpperCase() !== "DELETE" || deleteBusy) && styles.modalConfirmDisabled,
+                  pressed && { opacity: 0.85 },
+                ]}
+              >
+                {deleteBusy ? (
+                  <ActivityIndicator color="#ecf4ff" />
+                ) : (
+                  <Text style={styles.modalConfirmLabel}>Delete forever</Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -112,8 +221,69 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: "center",
-    borderColor: "#ff6b6b",
+    borderColor: "#24a7b4",
     borderWidth: 1,
   },
-  signOutLabel: { color: "#ff6b6b", fontSize: 16, fontWeight: "600" },
+  signOutLabel: { color: "#24a7b4", fontSize: 16, fontWeight: "600" },
+  delete: {
+    marginTop: 12,
+    backgroundColor: "transparent",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  deleteLabel: { color: "#ff6b6b", fontSize: 14, fontWeight: "500" },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.65)",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
+  },
+  modalCard: {
+    backgroundColor: "#0a2026",
+    borderRadius: 16,
+    padding: 24,
+    borderColor: "#1f3b44",
+    borderWidth: 1,
+    width: "100%",
+    maxWidth: 420,
+    gap: 12,
+  },
+  modalTitle: { color: "#ecf4ff", fontSize: 20, fontWeight: "700" },
+  modalBody: { color: "#8a96a8", fontSize: 14, lineHeight: 20 },
+  modalCode: { color: "#ff6b6b", fontFamily: "Menlo", fontWeight: "700" },
+  modalInput: {
+    backgroundColor: "#021416",
+    borderColor: "#1f3b44",
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    color: "#ecf4ff",
+    fontSize: 16,
+    letterSpacing: 4,
+    textAlign: "center",
+    fontFamily: "Menlo",
+  },
+  modalRow: { flexDirection: "row", gap: 12, marginTop: 4 },
+  modalCancel: {
+    flex: 1,
+    backgroundColor: "#021416",
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: "center",
+    borderColor: "#1f3b44",
+    borderWidth: 1,
+  },
+  modalCancelLabel: { color: "#ecf4ff", fontSize: 15, fontWeight: "600" },
+  modalConfirm: {
+    flex: 1,
+    backgroundColor: "#ff6b6b",
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  modalConfirmDisabled: { opacity: 0.35 },
+  modalConfirmLabel: { color: "#021416", fontSize: 15, fontWeight: "700" },
 });
