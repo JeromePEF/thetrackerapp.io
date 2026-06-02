@@ -115,9 +115,18 @@ async function fetchUpstreamFlags() {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 4000);
   try {
+    // A browser-like User-Agent + Accept-Language is required because the
+    // upstream sits behind Cloudflare's WAF which blocks bare server-to-
+    // server requests from AWS Lambda IP ranges. The headers don't make
+    // the request a browser — they just clear CF's "obvious bot" heuristic.
     const res = await fetch(UPSTREAM_URL, {
       method: "GET",
-      headers: { Accept: "application/json" },
+      headers: {
+        Accept: "application/json",
+        "Accept-Language": "en-US,en;q=0.9",
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15 TheTrackerApp/HomeRenderer",
+      },
       signal: controller.signal,
     });
     if (!res.ok) throw new Error(`Upstream HTTP ${res.status}`);
