@@ -1,4 +1,6 @@
 // Vercel Edge Middleware - runs before any page loads
+import { rewrite } from "@vercel/edge";
+
 export const config = {
   matcher: ['/((?!api|_next|favicon|.*\\..*).*)'],
 };
@@ -100,5 +102,17 @@ export default async function middleware(request) {
     }
   } catch (e) {
     // If control API fails, let the page load normally
+  }
+
+  // For the homepage, route through our server-renderer so the messaging
+  // services + SVG preloads are injected into <head>. Vercel's filesystem
+  // serves `dist/index.html` for `/` BEFORE checking `vercel.json` rewrites,
+  // so the only way to intercept is here in middleware.
+  //
+  // We exclude the dashboard subdomain — it has its own host-scoped redirect
+  // (`/` -> `/dashboard`) in vercel.json, but redirects run before middleware
+  // so by the time we get here the host is guaranteed to be a marketing one.
+  if (pathname === "/" || pathname === "/index" || pathname === "/index.html") {
+    return rewrite(new URL("/api/home", request.url));
   }
 }
