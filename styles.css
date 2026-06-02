@@ -34,10 +34,19 @@ body {
 }
 
 #appShell {
+  /* Fixed "design canvas" approach.
+     The hero is laid out at a natural 1440×~900 design size and then the
+     JS scaler in src/main.js (fitAppToViewport) applies a uniform
+     transform: scale() to make it fit any viewport while preserving
+     aspect ratio. Pinning the inner layout to 100vh defeats the scaler
+     because scrollHeight ≈ viewportHeight → scale=1 always → no
+     scaling → content silently overflows. Giving the canvas an
+     intrinsic size + natural content heights lets the scaler shrink
+     everything together when needed (and leaves wide screens at 1:1). */
   position: fixed;
   left: 0;
   top: 0;
-  width: 100%;
+  width: 1440px;
   transform-origin: top left;
   will-change: transform;
 }
@@ -243,12 +252,13 @@ body {
 }
 
 .leaderboard-panel {
+  /* Natural-height column. The JS viewport scaler shrinks the whole
+     canvas to fit short viewports — clipping individual sections here
+     used to hide entries; natural sizing keeps every section visible. */
   padding-top: 0.25rem;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  overflow: hidden;
-  height: 100%;
 }
 
 .leaderboard-section {
@@ -257,9 +267,6 @@ body {
   padding: 0.3rem 0.4rem;
   margin-bottom: 0;
   background: rgba(255, 255, 255, 0.015);
-  flex-shrink: 1;
-  min-height: 0;
-  overflow: hidden;
 }
 
 .leaderboard-panel h2 {
@@ -481,6 +488,15 @@ body {
   font-size: 0.62rem;
 }
 
+/* Cap each pebble sub-list to ~3 entries so the Pebble Live section
+   doesn't dominate the natural canvas height. Without a cap the section
+   stacks 5 sub-lists × up to 10 entries each (~700px), forcing the JS
+   scaler to shrink everything heavily on shorter viewports. */
+.pebble-leaderboard-list {
+  max-height: calc(1.58rem * 3 + 0.6rem);
+  overflow: hidden;
+}
+
 .hero-panel {
   display: grid;
   gap: 0.82rem;
@@ -625,13 +641,12 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr) auto;
   gap: 1rem;
-  /* dvh handles mobile browser chrome correctly; the layout always fits the
-     visible viewport. min-height keeps the layout filling the viewport on
-     short windows while still allowing the inner columns to shrink. */
-  height: calc(100dvh - 96px);
-  min-height: 0;
+  /* Natural content height. The JS viewport scaler measures the appShell
+     and uniformly scales it down on smaller viewports. Pinning to 100vh
+     here defeats the scaler — it makes scrollHeight ≈ viewportHeight so
+     scale always equals 1, and content silently overflows internally. */
   padding: 0.25rem 1.5rem;
-  overflow: hidden;
+  width: 100%;
   max-width: 1440px;
   margin: 0 auto;
 }
@@ -639,42 +654,28 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
 .hero-center-column {
   display: flex;
   flex-direction: column;
-  /* IMPORTANT: never center-align this column. When the content is taller
-     than the available height, justify-content:center crops BOTH ends of
-     the column — which silently hides the submit button on shorter
-     MacBook screens. flex-start + min-height:0 keeps the form visible
-     and lets the service zone (above) shrink first. */
-  justify-content: flex-start;
+  /* Centered: with natural canvas sizing the column matches the tallest
+     sibling (leaderboard). Centering the form visually balances the row
+     without ever cropping content — the JS scaler keeps everything in
+     view on smaller viewports. */
+  justify-content: center;
   align-items: stretch;
   gap: 0.5rem;
   padding: 0;
-  overflow: hidden;
   width: 100%;
-  min-height: 0;
-  height: 100%;
 }
 
 .hero-center-column .live-toast-container {
   width: 100%;
-  flex: 0 0 auto;
 }
 
 .hero-center-column .service-zone {
   width: 100%;
-  /* Service carousel is the ONLY part that shrinks when vertical space is
-     tight. The signup form below it keeps its natural height so the
-     submit button is always reachable. */
-  flex: 1 1 0;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
 }
 
 .hero-center-column .signup-form {
   width: 100%;
   max-width: 100%;
-  flex: 0 0 auto;
 }
 
 .hero-right-column {
@@ -696,20 +697,15 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
 
 .iphone-frame-compact {
   /* iPhone 14/15 aspect ratio (393:852).
-     The frame must scale by WHICHEVER constraint is tighter — vertical
-     viewport OR the horizontal slot allotted by the grid. Previously the
-     height was driven purely by 100vh, which made the iPhone overflow
-     its column horizontally on narrow / shorter-aspect MacBook viewports
-     and pushed the onboarding form off-screen. */
-  --frame-max-height: calc(100dvh - 100px);
-  --frame-max-width: min(28vw, 320px);
-  --frame-height-from-width: calc(var(--frame-max-width) * 852 / 393);
-  height: min(var(--frame-max-height), var(--frame-height-from-width));
+     Natural design size — JS scaler handles fit-to-viewport. Inside the
+     1440px design canvas we allow the phone roughly 320px of horizontal
+     space, which yields ~694px of height at the correct aspect ratio. */
+  width: 320px;
+  height: 694px;
   aspect-ratio: 393 / 852;
-  width: auto;
   background: #1c1c1e;
-  border-radius: clamp(28px, 4vw, 50px);
-  padding: clamp(5px, 0.8vw, 10px);
+  border-radius: 50px;
+  padding: 10px;
   box-shadow: 0 25px 80px rgba(0, 0, 0, 0.7), inset 0 0 0 2px rgba(255, 255, 255, 0.1);
   position: relative;
   display: flex;
@@ -1130,23 +1126,18 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
   display: grid;
   gap: 0.4rem;
   grid-template-columns: 1fr;
-  min-height: 0;
 }
 
 .service-preview {
   display: grid;
   justify-items: center;
   width: 100%;
-  min-height: 0;
 }
 
 .service-shell {
-  /* Shrink-to-fit: when the hero column is short, this collapses gracefully
-     instead of forcing the form below it off-screen. The clamp acts as an
-     UPPER bound only, while min-height:0 lets it shrink as needed. */
-  min-height: 0;
-  height: 100%;
-  max-height: clamp(220px, 38vh, 460px);
+  /* Natural design size. JS viewport scaler shrinks the whole canvas
+     proportionally on smaller viewports — keeping aspect ratio intact. */
+  height: 360px;
   width: 100%;
   display: grid;
   place-items: center;
@@ -1158,8 +1149,7 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
 .service-carousel {
   position: relative;
   width: 100%;
-  height: 100%;
-  max-height: clamp(220px, 38vh, 460px);
+  height: 360px;
   user-select: none;
 }
 
@@ -1188,10 +1178,9 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
   position: absolute;
   top: 50%;
   left: 50%;
-  /* min() across all three axes (vh, vw, hard cap) so the icons never
-     overflow their container regardless of which dimension is tightest. */
-  width: min(38vh, 32vw, 380px);
-  height: min(38vh, 32vw, 380px);
+  /* Natural design size — uniform scaler handles fit. */
+  width: 320px;
+  height: 320px;
   transform: translate(-50%, -50%);
   border: 0;
   background: transparent;
@@ -2261,130 +2250,6 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
   
   .iphone-frame-compact .messages-contact {
     font-size: 14px;
-  }
-}
-
-/* ============================================
-   HEIGHT-AWARE BREAKPOINTS
-   Smaller MacBook viewports (e.g. 13" at 1280x800 with browser chrome
-   typically ~720px of viewport height) were clipping the onboarding
-   submit button. These rules tighten vertical paddings/gaps and shrink
-   the service carousel so the form's CTA is always visible without
-   touching the wide-screen design. Width is unaffected.
-   ============================================ */
-@media (max-height: 860px) {
-  .hero-fullscreen-layout {
-    padding: 0.15rem 1rem;
-    gap: 0.75rem;
-  }
-
-  .service-shell,
-  .service-carousel {
-    max-height: clamp(180px, 30vh, 360px);
-  }
-
-  .service-carousel-item {
-    width: min(30vh, 28vw, 320px);
-    height: min(30vh, 28vw, 320px);
-  }
-
-  .signup-form {
-    padding: 0.45rem 0.6rem;
-  }
-
-  .signup-form label {
-    grid-template-rows: auto minmax(34px, auto) auto;
-    gap: 0.18rem;
-    font-size: 0.8rem;
-  }
-
-  .signup-form input,
-  .signup-form select {
-    min-height: 38px;
-    padding: 0.5rem 0.7rem;
-    font-size: 0.88rem;
-  }
-
-  .field-help {
-    min-height: 1.4rem;
-    font-size: 0.68rem;
-  }
-
-  .consent-row {
-    margin-top: 0.45rem;
-    font-size: 0.72rem;
-  }
-
-  .cta-row {
-    margin-top: 0.55rem;
-  }
-
-  .signup-form button {
-    padding: 0.62rem 0.95rem;
-    font-size: 0.92rem;
-    min-width: 220px;
-  }
-}
-
-@media (max-height: 720px) {
-  .hero-fullscreen-layout {
-    padding: 0.1rem 0.75rem;
-    gap: 0.6rem;
-  }
-
-  .service-shell,
-  .service-carousel {
-    max-height: clamp(150px, 24vh, 280px);
-  }
-
-  .service-carousel-item {
-    width: min(24vh, 24vw, 260px);
-    height: min(24vh, 24vw, 260px);
-  }
-
-  .service-carousel-label {
-    font-size: 0.68rem;
-  }
-
-  .service-carousel-hint {
-    display: none;
-  }
-
-  .signup-form {
-    padding: 0.35rem 0.55rem;
-  }
-
-  .signup-form label {
-    grid-template-rows: auto minmax(32px, auto) auto;
-    font-size: 0.76rem;
-  }
-
-  .signup-form input,
-  .signup-form select {
-    min-height: 34px;
-    padding: 0.4rem 0.6rem;
-    font-size: 0.84rem;
-  }
-
-  .field-help {
-    min-height: 1.1rem;
-    font-size: 0.64rem;
-  }
-
-  .consent-row {
-    margin-top: 0.35rem;
-    font-size: 0.68rem;
-    line-height: 1.25;
-  }
-
-  .cta-row {
-    margin-top: 0.4rem;
-  }
-
-  .signup-form button {
-    padding: 0.55rem 0.85rem;
-    font-size: 0.86rem;
-    min-width: 200px;
   }
 }
 
