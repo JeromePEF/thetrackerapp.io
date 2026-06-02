@@ -1243,20 +1243,23 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
 }
 
 .service-carousel-label {
-  margin: 0.2rem 0 0;
+  margin: 0.25rem 0 0;
   font-family: "Orbitron", sans-serif;
   letter-spacing: 0.05em;
-  font-size: 0.75rem;
+  /* Bumped from 0.75 → 0.95rem so "iMessage selected" stays readable
+     after the JS viewport scaler shrinks the canvas. */
+  font-size: 0.95rem;
   text-transform: uppercase;
   color: #e6f2ff;
-  min-height: 1rem;
+  min-height: 1.2rem;
   white-space: nowrap;
 }
 
 .service-carousel-hint {
-  margin: 0.1rem 0 0;
+  margin: 0.18rem 0 0;
   color: #9db2c6;
-  font-size: 0.7rem;
+  /* Bumped from 0.7 → 0.88rem for legibility at all viewport sizes. */
+  font-size: 0.88rem;
 }
 
 .signup-form {
@@ -1327,31 +1330,54 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
 
 .signup-form label {
   display: grid;
-  gap: 0.25rem;
-  grid-template-rows: auto minmax(36px, auto) auto;
+  gap: 0.3rem;
+  grid-template-rows: auto minmax(44px, auto) auto;
   align-content: start;
-  font-size: 0.85rem;
+  /* Bumped from 0.85 → 1.05rem so post-scale text on laptop viewports
+     (which the JS viewport scaler renders at ~85-95%) lands at a
+     comfortable ~16px effective size for all ages. */
+  font-size: 1.05rem;
   color: #f6fbff;
   font-weight: 700;
 }
 
-.signup-form label > span {
-  min-height: 1.2rem;
+.signup-form label > span,
+.signup-form label > .label-text {
+  min-height: 1.4rem;
   display: flex;
   align-items: center;
+  gap: 0.15rem;
+}
+
+/* Red required marker — visible at all viewport scales. aria-hidden in
+   markup so screen readers don't double-announce alongside the actual
+   `required` attribute on the inputs. */
+.required-mark {
+  color: #ff5f5f;
+  font-weight: 800;
+  font-size: 1.05em;
+  line-height: 1;
+  margin-left: 0.12em;
+  text-shadow: 0 0 6px rgba(255, 95, 95, 0.35);
+}
+
+.consent-row-text .required-mark {
+  margin-left: 0;
+  margin-right: 0.25em;
 }
 
 .signup-form input,
 .signup-form select {
   width: 100%;
-  min-height: 44px;
+  min-height: 50px;
   border: 2px solid #7ca9ff;
   border-radius: 9px;
-  padding: 0.7rem 0.85rem;
+  padding: 0.75rem 0.9rem;
   background: #f3f7ff;
   color: #08111c;
   font: inherit;
-  font-size: 0.94rem;
+  /* Bumped from 0.94 → 1.1rem for readability at scaled viewports. */
+  font-size: 1.1rem;
   font-weight: 600;
   scroll-margin-bottom: calc(8.5rem + env(safe-area-inset-bottom, 0px));
 }
@@ -1382,9 +1408,11 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
 
 .field-help {
   display: block;
-  min-height: 2.1rem;
+  min-height: 2.4rem;
   color: #c8d5e7;
-  font-size: 0.74rem;
+  /* Bumped from 0.74 → 0.9rem so helper text remains legible after the
+     viewport scaler shrinks the canvas on laptop displays. */
+  font-size: 0.9rem;
   line-height: 1.35;
 }
 
@@ -1402,13 +1430,14 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
 }
 
 .consent-row {
-  margin-top: 0.75rem;
+  margin-top: 0.85rem;
   display: flex;
   width: 100%;
   align-items: flex-start;
-  gap: 0.5rem;
-  font-size: 0.78rem;
-  line-height: 1.35;
+  gap: 0.55rem;
+  /* Bumped from 0.78 → 0.95rem for clarity at scaled viewports. */
+  font-size: 0.95rem;
+  line-height: 1.4;
   color: #d7e4f4;
   opacity: 1;
   visibility: visible;
@@ -1541,14 +1570,15 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
   border: 0;
   background: linear-gradient(90deg, #38ffd3, #2ee7f2);
   color: var(--accent-ink);
-  padding: 0.82rem 1.05rem;
+  padding: 0.95rem 1.25rem;
   border-radius: 11px;
   font-family: "Orbitron", sans-serif;
-  font-size: 1rem;
+  /* Bumped from 1 → 1.15rem so CTA reads clearly at scaled sizes. */
+  font-size: 1.15rem;
   font-weight: 800;
   letter-spacing: 0.03em;
   cursor: pointer;
-  min-width: 260px;
+  min-width: 280px;
   text-align: center;
 }
 

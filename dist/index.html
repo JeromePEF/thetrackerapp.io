@@ -114,12 +114,12 @@
       href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
-    <script type="module" crossorigin src="/assets/main-By0h1QbM.js"></script>
+    <script type="module" crossorigin src="/assets/main-B0uLqlcg.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-BJzIe6l4.js">
     <link rel="modulepreload" crossorigin href="/assets/feature-flags-CbA8ec72.js">
     <link rel="modulepreload" crossorigin href="/assets/google-analytics-DEhgzEy6.js">
     <link rel="modulepreload" crossorigin href="/assets/api-IjnKPKo1.js">
-    <link rel="stylesheet" crossorigin href="/assets/shared-sections-Ds4tFHjq.css">
+    <link rel="stylesheet" crossorigin href="/assets/shared-sections-D-koic6M.css">
   </head>
   <body>
     <!-- Skip to main content link for keyboard users (ADA compliance) -->
@@ -296,14 +296,14 @@
           <form id="signupForm" class="signup-form" novalidate>
             <div class="input-grid">
               <label for="serviceSelect">
-                Service
-                <select id="serviceSelect" name="serviceSelect" aria-label="Select service"></select>
+                <span class="label-text">Service<span class="required-mark" aria-hidden="true">*</span></span>
+                <select id="serviceSelect" name="serviceSelect" aria-label="Select service" required></select>
                 <small class="field-help">Choose where onboarding messages should be sent.</small>
               </label>
 
               <label id="serviceIdentityLabel" for="serviceIdentityInput">
-                <span id="serviceIdentityText">Phone Number</span>
-                <input id="serviceIdentityInput" name="serviceIdentity" type="text" autocomplete="off" placeholder="(555) 555-5555" />
+                <span class="label-text"><span id="serviceIdentityText">Phone Number</span><span class="required-mark" aria-hidden="true">*</span></span>
+                <input id="serviceIdentityInput" name="serviceIdentity" type="text" autocomplete="off" placeholder="(555) 555-5555" required />
                 <small id="serviceIdentityHelp" class="field-help">Required for the selected service.</small>
               </label>
 
@@ -324,8 +324,9 @@
                  checkbox here. AI processing consent is handled the same
                  way (covered in the Privacy Policy). -->
             <label id="consentWrap" class="consent-row" for="consentCheckbox">
-              <input id="consentCheckbox" name="consentCheckbox" type="checkbox" />
+              <input id="consentCheckbox" name="consentCheckbox" type="checkbox" required />
               <span class="consent-row-text">
+                <span class="required-mark" aria-hidden="true">*</span>
                 I consent to receive onboarding text messages and agree to the
                 <a href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a>
                 and
