@@ -697,11 +697,9 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
 
 .iphone-frame-compact {
   /* iPhone 14/15 aspect ratio (393:852).
-     Natural design size — JS scaler handles fit-to-viewport. Inside the
-     1440px design canvas we allow the phone roughly 320px of horizontal
-     space, which yields ~694px of height at the correct aspect ratio. */
-  width: 320px;
-  height: 694px;
+     Natural design size — JS scaler handles fit-to-viewport. */
+  width: 340px;
+  height: 737px;
   aspect-ratio: 393 / 852;
   background: #1c1c1e;
   border-radius: 50px;
@@ -2250,6 +2248,25 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
   
   .iphone-frame-compact .messages-contact {
     font-size: 14px;
+  }
+}
+
+/* ============================================
+   SMALL-VIEWPORT PRIORITIZATION
+   On laptops (e.g. MacBook Air 13") the 5-sub-list Pebble Live section
+   bloats the canvas height (~700px just for that section), forcing the
+   JS viewport scaler to shrink the entire hero — leaderboard text gets
+   uncomfortably small. We drop Pebble Live below a 1000px viewport
+   height OR a 1500px viewport width so the priority sections
+   (Strength + Calisthenics + Top Streaks) and the onboarding form
+   render at a readable scale.
+   Media queries reflect ACTUAL viewport size, not the scaled canvas,
+   so they fire correctly regardless of the transform: scale() applied
+   to #appShell. The pebble section is preserved on bigger displays
+   where there's headroom for it. ============================================ */
+@media (max-width: 1500px), (max-height: 1000px) {
+  .leaderboard-section-pebble {
+    display: none;
   }
 }
 
