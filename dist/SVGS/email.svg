@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-label="Email">
+  <defs>
+    <linearGradient id="emailBg" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="64" height="64" rx="14" ry="14" fill="url(#emailBg)"/>
+  <path d="M14 21h36c1.66 0 3 1.34 3 3v18c0 1.66-1.34 3-3 3H14c-1.66 0-3-1.34-3-3V24c0-1.66 1.34-3 3-3z" fill="#ffffff"/>
+  <path d="M11 25l21 14 21-14" fill="none" stroke="#1d4ed8" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</svg>

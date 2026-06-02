@@ -221,6 +221,16 @@ function startVersionPolling() {
     try {
       const flags = await fetchFeatureFlags();
       applyFeatureFlags(flags);
+      // Broadcast so any module that depends on flags (e.g. the homepage's
+      // service carousel reading `flags.messagingServices`) can re-render
+      // without polling on its own. Listeners receive the latest flags
+      // object in `event.detail`. Idempotent — safe to dispatch even when
+      // nothing has changed.
+      try {
+        window.dispatchEvent(new CustomEvent("featureflags:updated", { detail: flags }));
+      } catch {
+        /* CustomEvent unsupported (ancient browser) — ignore */
+      }
       // Re-run dependent UI hooks (footer socials + chatbot) so they pick up
       // any flips. Both modules are idempotent / teardown-safe.
       try {

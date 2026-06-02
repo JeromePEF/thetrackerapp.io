@@ -40,6 +40,12 @@
     }
   ],
   "rewrites": [
-    { "source": "/dashboard-endpoints", "destination": "/api/dashboard-endpoints" }
-  ]
+    { "source": "/dashboard-endpoints", "destination": "/api/dashboard-endpoints" },
+    { "source": "/", "destination": "/api/home" }
+  ],
+  "functions": {
+    "api/home.js": {
+      "includeFiles": "dist/index.html"
+    }
+  }
 }

@@ -4,13 +4,21 @@ import { initGoogleAnalytics } from "./google-analytics.js";
 import { attachRefToPayload, captureRefFromUrl } from "./affiliate-ref.js";
 import { fetchFeatureFlags, applyFeatureFlags } from "./feature-flags.js";
 
-const SERVICES = [
+// All known messaging providers. Display is gated by the server-injected
+// `window.__MESSAGING_SERVICES__` object (see /api/home.js) AND the
+// runtime feature-flags fetch as a fallback. iMessage is ALWAYS shown,
+// regardless of upstream — see filterServicesByFlags() below.
+//
+// The `flagKey` is the property name inside `messagingServices` from
+// /api/control. Keep these in sync with the backend (CONTROL_WEBHOOK_BACKEND.txt).
+const ALL_SERVICES = [
   {
     id: "imessage",
     label: "iMessage",
     logo: "/SVGS/IMessage_logo.svg",
     provider: "iMessage",
     identityKind: "imessage-contact",
+    flagKey: "iMessage",
   },
   {
     id: "sms",
@@ -18,6 +26,15 @@ const SERVICES = [
     logo: "/SVGS/SMS.svg",
     provider: "SMS",
     identityKind: "phone",
+    flagKey: "sms",
+  },
+  {
+    id: "whatsapp",
+    label: "WhatsApp",
+    logo: "/SVGS/WhatsApp.svg",
+    provider: "WhatsApp",
+    identityKind: "phone",
+    flagKey: "whatsapp",
   },
   {
     id: "telegram",
@@ -25,8 +42,124 @@ const SERVICES = [
     logo: "/SVGS/Telegram_logo.svg",
     provider: "Telegram",
     identityKind: "bot-link",
+    flagKey: "telegram",
+  },
+  {
+    id: "discord",
+    label: "Discord",
+    logo: "/SVGS/discord-icon-svgrepo-com.svg",
+    provider: "Discord",
+    identityKind: "username",
+    flagKey: "discord",
+  },
+  {
+    id: "slack",
+    label: "Slack",
+    logo: "/SVGS/Slack_icon_2019.svg",
+    provider: "Slack",
+    identityKind: "username",
+    flagKey: "slack",
+  },
+  {
+    id: "signal",
+    label: "Signal",
+    logo: "/SVGS/Signal-Logo-Ultramarine.svg",
+    provider: "Signal",
+    identityKind: "phone",
+    flagKey: "signal",
+  },
+  {
+    id: "google-chat",
+    label: "Google Chat",
+    logo: "/SVGS/googlechat.svg",
+    provider: "GoogleChat",
+    identityKind: "username",
+    flagKey: "googleChat",
+  },
+  {
+    id: "email",
+    label: "Email",
+    logo: "/SVGS/email.svg",
+    provider: "Email",
+    identityKind: "username",
+    flagKey: "email",
   },
 ];
+
+// Pick the messaging-services map. Preference order:
+//   1. `window.__MESSAGING_SERVICES__` — injected server-side by
+//      /api/home.js BEFORE main.js executes, so this is available
+//      synchronously on the very first paint with zero extra round-trips.
+//   2. The runtime `feature-flags.js` cache (populated by /api/control).
+//      Used in dev mode or when /api/home is bypassed.
+// iMessage is forced ON in BOTH paths (product rule).
+function resolveMessagingServicesMap(featureFlags) {
+  let map = null;
+  if (typeof window !== "undefined" && window.__MESSAGING_SERVICES__ && typeof window.__MESSAGING_SERVICES__ === "object") {
+    map = window.__MESSAGING_SERVICES__;
+  } else if (featureFlags && featureFlags.messagingServices && typeof featureFlags.messagingServices === "object") {
+    map = featureFlags.messagingServices;
+  }
+  // Defensive default: iMessage on, the rest off. Caller can still override
+  // by re-rendering once real flags arrive.
+  const merged = {
+    iMessage: true,
+    sms: false,
+    whatsapp: false,
+    telegram: false,
+    discord: false,
+    slack: false,
+    signal: false,
+    googleChat: false,
+    email: false,
+    ...(map || {}),
+  };
+  merged.iMessage = true; // never hide
+  return merged;
+}
+
+function filterServicesByFlags(featureFlags) {
+  const map = resolveMessagingServicesMap(featureFlags);
+  const filtered = ALL_SERVICES.filter((s) => {
+    if (s.flagKey === "iMessage") return true; // always shown
+    return map[s.flagKey] === true;
+  });
+  // Guard against a misconfigured backend that toggles everything off —
+  // we must always have at least iMessage so the form is operable.
+  if (filtered.length === 0) {
+    return ALL_SERVICES.filter((s) => s.flagKey === "iMessage");
+  }
+  return filtered;
+}
+
+// Mutable list — initialized from server-injected flags (sync), then
+// re-resolved when async feature flags arrive (e.g. in dev mode or after
+// a backend invalidation).
+let SERVICES = filterServicesByFlags(null);
+
+// Recompute SERVICES from a fresh feature-flags payload and re-render the
+// carousel + select. Safe to call multiple times; idempotent. Preserves
+// the current selection when possible (falls back to the first available
+// service — typically iMessage — if the selected one was just hidden).
+function refreshServicesFromFlags(flags) {
+  const next = filterServicesByFlags(flags);
+  const sameLength = next.length === SERVICES.length;
+  const sameIds = sameLength && next.every((s, i) => s.id === SERVICES[i].id);
+  if (sameIds) {
+    return;
+  }
+  SERVICES = next;
+  if (!SERVICES.find((s) => s.id === state.serviceId)) {
+    state.serviceId = SERVICES[0].id;
+  }
+  try {
+    renderServiceOptions();
+    renderServiceCarousel();
+    updateServiceVisual();
+  } catch (e) {
+    console.warn("refreshServicesFromFlags: re-render failed:", e?.message || e);
+  }
+}
 
 const state = {
   serviceId: "imessage",
@@ -1991,6 +2124,14 @@ function wireEvents() {
     }
   });
 
+  // feature-flags.js dispatches this whenever the upstream control version
+  // bumps (poll cadence: 30 s). Recompute the service carousel so any newly
+  // enabled / disabled messaging channel appears (or disappears) live, no
+  // reload required.
+  window.addEventListener("featureflags:updated", (event) => {
+    refreshServicesFromFlags(event?.detail || null);
+  });
+
   if (els.liveWorkoutToast) {
     els.liveWorkoutToast.addEventListener("click", (e) => {
       e.preventDefault();
@@ -2712,6 +2853,12 @@ async function initFeatureSections() {
   try {
     const flags = await fetchFeatureFlags();
     applyFeatureFlags(flags);
+    // If the server-side injection (window.__MESSAGING_SERVICES__) was
+    // absent (e.g. local `vite` dev, or /api/home unavailable), the
+    // service carousel was rendered with the safe-default subset. Now
+    // that real flags have arrived, recompute + re-render so any newly
+    // enabled channels (WhatsApp, Discord, …) appear without a reload.
+    refreshServicesFromFlags(flags);
     // Footer socials + chatbot widget run as side-effects of feature flags.
     // initFeatureFlags() does both already, but the homepage uses the
     // lower-level fetch+apply pair so we kick them off manually here.
