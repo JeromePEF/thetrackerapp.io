@@ -1,0 +1,1021 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Social Calendar — Brand Tools</title>
+<link rel="icon" href="/public/favicon.svg">
+<style>
+  * { box-sizing: border-box; }
+  html, body { background: #07090d; color: #ecf4ff; margin: 0; font: 14px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, system-ui, sans-serif; }
+  a { color: #38ffd3; text-decoration: none; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+
+  .topbar2 {
+    display: flex; align-items: center; gap: 14px;
+    padding: 10px 18px; border-bottom: 1px solid rgba(255,255,255,.08);
+    background: rgba(7,9,13,.85); backdrop-filter: blur(12px);
+    position: sticky; top: 38px; z-index: 50;
+  }
+  .topbar2 h1 { font-size: 15px; margin: 0; font-weight: 700; }
+  .topbar2 .sub { color: #8a96a8; font-size: 12px; }
+  .topbar2 .spacer { flex: 1; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 999px; background: #131a25; border: 1px solid rgba(255,255,255,.1); font-size: 11px; color: #8a96a8; }
+  .pill.ok { color: #38ffd3; border-color: rgba(56,255,211,.35); }
+  .pill.warn { color: #ffb454; border-color: rgba(255,180,84,.45); }
+  .pill.err { color: #ff7f7f; border-color: rgba(255,127,127,.45); }
+
+  main { display: grid; grid-template-columns: 320px 1fr; gap: 0; min-height: calc(100vh - 90px); }
+  @media (max-width: 1000px) { main { grid-template-columns: 1fr; } }
+  aside.sidebar {
+    background: #0e131b; border-right: 1px solid rgba(255,255,255,.08); padding: 16px;
+    position: sticky; top: 90px; align-self: start; max-height: calc(100vh - 90px); overflow-y: auto;
+  }
+  @media (max-width: 1000px) { aside.sidebar { position: static; max-height: none; } }
+  .content { padding: 18px; }
+
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+  .tab { background: transparent; border: 1px solid rgba(255,255,255,.1); color: #8a96a8; padding: 6px 12px; border-radius: 999px; font-size: 13px; }
+  .tab.active { background: #38ffd3; color: #021416; border-color: #38ffd3; font-weight: 700; }
+
+  .section { margin-bottom: 32px; }
+  .section h2 { margin: 0 0 4px; font-size: 16px; }
+  .section .desc { color: #8a96a8; font-size: 12px; margin: 0 0 14px; }
+
+  .btn { background: #131a25; border: 1px solid rgba(255,255,255,.18); color: #ecf4ff; padding: 7px 12px; border-radius: 8px; font-size: 12px; }
+  .btn:hover { border-color: #38ffd3; }
+  .btn.primary { background: #38ffd3; color: #021416; border-color: #38ffd3; font-weight: 700; }
+  .btn.sm { padding: 5px 9px; font-size: 11px; border-radius: 6px; }
+  .btn.ghost { background: transparent; }
+  .btn.danger { color: #ff7f7f; border-color: rgba(255,127,127,.4); }
+
+  /* ============= CALENDAR ============= */
+  .cal-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; background: #0e131b; border: 1px solid rgba(255,255,255,.08); border-radius: 12px; padding: 10px 12px; }
+  .cal-toolbar .cal-title { font-size: 18px; font-weight: 800; flex: 1; }
+  .seg { display: inline-flex; border: 1px solid rgba(255,255,255,.18); border-radius: 999px; overflow: hidden; }
+  .seg button { background: transparent; color: #ecf4ff; border: 0; padding: 5px 12px; font-size: 12px; }
+  .seg button.active { background: #38ffd3; color: #021416; font-weight: 700; }
+
+  .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .month-grid .dow { color: #8a96a8; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; text-align: center; padding: 4px 0; }
+  .day-cell {
+    background: #0a0e16; border: 1px solid rgba(255,255,255,.05); border-radius: 8px; min-height: 110px;
+    padding: 6px; display: flex; flex-direction: column; gap: 4px; position: relative; cursor: pointer;
+    transition: border-color .12s;
+  }
+  .day-cell:hover { border-color: rgba(56,255,211,.3); }
+  .day-cell.other-month { opacity: .35; }
+  .day-cell.today .day-num { color: #38ffd3; font-weight: 800; }
+  .day-cell .day-num { font-size: 11px; color: #8a96a8; font-weight: 600; }
+  .day-cell .posts { display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
+  .post-chip { display: flex; align-items: center; gap: 4px; font-size: 10px; padding: 2px 5px; border-radius: 4px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.06); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+  .post-chip .pdot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .post-chip.posted { background: rgba(56,255,211,.16); border-color: rgba(56,255,211,.35); }
+  .post-chip.skipped { opacity: .5; text-decoration: line-through; }
+  .post-chip.missed { background: rgba(255,127,127,.14); border-color: rgba(255,127,127,.35); color: #ffb0b0; }
+  .post-chip.planned { background: rgba(255,255,255,.04); }
+  .day-cell .more-link { font-size: 10px; color: #8a96a8; cursor: pointer; padding: 1px 4px; }
+
+  /* List view */
+  .list-view { display: flex; flex-direction: column; gap: 6px; }
+  .list-row { display: grid; grid-template-columns: 92px 1fr auto; gap: 10px; align-items: center; padding: 8px 10px; background: #0e131b; border: 1px solid rgba(255,255,255,.06); border-radius: 8px; cursor: pointer; }
+  .list-row:hover { border-color: rgba(56,255,211,.35); }
+  .list-row.posted { border-left: 3px solid #38ffd3; }
+  .list-row.missed { border-left: 3px solid #ff7f7f; }
+  .list-row.skipped { opacity: .6; }
+  .list-row .dt { color: #8a96a8; font-size: 11px; font-family: ui-monospace, Menlo, monospace; }
+  .list-row .titleline { display: flex; align-items: center; gap: 8px; }
+  .list-row .titleline .title { font-weight: 600; font-size: 13px; }
+  .list-row .platforms { display: inline-flex; gap: 4px; }
+  .list-row .platforms .pchip { font-size: 10px; padding: 2px 6px; border-radius: 999px; }
+
+  /* Sidebar this-week summary */
+  .week-summary { margin-top: 18px; padding: 12px 14px; background: #0a0e16; border: 1px solid rgba(255,255,255,.06); border-radius: 8px; }
+  .week-summary h4 { margin: 0 0 8px; font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: #8a96a8; }
+  .week-summary .ws-row { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 4px 0; }
+  .week-summary .ws-row .pdot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .week-summary .ws-row .ws-name { flex: 1; color: #ecf4ff; }
+  .week-summary .ws-row .ws-prog { color: #8a96a8; font-family: ui-monospace, Menlo, monospace; font-size: 11px; }
+  .week-summary .ws-bar { height: 4px; background: rgba(255,255,255,.06); border-radius: 999px; overflow: hidden; margin-top: 2px; }
+  .week-summary .ws-bar > div { height: 100%; background: #38ffd3; transition: width .2s; }
+  .week-summary .ws-bar > div.over { background: #38ffd3; }
+  .week-summary .ws-bar > div.under { background: #ffb454; }
+  .week-summary .ws-bar > div.behind { background: #ff7f7f; }
+
+  /* ============= TARGETS ============= */
+  .target-grid { display: grid; gap: 8px; }
+  .target-row { display: grid; grid-template-columns: 28px 1fr 80px 100px 1fr 60px; gap: 10px; align-items: center; padding: 10px 12px; background: #0e131b; border: 1px solid rgba(255,255,255,.06); border-radius: 8px; }
+  @media (max-width: 700px) { .target-row { grid-template-columns: 28px 1fr 60px 80px; } .target-row .progress-cell, .target-row .progress-text { display: none; } }
+  .target-row .pdot { width: 14px; height: 14px; border-radius: 4px; }
+  .target-row input[type=number], .target-row select {
+    background: #131a25; border: 1px solid rgba(255,255,255,.18); border-radius: 6px; padding: 5px 8px; color: #ecf4ff; outline: none; font: inherit; font-size: 12px;
+  }
+  .target-row .progress-cell .pbar { height: 6px; background: rgba(255,255,255,.06); border-radius: 999px; overflow: hidden; }
+  .target-row .progress-cell .pbar > div { height: 100%; background: #38ffd3; transition: width .2s; }
+  .target-row .progress-text { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: #8a96a8; text-align: right; }
+
+  /* ============= ANALYTICS ============= */
+  .analytics-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+  .analytics-card { background: #0e131b; border: 1px solid rgba(255,255,255,.06); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .analytics-card .head { display: flex; align-items: center; gap: 8px; }
+  .analytics-card .head .pdot { width: 14px; height: 14px; border-radius: 4px; }
+  .analytics-card .head .name { font-weight: 700; }
+  .analytics-card .head .latest { margin-left: auto; font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: #38ffd3; }
+  .analytics-card .figures { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .analytics-card .fig { text-align: center; padding: 8px; background: #0a0e16; border-radius: 8px; }
+  .analytics-card .fig .v { font-size: 18px; font-weight: 800; color: #38ffd3; }
+  .analytics-card .fig .v.miss { color: #ff7f7f; }
+  .analytics-card .fig .v.ok { color: #38ffd3; }
+  .analytics-card .fig .l { font-size: 10px; color: #8a96a8; text-transform: uppercase; letter-spacing: .12em; }
+  .analytics-card .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .analytics-card canvas { width: 100%; height: 50px; background: #0a0e16; border-radius: 6px; }
+
+  /* ============= PLATFORMS ============= */
+  .plat-grid { display: grid; gap: 8px; }
+  .plat-row { display: grid; grid-template-columns: 14px 1fr 1fr 1fr 80px 80px; gap: 10px; align-items: center; padding: 10px 12px; background: #0e131b; border: 1px solid rgba(255,255,255,.06); border-radius: 8px; }
+  @media (max-width: 700px) { .plat-row { grid-template-columns: 14px 1fr 1fr; } .plat-row .ph-url, .plat-row .ph-color, .plat-row .ph-target { display: none; } }
+  .plat-row input[type=text], .plat-row input[type=url], .plat-row input[type=number] {
+    background: #131a25; border: 1px solid rgba(255,255,255,.18); border-radius: 6px; padding: 5px 8px; color: #ecf4ff; outline: none; font: inherit; font-size: 12px; width: 100%;
+  }
+  .plat-row input[type=color] { width: 40px; height: 28px; padding: 0; background: transparent; border: 1px solid rgba(255,255,255,.18); border-radius: 6px; }
+  .plat-row .pdot { width: 14px; height: 14px; border-radius: 4px; }
+
+  /* Modal */
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.7); display: none; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(4px); padding: 20px; }
+  .modal-backdrop.show { display: flex; }
+  .modal { background: #0e131b; border: 1px solid rgba(255,255,255,.12); border-radius: 14px; padding: 18px; width: 100%; max-width: 460px; max-height: 92vh; overflow-y: auto; }
+  .modal h3 { margin: 0 0 12px; font-size: 16px; }
+  .modal .row { margin-bottom: 10px; }
+  .modal label { display: block; font-size: 11px; color: #8a96a8; text-transform: uppercase; letter-spacing: .12em; margin-bottom: 4px; }
+  .modal input[type=text], .modal input[type=url], .modal input[type=date], .modal input[type=time], .modal input[type=number], .modal select, .modal textarea {
+    width: 100%; background: #131a25; border: 1px solid rgba(255,255,255,.18); border-radius: 8px; padding: 8px 10px; color: #ecf4ff; outline: none; font: inherit;
+  }
+  .modal textarea { resize: vertical; min-height: 60px; }
+  .modal .chip-set { display: flex; flex-wrap: wrap; gap: 6px; }
+  .modal .chip { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,.15); background: #131a25; font-size: 12px; cursor: pointer; user-select: none; }
+  .modal .chip .pdot { width: 8px; height: 8px; border-radius: 50%; }
+  .modal .chip.active { background: rgba(56,255,211,.2); border-color: #38ffd3; }
+  .modal .actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; margin-top: 12px; }
+  .modal .actions .spacer { flex: 1; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #38ffd3; color: #021416; padding: 8px 16px; border-radius: 999px; font-weight: 700; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 200; }
+  .toast.show { opacity: 1; }
+</style>
+<script src="_brand-kit.js"></script>
+</head>
+<body>
+
+<div id="bkNav"></div>
+<script>document.getElementById('bkNav').innerHTML = BrandKit.navStrip('social-calendar');</script>
+
+<div class="topbar2">
+  <h1>Social Calendar</h1>
+  <span class="sub">plan posts · set per-platform targets · log counts</span>
+  <span class="spacer"></span>
+  <span class="pill" id="syncPill">offline</span>
+</div>
+
+<main>
+  <aside class="sidebar">
+    <div id="brandConfig"></div>
+    <div class="week-summary">
+      <h4>This week</h4>
+      <div id="weekSummary"></div>
+    </div>
+  </aside>
+
+  <section class="content">
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-tab="calendar">Calendar</button>
+      <button class="tab" data-tab="targets">Targets</button>
+      <button class="tab" data-tab="analytics">Analytics</button>
+      <button class="tab" data-tab="platforms">Platforms</button>
+    </div>
+
+    <!-- =================== CALENDAR =================== -->
+    <div data-pane="calendar">
+      <div class="cal-toolbar">
+        <button class="btn sm" id="prevBtn">←</button>
+        <button class="btn sm" id="todayBtn">Today</button>
+        <button class="btn sm" id="nextBtn">→</button>
+        <div class="cal-title" id="calTitle"></div>
+        <div class="seg" id="viewSeg">
+          <button class="active" data-view="month">Month</button>
+          <button data-view="list">List</button>
+        </div>
+        <button class="btn sm" id="exportIcs">Export ICS</button>
+        <button class="btn sm primary" id="addPostBtn">+ Post</button>
+      </div>
+      <div id="calBody"></div>
+    </div>
+
+    <!-- =================== TARGETS =================== -->
+    <div data-pane="targets" style="display:none">
+      <div class="section">
+        <h2>Per-platform targets</h2>
+        <p class="desc">Set a posting goal per platform. Period is per-platform — Instagram can be 5/week while LinkedIn is 12/month.</p>
+        <div class="target-grid" id="targetGrid"></div>
+      </div>
+    </div>
+
+    <!-- =================== ANALYTICS =================== -->
+    <div data-pane="analytics" style="display:none">
+      <div class="section">
+        <h2>Analytics</h2>
+        <p class="desc">Latest post count per platform (pulled from <code>/api/social/latest</code> when reachable), with progress toward this period's target. Click <b>Log count</b> to open the profile and paste the current number.</p>
+        <div class="analytics-grid" id="analyticsGrid"></div>
+      </div>
+    </div>
+
+    <!-- =================== PLATFORMS =================== -->
+    <div data-pane="platforms" style="display:none">
+      <div class="section">
+        <h2>Platforms</h2>
+        <p class="desc">Toggle which platforms appear on the calendar, set profile URLs, override brand colors. Custom entries persist on this device.</p>
+        <div class="plat-grid" id="platGrid"></div>
+        <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <button class="btn sm primary" id="addPlatformBtn">+ Add custom platform</button>
+          <button class="btn sm" id="resetPlatformsBtn">Reset platform list to defaults</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- Add/edit post modal -->
+<div class="modal-backdrop" id="postModal">
+  <div class="modal">
+    <h3 id="postModalTitle">New post</h3>
+    <div class="row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div><label>Date</label><input type="date" id="pmDate"></div>
+      <div><label>Time</label><input type="time" id="pmTime"></div>
+    </div>
+    <div class="row">
+      <label>Platforms</label>
+      <div class="chip-set" id="pmPlatforms"></div>
+    </div>
+    <div class="row"><label>Title</label><input type="text" id="pmTitle" placeholder="e.g. AI workout reflections"></div>
+    <div class="row"><label>Notes</label><textarea id="pmNotes" placeholder="copy, hashtags, caption draft..."></textarea></div>
+    <div class="row"><label>Link / asset (optional)</label><input type="url" id="pmLink" placeholder="https://thetrackerapp.io/tools/..."></div>
+    <div class="row">
+      <label>Status</label>
+      <select id="pmStatus">
+        <option value="planned">Planned</option>
+        <option value="posted">Posted</option>
+        <option value="skipped">Skipped</option>
+      </select>
+    </div>
+    <div class="actions">
+      <button class="btn danger sm" id="pmDeleteBtn" style="display:none">Delete</button>
+      <span class="spacer"></span>
+      <button class="btn sm" id="pmCancelBtn">Cancel</button>
+      <button class="btn primary sm" id="pmSaveBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Log count modal -->
+<div class="modal-backdrop" id="countModal">
+  <div class="modal">
+    <h3 id="countModalTitle">Log current count</h3>
+    <p class="desc" id="countModalSub" style="color:#8a96a8;font-size:12px;margin-top:0"></p>
+    <div class="row"><label>Current total posts</label><input type="number" id="cmCount" placeholder="e.g. 412" min="0"></div>
+    <div class="actions">
+      <span class="spacer"></span>
+      <button class="btn sm" id="cmCancelBtn">Cancel</button>
+      <button class="btn primary sm" id="cmSaveBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Custom platform modal -->
+<div class="modal-backdrop" id="platformModal">
+  <div class="modal">
+    <h3>Custom platform</h3>
+    <div class="row"><label>Name</label><input type="text" id="addPlatName" placeholder="My platform"></div>
+    <div class="row"><label>Profile URL</label><input type="url" id="addPlatUrl" placeholder="https://..."></div>
+    <div class="row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div><label>Color</label><input type="color" id="addPlatColor" value="#38ffd3"></div>
+      <div><label>Default target / week</label><input type="number" id="addPlatTarget" value="3" min="0"></div>
+    </div>
+    <div class="actions">
+      <span class="spacer"></span>
+      <button class="btn sm" id="addPlatCancelBtn">Cancel</button>
+      <button class="btn primary sm" id="addPlatSaveBtn">Add</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================================
+   Social Calendar
+   ========================================================================= */
+
+const STORAGE_KEY = 'tta_social_calendar_v1';
+// Local automations server (PM2-managed at /Users/rd/automations/Old Mac Mii Files/Server/server.js).
+// Holds /api/social/{log,latest,goal,goals}. The cron snapshot reads the same
+// host on its next tick and writes the values into the SOCIAL sheet.
+// Override via localStorage.setItem('tta_social_backend','https://...') if needed.
+const BACKEND_BASE = (() => {
+  try { return localStorage.getItem('tta_social_backend') || 'http://127.0.0.1:3011'; }
+  catch { return 'http://127.0.0.1:3011'; }
+})();
+const GOAL_HORIZON_WEEKS = 26; // matches SOCIAL_WEEK_HORIZON in weekly_sheet_snapshot.js
+const $ = (id) => document.getElementById(id);
+const BK = window.BrandKit;
+BK.mountConfigPanel($('brandConfig'));
+
+function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 1800); }
+
+/* ----------------- Default platform registry -----------------
+ * Mirrors scripts/lib/social_platforms.js on the snapshot side.
+ * Brand colors taken from each platform's published guidelines.
+ */
+const DEFAULT_PLATFORMS = [
+  { id: 'bitchute',    name: 'BitChute',                 url: 'https://www.bitchute.com/thetrackerappio',                              color: '#c00000', target: { period: 'week',  count: 1 }, enabled: true,  group: 'brand' },
+  { id: 'rumble',      name: 'Rumble',                   url: 'https://rumble.com/user/thetrackerappio/videos',                        color: '#85c742', target: { period: 'week',  count: 1 }, enabled: true,  group: 'brand' },
+  { id: 'x',           name: 'X (Twitter)',              url: 'https://x.com/thetrackerappio',                                         color: '#ffffff', target: { period: 'week',  count: 7 }, enabled: true,  group: 'brand' },
+  { id: 'instagram',   name: 'Instagram',                url: 'https://www.instagram.com/thetrackerappio/',                            color: '#e1306c', target: { period: 'week',  count: 5 }, enabled: true,  group: 'brand' },
+  { id: 'threads',     name: 'Threads',                  url: 'https://www.threads.com/@thetrackerappio',                              color: '#cccccc', target: { period: 'week',  count: 5 }, enabled: true,  group: 'brand' },
+  { id: 'youtube',     name: 'YouTube',                  url: 'https://www.youtube.com/@thetrackerappio',                              color: '#ff0000', target: { period: 'week',  count: 2 }, enabled: true,  group: 'brand' },
+  { id: 'tiktok',      name: 'TikTok',                   url: 'https://www.tiktok.com/@thetrackerappio',                               color: '#00f2ea', target: { period: 'week',  count: 5 }, enabled: true,  group: 'brand' },
+  { id: 'truthsocial', name: 'Truth Social',             url: 'https://truthsocial.com/@thetrackerappio',                              color: '#5a32a0', target: { period: 'week',  count: 3 }, enabled: true,  group: 'brand' },
+  { id: 'bluesky',     name: 'Bluesky',                  url: 'https://bsky.app/profile/thetrackerappio.bsky.social',                  color: '#0085ff', target: { period: 'week',  count: 5 }, enabled: true,  group: 'brand' },
+  { id: 'primal',      name: 'Primal (Nostr)',           url: 'https://primal.net/p/nprofile1qqsxuursje57m88jyee5zs3k92lfndgqf2myr3zzqhh4zzdtar5e0ksw0yyj6', color: '#a020f0', target: { period: 'week', count: 3 }, enabled: true, group: 'brand' },
+  { id: 'reddit_sub',  name: 'Reddit · r/TheTrackerApp', url: 'https://www.reddit.com/r/TheTrackerApp/',                               color: '#ff4500', target: { period: 'week',  count: 2 }, enabled: true,  group: 'brand' },
+  { id: 'reddit_user', name: 'Reddit · u/thetrackerappio',url:'https://www.reddit.com/user/thetrackerappio/',                          color: '#ff8717', target: { period: 'week',  count: 2 }, enabled: true,  group: 'brand' },
+  { id: 'tumblr',      name: 'Tumblr',                   url: 'https://www.tumblr.com/thetrackerappio',                                color: '#36465d', target: { period: 'week',  count: 2 }, enabled: true,  group: 'brand' },
+  { id: 'mastodon',    name: 'Mastodon',                 url: 'https://mastodon.social/@thetrackerappio',                              color: '#6364ff', target: { period: 'week',  count: 3 }, enabled: true,  group: 'brand' },
+  { id: 'pinterest',   name: 'Pinterest',                url: 'https://www.pinterest.com/thetrackerappio/',                            color: '#e60023', target: { period: 'week',  count: 5 }, enabled: true,  group: 'brand' },
+  { id: 'linkedin',    name: 'LinkedIn (Jerome)',        url: 'https://www.linkedin.com/in/jerome-belcher-7a062b273/',                 color: '#0a66c2', target: { period: 'week',  count: 3 }, enabled: true,  group: 'personal' },
+  { id: 'substack',    name: 'Substack (@romeofoxford)', url: 'https://substack.com/@romeofoxford',                                    color: '#ff6719', target: { period: 'month', count: 2 }, enabled: true,  group: 'personal' },
+  { id: 'kick',        name: 'Kick (romeinexamerica111)',url: 'https://kick.com/romeinexamerica111',                                   color: '#53fc18', target: { period: 'week',  count: 1 }, enabled: true,  group: 'personal' },
+];
+
+/* ----------------- State ----------------- */
+function loadState() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    if (!stored) return freshState();
+    // Merge: keep saved platforms, but ensure all DEFAULT ones exist (unless explicitly removed).
+    const byId = new Map(stored.platforms?.map(p => [p.id, p]) || []);
+    const merged = DEFAULT_PLATFORMS.map(d => byId.get(d.id) ? { ...d, ...byId.get(d.id) } : d);
+    // Append any custom-added platforms not in defaults
+    (stored.platforms || []).forEach(p => { if (!DEFAULT_PLATFORMS.find(d => d.id === p.id)) merged.push(p); });
+    return Object.assign({}, freshState(), stored, { platforms: merged });
+  } catch { return freshState(); }
+}
+function freshState() {
+  return {
+    platforms: DEFAULT_PLATFORMS.map(p => ({ ...p })),
+    posts: [],          // { id, datetime, platformIds:[], title, notes, link, status }
+    snapshots: [],      // { platformId, count, source, at } — local copies of /api/social/log calls
+    uiPrefs: { view: 'month', monthCursor: null, weekStart: 'Sun', currentTab: 'calendar' },
+    backendCounts: {},  // last fetched /api/social/latest snapshot
+    backendGoals: {},   // last fetched /api/social/goals
+    pendingLogs: [],    // queue of POSTs to retry when backend reappears
+    syncToken: '',      // SOCIAL_LOG_TOKEN if user pasted one
+  };
+}
+let STATE = loadState();
+function saveState() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE)); } catch {} }
+
+/* ----------------- Backend ----------------- */
+async function backendGet(path) {
+  try {
+    const r = await fetch(BACKEND_BASE + path, { headers: { 'Accept': 'application/json' } });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.json();
+  } catch (e) { return null; }
+}
+async function backendPost(path, body) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (STATE.syncToken) headers['Authorization'] = 'Bearer ' + STATE.syncToken;
+  try {
+    const r = await fetch(BACKEND_BASE + path, { method: 'POST', headers, body: JSON.stringify(body) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.json();
+  } catch (e) {
+    // Queue for retry
+    STATE.pendingLogs.push({ path, body, queuedAt: Date.now() });
+    saveState();
+    throw e;
+  }
+}
+async function drainPendingLogs() {
+  if (!STATE.pendingLogs.length) return;
+  // Defensive purge: discard any queued item whose shape doesn't match the
+  // endpoint it was originally posted to. Older builds of this page queued
+  // goal-shaped bodies ({kind,weekStart,...}) against /api/social/log, which
+  // — when replayed — corrupted the count cache with goal values. Throw
+  // anything ambiguous on the floor; the calendar resyncs goals on every
+  // load via syncAllTargetsToBackend() anyway, so nothing real is lost.
+  const queued = STATE.pendingLogs.slice().filter(item => {
+    if (!item || !item.path || !item.body) return false;
+    const b = item.body;
+    if (item.path === '/api/social/log') {
+      // count endpoint — must NOT have weekStart/kind:'goal'
+      return !b.weekStart && b.kind !== 'goal' && typeof b.platform === 'string' && Number.isFinite(Number(b.count));
+    }
+    if (item.path === '/api/social/goal') {
+      return typeof b.platform === 'string' && typeof b.weekStart === 'string' && Number.isFinite(Number(b.count));
+    }
+    return false;
+  });
+  STATE.pendingLogs = [];
+  saveState();
+  for (const item of queued) {
+    try { await backendPost(item.path, item.body); }
+    catch { /* re-queues via backendPost */ }
+  }
+}
+async function refreshFromBackend() {
+  const [latest, goals] = await Promise.all([
+    backendGet('/api/social/latest'),
+    backendGet('/api/social/goals?weeks=26'),
+  ]);
+  if (latest) {
+    STATE.backendCounts = latest.platforms || {};
+    saveState();
+    setSyncPill('ok', 'live');
+  } else {
+    setSyncPill('warn', 'offline');
+  }
+  if (goals) STATE.backendGoals = goals;
+  await drainPendingLogs();
+  renderAll();
+}
+function setSyncPill(kind, label) {
+  const p = $('syncPill');
+  p.className = 'pill ' + (kind === 'ok' ? 'ok' : kind === 'warn' ? 'warn' : kind === 'err' ? 'err' : '');
+  p.textContent = label;
+}
+
+/* ----------------- Date helpers ----------------- */
+function ymd(d) { return d.toISOString().slice(0, 10); }
+function localYmd(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+}
+function todayLocal() { const t = new Date(); t.setHours(0, 0, 0, 0); return t; }
+function sundayStart(d) { const c = new Date(d); c.setHours(0,0,0,0); c.setDate(c.getDate() - c.getDay()); return c; }
+function addDays(d, n) { const c = new Date(d); c.setDate(c.getDate() + n); return c; }
+function monthStart(d) { return new Date(d.getFullYear(), d.getMonth(), 1); }
+function monthEnd(d) { return new Date(d.getFullYear(), d.getMonth() + 1, 0); }
+function fmtMonthYear(d) { return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }); }
+function parseDateTime(dt) { return new Date(dt); }
+
+function uid() { return 'p_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36); }
+
+/* ----------------- Post helpers ----------------- */
+function postsOnDate(ymdStr) {
+  return STATE.posts.filter(p => p.datetime.slice(0, 10) === ymdStr).sort((a, b) => a.datetime.localeCompare(b.datetime));
+}
+function applyMissedStatus() {
+  // Any 'planned' post with a date in the past gets visually shown as missed,
+  // but its stored status is unchanged so a user can still flip it to 'posted'.
+  const today = ymd(new Date());
+  return today; // no-op; rendering handles the visual
+}
+function platformById(id) { return STATE.platforms.find(p => p.id === id); }
+
+/* ----------------- Calendar render ----------------- */
+let viewMonth = monthStart(new Date());
+function calTitle() {
+  if (STATE.uiPrefs.view === 'list') return 'Upcoming posts';
+  return fmtMonthYear(viewMonth);
+}
+function renderCal() {
+  $('calTitle').textContent = calTitle();
+  if (STATE.uiPrefs.view === 'list') return renderList();
+  renderMonth();
+}
+function renderMonth() {
+  const start = monthStart(viewMonth);
+  const end = monthEnd(viewMonth);
+  // Grid starts on the Sunday on/before the 1st
+  const gridStart = sundayStart(start);
+  const days = [];
+  for (let i = 0; i < 42; i++) days.push(addDays(gridStart, i));
+  // Truncate trailing weeks that have no in-month days
+  while (days.length > 28) {
+    const last7 = days.slice(-7);
+    if (last7.every(d => d.getMonth() !== viewMonth.getMonth())) { days.length -= 7; }
+    else break;
+  }
+  const dows = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const html = ['<div class="month-grid">'];
+  for (const d of dows) html.push(`<div class="dow">${d}</div>`);
+  const todayYmd = ymd(new Date());
+  for (const d of days) {
+    const isOtherMonth = d.getMonth() !== viewMonth.getMonth();
+    const ymds = localYmd(d);
+    const isToday = ymds === todayYmd;
+    const posts = postsOnDate(ymds);
+    const chips = posts.slice(0, 4).map(p => {
+      let cls = p.status || 'planned';
+      if (cls === 'planned' && ymds < todayYmd) cls = 'missed';
+      const dots = p.platformIds.slice(0, 3).map(id => {
+        const pl = platformById(id);
+        return pl ? `<span class="pdot" style="background:${pl.color}"></span>` : '';
+      }).join('');
+      const safeTitle = (p.title || '(untitled)').replace(/[<>&"]/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;' })[c]);
+      return `<div class="post-chip ${cls}" data-id="${p.id}">${dots}${safeTitle}</div>`;
+    }).join('');
+    const more = posts.length > 4 ? `<div class="more-link" data-date="${ymds}">+${posts.length - 4} more</div>` : '';
+    html.push(`<div class="day-cell ${isOtherMonth ? 'other-month' : ''} ${isToday ? 'today' : ''}" data-date="${ymds}">
+      <div class="day-num">${d.getDate()}</div><div class="posts">${chips}${more}</div></div>`);
+  }
+  html.push('</div>');
+  $('calBody').innerHTML = html.join('');
+  // wire clicks
+  $('calBody').querySelectorAll('.day-cell').forEach(el => {
+    el.addEventListener('click', (e) => {
+      if (e.target.closest('.post-chip')) return; // handled separately
+      if (e.target.closest('.more-link')) { openListForDate(e.target.dataset.date); return; }
+      openPostModal(null, el.dataset.date);
+    });
+  });
+  $('calBody').querySelectorAll('.post-chip').forEach(el => {
+    el.addEventListener('click', (e) => { e.stopPropagation(); openPostModal(el.dataset.id); });
+  });
+}
+function renderList() {
+  // Show upcoming 30 days + last 7 of past
+  const today = new Date(); today.setHours(0,0,0,0);
+  const from = ymd(addDays(today, -7));
+  const to = ymd(addDays(today, 30));
+  const rows = STATE.posts.filter(p => p.datetime.slice(0,10) >= from && p.datetime.slice(0,10) <= to)
+    .sort((a, b) => a.datetime.localeCompare(b.datetime));
+  if (!rows.length) {
+    $('calBody').innerHTML = '<div style="color:#8a96a8;padding:24px;text-align:center;border:1px dashed rgba(255,255,255,.1);border-radius:12px">No posts in the next 30 days. Click <b>+ Post</b> to add one.</div>';
+    return;
+  }
+  const todayYmd = ymd(new Date());
+  const html = ['<div class="list-view">'];
+  for (const p of rows) {
+    let cls = p.status || 'planned';
+    if (cls === 'planned' && p.datetime.slice(0,10) < todayYmd) cls = 'missed';
+    const platforms = p.platformIds.map(id => {
+      const pl = platformById(id);
+      return pl ? `<span class="pchip" style="background:${pl.color}22;border:1px solid ${pl.color}66;color:${pl.color}">${pl.name.split(' ')[0]}</span>` : '';
+    }).join('');
+    const safeTitle = (p.title || '(untitled)').replace(/[<>&"]/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;' })[c]);
+    const dt = new Date(p.datetime);
+    html.push(`<div class="list-row ${cls}" data-id="${p.id}">
+      <div class="dt">${dt.toLocaleDateString('en-US',{month:'short',day:'numeric'})}<br>${dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</div>
+      <div class="titleline"><span class="title">${safeTitle}</span><span class="platforms">${platforms}</span></div>
+      <div class="ico">›</div></div>`);
+  }
+  html.push('</div>');
+  $('calBody').innerHTML = html.join('');
+  $('calBody').querySelectorAll('.list-row').forEach(el => {
+    el.addEventListener('click', () => openPostModal(el.dataset.id));
+  });
+}
+function openListForDate(ymds) {
+  STATE.uiPrefs.view = 'list';
+  $('viewSeg').querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.view === 'list'));
+  saveState();
+  renderCal();
+}
+
+/* ----------------- Post modal ----------------- */
+let modalEditingId = null;
+function openPostModal(id, defaultDate = null) {
+  modalEditingId = id;
+  if (id) {
+    const p = STATE.posts.find(x => x.id === id);
+    if (!p) return;
+    $('postModalTitle').textContent = 'Edit post';
+    $('pmDate').value = p.datetime.slice(0, 10);
+    $('pmTime').value = p.datetime.slice(11, 16) || '09:00';
+    $('pmTitle').value = p.title || '';
+    $('pmNotes').value = p.notes || '';
+    $('pmLink').value = p.link || '';
+    $('pmStatus').value = p.status || 'planned';
+    renderPlatformChips(p.platformIds || []);
+    $('pmDeleteBtn').style.display = '';
+  } else {
+    $('postModalTitle').textContent = 'New post';
+    $('pmDate').value = defaultDate || localYmd(new Date());
+    $('pmTime').value = '09:00';
+    $('pmTitle').value = '';
+    $('pmNotes').value = '';
+    $('pmLink').value = '';
+    $('pmStatus').value = 'planned';
+    renderPlatformChips([]);
+    $('pmDeleteBtn').style.display = 'none';
+  }
+  $('postModal').classList.add('show');
+}
+function renderPlatformChips(selectedIds) {
+  const enabled = STATE.platforms.filter(p => p.enabled);
+  $('pmPlatforms').innerHTML = enabled.map(p =>
+    `<div class="chip ${selectedIds.includes(p.id) ? 'active' : ''}" data-id="${p.id}"><span class="pdot" style="background:${p.color}"></span>${p.name}</div>`
+  ).join('');
+  $('pmPlatforms').querySelectorAll('.chip').forEach(el => {
+    el.addEventListener('click', () => el.classList.toggle('active'));
+  });
+}
+function closePostModal() { $('postModal').classList.remove('show'); }
+function savePostModal() {
+  const datetime = `${$('pmDate').value}T${$('pmTime').value || '09:00'}`;
+  const platformIds = Array.from($('pmPlatforms').querySelectorAll('.chip.active')).map(el => el.dataset.id);
+  const title = $('pmTitle').value.trim();
+  if (!platformIds.length) { toast('Pick at least one platform'); return; }
+  if (!title) { toast('Title required'); return; }
+  const status = $('pmStatus').value;
+  if (modalEditingId) {
+    const p = STATE.posts.find(x => x.id === modalEditingId);
+    if (!p) return;
+    Object.assign(p, { datetime, platformIds, title, notes: $('pmNotes').value, link: $('pmLink').value, status });
+  } else {
+    STATE.posts.push({ id: uid(), datetime, platformIds, title, notes: $('pmNotes').value, link: $('pmLink').value, status, createdAt: Date.now() });
+  }
+  saveState();
+  closePostModal();
+  renderAll();
+  toast('Saved');
+}
+function deletePostModal() {
+  if (!modalEditingId) return;
+  STATE.posts = STATE.posts.filter(p => p.id !== modalEditingId);
+  saveState();
+  closePostModal();
+  renderAll();
+  toast('Deleted');
+}
+
+/* ----------------- Targets render ----------------- */
+function periodCounts(platformId, period) {
+  // count POSTED entries within the current period
+  const now = new Date();
+  let start;
+  if (period === 'week') start = sundayStart(now);
+  else if (period === 'month') start = new Date(now.getFullYear(), now.getMonth(), 1);
+  else start = new Date(now.getFullYear(), 0, 1);
+  const startStr = localYmd(start);
+  return STATE.posts.filter(p => p.platformIds.includes(platformId)
+    && p.datetime.slice(0,10) >= startStr
+    && (p.status === 'posted')).length;
+}
+function renderTargets() {
+  const grid = $('targetGrid');
+  const enabled = STATE.platforms.filter(p => p.enabled);
+  grid.innerHTML = enabled.map(p => {
+    const period = p.target?.period || 'week';
+    const goal = Number(p.target?.count || 0);
+    const current = periodCounts(p.id, period);
+    const pct = goal > 0 ? Math.min(1, current / goal) : 0;
+    const barClass = current >= goal ? 'over' : (current >= goal * 0.66 ? 'under' : 'behind');
+    return `<div class="target-row" data-id="${p.id}">
+      <span class="pdot" style="background:${p.color}"></span>
+      <div><b>${p.name}</b><div style="color:#8a96a8;font-size:11px">${p.url || ''}</div></div>
+      <input type="number" min="0" value="${goal}" data-field="count">
+      <select data-field="period">
+        <option value="week" ${period==='week'?'selected':''}>per week</option>
+        <option value="month" ${period==='month'?'selected':''}>per month</option>
+        <option value="year" ${period==='year'?'selected':''}>per year</option>
+      </select>
+      <div class="progress-cell"><div class="pbar"><div class="${barClass}" style="width:${(pct*100).toFixed(0)}%"></div></div></div>
+      <div class="progress-text">${current}/${goal}</div>
+    </div>`;
+  }).join('');
+  grid.querySelectorAll('.target-row').forEach(row => {
+    const id = row.dataset.id;
+    row.querySelectorAll('input,select').forEach(input => {
+      input.addEventListener('change', () => {
+        const p = platformById(id);
+        if (!p) return;
+        p.target = p.target || {};
+        p.target.count = Number(row.querySelector('[data-field=count]').value) || 0;
+        p.target.period = row.querySelector('[data-field=period]').value;
+        saveState();
+        // Push this goal forward across the entire 26-week horizon so the
+        // SOCIAL sheet's GOAL cells get seeded on every future Sunday-rollover.
+        // The snapshot only writes a GOAL cell when it's empty, so any per-week
+        // override the user types directly in the sheet survives.
+        pushGoalForward(id, p.target.count, p.target.period || 'week');
+        renderTargets();
+        renderWeekSummary();
+      });
+    });
+  });
+}
+
+/**
+ * Push the per-platform target out to the local server for every Sunday in
+ * the next 26 weeks. The server stores them in logs/social_goals.json; the
+ * cron snapshot reads that file and writes the matching GOAL cells.
+ *
+ * Period semantics: the sheet's GOAL column is a per-week cell, but we store
+ * the raw target value the user typed regardless of period — fractional
+ * divisors (1/month → 0.23/week → rounds to 0) lose information and surprised
+ * the user. Treat the period dropdown as display metadata only; the sheet
+ * shows whatever number the user entered. If the user wants a different
+ * weekly value, they can switch the period to "per week" and re-enter.
+ */
+async function pushGoalForward(platformId, targetCount, _period) {
+  if (!Number.isFinite(Number(targetCount)) || Number(targetCount) < 0) return;
+  const value = Math.max(0, Math.round(Number(targetCount)));
+  const start = sundayStart(new Date());
+  for (let i = 0; i < GOAL_HORIZON_WEEKS; i++) {
+    const wkStart = localYmd(addDays(start, i * 7));
+    try { await backendPost('/api/social/goal', { platform: platformId, weekStart: wkStart, count: value }); }
+    catch { /* backendPost already queued it for retry */ }
+  }
+  setSyncPill('ok', 'goals synced');
+}
+
+/* ----------------- Analytics render ----------------- */
+function renderAnalytics() {
+  const grid = $('analyticsGrid');
+  const enabled = STATE.platforms.filter(p => p.enabled);
+  grid.innerHTML = enabled.map(p => {
+    const period = p.target?.period || 'week';
+    const goal = Number(p.target?.count || 0);
+    const current = periodCounts(p.id, period);
+    const pct = goal > 0 ? (current / goal * 100).toFixed(0) : '—';
+    const okClass = goal > 0 && current >= goal ? 'ok' : 'miss';
+    const backend = STATE.backendCounts && STATE.backendCounts[p.id];
+    const latestNum = backend?.count != null ? Number(backend.count).toLocaleString() : '—';
+    const latestSrc = backend?.source ? `<span style="color:#8a96a8;font-size:10px">(${backend.source})</span>` : '';
+    return `<div class="analytics-card" data-id="${p.id}">
+      <div class="head"><span class="pdot" style="background:${p.color}"></span><span class="name">${p.name}</span><span class="latest">${latestNum} ${latestSrc}</span></div>
+      <div class="figures">
+        <div class="fig"><div class="v ${okClass}">${current}</div><div class="l">This ${period}</div></div>
+        <div class="fig"><div class="v">${goal || '—'}</div><div class="l">Target</div></div>
+        <div class="fig"><div class="v ${okClass}">${pct === '—' ? '—' : pct + '%'}</div><div class="l">Attainment</div></div>
+      </div>
+      <canvas data-spark="${p.id}" width="320" height="50"></canvas>
+      <div class="actions">
+        <button class="btn sm" data-act="open">Open profile</button>
+        <button class="btn sm primary" data-act="log">Log count</button>
+      </div>
+    </div>`;
+  }).join('');
+  grid.querySelectorAll('.analytics-card').forEach(card => {
+    const id = card.dataset.id;
+    card.querySelector('[data-act=open]').addEventListener('click', () => window.open(platformById(id)?.url || '#', '_blank'));
+    card.querySelector('[data-act=log]').addEventListener('click', () => openCountModal(id));
+    drawSparkline(card.querySelector('canvas'), id);
+  });
+}
+function drawSparkline(canvas, platformId) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  const snapshots = STATE.snapshots.filter(s => s.platformId === platformId).slice(-30);
+  if (snapshots.length < 2) {
+    ctx.fillStyle = '#8a96a8'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('not enough data — log a count to start tracking', w/2, h/2);
+    return;
+  }
+  const vals = snapshots.map(s => Number(s.count) || 0);
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const range = (max - min) || 1;
+  ctx.strokeStyle = platformById(platformId)?.color || '#38ffd3';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  vals.forEach((v, i) => {
+    const x = (i / (vals.length - 1)) * (w - 4) + 2;
+    const y = h - 4 - ((v - min) / range) * (h - 8);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+}
+
+/* ----------------- Log count modal ----------------- */
+let countModalPlatformId = null;
+function openCountModal(id) {
+  countModalPlatformId = id;
+  const p = platformById(id);
+  if (!p) return;
+  $('countModalTitle').textContent = `Log count — ${p.name}`;
+  $('countModalSub').innerHTML = `Open <a href="${p.url}" target="_blank">${p.url}</a> in a new tab, then type the total post count below.`;
+  $('cmCount').value = '';
+  $('countModal').classList.add('show');
+  // also pre-open the profile tab
+  if (p.url) window.open(p.url, '_blank');
+}
+function closeCountModal() { $('countModal').classList.remove('show'); }
+async function saveCountModal() {
+  if (!countModalPlatformId) return;
+  const n = parseInt($('cmCount').value, 10);
+  if (!Number.isFinite(n) || n < 0) { toast('Enter a number'); return; }
+  const at = new Date().toISOString();
+  STATE.snapshots.push({ platformId: countModalPlatformId, count: n, source: 'manual', at });
+  if (!STATE.backendCounts[countModalPlatformId] || (Date.parse(STATE.backendCounts[countModalPlatformId].at || 0) || 0) < Date.parse(at)) {
+    STATE.backendCounts[countModalPlatformId] = { count: n, source: 'manual', at };
+  }
+  saveState();
+  try { await backendPost('/api/social/log', { platform: countModalPlatformId, count: n, source: 'manual', at }); }
+  catch (_) { toast('Saved locally — will sync when backend reachable'); }
+  closeCountModal();
+  renderAnalytics();
+  toast('Count logged');
+}
+
+/* ----------------- Platforms tab ----------------- */
+function renderPlatforms() {
+  const grid = $('platGrid');
+  grid.innerHTML = STATE.platforms.map(p => `
+    <div class="plat-row" data-id="${p.id}">
+      <span class="pdot" style="background:${p.color}"></span>
+      <input type="text" data-field="name" value="${(p.name||'').replace(/"/g,'&quot;')}">
+      <input type="url" class="ph-url" data-field="url" value="${(p.url||'').replace(/"/g,'&quot;')}" placeholder="https://...">
+      <input type="color" class="ph-color" data-field="color" value="${p.color || '#38ffd3'}">
+      <input type="number" class="ph-target" data-field="target-count" min="0" value="${Number(p.target?.count||0)}">
+      <label style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#8a96a8;cursor:pointer">
+        <input type="checkbox" data-field="enabled" ${p.enabled !== false ? 'checked' : ''} style="accent-color:#38ffd3"> on
+      </label>
+    </div>
+  `).join('');
+  grid.querySelectorAll('.plat-row').forEach(row => {
+    const id = row.dataset.id;
+    row.querySelectorAll('[data-field]').forEach(input => {
+      input.addEventListener('change', () => {
+        const p = platformById(id); if (!p) return;
+        const field = input.dataset.field;
+        if (field === 'enabled') p.enabled = input.checked;
+        else if (field === 'target-count') { p.target = p.target || {}; p.target.count = Number(input.value) || 0; }
+        else p[field] = input.value;
+        saveState();
+        renderAll();
+      });
+    });
+  });
+}
+
+/* ----------------- Sidebar this-week summary ----------------- */
+function renderWeekSummary() {
+  const box = $('weekSummary');
+  const enabled = STATE.platforms.filter(p => p.enabled);
+  if (!enabled.length) { box.innerHTML = '<div style="color:#8a96a8;font-size:11px">No platforms enabled</div>'; return; }
+  const rows = enabled.map(p => {
+    const period = p.target?.period || 'week';
+    const goal = Number(p.target?.count || 0);
+    const current = periodCounts(p.id, period);
+    const pct = goal > 0 ? Math.min(1, current / goal) : 0;
+    const barClass = current >= goal ? 'over' : (current >= goal * 0.66 ? 'under' : 'behind');
+    return `<div class="ws-row">
+      <span class="pdot" style="background:${p.color}"></span>
+      <span class="ws-name">${p.name.split(' ')[0]}</span>
+      <span class="ws-prog">${current}/${goal||'-'}</span>
+    </div>
+    <div class="ws-bar"><div class="${barClass}" style="width:${(pct*100).toFixed(0)}%"></div></div>`;
+  }).join('');
+  box.innerHTML = rows;
+}
+
+/* ----------------- ICS export ----------------- */
+function exportIcs() {
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//TheTrackerApp//Social Calendar//EN',
+    'CALSCALE:GREGORIAN',
+  ];
+  const upcoming = STATE.posts.filter(p => p.status !== 'skipped');
+  for (const p of upcoming) {
+    const dt = new Date(p.datetime);
+    if (isNaN(dt.getTime())) continue;
+    const z = (n) => String(n).padStart(2, '0');
+    const dtStart = `${dt.getFullYear()}${z(dt.getMonth()+1)}${z(dt.getDate())}T${z(dt.getHours())}${z(dt.getMinutes())}00`;
+    const dtEnd = `${dt.getFullYear()}${z(dt.getMonth()+1)}${z(dt.getDate())}T${z(dt.getHours()+1)}${z(dt.getMinutes())}00`;
+    const platforms = p.platformIds.map(id => platformById(id)?.name || id).join(', ');
+    const escape = (s) => String(s||'').replace(/\\/g,'\\\\').replace(/\n/g,'\\n').replace(/,/g,'\\,').replace(/;/g,'\\;');
+    lines.push('BEGIN:VEVENT',
+      `UID:${p.id}@thetrackerapp.io`,
+      `DTSTAMP:${new Date().toISOString().replace(/[-:]/g,'').slice(0,15)}Z`,
+      `DTSTART:${dtStart}`,
+      `DTEND:${dtEnd}`,
+      `SUMMARY:[${platforms}] ${escape(p.title || '')}`,
+      `DESCRIPTION:${escape(p.notes || '')}`,
+      `STATUS:${(p.status||'planned').toUpperCase() === 'POSTED' ? 'CONFIRMED' : 'TENTATIVE'}`,
+      'END:VEVENT');
+  }
+  lines.push('END:VCALENDAR');
+  const blob = new Blob([lines.join('\r\n')], { type: 'text/calendar' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'social-calendar.ics';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+
+/* ----------------- Custom platform add ----------------- */
+function openAddPlatform() { $('platformModal').classList.add('show'); }
+function closeAddPlatform() { $('platformModal').classList.remove('show'); }
+function addCustomPlatform() {
+  const name = $('addPlatName').value.trim();
+  const url = $('addPlatUrl').value.trim();
+  const color = $('addPlatColor').value;
+  const target = Number($('addPlatTarget').value) || 0;
+  if (!name) { toast('Name required'); return; }
+  const id = 'custom_' + name.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+  if (STATE.platforms.find(p => p.id === id)) { toast('Already exists'); return; }
+  STATE.platforms.push({ id, name, url, color, target: { period: 'week', count: target }, enabled: true, group: 'custom' });
+  saveState();
+  closeAddPlatform();
+  renderAll();
+  toast('Platform added');
+}
+
+/* ----------------- Top render orchestrator ----------------- */
+function renderAll() { renderCal(); renderTargets(); renderAnalytics(); renderPlatforms(); renderWeekSummary(); }
+
+/* ----------------- Wiring ----------------- */
+function wire() {
+  // Tabs
+  $('tabs').addEventListener('click', e => {
+    const b = e.target.closest('.tab'); if (!b) return;
+    document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x === b));
+    document.querySelectorAll('[data-pane]').forEach(p => p.style.display = p.dataset.pane === b.dataset.tab ? '' : 'none');
+    STATE.uiPrefs.currentTab = b.dataset.tab; saveState();
+  });
+  // Cal toolbar
+  $('prevBtn').onclick = () => { viewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() - 1, 1); renderCal(); };
+  $('nextBtn').onclick = () => { viewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1); renderCal(); };
+  $('todayBtn').onclick = () => { viewMonth = monthStart(new Date()); renderCal(); };
+  $('viewSeg').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    STATE.uiPrefs.view = b.dataset.view; saveState();
+    $('viewSeg').querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+    renderCal();
+  });
+  $('addPostBtn').onclick = () => openPostModal(null);
+  $('exportIcs').onclick = exportIcs;
+  // Post modal
+  $('pmCancelBtn').onclick = closePostModal;
+  $('pmSaveBtn').onclick = savePostModal;
+  $('pmDeleteBtn').onclick = deletePostModal;
+  $('postModal').addEventListener('click', e => { if (e.target === $('postModal')) closePostModal(); });
+  // Count modal
+  $('cmCancelBtn').onclick = closeCountModal;
+  $('cmSaveBtn').onclick = saveCountModal;
+  $('countModal').addEventListener('click', e => { if (e.target === $('countModal')) closeCountModal(); });
+  // Platform modal
+  $('addPlatformBtn').onclick = openAddPlatform;
+  $('addPlatCancelBtn').onclick = closeAddPlatform;
+  $('addPlatSaveBtn').onclick = addCustomPlatform;
+  $('platformModal').addEventListener('click', e => { if (e.target === $('platformModal')) closeAddPlatform(); });
+  $('resetPlatformsBtn').onclick = () => {
+    if (!confirm('Reset all platforms to defaults? Custom ones will be removed.')) return;
+    STATE.platforms = DEFAULT_PLATFORMS.map(p => ({ ...p }));
+    saveState(); renderAll(); toast('Reset');
+  };
+  // restore UI prefs
+  if (STATE.uiPrefs.view === 'list') $('viewSeg').querySelector('[data-view="list"]').click();
+  if (STATE.uiPrefs.currentTab && STATE.uiPrefs.currentTab !== 'calendar') {
+    const tab = $('tabs').querySelector(`[data-tab="${STATE.uiPrefs.currentTab}"]`);
+    if (tab) tab.click();
+  }
+}
+
+/**
+ * Push every enabled platform's stored target out to the backend across the
+ * full 26-week horizon. This makes the calendar's localStorage the source of
+ * truth and ensures the SOCIAL sheet's GOAL cells stay in sync.
+ */
+async function syncAllTargetsToBackend() {
+  const enabled = STATE.platforms.filter(p => p.enabled && p.target && Number.isFinite(Number(p.target.count)));
+  if (!enabled.length) return { sent: 0, total: 0 };
+  setSyncPill('warn', 'syncing goals…');
+  let sent = 0;
+  const start = sundayStart(new Date());
+  for (const p of enabled) {
+    // Period is display metadata only; we push the raw target value the
+    // user typed. See comment on pushGoalForward for rationale.
+    const value = Math.max(0, Math.round(Number(p.target.count)));
+    for (let i = 0; i < GOAL_HORIZON_WEEKS; i++) {
+      const wkStart = localYmd(addDays(start, i * 7));
+      try { await backendPost('/api/social/goal', { platform: p.id, weekStart: wkStart, count: value }); sent++; }
+      catch { /* backendPost queued for retry */ }
+    }
+  }
+  setSyncPill('ok', `goals synced (${sent})`);
+  return { sent, total: enabled.length * GOAL_HORIZON_WEEKS };
+}
+
+(function init() {
+  setSyncPill('warn', 'connecting...');
+  wire();
+  renderAll();
+  refreshFromBackend()
+    .then(() => syncAllTargetsToBackend())   // push localStorage goals up to backend on every load
+    .catch(() => setSyncPill('warn', 'offline'));
+  // Periodic refresh every 5 min
+  setInterval(() => refreshFromBackend().catch(() => {}), 5 * 60 * 1000);
+})();
+</script>
+</body>
+</html>

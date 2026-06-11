@@ -1,0 +1,218 @@
+================================================================================
+SOCIAL POST-COUNTS & GOALS — Backend hand-off
+================================================================================
+
+GOAL
+  Provide a small key-value surface on api.thetrackerapp.io so:
+
+    1. The phone-friendly tool at /tools/social-calendar.html can POST manually
+       observed post counts (for platforms that can't be scraped/OCR'd) and
+       weekly per-platform goals.
+    2. The local cron snapshot script
+       (/Users/rd/automations/scripts/weekly_sheet_snapshot.js --social-only)
+       can read both of these every 30 minutes and merge them into the SOCIAL
+       tab on the STATS workbook.
+
+  This file is everything the backend needs. The frontend already ships the
+  matching pieces (calendar tool + cron script).
+
+================================================================================
+1. ENDPOINTS
+================================================================================
+
+  POST  /api/social/log
+    Headers:
+      Authorization: Bearer <SOCIAL_LOG_TOKEN>
+      Content-Type:  application/json
+    Body (kind = "count"):
+      {
+        "kind":     "count",                  // REQUIRED
+        "platform": "instagram",              // REQUIRED — see PLATFORM IDS
+        "count":    412,                      // REQUIRED — non-negative integer
+        "source":   "manual",                 // optional; e.g. "manual", "ocr"
+        "at":       "2026-06-03T18:45:00Z"    // optional; defaults to server time
+      }
+    Body (kind = "goal"):
+      {
+        "kind":      "goal",                  // REQUIRED
+        "platform":  "instagram",             // REQUIRED
+        "weekStart": "2026-06-01",            // REQUIRED — Sunday-start ISO date
+        "count":     5,                       // REQUIRED — non-negative integer
+        "at":        "2026-06-03T18:45:00Z"   // optional
+      }
+    Response:
+      200 { "ok": true }
+      400 { "ok": false, "error": "<message>" }
+      401 { "ok": false, "error": "unauthorized" }
+      405 { "ok": false, "error": "method_not_allowed" }
+
+    Idempotency: last write wins per { platform } for count, per
+    { platform, weekStart } for goal.
+
+  GET  /api/social/latest
+    Headers: none required (read-only; safe to expose publicly)
+    Response:
+      200 {
+        "platforms": {
+          "instagram": { "count": 412, "source": "manual", "at": "2026-06-03T18:45:00Z" },
+          "youtube":   { "count":  84, "source": "ocr",    "at": "2026-06-03T14:00:00Z" },
+          ...
+        }
+      }
+
+    Returns the most recent stored count per platform. The cron snapshot
+    overlays this on top of its own free-API + OCR results: a newer entry
+    here always wins.
+
+  GET  /api/social/goals?weeks=26
+    Headers: none required.
+    Query:   weeks = how many weeks to include starting from the current
+                     Sunday. Default 26. Max 104.
+    Response:
+      200 {
+        "weeks": ["2026-06-01", "2026-06-08", "2026-06-15", ...],
+        "platforms": {
+          "instagram": { "2026-06-01": 5, "2026-06-08": 5, ... },
+          "linkedin":  { "2026-06-01": 3, ... },
+          ...
+        }
+      }
+
+    Used by the calendar tool to render goal columns and by the cron
+    snapshot to seed the SOCIAL sheet's GOAL cells when they are still
+    empty.
+
+================================================================================
+2. PLATFORM IDS
+================================================================================
+
+The script defines these in scripts/lib/social_platforms.js. Treat these IDs
+as the canonical strings everywhere:
+
+  bitchute, rumble, x, instagram, threads, youtube, tiktok, truthsocial,
+  bluesky, primal, reddit_sub, reddit_user, tumblr, mastodon, pinterest,
+  linkedin, substack, kick
+
+Unknown IDs should be accepted and stored (so we can extend the registry
+without a backend deploy). Reject only on malformed body.
+
+================================================================================
+3. STORAGE
+================================================================================
+
+Counts and goals are small. Two keyspaces are sufficient:
+
+  social:counts:<platform>                 (one entry per platform)
+    { count, source, at }
+
+  social:goals:<platform>:<weekStart-iso>  (one entry per platform per week)
+    { count, at }
+
+Implementation suggestion: existing KV / Redis layer is more than enough.
+If neither is present, an in-process JSON file written atomically per request
+is fine for v1 — write volume is at most a few requests per day per user.
+Persist on each write so a restart doesn't drop manual log entries.
+
+Retention: indefinite. Counts are tiny and we use historical goals to draw
+trend lines on the calendar's analytics view.
+
+================================================================================
+4. SHARED SECRET
+================================================================================
+
+We will set on the frontend:
+
+  SOCIAL_LOG_TOKEN=<long random string>
+
+Same value on the backend, validated as the Bearer token on POST. GET
+endpoints stay unauthenticated — they only expose counts the user can see by
+visiting the social profiles directly. If you want both endpoints behind the
+same token, that's fine too; the frontend will send it.
+
+================================================================================
+5. CORS
+================================================================================
+
+  Access-Control-Allow-Origin:   https://thetrackerapp.io
+  Access-Control-Allow-Origin:   null                       (for OBS browser source)
+  Access-Control-Allow-Methods:  GET, POST, OPTIONS
+  Access-Control-Allow-Headers:  Authorization, Content-Type
+  Access-Control-Max-Age:        600
+
+================================================================================
+6. RATE-LIMIT
+================================================================================
+
+  POST /api/social/log     20 req / sec per IP, 200 req / minute per IP
+  GET  /api/social/latest  60 req / minute per IP
+  GET  /api/social/goals   60 req / minute per IP
+
+================================================================================
+7. TESTING CHECKLIST
+================================================================================
+
+After the endpoints are wired:
+
+  [ ] curl -X POST https://api.thetrackerapp.io/api/social/log \
+          -H "Authorization: Bearer $SOCIAL_LOG_TOKEN" \
+          -H "Content-Type: application/json" \
+          -d '{"kind":"count","platform":"instagram","count":412}'
+      → 200 { "ok": true }
+
+  [ ] curl -X POST https://api.thetrackerapp.io/api/social/log \
+          -H "Authorization: Bearer $SOCIAL_LOG_TOKEN" \
+          -H "Content-Type: application/json" \
+          -d '{"kind":"goal","platform":"instagram","weekStart":"2026-06-01","count":5}'
+      → 200 { "ok": true }
+
+  [ ] Same POST with a bad token → 401.
+
+  [ ] curl https://api.thetrackerapp.io/api/social/latest
+      → instagram present with count 412.
+
+  [ ] curl 'https://api.thetrackerapp.io/api/social/goals?weeks=26'
+      → instagram entry contains "2026-06-01": 5.
+
+  [ ] CORS preflight from https://thetrackerapp.io and from Origin: null
+      both succeed.
+
+================================================================================
+8. FAILURE MODES
+================================================================================
+
+  - If the backend is unreachable, the cron snapshot logs a warning and
+    continues using its local cache. The SOCIAL sheet is never blanked —
+    the never-go-backward + surgical-update rules in the script guarantee
+    no data loss.
+  - The calendar tool degrades to local-only mode (localStorage) if
+    /api/social/log is offline. Manual entries get queued and retried.
+
+================================================================================
+9. ENV VAR SUMMARY
+================================================================================
+
+Backend side:
+  SOCIAL_LOG_TOKEN = <shared random string>     (also set on Vercel for the frontend)
+
+Frontend side (this repo, set as Vercel env):
+  SOCIAL_LOG_TOKEN = <same shared random string>
+
+Local cron host (/Users/rd/automations) needs no extra env for backend reads —
+the URLs are public-GET-friendly. Writes from cron are never required; cron
+only READS /api/social/latest and /api/social/goals.
+
+================================================================================
+10. ASK
+================================================================================
+
+Please confirm:
+
+  1. Backend will implement the three endpoints above with the schemas listed.
+  2. Backend will share / generate the SOCIAL_LOG_TOKEN value with us so we
+     can install it on Vercel.
+
+Once those two are in place, the frontend calendar will start writing manual
+counts and goals immediately and the next cron tick will pull them into the
+SOCIAL sheet.
+
+================================================================================

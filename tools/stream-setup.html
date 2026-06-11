@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Stream Setup — Brand Tools</title>
+<link rel="icon" href="/public/favicon.svg">
+<style>
+  * { box-sizing: border-box; }
+  html, body { background: #07090d; color: #ecf4ff; margin: 0; font: 14px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, system-ui, sans-serif; }
+  a { color: #38ffd3; text-decoration: none; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+
+  .topbar2 {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 18px; border-bottom: 1px solid rgba(255,255,255,.08);
+    background: rgba(7,9,13,.85); backdrop-filter: blur(12px);
+    position: sticky; top: 38px; z-index: 50;
+  }
+  .topbar2 h1 { font-size: 15px; margin: 0; font-weight: 700; }
+  .topbar2 .sub { color: #8a96a8; font-size: 12px; }
+  .topbar2 .spacer { flex: 1; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 999px; background: #131a25; border: 1px solid rgba(255,255,255,.1); font-size: 11px; color: #8a96a8; }
+  .pill.ok { color: #38ffd3; border-color: rgba(56,255,211,.35); }
+  .pill.live { color: #ff7f7f; border-color: rgba(255,127,127,.45); }
+  .pill.live::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #ff5a5a; animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .35 } }
+
+  main { display: grid; grid-template-columns: 320px 1fr; gap: 0; min-height: calc(100vh - 90px); }
+  @media (max-width: 1000px) { main { grid-template-columns: 1fr; } }
+  aside.sidebar {
+    background: #0e131b; border-right: 1px solid rgba(255,255,255,.08); padding: 16px;
+    position: sticky; top: 90px; align-self: start; max-height: calc(100vh - 90px); overflow-y: auto;
+  }
+  @media (max-width: 1000px) { aside.sidebar { position: static; max-height: none; } }
+  .content { padding: 18px; }
+
+  /* mode bar */
+  .modebar {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    background: #0e131b; border: 1px solid rgba(255,255,255,.08); border-radius: 12px;
+    padding: 10px 12px; margin-bottom: 14px;
+  }
+  .seg { display: inline-flex; gap: 0; border: 1px solid rgba(255,255,255,.18); border-radius: 999px; overflow: hidden; }
+  .seg button { background: transparent; color: #ecf4ff; border: 0; padding: 6px 14px; font-size: 12px; }
+  .seg button.active { background: #38ffd3; color: #021416; font-weight: 700; }
+  .btn { background: #131a25; border: 1px solid rgba(255,255,255,.18); color: #ecf4ff; padding: 7px 12px; border-radius: 8px; font-size: 12px; }
+  .btn:hover { border-color: #38ffd3; }
+  .btn.primary { background: #38ffd3; color: #021416; border-color: #38ffd3; font-weight: 700; }
+  .btn.sm { padding: 5px 9px; font-size: 11px; border-radius: 6px; }
+  .btn.ghost { background: transparent; }
+  .btn.danger { color: #ff7f7f; border-color: rgba(255,127,127,.4); }
+
+  /* the staging stage */
+  .stage-wrap {
+    background: #0a0d12; border: 1px solid rgba(255,255,255,.08); border-radius: 16px; overflow: hidden;
+    position: relative;
+  }
+  .stage {
+    position: relative; width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    overflow: hidden;
+  }
+  .stage.phone { aspect-ratio: 9 / 16; max-width: 460px; margin: 0 auto; }
+
+  /* overlay base */
+  .ov {
+    position: absolute; box-sizing: border-box;
+    color: #ecf4ff;
+    font-family: -apple-system, "SF Pro Display", Inter, system-ui, sans-serif;
+  }
+  .ov.hidden { display: none; }
+  .ov-panel {
+    background: linear-gradient(180deg, rgba(0,0,0,.78), rgba(0,0,0,.55));
+    border: 1px solid rgba(56,255,211,.18);
+    border-radius: 14px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 12px 30px rgba(0,0,0,.5);
+    padding: 12px 14px;
+    overflow: hidden;
+  }
+
+  /* LEADERBOARD */
+  .ov-leaderboard {
+    left: 1.8%; top: 3.5%; width: 27%; max-height: 45%;
+    display: flex; flex-direction: column;
+  }
+  .ov-leaderboard .head {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+    font-weight: 800; font-size: clamp(11px, 1.4cqi, 18px);
+    color: var(--brand-accent, #38ffd3); letter-spacing: .12em; text-transform: uppercase;
+  }
+  .ov-leaderboard .head .dot { width: 8px; height: 8px; border-radius: 50%; background: #ff5a5a; animation: pulse 1.2s ease-in-out infinite; }
+  .ov-leaderboard .rows { display: flex; flex-direction: column; gap: 5px; overflow: hidden; }
+  .ov-leaderboard .row { display: flex; align-items: center; gap: 8px; font-size: clamp(10px, 1.2cqi, 16px); padding: 4px 6px; border-radius: 8px; transition: background .3s; }
+  .ov-leaderboard .row.highlight { background: rgba(56,255,211,.1); }
+  .ov-leaderboard .rank { width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; background: rgba(255,255,255,.08); font-weight: 800; font-size: 11px; }
+  .ov-leaderboard .row.r1 .rank { background: #ffd166; color: #1a1208; }
+  .ov-leaderboard .row.r2 .rank { background: #c5d0db; color: #1a1208; }
+  .ov-leaderboard .row.r3 .rank { background: #d49b6a; color: #1a1208; }
+  .ov-leaderboard .name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+  .ov-leaderboard .val { font-weight: 800; color: var(--brand-accent, #38ffd3); font-variant-numeric: tabular-nums; }
+
+  /* STATS */
+  .ov-stats {
+    right: 1.8%; top: 3.5%; width: 22%;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .ov-stats .stat {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(0,0,0,.78), rgba(0,0,0,.55));
+    border: 1px solid rgba(56,255,211,.18);
+    backdrop-filter: blur(8px);
+  }
+  .ov-stats .stat .lbl { font-size: clamp(10px, 1.1cqi, 15px); color: #8a96a8; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+  .ov-stats .stat .val { font-size: clamp(18px, 2.6cqi, 38px); font-weight: 900; color: var(--brand-accent, #38ffd3); font-variant-numeric: tabular-nums; line-height: 1; }
+
+  /* STREAM (center placeholder for webcam) */
+  .ov-stream {
+    left: 26%; top: 18%; right: 25%; bottom: 28%;
+    border-radius: 18px; overflow: hidden;
+    background: #111;
+    border: 1px solid rgba(255,255,255,.12);
+    box-shadow: 0 0 0 4px rgba(56,255,211,.1), 0 30px 60px rgba(0,0,0,.6);
+    display: flex; align-items: center; justify-content: center;
+    color: #8a96a8;
+  }
+  .ov-stream video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); /* mirror webcam */ }
+  .ov-stream .placeholder { text-align: center; padding: 20px; font-size: 12px; color: #8a96a8; }
+  .ov-stream .placeholder .icon { font-size: 38px; margin-bottom: 8px; }
+
+  /* WEBSITE bar */
+  .ov-website {
+    left: 1.8%; bottom: 3%; width: 32%;
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px;
+    background: linear-gradient(90deg, rgba(0,0,0,.85), rgba(0,0,0,.55));
+    border: 1px solid rgba(56,255,211,.18);
+    border-radius: 999px;
+    backdrop-filter: blur(8px);
+  }
+  .ov-website .mark { width: 36px; height: 36px; border-radius: 50%; background: var(--brand-accent, #38ffd3); display: inline-flex; align-items: center; justify-content: center; font-size: 22px; }
+  .ov-website .mark img { width: 30px; height: 30px; object-fit: contain; border-radius: 50%; }
+  .ov-website .meta { display: flex; flex-direction: column; line-height: 1.15; }
+  .ov-website .meta .name { font-size: clamp(11px, 1.3cqi, 18px); font-weight: 800; }
+  .ov-website .meta .site { font-size: clamp(10px, 1.1cqi, 15px); color: var(--brand-accent, #38ffd3); font-weight: 600; }
+
+  /* PHONE inset */
+  .ov-phone {
+    right: 1.8%; bottom: 3%; width: 14%; aspect-ratio: 9/19;
+    border-radius: 18px; overflow: hidden;
+    background: #0a0f17;
+    border: 2px solid #1a1d24;
+    box-shadow: 0 18px 40px rgba(0,0,0,.6);
+    display: flex; flex-direction: column;
+  }
+  .ov-phone .notch {
+    width: 36%; height: 12px; background: #000; border-radius: 0 0 10px 10px;
+    margin: 0 auto;
+  }
+  .ov-phone .screen {
+    flex: 1; padding: 8% 8% 12%;
+    background: linear-gradient(180deg, var(--brand-bg, #000), rgba(0,0,0,.6));
+    color: #ecf4ff; font-size: 9px; line-height: 1.3;
+    display: flex; flex-direction: column; gap: 5%; overflow: hidden;
+  }
+  .ov-phone .screen .bubble {
+    border-radius: 8px; padding: 5% 8%;
+    max-width: 86%;
+    font-weight: 600;
+  }
+  .ov-phone .screen .bubble.r { align-self: flex-end; background: var(--brand-accent, #38ffd3); color: var(--brand-cta-ink, #021416); }
+  .ov-phone .screen .bubble.l { align-self: flex-start; background: rgba(255,255,255,.08); }
+
+  /* === PHONE MODE layout: stack overlays vertically === */
+  .stage.phone .ov-leaderboard { left: 3%; top: 22%; width: 94%; max-height: 28%; }
+  .stage.phone .ov-stats { right: auto; left: 3%; top: 3%; width: 94%; flex-direction: row; flex-wrap: wrap; justify-content: space-between; }
+  .stage.phone .ov-stats .stat { flex: 1; min-width: 30%; padding: 6px 8px; }
+  .stage.phone .ov-stats .stat .val { font-size: clamp(14px, 4cqi, 28px); }
+  .stage.phone .ov-stats .stat .lbl { font-size: clamp(8px, 2cqi, 12px); }
+  .stage.phone .ov-stream { left: 3%; right: 3%; top: 12%; bottom: 70%; height: auto; }
+  .stage.phone .ov-website { left: 3%; bottom: 3%; width: 94%; }
+  .stage.phone .ov-phone { display: none; } /* no inset phone inside phone view */
+
+  /* Stage container query so cqi text scaling works */
+  .stage { container-type: inline-size; }
+
+  /* overlay controls panel */
+  .ov-controls {
+    margin-top: 14px; background: #0e131b; border: 1px solid rgba(255,255,255,.08); border-radius: 12px;
+    padding: 12px 14px;
+  }
+  .ov-controls h3 { margin: 0 0 10px; font-size: 12px; color: #8a96a8; text-transform: uppercase; letter-spacing: .12em; }
+  .ov-row { display: grid; grid-template-columns: 130px 1fr; gap: 10px; align-items: center; padding: 6px 0; border-top: 1px solid rgba(255,255,255,.05); }
+  .ov-row:first-of-type { border-top: 0; }
+  .ov-row .nm { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
+  .ov-row .nm input[type=checkbox] { accent-color: #38ffd3; }
+  .ov-row .ctrls { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .ov-row textarea, .ov-row input[type=text] {
+    background: #131a25; border: 1px solid rgba(255,255,255,.15); border-radius: 6px;
+    padding: 5px 8px; color: #ecf4ff; outline: none; font: inherit; font-size: 12px;
+  }
+  .ov-row textarea { resize: vertical; min-height: 32px; flex: 1; }
+
+  /* Toast / overlay */
+  .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #38ffd3; color: #021416; padding: 8px 16px; border-radius: 999px; font-weight: 700; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 60; }
+  .toast.show { opacity: 1; }
+
+  /* hint */
+  .hint { color: #8a96a8; font-size: 12px; line-height: 1.55; }
+
+  /* CODE inline */
+  code, kbd { background: rgba(255,255,255,.06); padding: 1px 6px; border-radius: 4px; font-family: ui-monospace, Menlo, monospace; font-size: 11px; }
+
+  /* OBS mode: when ?obs=... is in URL, hide everything except the requested overlay on a transparent background */
+  body.obs { background: transparent !important; }
+  body.obs .stage { background: transparent !important; aspect-ratio: auto; width: 100vw; height: 100vh; }
+  body.obs .ov-stream, body.obs .ov:not(.obs-target) { display: none !important; }
+  body.obs .ov.obs-target { position: absolute; inset: 0; left: 0; top: 0; width: 100%; height: 100%; max-height: none; }
+  /* Make overlay panels fill their container in OBS mode */
+  body.obs .ov-leaderboard.obs-target { width: 100%; left: 0; top: 0; max-height: 100%; padding: 12px; }
+  body.obs .ov-stats.obs-target { width: 100%; right: 0; top: 0; }
+  body.obs .ov-website.obs-target { width: 100%; left: 0; top: 0; bottom: auto; }
+  body.obs .ov-phone.obs-target { right: 0; bottom: 0; left: 0; top: 0; width: 100%; aspect-ratio: auto; }
+
+  details > summary { cursor: pointer; color: #8a96a8; font-size: 12px; padding: 4px 0; }
+  details[open] > summary { color: #ecf4ff; }
+</style>
+<script src="_brand-kit.js"></script>
+</head>
+<body>
+
+<div id="bkNav"></div>
+<script>document.getElementById('bkNav').innerHTML = BrandKit.navStrip('stream-setup');</script>
+
+<div class="topbar2">
+  <h1>Stream Setup</h1>
+  <span class="sub">live overlay design surface · desktop + phone view · OBS-ready exports</span>
+  <span class="spacer"></span>
+  <span class="pill" id="livePill">PREVIEW</span>
+</div>
+
+<main>
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <section class="content">
+
+    <div class="modebar">
+      <span style="font-size:12px;color:#8a96a8;font-weight:700;text-transform:uppercase;letter-spacing:.12em">View</span>
+      <div class="seg" id="modeSeg">
+        <button class="active" data-mode="desktop">Desktop · 16:9</button>
+        <button data-mode="phone">Phone · 9:16</button>
+      </div>
+      <span style="flex:1"></span>
+      <label style="font-size:12px;color:#8a96a8;display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" id="demoMode" checked> demo mode (animate counters + leaderboard)
+      </label>
+      <button class="btn sm" id="webcamBtn">Use webcam in stream area</button>
+    </div>
+
+    <div class="stage-wrap">
+      <div class="stage" id="stage">
+        <!-- LEADERBOARD -->
+        <div class="ov ov-panel ov-leaderboard" data-ov="leaderboard">
+          <div class="head"><span class="dot"></span><span id="lb-title">LIVE LEADERBOARD</span></div>
+          <div class="rows" id="lbRows"></div>
+        </div>
+        <!-- STATS -->
+        <div class="ov ov-stats" data-ov="stats" id="statsOv"></div>
+        <!-- STREAM -->
+        <div class="ov ov-stream" data-ov="stream" id="streamOv">
+          <video id="webcam" autoplay playsinline muted style="display:none"></video>
+          <div class="placeholder" id="streamPh"><div class="icon">📹</div><div>STREAM (your webcam/screen goes here)</div><div style="margin-top:8px;font-size:11px;opacity:.7">click "Use webcam in stream area" above for a live preview</div></div>
+        </div>
+        <!-- WEBSITE -->
+        <div class="ov ov-website" data-ov="website">
+          <div class="mark" id="webMark"></div>
+          <div class="meta"><span class="name" id="webName"></span><span class="site" id="webSite"></span></div>
+        </div>
+        <!-- PHONE inset -->
+        <div class="ov ov-phone" data-ov="phone">
+          <div class="notch"></div>
+          <div class="screen" id="phoneScreen"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ov-controls">
+      <h3>Overlay controls</h3>
+      <div class="ov-row">
+        <span class="nm"><input type="checkbox" data-ov-toggle="leaderboard" checked> Leaderboard</span>
+        <div class="ctrls">
+          <input type="text" id="lbTitleInput" placeholder="LIVE LEADERBOARD" style="width:170px">
+          <span class="hint">edit rows in <code>Edit data</code> below</span>
+        </div>
+      </div>
+      <div class="ov-row">
+        <span class="nm"><input type="checkbox" data-ov-toggle="stats" checked> Stats (WKT/SETS/REP/VOL/COUNTER)</span>
+        <div class="ctrls"><span class="hint">edit labels + start values in <code>Edit data</code> below</span></div>
+      </div>
+      <div class="ov-row">
+        <span class="nm"><input type="checkbox" data-ov-toggle="stream" checked> Stream window</span>
+        <div class="ctrls"><span class="hint">center area; uses webcam when permitted</span></div>
+      </div>
+      <div class="ov-row">
+        <span class="nm"><input type="checkbox" data-ov-toggle="website" checked> Website bar</span>
+        <div class="ctrls"><span class="hint">uses brand name + website from sidebar</span></div>
+      </div>
+      <div class="ov-row">
+        <span class="nm"><input type="checkbox" data-ov-toggle="phone" checked> Phone inset</span>
+        <div class="ctrls"><span class="hint">animated app preview in bottom-right (desktop only)</span></div>
+      </div>
+
+      <details style="margin-top:10px">
+        <summary>Edit data</summary>
+        <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div>
+            <div style="font-size:11px;color:#8a96a8;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px">Leaderboard rows (name : value, one per line)</div>
+            <textarea id="lbDataInput" rows="6" style="width:100%;background:#131a25;border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:6px 8px;color:#ecf4ff;font:inherit;font-size:12px"></textarea>
+          </div>
+          <div>
+            <div style="font-size:11px;color:#8a96a8;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px">Stats (label : value, one per line)</div>
+            <textarea id="statDataInput" rows="6" style="width:100%;background:#131a25;border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:6px 8px;color:#ecf4ff;font:inherit;font-size:12px"></textarea>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <div class="ov-controls" style="margin-top:14px">
+      <h3>Export for OBS / Streamlabs</h3>
+      <p class="hint" style="margin:0 0 10px">
+        Two ways to use these overlays in OBS:
+        <br>
+        <b>A) PNG layers.</b> Download each overlay as a transparent PNG and add as image source in OBS. Quick but static.
+        <br>
+        <b>B) Browser source (recommended).</b> Add a Browser Source in OBS pointing at this page with <code>?obs=&lt;overlay&gt;</code> — the overlay renders live with transparent background, so counters & leaderboard keep animating.
+      </p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+        <button class="btn primary" id="dlComposite">Download composite background PNG</button>
+        <button class="btn" data-dl-overlay="leaderboard">Leaderboard PNG</button>
+        <button class="btn" data-dl-overlay="stats">Stats PNG</button>
+        <button class="btn" data-dl-overlay="website">Website PNG</button>
+        <button class="btn" data-dl-overlay="phone">Phone PNG</button>
+      </div>
+      <div style="font-size:11px;color:#8a96a8;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px">OBS browser source URLs (this page in transparent mode)</div>
+      <div id="obsLinks" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+    </div>
+
+  </section>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<!-- html2canvas for rendering DOM overlays to PNG -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+/* =========================================================================
+   Stream Setup
+   ========================================================================= */
+const $ = (id) => document.getElementById(id);
+const STREAM_STORAGE = 'tta_stream_setup_v1';
+const BK = window.BrandKit;
+
+BK.mountConfigPanel($('sidebar'));
+BK.onChange(applyBranding);
+
+function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 1800); }
+
+/* ---------- persisted state ---------- */
+const DEFAULT_STATE = {
+  mode: 'desktop',
+  visible: { leaderboard: true, stats: true, stream: true, website: true, phone: true },
+  lbTitle: 'LIVE LEADERBOARD',
+  lbRows: [
+    { name: 'Alex M.',     value: 14820 },
+    { name: 'Jordan R.',   value: 13205 },
+    { name: 'You',         value: 11985, you: true },
+    { name: 'Sam K.',      value: 10410 },
+    { name: 'Riley P.',    value:  9820 },
+    { name: 'Casey D.',    value:  8775 },
+  ],
+  stats: [
+    { label: 'WKT',     value: 1, fmt: 'n' },
+    { label: 'SETS',    value: 12, fmt: 'n' },
+    { label: 'REP',     value: 96, fmt: 'n' },
+    { label: 'VOL',     value: 8420, fmt: 'lb' },
+    { label: 'COUNTER', value: 0, fmt: 'n' },
+  ],
+};
+let STATE = loadState();
+function loadState() {
+  try {
+    const s = JSON.parse(localStorage.getItem(STREAM_STORAGE) || 'null');
+    return s ? Object.assign({}, DEFAULT_STATE, s) : { ...DEFAULT_STATE };
+  } catch { return { ...DEFAULT_STATE }; }
+}
+function saveState() { try { localStorage.setItem(STREAM_STORAGE, JSON.stringify(STATE)); } catch {} }
+
+/* ---------- branding application ---------- */
+function applyBranding() {
+  const cfg = BK.get();
+  const root = document.documentElement;
+  root.style.setProperty('--brand-accent', cfg.accent);
+  root.style.setProperty('--brand-bg', cfg.bg);
+  root.style.setProperty('--brand-ink', cfg.ink);
+  root.style.setProperty('--brand-cta-ink', BK.luminance(cfg.accent) > 0.5 ? '#021416' : '#ffffff');
+
+  // website bar
+  $('webName').textContent = cfg.name || '';
+  $('webSite').textContent = cfg.site || '';
+  const wm = $('webMark');
+  wm.innerHTML = '';
+  if (cfg.logo) {
+    const img = document.createElement('img'); img.src = cfg.logo; img.alt = '';
+    wm.appendChild(img);
+    wm.style.background = 'transparent';
+  } else {
+    wm.style.background = cfg.accent;
+    wm.textContent = cfg.icon || '★';
+    wm.style.color = BK.luminance(cfg.accent) > 0.5 ? '#021416' : '#fff';
+  }
+
+  // phone screen content
+  renderPhoneInset();
+}
+
+function renderPhoneInset() {
+  const screen = $('phoneScreen');
+  const cfg = BK.get();
+  const bubbles = [
+    { side: 'r', text: 'bench 4x8 @ 185' },
+    { side: 'l', text: '✓ logged' },
+    { side: 'r', text: 'water 12oz' },
+    { side: 'l', text: '✓ 32oz today' },
+    { side: 'r', text: 'sleep 7.5h' },
+  ];
+  screen.innerHTML = bubbles.map(b => `<div class="bubble ${b.side}">${b.text}</div>`).join('');
+}
+
+/* ---------- visibility ---------- */
+function applyVisibility() {
+  document.querySelectorAll('.ov').forEach(el => {
+    const id = el.dataset.ov;
+    el.classList.toggle('hidden', !STATE.visible[id]);
+  });
+  document.querySelectorAll('[data-ov-toggle]').forEach(cb => {
+    cb.checked = !!STATE.visible[cb.dataset.ovToggle];
+  });
+}
+document.querySelectorAll('[data-ov-toggle]').forEach(cb => {
+  cb.addEventListener('change', () => {
+    STATE.visible[cb.dataset.ovToggle] = cb.checked;
+    saveState(); applyVisibility();
+  });
+});
+
+/* ---------- mode ---------- */
+function applyMode() {
+  const stage = $('stage');
+  stage.classList.toggle('phone', STATE.mode === 'phone');
+  document.querySelectorAll('#modeSeg button').forEach(b => b.classList.toggle('active', b.dataset.mode === STATE.mode));
+}
+$('modeSeg').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  STATE.mode = b.dataset.mode; saveState(); applyMode();
+});
+
+/* ---------- leaderboard rendering ---------- */
+function renderLeaderboard() {
+  $('lb-title').textContent = STATE.lbTitle || 'LIVE LEADERBOARD';
+  const rows = STATE.lbRows.slice(0, 6);
+  const box = $('lbRows');
+  box.innerHTML = '';
+  rows.forEach((r, i) => {
+    const row = document.createElement('div');
+    row.className = 'row' + (i < 3 ? ' r' + (i + 1) : '') + (r.you ? ' highlight' : '');
+    row.innerHTML = `<span class="rank">${i + 1}</span><span class="name">${escapeHtml(r.name)}</span><span class="val">${Number(r.value).toLocaleString()}</span>`;
+    box.appendChild(row);
+  });
+}
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); }
+
+/* ---------- stats rendering ---------- */
+function renderStats() {
+  const box = $('statsOv');
+  box.innerHTML = '';
+  STATE.stats.forEach(s => {
+    const d = document.createElement('div');
+    d.className = 'stat';
+    d.innerHTML = `<span class="lbl">${escapeHtml(s.label)}</span><span class="val" data-stat="${escapeHtml(s.label)}">${formatStat(s)}</span>`;
+    box.appendChild(d);
+  });
+}
+function formatStat(s) {
+  const v = Number(s.value);
+  if (s.fmt === 'lb') return v.toLocaleString() + ' lb';
+  return v.toLocaleString();
+}
+
+/* ---------- data editing ---------- */
+function syncDataInputs() {
+  $('lbTitleInput').value = STATE.lbTitle || '';
+  $('lbDataInput').value = STATE.lbRows.map(r => `${r.name} : ${r.value}${r.you ? ' (you)' : ''}`).join('\n');
+  $('statDataInput').value = STATE.stats.map(s => `${s.label} : ${s.value}${s.fmt === 'lb' ? ' lb' : ''}`).join('\n');
+}
+$('lbTitleInput').addEventListener('input', e => { STATE.lbTitle = e.target.value; saveState(); renderLeaderboard(); });
+$('lbDataInput').addEventListener('input', e => {
+  STATE.lbRows = e.target.value.split('\n').map(line => {
+    const m = line.match(/^(.+?)\s*:\s*([\d,]+)(.*)$/);
+    if (!m) return null;
+    return { name: m[1].trim(), value: parseInt(m[2].replace(/,/g, '')) || 0, you: /you/i.test(m[3] || '') };
+  }).filter(Boolean);
+  saveState(); renderLeaderboard();
+});
+$('statDataInput').addEventListener('input', e => {
+  STATE.stats = e.target.value.split('\n').map(line => {
+    const m = line.match(/^(.+?)\s*:\s*([\d,]+)(.*)$/);
+    if (!m) return null;
+    return { label: m[1].trim().toUpperCase(), value: parseInt(m[2].replace(/,/g, '')) || 0, fmt: /lb/i.test(m[3] || '') ? 'lb' : 'n' };
+  }).filter(Boolean);
+  saveState(); renderStats();
+});
+
+/* ---------- DEMO MODE: animate counters + leaderboard ---------- */
+let demoTimer = null;
+function setDemo(on) {
+  if (demoTimer) { clearInterval(demoTimer); demoTimer = null; }
+  if (on) {
+    demoTimer = setInterval(() => {
+      // bump stats randomly
+      STATE.stats.forEach(s => {
+        const upBy = ({
+          WKT: () => Math.random() < 0.02 ? 1 : 0,
+          SETS: () => Math.random() < 0.12 ? 1 : 0,
+          REP: () => Math.random() < 0.3 ? Math.floor(Math.random() * 4) + 1 : 0,
+          VOL: () => Math.random() < 0.3 ? Math.floor(Math.random() * 200) + 30 : 0,
+          COUNTER: () => 1,
+        })[s.label];
+        if (upBy) s.value = Number(s.value) + upBy();
+      });
+      // bump leaderboard
+      STATE.lbRows.forEach(r => { r.value += Math.floor(Math.random() * 80); });
+      STATE.lbRows.sort((a, b) => b.value - a.value);
+      renderStats(); renderLeaderboard();
+    }, 600);
+  }
+  $('livePill').textContent = on ? 'LIVE DEMO' : 'PREVIEW';
+  $('livePill').className = 'pill ' + (on ? 'live' : '');
+}
+$('demoMode').addEventListener('change', e => setDemo(e.target.checked));
+
+/* ---------- webcam ---------- */
+let webcamStream = null;
+$('webcamBtn').addEventListener('click', async () => {
+  if (webcamStream) {
+    webcamStream.getTracks().forEach(t => t.stop());
+    webcamStream = null;
+    $('webcam').srcObject = null;
+    $('webcam').style.display = 'none';
+    $('streamPh').style.display = '';
+    $('webcamBtn').textContent = 'Use webcam in stream area';
+    return;
+  }
+  try {
+    webcamStream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 }, audio: false });
+    $('webcam').srcObject = webcamStream;
+    $('webcam').style.display = '';
+    $('streamPh').style.display = 'none';
+    $('webcamBtn').textContent = 'Stop webcam';
+  } catch (e) { toast('Camera blocked: ' + e.message); }
+});
+
+/* =========================================================================
+   EXPORTS
+   ========================================================================= */
+function downloadBlob(blob, filename) { BK.downloadBlob(blob, filename); }
+
+/* Composite background (whole stage, without webcam frame contents) */
+$('dlComposite').addEventListener('click', async () => {
+  toast('Rendering composite…');
+  // Temporarily hide the webcam video to keep clean placeholder
+  const webcam = $('webcam');
+  const prevDisplay = webcam.style.display;
+  webcam.style.display = 'none';
+  try {
+    const canvas = await html2canvas($('stage'), { backgroundColor: null, scale: 2, useCORS: true });
+    canvas.toBlob(blob => {
+      downloadBlob(blob, `${BK.fileBase()}-stream-bg-${STATE.mode}.png`);
+      toast('Background PNG downloaded');
+    });
+  } catch (e) { console.error(e); toast('Failed: ' + e.message); }
+  webcam.style.display = prevDisplay;
+});
+
+/* Per-overlay transparent PNG */
+document.querySelectorAll('[data-dl-overlay]').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const id = btn.dataset.dlOverlay;
+    const el = document.querySelector(`.ov[data-ov="${id}"]`);
+    if (!el) return;
+    toast('Rendering overlay…');
+    try {
+      const canvas = await html2canvas(el, { backgroundColor: null, scale: 2, useCORS: true });
+      canvas.toBlob(blob => {
+        downloadBlob(blob, `${BK.fileBase()}-stream-${id}-${STATE.mode}.png`);
+        toast(id + ' PNG downloaded');
+      });
+    } catch (e) { console.error(e); toast('Failed: ' + e.message); }
+  });
+});
+
+/* OBS browser source URL list */
+function renderOBSLinks() {
+  const base = window.location.origin + window.location.pathname;
+  const list = [
+    { id: 'leaderboard', label: 'Leaderboard',   size: '720×540'   },
+    { id: 'stats',       label: 'Stats column',  size: '480×900'   },
+    { id: 'website',     label: 'Website bar',   size: '700×120'   },
+    { id: 'phone',       label: 'Phone inset',   size: '280×590'   },
+  ];
+  $('obsLinks').innerHTML = list.map(item => `
+    <div style="background:#131a25;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:4px">
+      <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:12px">${item.label}</b><span style="font-size:10px;color:#8a96a8;font-family:ui-monospace,Menlo,monospace">${item.size}</span></div>
+      <div style="display:flex;gap:4px;align-items:center">
+        <input type="text" readonly value="${base}?obs=${item.id}&mode=${STATE.mode}" style="flex:1;background:#0a0e16;border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:4px 6px;font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#d6e2f0;outline:none">
+        <button class="btn sm" data-copy-url="${base}?obs=${item.id}&mode=${STATE.mode}">Copy</button>
+      </div>
+    </div>
+  `).join('');
+  $('obsLinks').querySelectorAll('[data-copy-url]').forEach(b => b.onclick = () => {
+    navigator.clipboard.writeText(b.dataset.copyUrl).then(() => toast('URL copied'));
+  });
+}
+
+/* =========================================================================
+   OBS rendering mode
+   When ?obs=<id>&mode=desktop|phone in URL, hide everything except the
+   requested overlay on a transparent background. Demo mode runs so values
+   keep animating live for OBS browser source consumers.
+   ========================================================================= */
+function checkObsMode() {
+  const params = new URLSearchParams(window.location.search);
+  const obsId = params.get('obs');
+  if (!obsId) return false;
+  const mode = params.get('mode') === 'phone' ? 'phone' : 'desktop';
+  STATE.mode = mode;
+  document.body.classList.add('obs');
+  // hide page chrome
+  document.querySelectorAll('.bk-navstrip, .topbar2, .sidebar, .modebar, .ov-controls').forEach(el => el.style.display = 'none');
+  const content = document.querySelector('.content'); if (content) content.style.padding = '0';
+  const sw = document.querySelector('.stage-wrap'); if (sw) { sw.style.border = 'none'; sw.style.background = 'transparent'; sw.style.borderRadius = '0'; }
+  // Mark the target overlay
+  document.querySelectorAll('.ov').forEach(el => {
+    if (el.dataset.ov === obsId) { el.classList.add('obs-target'); el.classList.remove('hidden'); }
+    else { el.style.display = 'none'; }
+  });
+  // force visibility ON for the requested overlay (ignore user toggles)
+  STATE.visible[obsId] = true;
+  // ensure demo mode is on so it stays live
+  setDemo(true);
+  // hide main grid offset
+  const main = document.querySelector('main'); if (main) main.style.display = 'block';
+  return true;
+}
+
+/* =========================================================================
+   INIT
+   ========================================================================= */
+(function init() {
+  applyBranding();
+  applyMode();
+  applyVisibility();
+  renderLeaderboard();
+  renderStats();
+  syncDataInputs();
+  renderOBSLinks();
+  setDemo(true);
+
+  // refresh OBS links when mode changes
+  $('modeSeg').addEventListener('click', () => setTimeout(renderOBSLinks, 50));
+
+  // OBS mode handling
+  checkObsMode();
+})();
+</script>
+</body>
+</html>

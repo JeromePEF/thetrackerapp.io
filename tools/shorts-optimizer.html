@@ -1,0 +1,1444 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Shorts Optimizer + AI References — Brand Tools</title>
+<link rel="icon" href="/public/favicon.svg">
+<style>
+  * { box-sizing: border-box; }
+  html, body { background: #07090d; color: #ecf4ff; margin: 0; font: 14px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, system-ui, sans-serif; }
+  a { color: #38ffd3; text-decoration: none; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+
+  .topbar2 {
+    display: flex; align-items: center; gap: 14px;
+    padding: 10px 18px; border-bottom: 1px solid rgba(255,255,255,.08);
+    background: rgba(7,9,13,.85); backdrop-filter: blur(12px);
+    position: sticky; top: 38px; z-index: 50;
+  }
+  .topbar2 h1 { font-size: 15px; margin: 0; font-weight: 700; }
+  .topbar2 .sub { color: #8a96a8; font-size: 12px; }
+  .topbar2 .spacer { flex: 1; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 999px; background: #131a25; border: 1px solid rgba(255,255,255,.1); font-size: 11px; color: #8a96a8; }
+  .pill.ok { color: #38ffd3; border-color: rgba(56,255,211,.35); }
+
+  main { display: grid; grid-template-columns: 320px 1fr; gap: 0; min-height: calc(100vh - 90px); }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  aside.sidebar {
+    background: #0e131b; border-right: 1px solid rgba(255,255,255,.08); padding: 16px;
+    position: sticky; top: 90px; align-self: start; max-height: calc(100vh - 90px); overflow-y: auto;
+  }
+  @media (max-width: 900px) { aside.sidebar { position: static; max-height: none; } }
+  .content { padding: 20px; }
+
+  /* tabs */
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
+  .tab {
+    background: transparent; border: 1px solid rgba(255,255,255,.1); color: #8a96a8;
+    padding: 6px 12px; border-radius: 999px; font-size: 13px;
+  }
+  .tab.active { background: #38ffd3; color: #021416; border-color: #38ffd3; font-weight: 700; }
+
+  /* section headings */
+  .section { margin-bottom: 36px; }
+  .section h2 { font-size: 16px; margin: 0 0 4px; }
+  .section .desc { color: #8a96a8; font-size: 12px; margin: 0 0 14px; }
+
+  /* template grid */
+  .tpl-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+  .tpl-card {
+    background: #0e131b; border: 1px solid rgba(255,255,255,.08); border-radius: 12px; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .tpl-card.selected { border-color: #38ffd3; box-shadow: 0 0 0 1px #38ffd3 inset; }
+  .tpl-preview {
+    aspect-ratio: 9 / 16; background:
+      linear-gradient(45deg, rgba(255,255,255,.03) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.03) 75%),
+      linear-gradient(45deg, rgba(255,255,255,.03) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.03) 75%);
+    background-size: 16px 16px; background-position: 0 0, 8px 8px;
+    display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;
+  }
+  .tpl-preview canvas { max-width: 100%; max-height: 100%; }
+  .tpl-preview .safe-overlay {
+    position: absolute; inset: 0; pointer-events: none; display: none;
+  }
+  .tpl-preview.show-safe .safe-overlay { display: block; }
+  .tpl-preview .video-pill {
+    position: absolute; top: 8px; right: 8px;
+    background: rgba(0,0,0,.65); color: #fff; font-size: 10px;
+    padding: 3px 7px; border-radius: 999px;
+  }
+  .tpl-info { padding: 10px 12px 6px; }
+  .tpl-info .name { font-size: 13px; font-weight: 700; }
+  .tpl-info .dur { color: #8a96a8; font-size: 11px; font-family: ui-monospace, Menlo, monospace; }
+  .tpl-fields { padding: 6px 12px 10px; display: flex; flex-direction: column; gap: 6px; }
+  .tpl-fields label { font-size: 11px; color: #8a96a8; }
+  .tpl-fields input, .tpl-fields textarea {
+    background: #131a25; border: 1px solid rgba(255,255,255,.15); border-radius: 6px;
+    padding: 6px 8px; color: #ecf4ff; outline: none; font: inherit; font-size: 12px;
+  }
+  .tpl-fields textarea { resize: vertical; min-height: 38px; }
+  .tpl-fields input:focus, .tpl-fields textarea:focus { border-color: #38ffd3; }
+  .tpl-fields .twin { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+
+  .tpl-actions { padding: 0 12px 12px; display: flex; gap: 6px; align-items: center; }
+  .tpl-actions .check { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #8a96a8; margin-right: auto; }
+  .tpl-actions input[type=checkbox] { accent-color: #38ffd3; }
+  .btn { background: #131a25; border: 1px solid rgba(255,255,255,.18); color: #ecf4ff; padding: 7px 12px; border-radius: 8px; font-size: 12px; }
+  .btn:hover { border-color: #38ffd3; }
+  .btn.primary { background: #38ffd3; color: #021416; border-color: #38ffd3; font-weight: 700; }
+  .btn.sm { padding: 5px 9px; font-size: 11px; border-radius: 6px; }
+  .btn.ghost { background: transparent; }
+
+  /* safe zone overlay (TikTok/Reels/Shorts) */
+  .sz-tt-top, .sz-tt-bot, .sz-tt-right {
+    position: absolute; background: rgba(255, 80, 80, .14);
+    outline: 1px dashed rgba(255, 80, 80, .55);
+    color: rgba(255, 80, 80, .9); font-size: 9px;
+    display: flex; align-items: center; justify-content: center; text-transform: uppercase; letter-spacing: .12em;
+    font-weight: 700; padding: 4px;
+  }
+  .sz-tt-top { top: 0; left: 0; right: 0; height: 8%; }
+  .sz-tt-bot { bottom: 0; left: 0; right: 0; height: 17%; }
+  .sz-tt-right { top: 8%; right: 0; width: 12%; bottom: 17%; }
+
+  /* AI ref section */
+  .ai-controls {
+    background: #0e131b; border: 1px solid rgba(255,255,255,.08); border-radius: 12px;
+    padding: 14px; margin-bottom: 14px;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;
+  }
+  .ai-controls .field { display: flex; flex-direction: column; gap: 4px; }
+  .ai-controls label { font-size: 11px; color: #8a96a8; text-transform: uppercase; letter-spacing: .1em; }
+  .ai-controls input, .ai-controls select, .ai-controls textarea {
+    background: #131a25; border: 1px solid rgba(255,255,255,.18); border-radius: 8px;
+    padding: 8px 10px; color: #ecf4ff; outline: none; font: inherit;
+  }
+  .ai-controls textarea { min-height: 60px; resize: vertical; }
+  .ai-controls input:focus, .ai-controls select:focus, .ai-controls textarea:focus { border-color: #38ffd3; }
+
+  .scene-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+  .scene-card {
+    background: #0e131b; border: 1px solid rgba(255,255,255,.08); border-radius: 12px;
+    display: flex; flex-direction: column;
+  }
+  .scene-preview {
+    aspect-ratio: 9 / 16;
+    background: #000;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .scene-preview.aspect-16x9 { aspect-ratio: 16 / 9; }
+  .scene-preview.aspect-1x1 { aspect-ratio: 1 / 1; }
+  .scene-preview canvas { max-width: 100%; max-height: 100%; }
+  .scene-head { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,.06); display: flex; align-items: center; gap: 8px; }
+  .scene-num { width: 22px; height: 22px; border-radius: 999px; background: #38ffd3; color: #021416; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; }
+  .scene-head select { flex: 1; background: #131a25; border: 1px solid rgba(255,255,255,.15); border-radius: 6px; padding: 5px 8px; font-size: 12px; }
+  .scene-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+  .scene-body textarea { min-height: 60px; background: #131a25; border: 1px solid rgba(255,255,255,.15); border-radius: 6px; padding: 6px 8px; color: #ecf4ff; outline: none; font: inherit; font-size: 12px; resize: vertical; }
+  .scene-body label { font-size: 10px; color: #8a96a8; text-transform: uppercase; letter-spacing: .12em; }
+  .scene-body .prompt-box { background: #0a0e16; border: 1px solid rgba(56,255,211,.2); border-radius: 6px; padding: 8px; font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: #d6e2f0; white-space: pre-wrap; max-height: 160px; overflow-y: auto; }
+  .scene-actions { padding: 0 12px 12px; display: flex; gap: 6px; }
+
+  /* download bar */
+  .dl-bar {
+    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+    background: rgba(14,19,27,.95); border: 1px solid rgba(255,255,255,.2);
+    border-radius: 999px; padding: 8px 8px 8px 16px;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 18px 40px rgba(0,0,0,.6); backdrop-filter: blur(12px); z-index: 40;
+  }
+  .dl-bar .num { color: #38ffd3; font-weight: 700; }
+  .toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+    background: #38ffd3; color: #021416; padding: 8px 16px; border-radius: 999px;
+    font-weight: 700; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 60;
+  }
+  .toast.show { opacity: 1; }
+
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.7); display: none;
+    align-items: center; justify-content: center; flex-direction: column; gap: 12px;
+    z-index: 100; backdrop-filter: blur(4px);
+  }
+  .overlay.show { display: flex; }
+  .overlay .spinner { width: 38px; height: 38px; border: 3px solid rgba(255,255,255,.15); border-top-color: #38ffd3; border-radius: 50%; animation: spin .8s linear infinite; }
+  .overlay .msg { font-size: 13px; }
+  .overlay .progress { width: 240px; height: 6px; background: rgba(255,255,255,.1); border-radius: 999px; overflow: hidden; }
+  .overlay .progress > div { height: 100%; width: 0; background: #38ffd3; transition: width .2s; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .toggle-row { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+  .toggle-row label { font-size: 12px; color: #8a96a8; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+  .toggle-row input[type=checkbox] { accent-color: #38ffd3; }
+</style>
+<script src="_brand-kit.js"></script>
+</head>
+<body>
+
+<div id="bkNav"></div>
+<script>document.getElementById('bkNav').innerHTML = BrandKit.navStrip('shorts-optimizer');</script>
+
+<div class="topbar2">
+  <h1>Shorts Optimizer + AI References</h1>
+  <span class="sub">vertical short templates · AI scene & prompt generator · safe zones</span>
+  <span class="spacer"></span>
+  <span class="pill" id="capPill">video: detecting…</span>
+</div>
+
+<main>
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <section class="content">
+
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-tab="templates">Short Templates</button>
+      <button class="tab" data-tab="ai">AI Storyboard</button>
+      <button class="tab" data-tab="safezones">Safe Zone Reference</button>
+    </div>
+
+    <!-- ============ TEMPLATES ============ -->
+    <div class="section" data-pane="templates">
+      <h2>Vertical short templates (1080×1920)</h2>
+      <p class="desc">Editable text per template, live preview, render to MP4/WebM. Use the safe-zone overlay to confirm critical text doesn't sit under TikTok/Reels/YT Shorts UI.</p>
+      <div class="toggle-row">
+        <label><input type="checkbox" id="showSafe"> Show TikTok/Reels safe zones over previews</label>
+        <label>Platform style:
+          <select id="platformPick" style="background:#131a25;border:1px solid rgba(255,255,255,.18);border-radius:6px;padding:4px 8px">
+            <option value="tiktok">TikTok</option>
+            <option value="reels">Instagram Reels</option>
+            <option value="shorts">YouTube Shorts</option>
+          </select>
+        </label>
+      </div>
+      <div class="tpl-grid" id="tplGrid"></div>
+    </div>
+
+    <!-- ============ AI STORYBOARD ============ -->
+    <div class="section" data-pane="ai" style="display:none">
+      <h2>AI video reference + storyboard</h2>
+      <p class="desc">Generate brand-styled reference frames + ready-to-paste prompts for AI video tools. Use the reference PNG as <code>first-frame</code> / <code>image-to-video</code> input, paste the matching prompt, then stitch the clips in your editor.</p>
+
+      <div class="ai-controls">
+        <div class="field">
+          <label>Aspect ratio</label>
+          <select id="ai-aspect">
+            <option value="9x16" selected>9:16 vertical (1080×1920)</option>
+            <option value="16x9">16:9 landscape (1920×1080)</option>
+            <option value="1x1">1:1 square (1080×1080)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>AI tool style</label>
+          <select id="ai-tool">
+            <option value="generic">Generic (universal)</option>
+            <option value="runway">Runway Gen-3</option>
+            <option value="pika">Pika</option>
+            <option value="luma">Luma Dream Machine</option>
+            <option value="kling">Kling</option>
+            <option value="sora">Sora</option>
+            <option value="veo">Google Veo</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Number of scenes</label>
+          <select id="ai-count">
+            <option value="3">3 scenes</option>
+            <option value="5" selected>5 scenes</option>
+            <option value="7">7 scenes</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Per-scene duration (s)</label>
+          <input type="number" id="ai-dur" min="2" max="10" value="5" step="1">
+        </div>
+        <div class="field" style="grid-column: 1 / -1">
+          <label>Story theme / topic</label>
+          <textarea id="ai-theme" placeholder="A 30-second short explaining how the app makes fitness logging effortless via iMessage. Build excitement, end with a clear CTA."></textarea>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <button class="btn primary" id="ai-build">Build storyboard</button>
+        <button class="btn" id="ai-randomize">Randomize scene order</button>
+        <button class="btn" id="ai-export-zip">Download storyboard (ZIP)</button>
+        <button class="btn ghost" id="ai-copy-all">Copy all prompts</button>
+      </div>
+
+      <div class="scene-grid" id="aiSceneGrid"></div>
+    </div>
+
+    <!-- ============ SAFE ZONES ============ -->
+    <div class="section" data-pane="safezones" style="display:none">
+      <h2>Safe zone reference</h2>
+      <p class="desc">Where each platform's UI sits over your vertical video. Anything visually critical (logo, hook, CTA) should be inside the clear center area.</p>
+      <div class="tpl-grid" id="safeGrid"></div>
+    </div>
+
+  </section>
+</main>
+
+<div class="dl-bar">
+  <span><span class="num" id="selCount">0</span> selected</span>
+  <button class="btn sm" id="dlSelectedBtn">Render selected</button>
+  <button class="btn sm primary" id="dlAllBtn">Render all (ZIP)</button>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="overlay" id="overlay"><div class="spinner"></div><div class="msg" id="overlayMsg">Working…</div><div class="progress"><div id="overlayBar"></div></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+/* =========================================================================
+   Shorts Optimizer
+   ========================================================================= */
+const $ = (id) => document.getElementById(id);
+const SHORTS_STORAGE = 'tta_shorts_v1';
+
+const BK = window.BrandKit;
+BK.mountConfigPanel($('sidebar'));
+BK.onChange(() => { refreshTemplates(); refreshSafe(); refreshAIScenes(); });
+
+function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 1800); }
+function showOverlay(m) { $('overlayMsg').textContent = m; $('overlayBar').style.width = '0%'; $('overlay').classList.add('show'); }
+function setOverlay(m, p) { if (m) $('overlayMsg').textContent = m; if (typeof p === 'number') $('overlayBar').style.width = p + '%'; }
+function hideOverlay() { $('overlay').classList.remove('show'); }
+
+/* ---------- shared per-template text state ---------- */
+const STATE = loadState();
+function loadState() {
+  try { return JSON.parse(localStorage.getItem(SHORTS_STORAGE) || '{}'); }
+  catch { return {}; }
+}
+function saveState() { try { localStorage.setItem(SHORTS_STORAGE, JSON.stringify(STATE)); } catch {} }
+
+/* ---------- tab handling ---------- */
+$('tabs').addEventListener('click', e => {
+  const b = e.target.closest('.tab'); if (!b) return;
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x === b));
+  const tab = b.dataset.tab;
+  document.querySelectorAll('[data-pane]').forEach(p => p.style.display = p.dataset.pane === tab ? '' : 'none');
+});
+
+/* =========================================================================
+   TEMPLATES
+   ========================================================================= */
+const SHORT_W = 1080, SHORT_H = 1920;
+
+function tplState(id) {
+  if (!STATE[id]) STATE[id] = {};
+  return STATE[id];
+}
+
+// -------- Helper: draw bottom site URL + small mark --------
+function drawCornerBrand(ctx, w, h) {
+  const cfg = BK.get();
+  const pad = Math.min(w, h) * 0.04;
+  const ms = Math.min(w, h) * 0.07;
+  BK.drawLogoMark(ctx, pad + ms / 2, h - pad - ms / 2, ms);
+  ctx.fillStyle = BK.contrastInk();
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.font = `700 ${Math.round(ms * 0.42)}px ${cfg.fontH}`;
+  ctx.fillText(cfg.name || '', pad + ms + pad * 0.4, h - pad - ms * 0.65);
+  ctx.fillStyle = BK.hexA(BK.contrastInk(), 0.7);
+  ctx.font = `500 ${Math.round(ms * 0.32)}px ${cfg.fontB}`;
+  ctx.fillText(cfg.site || '', pad + ms + pad * 0.4, h - pad - ms * 0.25);
+}
+
+function drawCTACard(ctx, w, h, t, fadeIn = 0.25) {
+  const cfg = BK.get();
+  const alpha = BK.clamp01(t / fadeIn);
+  if (t < 0.18) {
+    ctx.fillStyle = BK.hexA('#ffffff', (0.18 - t) / 0.18 * 0.7);
+    ctx.fillRect(0, 0, w, h);
+  }
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  const cardW = w * 0.78, cardH = h * 0.32;
+  const cx = (w - cardW) / 2, cy = (h - cardH) / 2;
+  BK.roundRect(ctx, cx, cy, cardW, cardH, 32);
+  ctx.fillStyle = BK.hexA('#000000', 0.55);
+  ctx.fill();
+  ctx.strokeStyle = BK.hexA(cfg.accent, 0.6); ctx.lineWidth = 4;
+  BK.roundRect(ctx, cx, cy, cardW, cardH, 32); ctx.stroke();
+
+  const ms = cardH * 0.32;
+  BK.drawLogoMark(ctx, cx + cardW / 2, cy + cardH * 0.28, ms);
+  ctx.fillStyle = cfg.accent;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = `800 ${Math.round(cardH * 0.13)}px ${cfg.fontH}`;
+  ctx.fillText(cfg.cta || 'Try it', cx + cardW / 2, cy + cardH * 0.65);
+  ctx.fillStyle = BK.hexA(BK.contrastInk(), 0.9);
+  ctx.font = `600 ${Math.round(cardH * 0.09)}px ${cfg.fontB}`;
+  ctx.fillText(cfg.site || '', cx + cardW / 2, cy + cardH * 0.85);
+  ctx.restore();
+}
+
+const TEMPLATES = [
+  {
+    id: 'hook-demo-cta',
+    name: 'Hook + Demo + CTA',
+    duration: 8,
+    defaults: { hook: 'STOP using fitness apps.', b1: 'Text-only · no install', b2: 'Works in iMessage', b3: 'Live leaderboards' },
+    fields: [
+      { k: 'hook', label: 'Hook text', type: 'text' },
+      { k: 'b1', label: 'Feature 1', type: 'text' },
+      { k: 'b2', label: 'Feature 2', type: 'text' },
+      { k: 'b3', label: 'Feature 3', type: 'text' },
+    ],
+    render(ctx, w, h, t) {
+      const cfg = BK.get();
+      const s = Object.assign({}, this.defaults, tplState(this.id));
+      BK.fillBackground(ctx, w, h);
+
+      // animated accent glow
+      const px = w * (0.5 + 0.15 * Math.sin(t * 1.2));
+      const py = h * (0.5 + 0.15 * Math.cos(t * 1.0));
+      const rg = ctx.createRadialGradient(px, py, 0, px, py, Math.max(w, h) * 0.6);
+      rg.addColorStop(0, BK.hexA(cfg.accent, 0.18));
+      rg.addColorStop(1, BK.hexA(cfg.accent, 0));
+      ctx.fillStyle = rg; ctx.fillRect(0, 0, w, h);
+
+      const ink = BK.contrastInk();
+
+      if (t < 1.0) {
+        // big hook scales in
+        const p = BK.ease(BK.clamp01(t / 0.8));
+        ctx.save();
+        ctx.translate(w / 2, h / 2);
+        ctx.scale(0.6 + 0.4 * p, 0.6 + 0.4 * p);
+        ctx.globalAlpha = p;
+        ctx.fillStyle = ink;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = `900 ${Math.round(h * 0.085)}px ${cfg.fontH}`;
+        const lines = BK.wrapText(ctx, s.hook, w * 0.84, 3);
+        let y = -((lines.length - 1) * h * 0.085 * 0.6);
+        for (const ln of lines) { ctx.fillText(ln, 0, y); y += h * 0.085 * 1.15; }
+        ctx.restore();
+      } else if (t < 6.5) {
+        // hook stays at top + feature bullets rotate
+        ctx.fillStyle = ink;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = `900 ${Math.round(h * 0.06)}px ${cfg.fontH}`;
+        const lines = BK.wrapText(ctx, s.hook, w * 0.84, 2);
+        let y = h * 0.18;
+        for (const ln of lines) { ctx.fillText(ln, w / 2, y); y += h * 0.07; }
+
+        // central mark
+        const markY = h * 0.5;
+        const ms = h * 0.18;
+        BK.drawLogoMark(ctx, w / 2, markY, ms);
+
+        // rotating bullets (one at a time)
+        const bullets = [s.b1, s.b2, s.b3].filter(Boolean);
+        const phaseT = (t - 1.0) / (6.5 - 1.0); // 0..1
+        const idx = Math.min(bullets.length - 1, Math.floor(phaseT * bullets.length));
+        const localT = (phaseT * bullets.length) - idx;
+        const fade = Math.min(BK.ease(BK.clamp01(localT * 4)), BK.ease(BK.clamp01((1 - localT) * 4)));
+        ctx.save();
+        ctx.globalAlpha = fade;
+        ctx.fillStyle = cfg.accent;
+        ctx.font = `800 ${Math.round(h * 0.052)}px ${cfg.fontH}`;
+        ctx.fillText(bullets[idx] || '', w / 2, h * 0.74);
+        ctx.restore();
+
+        // bullet dots
+        for (let i = 0; i < bullets.length; i++) {
+          ctx.beginPath();
+          ctx.arc(w / 2 + (i - (bullets.length - 1) / 2) * h * 0.025, h * 0.79, h * 0.006, 0, Math.PI * 2);
+          ctx.fillStyle = i === idx ? cfg.accent : BK.hexA(ink, 0.3);
+          ctx.fill();
+        }
+      } else {
+        drawCTACard(ctx, w, h, t - 6.5);
+      }
+      drawCornerBrand(ctx, w, h);
+    }
+  },
+  {
+    id: 'three-reasons',
+    name: '3 Reasons',
+    duration: 9,
+    defaults: { title: '3 reasons to switch:', r1: 'No app to download.', r2: 'Works in your messages.', r3: 'Actually log workouts.' },
+    fields: [
+      { k: 'title', label: 'Title', type: 'text' },
+      { k: 'r1', label: 'Reason 1', type: 'text' },
+      { k: 'r2', label: 'Reason 2', type: 'text' },
+      { k: 'r3', label: 'Reason 3', type: 'text' },
+    ],
+    render(ctx, w, h, t) {
+      const cfg = BK.get();
+      const s = Object.assign({}, this.defaults, tplState(this.id));
+      BK.fillBackground(ctx, w, h);
+      const ink = BK.contrastInk();
+
+      if (t < 0.9) {
+        const p = BK.ease(BK.clamp01(t / 0.7));
+        ctx.save(); ctx.globalAlpha = p;
+        ctx.fillStyle = ink;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = `900 ${Math.round(h * 0.075)}px ${cfg.fontH}`;
+        const lines = BK.wrapText(ctx, s.title, w * 0.82, 3);
+        let y = h / 2 - (lines.length - 1) * h * 0.045;
+        for (const ln of lines) { ctx.fillText(ln, w / 2, y); y += h * 0.085; }
+        ctx.restore();
+      } else if (t < 7.5) {
+        const items = [s.r1, s.r2, s.r3];
+        const perItem = (7.5 - 0.9) / 3;
+        const idx = Math.min(2, Math.floor((t - 0.9) / perItem));
+        const localT = ((t - 0.9) - idx * perItem) / perItem;
+        const fade = Math.min(BK.ease(BK.clamp01(localT * 4)), BK.ease(BK.clamp01((1 - localT) * 4)));
+
+        ctx.save();
+        // big number
+        ctx.fillStyle = cfg.accent;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = `900 ${Math.round(h * 0.36)}px ${cfg.fontH}`;
+        ctx.globalAlpha = fade;
+        ctx.fillText(String(idx + 1), w / 2, h * 0.42);
+
+        // reason text
+        ctx.fillStyle = ink;
+        ctx.font = `800 ${Math.round(h * 0.062)}px ${cfg.fontH}`;
+        const lines = BK.wrapText(ctx, items[idx] || '', w * 0.84, 3);
+        let y = h * 0.7;
+        for (const ln of lines) { ctx.fillText(ln, w / 2, y); y += h * 0.075; }
+        ctx.restore();
+      } else {
+        drawCTACard(ctx, w, h, t - 7.5);
+      }
+      drawCornerBrand(ctx, w, h);
+    }
+  },
+  {
+    id: 'stat-reveal',
+    name: 'Stat Reveal',
+    duration: 8,
+    defaults: { setup: 'In the last 30 days...', target: 18432, unit: 'workouts logged', closer: 'all from text messages.' },
+    fields: [
+      { k: 'setup', label: 'Setup line', type: 'text' },
+      { k: 'target', label: 'Number target', type: 'number' },
+      { k: 'unit', label: 'Unit / description', type: 'text' },
+      { k: 'closer', label: 'Closer line', type: 'text' },
+    ],
+    render(ctx, w, h, t) {
+      const cfg = BK.get();
+      const s = Object.assign({}, this.defaults, tplState(this.id));
+      const target = parseInt(s.target) || 0;
+      BK.fillBackground(ctx, w, h);
+      const ink = BK.contrastInk();
+
+      if (t < 1.0) {
+        const p = BK.ease(BK.clamp01(t / 0.8));
+        ctx.save(); ctx.globalAlpha = p;
+        ctx.fillStyle = ink;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = `700 ${Math.round(h * 0.058)}px ${cfg.fontH}`;
+        ctx.fillText(s.setup, w / 2, h / 2);
+        ctx.restore();
+      } else if (t < 6.0) {
+        const localT = (t - 1.0) / 3.5; // count up over 3.5s
+        const p = BK.ease(BK.clamp01(localT));
+        const val = Math.round(target * p);
+        // pulse shake
+        const shake = (localT < 1) ? Math.sin(t * 60) * (1 - p) * 4 : 0;
+
+        ctx.fillStyle = ink;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = `600 ${Math.round(h * 0.04)}px ${cfg.fontB}`;
+        ctx.fillStyle = BK.hexA(ink, 0.7);
+        ctx.fillText(s.setup, w / 2, h * 0.28);
+
+        ctx.fillStyle = cfg.accent;
+        ctx.font = `900 ${Math.round(h * 0.16)}px ${cfg.fontH}`;
+        ctx.fillText(val.toLocaleString(), w / 2 + shake, h * 0.46);
+
+        ctx.fillStyle = ink;
+        ctx.font = `700 ${Math.round(h * 0.045)}px ${cfg.fontH}`;
+        ctx.fillText(s.unit, w / 2, h * 0.58);
+
+        if (localT > 0.95) {
+          ctx.save();
+          ctx.globalAlpha = BK.clamp01((localT - 0.95) * 20);
+          ctx.fillStyle = BK.hexA(ink, 0.85);
+          ctx.font = `500 ${Math.round(h * 0.035)}px ${cfg.fontB}`;
+          ctx.fillText(s.closer, w / 2, h * 0.68);
+          ctx.restore();
+        }
+      } else {
+        drawCTACard(ctx, w, h, t - 6.0);
+      }
+      drawCornerBrand(ctx, w, h);
+    }
+  },
+  {
+    id: 'before-after',
+    name: 'Before / After',
+    duration: 8,
+    defaults: { title: 'Before vs. After', before: 'Forgetting to log. Forgetting to weigh. Forgetting to drink.', after: 'Text it. Done. Logged. Tracked.' },
+    fields: [
+      { k: 'title', label: 'Title', type: 'text' },
+      { k: 'before', label: 'Before text', type: 'text' },
+      { k: 'after', label: 'After text', type: 'text' },
+    ],
+    render(ctx, w, h, t) {
+      const cfg = BK.get();
+      const s = Object.assign({}, this.defaults, tplState(this.id));
+      BK.fillBackground(ctx, w, h);
+      const ink = BK.contrastInk();
+
+      // title strip
+      ctx.fillStyle = ink;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = `900 ${Math.round(h * 0.055)}px ${cfg.fontH}`;
+      ctx.fillText(s.title, w / 2, h * 0.1);
+
+      if (t < 4.0) {
+        // BEFORE half
+        const p = BK.ease(BK.clamp01(t / 0.8));
+        ctx.save();
+        ctx.fillStyle = 'rgba(255, 80, 80, 0.12)';
+        ctx.fillRect(0, h * 0.18, w, (h * 0.78) * p);
+        ctx.globalAlpha = p;
+        ctx.fillStyle = '#ff7f7f';
+        ctx.font = `900 ${Math.round(h * 0.06)}px ${cfg.fontH}`;
+        ctx.fillText('BEFORE', w / 2, h * 0.28);
+        ctx.fillStyle = ink;
+        ctx.font = `700 ${Math.round(h * 0.045)}px ${cfg.fontH}`;
+        const lines = BK.wrapText(ctx, s.before, w * 0.82, 6);
+        let y = h * 0.4;
+        for (const ln of lines) { ctx.fillText(ln, w / 2, y); y += h * 0.06; }
+        ctx.restore();
+      } else if (t < 7.0) {
+        const lt = (t - 4.0) / 0.6;
+        const p = BK.ease(BK.clamp01(lt));
+        ctx.save();
+        ctx.fillStyle = BK.hexA(cfg.accent, 0.12);
+        ctx.fillRect(0, h * 0.18, w, (h * 0.78) * p);
+        ctx.globalAlpha = p;
+        ctx.fillStyle = cfg.accent;
+        ctx.font = `900 ${Math.round(h * 0.06)}px ${cfg.fontH}`;
+        ctx.fillText('AFTER', w / 2, h * 0.28);
+        ctx.fillStyle = ink;
+        ctx.font = `700 ${Math.round(h * 0.05)}px ${cfg.fontH}`;
+        const lines = BK.wrapText(ctx, s.after, w * 0.82, 6);
+        let y = h * 0.42;
+        for (const ln of lines) { ctx.fillText(ln, w / 2, y); y += h * 0.062; }
+        ctx.restore();
+      } else {
+        drawCTACard(ctx, w, h, t - 7.0);
+      }
+      drawCornerBrand(ctx, w, h);
+    }
+  },
+  {
+    id: 'problem-solution',
+    name: 'Problem → Solution',
+    duration: 8,
+    defaults: { problem: 'You never log your workouts.', solution: 'Just text them. Done.' },
+    fields: [
+      { k: 'problem', label: 'Problem', type: 'text' },
+      { k: 'solution', label: 'Solution', type: 'text' },
+    ],
+    render(ctx, w, h, t) {
+      const cfg = BK.get();
+      const s = Object.assign({}, this.defaults, tplState(this.id));
+      BK.fillBackground(ctx, w, h);
+      const ink = BK.contrastInk();
+
+      if (t < 2.5) {
+        const p = BK.ease(BK.clamp01(t / 0.6));
+        // red glow
+        const rg = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, h * 0.6);
+        rg.addColorStop(0, `rgba(255,80,80,${0.25 * p})`);
+        rg.addColorStop(1, 'rgba(255,80,80,0)');
+        ctx.fillStyle = rg; ctx.fillRect(0, 0, w, h);
+
+        ctx.save();
+        ctx.globalAlpha = p;
+        ctx.fillStyle = '#ff9a9a';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = `800 ${Math.round(h * 0.038)}px ${cfg.fontB}`;
+        ctx.fillText('THE PROBLEM', w / 2, h * 0.4);
+
+        ctx.fillStyle = ink;
+        ctx.font = `900 ${Math.round(h * 0.072)}px ${cfg.fontH}`;
+        const lines = BK.wrapText(ctx, s.problem, w * 0.84, 4);
+        let y = h * 0.5;
+        for (const ln of lines) { ctx.fillText(ln, w / 2, y); y += h * 0.082; }
+        ctx.restore();
+      } else if (t < 3.2) {
+        // transition: down arrow
+        const p = BK.ease(BK.clamp01((t - 2.5) / 0.6));
+        ctx.fillStyle = cfg.accent;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = `900 ${Math.round(h * 0.18)}px ${cfg.fontH}`;
+        ctx.globalAlpha = p;
+        ctx.fillText('↓', w / 2, h * 0.5 + (1 - p) * h * 0.1);
+        ctx.globalAlpha = 1;
+      } else if (t < 7.0) {
+        const lt = (t - 3.2) / 0.6;
+        const p = BK.ease(BK.clamp01(lt));
+        const rg = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, h * 0.6);
+        rg.addColorStop(0, BK.hexA(cfg.accent, 0.28 * p));
+        rg.addColorStop(1, BK.hexA(cfg.accent, 0));
+        ctx.fillStyle = rg; ctx.fillRect(0, 0, w, h);
+        ctx.save();
+        ctx.globalAlpha = p;
+        ctx.fillStyle = cfg.accent;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = `800 ${Math.round(h * 0.038)}px ${cfg.fontB}`;
+        ctx.fillText('THE FIX', w / 2, h * 0.4);
+        ctx.fillStyle = ink;
+        ctx.font = `900 ${Math.round(h * 0.075)}px ${cfg.fontH}`;
+        const lines = BK.wrapText(ctx, s.solution, w * 0.84, 4);
+        let y = h * 0.5;
+        for (const ln of lines) { ctx.fillText(ln, w / 2, y); y += h * 0.085; }
+        ctx.restore();
+      } else {
+        drawCTACard(ctx, w, h, t - 7.0);
+      }
+      drawCornerBrand(ctx, w, h);
+    }
+  },
+  {
+    id: 'testimonial',
+    name: 'Testimonial',
+    duration: 8,
+    defaults: { quote: 'I actually log my workouts now. Game changer.', name: 'Alex M.', role: 'Hybrid athlete', stars: 5 },
+    fields: [
+      { k: 'quote', label: 'Quote', type: 'textarea' },
+      { k: 'name', label: 'Name', type: 'text' },
+      { k: 'role', label: 'Role / context', type: 'text' },
+      { k: 'stars', label: 'Stars', type: 'number' },
+    ],
+    render(ctx, w, h, t) {
+      const cfg = BK.get();
+      const s = Object.assign({}, this.defaults, tplState(this.id));
+      BK.fillBackground(ctx, w, h);
+      const ink = BK.contrastInk();
+
+      // big quotation mark
+      ctx.save();
+      ctx.globalAlpha = 0.18;
+      ctx.fillStyle = cfg.accent;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = `900 ${Math.round(h * 0.35)}px ${cfg.fontH}`;
+      ctx.fillText('"', w / 2, h * 0.26);
+      ctx.restore();
+
+      if (t < 6.0) {
+        const p = BK.ease(BK.clamp01(t / 1.2));
+        ctx.save();
+        ctx.globalAlpha = p;
+        ctx.fillStyle = ink;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = `800 ${Math.round(h * 0.05)}px ${cfg.fontH}`;
+        const lines = BK.wrapText(ctx, '"' + s.quote + '"', w * 0.84, 6);
+        let y = h * 0.42;
+        for (const ln of lines) { ctx.fillText(ln, w / 2, y); y += h * 0.062; }
+
+        // stars
+        const sCount = Math.max(0, Math.min(5, parseInt(s.stars) || 5));
+        ctx.fillStyle = '#ffd166';
+        ctx.font = `${Math.round(h * 0.04)}px ${cfg.fontH}`;
+        ctx.fillText('★'.repeat(sCount) + '☆'.repeat(5 - sCount), w / 2, h * 0.72);
+
+        ctx.fillStyle = ink;
+        ctx.font = `700 ${Math.round(h * 0.035)}px ${cfg.fontH}`;
+        ctx.fillText(s.name || '', w / 2, h * 0.78);
+        ctx.fillStyle = BK.hexA(ink, 0.7);
+        ctx.font = `500 ${Math.round(h * 0.028)}px ${cfg.fontB}`;
+        ctx.fillText(s.role || '', w / 2, h * 0.82);
+        ctx.restore();
+      } else {
+        drawCTACard(ctx, w, h, t - 6.0);
+      }
+      drawCornerBrand(ctx, w, h);
+    }
+  },
+];
+
+const selected = new Set();
+
+function refreshTemplates() {
+  const grid = $('tplGrid');
+  grid.innerHTML = '';
+  TEMPLATES.forEach(tpl => {
+    const card = document.createElement('div');
+    card.className = 'tpl-card';
+    card.dataset.id = tpl.id;
+
+    const prev = document.createElement('div');
+    prev.className = 'tpl-preview' + ($('showSafe').checked ? ' show-safe' : '');
+    prev.style.aspectRatio = '9 / 16';
+
+    // preview canvas
+    const pc = document.createElement('canvas');
+    const previewW = 280;
+    pc.width = previewW;
+    pc.height = Math.round(previewW * SHORT_H / SHORT_W);
+    pc.style.maxWidth = '100%';
+    prev.appendChild(pc);
+    card._previewCtx = pc.getContext('2d');
+    card._previewScale = pc.width / SHORT_W;
+
+    // safe overlay (uses platform)
+    const so = document.createElement('div');
+    so.className = 'safe-overlay';
+    so.appendChild(makeSafeOverlay($('platformPick').value));
+    prev.appendChild(so);
+
+    const vp = document.createElement('div');
+    vp.className = 'video-pill';
+    vp.textContent = `VIDEO · ${tpl.duration}s`;
+    prev.appendChild(vp);
+
+    card.appendChild(prev);
+
+    const info = document.createElement('div');
+    info.className = 'tpl-info';
+    info.innerHTML = `<div class="name"></div><div class="dur">${SHORT_W}×${SHORT_H} · 30fps</div>`;
+    info.querySelector('.name').textContent = tpl.name;
+    card.appendChild(info);
+
+    const fields = document.createElement('div');
+    fields.className = 'tpl-fields';
+    const state = Object.assign({}, tpl.defaults, tplState(tpl.id));
+    tpl.fields.forEach(f => {
+      const lab = document.createElement('label');
+      lab.textContent = f.label;
+      let input;
+      if (f.type === 'textarea') { input = document.createElement('textarea'); input.rows = 2; }
+      else { input = document.createElement('input'); input.type = f.type === 'number' ? 'number' : 'text'; }
+      input.value = state[f.k] != null ? state[f.k] : '';
+      input.addEventListener('input', () => {
+        tplState(tpl.id)[f.k] = input.value;
+        saveState();
+        renderPreviewFor(card, tpl);
+      });
+      fields.appendChild(lab); fields.appendChild(input);
+    });
+    card.appendChild(fields);
+
+    const actions = document.createElement('div');
+    actions.className = 'tpl-actions';
+    actions.innerHTML = `
+      <label class="check"><input type="checkbox" ${selected.has(tpl.id) ? 'checked' : ''}> select</label>
+      <button class="btn sm primary" type="button">Render MP4</button>
+    `;
+    const cb = actions.querySelector('input');
+    cb.onchange = () => { if (cb.checked) selected.add(tpl.id); else selected.delete(tpl.id); card.classList.toggle('selected', cb.checked); updateSelCount(); };
+    const dl = actions.querySelector('button');
+    dl.onclick = async () => {
+      dl.disabled = true; dl.textContent = 'Rendering…';
+      try { await renderTemplate(tpl); } catch (e) { console.error(e); toast('Failed: ' + e.message); }
+      dl.disabled = false; dl.textContent = 'Render MP4';
+    };
+    card.appendChild(actions);
+
+    grid.appendChild(card);
+    renderPreviewFor(card, tpl);
+  });
+  updateSelCount();
+}
+
+function renderPreviewFor(card, tpl) {
+  const ctx = card._previewCtx;
+  const scale = card._previewScale;
+  const w = SHORT_W, h = SHORT_H;
+  // Render the most representative frame
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+  // mid-of-content phase
+  tpl.render(ctx, w, h, tpl.duration * 0.45);
+}
+
+function makeSafeOverlay(platform) {
+  const wrap = document.createElement('div');
+  wrap.style.position = 'absolute'; wrap.style.inset = '0';
+  const cfg = ({
+    tiktok:  { top: 7, bot: 17, right: 13 },
+    reels:   { top: 8, bot: 22, right: 0 },
+    shorts:  { top: 6, bot: 19, right: 12 },
+  })[platform] || { top: 7, bot: 17, right: 13 };
+  const top = document.createElement('div'); top.className = 'sz-tt-top'; top.textContent = 'UI'; top.style.height = cfg.top + '%';
+  const bot = document.createElement('div'); bot.className = 'sz-tt-bot'; bot.textContent = 'caption / profile'; bot.style.height = cfg.bot + '%';
+  wrap.appendChild(top); wrap.appendChild(bot);
+  if (cfg.right) {
+    const r = document.createElement('div'); r.className = 'sz-tt-right'; r.textContent = 'actions';
+    r.style.top = cfg.top + '%'; r.style.bottom = cfg.bot + '%'; r.style.width = cfg.right + '%';
+    wrap.appendChild(r);
+  }
+  return wrap;
+}
+
+$('showSafe').addEventListener('change', () => {
+  document.querySelectorAll('.tpl-preview').forEach(p => p.classList.toggle('show-safe', $('showSafe').checked));
+});
+$('platformPick').addEventListener('change', () => {
+  refreshTemplates(); refreshSafe();
+});
+
+function updateSelCount() { $('selCount').textContent = selected.size; }
+
+/* ---------- video render & download ---------- */
+async function renderTemplate(tpl) {
+  showOverlay(`Rendering "${tpl.name}"…`);
+  const asset = {
+    w: SHORT_W, h: SHORT_H, duration: tpl.duration, fps: 30,
+    renderFrame: (ctx, w, h, t) => tpl.render(ctx, w, h, t),
+  };
+  const { blob, ext } = await BK.renderVideoBlob(asset, p => setOverlay(null, p * 100));
+  BK.downloadBlob(blob, `${BK.fileBase()}-short-${tpl.id}.${ext}`);
+  hideOverlay();
+  toast('Downloaded');
+}
+
+$('dlSelectedBtn').onclick = async () => {
+  const list = TEMPLATES.filter(t => selected.has(t.id));
+  if (!list.length) { toast('Nothing selected'); return; }
+  for (let i = 0; i < list.length; i++) {
+    try { await renderTemplate(list[i]); } catch (e) { console.error(e); }
+  }
+};
+$('dlAllBtn').onclick = async () => {
+  const list = selected.size ? TEMPLATES.filter(t => selected.has(t.id)) : TEMPLATES;
+  if (!list.length) return;
+  showOverlay(`Rendering ${list.length} videos…`);
+  if (typeof JSZip === 'undefined') { hideOverlay(); toast('Zip not loaded'); return; }
+  const zip = new JSZip();
+  for (let i = 0; i < list.length; i++) {
+    const tpl = list[i];
+    setOverlay(`(${i + 1}/${list.length}) ${tpl.name}`, (i / list.length) * 100);
+    try {
+      const asset = { w: SHORT_W, h: SHORT_H, duration: tpl.duration, fps: 30, renderFrame: (ctx, w, h, t) => tpl.render(ctx, w, h, t) };
+      const { blob, ext } = await BK.renderVideoBlob(asset, p => setOverlay(`(${i+1}/${list.length}) ${tpl.name} — ${(p*100).toFixed(0)}%`, ((i+p)/list.length)*100));
+      zip.file(`${BK.fileBase()}-short-${tpl.id}.${ext}`, blob);
+    } catch (e) { console.error(e); }
+  }
+  setOverlay('Zipping…', 99);
+  const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
+  BK.downloadBlob(zipBlob, `${BK.fileBase()}-shorts.zip`);
+  hideOverlay(); toast('ZIP downloaded');
+};
+
+/* =========================================================================
+   SAFE ZONES PANE — informational
+   ========================================================================= */
+function refreshSafe() {
+  const grid = $('safeGrid');
+  grid.innerHTML = '';
+  ['tiktok', 'reels', 'shorts'].forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'tpl-card';
+    const prev = document.createElement('div');
+    prev.className = 'tpl-preview show-safe';
+    prev.style.aspectRatio = '9 / 16';
+    const pc = document.createElement('canvas');
+    pc.width = 280; pc.height = Math.round(280 * 16 / 9);
+    pc.style.maxWidth = '100%';
+    prev.appendChild(pc);
+    const ctx = pc.getContext('2d');
+    BK.fillBackground(ctx, pc.width, pc.height);
+    // place sample mark + tagline
+    BK.drawLogoMark(ctx, pc.width / 2, pc.height * 0.4, pc.width * 0.34);
+    ctx.fillStyle = BK.contrastInk();
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = `800 ${Math.round(pc.height * 0.05)}px ${BK.get().fontH}`;
+    ctx.fillText(BK.get().short || BK.get().name || '', pc.width / 2, pc.height * 0.55);
+    const so = document.createElement('div'); so.className = 'safe-overlay';
+    so.appendChild(makeSafeOverlay(p));
+    prev.appendChild(so);
+    card.appendChild(prev);
+    const info = document.createElement('div');
+    info.className = 'tpl-info';
+    const names = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts' };
+    info.innerHTML = `<div class="name">${names[p]}</div><div class="dur">Red zones = platform UI overlays</div>`;
+    card.appendChild(info);
+    grid.appendChild(card);
+  });
+}
+
+/* =========================================================================
+   AI STORYBOARD
+   ========================================================================= */
+const AI_STATE = {
+  aspect: '9x16',
+  tool: 'generic',
+  count: 5,
+  dur: 5,
+  theme: '',
+  scenes: [], // [{ type, description, prompt, camera, negative }]
+};
+
+// Scene type library
+const SCENE_TYPES = [
+  { id: 'hero',     label: 'Hero / product shot' },
+  { id: 'demo',     label: 'In-app demo / UI close-up' },
+  { id: 'textcard', label: 'Title / text card' },
+  { id: 'lifestyle',label: 'Lifestyle / user moment' },
+  { id: 'testimon', label: 'Testimonial face' },
+  { id: 'broll',    label: 'B-roll / atmosphere' },
+  { id: 'cta',      label: 'CTA / end card' },
+];
+
+// Default theme rotation per scene index
+function defaultSceneTypes(n) {
+  const seqMap = {
+    3: ['hero', 'demo', 'cta'],
+    5: ['hero', 'textcard', 'demo', 'lifestyle', 'cta'],
+    7: ['hero', 'textcard', 'demo', 'lifestyle', 'broll', 'testimon', 'cta'],
+  };
+  return seqMap[n] || seqMap[5];
+}
+
+// Per-AI tool prompt format
+const TOOL_PROMPTS = {
+  generic: {
+    label: 'Generic',
+    prefix: '',
+    suffix: ', cinematic, professional production quality',
+    cameraMap: {},
+    negative: 'low quality, blurry, distorted, text artifacts, watermark',
+  },
+  runway: {
+    label: 'Runway Gen-3',
+    prefix: '',
+    suffix: ', shot on RED, anamorphic lens, shallow depth of field, cinematic color grade',
+    cameraMap: { static: 'locked-off camera', pan: 'slow pan right', zoom: 'slow push in', dolly: 'dolly forward' },
+    negative: 'lowres, jpeg artifacts, watermark, text, cgi',
+  },
+  pika: {
+    label: 'Pika',
+    prefix: '',
+    suffix: ', cinematic lighting, 4k, detailed',
+    cameraMap: { static: 'fixed shot', pan: 'panning camera', zoom: 'zoom in', dolly: 'dolly in' },
+    negative: 'distorted, low quality, glitch',
+  },
+  luma: {
+    label: 'Luma',
+    prefix: '',
+    suffix: ', smooth cinematic motion, professional cinematography',
+    cameraMap: { static: 'static shot', pan: 'pan', zoom: 'slow zoom in', dolly: 'dolly forward' },
+    negative: '',
+  },
+  kling: {
+    label: 'Kling',
+    prefix: '',
+    suffix: ', high detail, realistic motion, cinematic framing',
+    cameraMap: { static: 'static', pan: 'pan', zoom: 'push in', dolly: 'dolly' },
+    negative: 'blurry, distorted, artifacts',
+  },
+  sora: {
+    label: 'Sora',
+    prefix: '',
+    suffix: '. Photoreal. Natural lighting. Subtle camera motion.',
+    cameraMap: { static: 'locked camera', pan: 'slow pan', zoom: 'slow push in', dolly: 'dolly forward' },
+    negative: '',
+  },
+  veo: {
+    label: 'Google Veo',
+    prefix: '',
+    suffix: ', 4k, sharp focus, professional',
+    cameraMap: { static: 'static shot', pan: 'pan right', zoom: 'zoom in', dolly: 'dolly in' },
+    negative: '',
+  },
+};
+
+function aiAspectDims() {
+  switch (AI_STATE.aspect) {
+    case '16x9': return [1920, 1080];
+    case '1x1':  return [1080, 1080];
+    default:     return [1080, 1920];
+  }
+}
+
+/* Generate description + prompt for a scene type, using brand context */
+function generateScene(type, idx, theme) {
+  const cfg = BK.get();
+  const brand = cfg.name || 'the product';
+  const t = theme || cfg.tagline || '';
+  const baseDescriptions = {
+    hero: `Hero shot of a modern smartphone displaying the ${brand} interface, dark UI with ${cfg.accent} accent glow on screen, clean studio lighting, slow push in.`,
+    demo: `Close-up of the ${brand} chat interface, fingers typing a workout into iMessage, screen filling the frame, soft bokeh background.`,
+    textcard: `Bold typographic title card on a dark gradient background, "${t}" centered in large modern sans-serif, accent color ${cfg.accent} underline pulse.`,
+    lifestyle: `Athletic person mid-workout in a sunlit gym, glancing at their phone screen showing a workout confirmation, candid cinematic moment.`,
+    testimon: `Medium close-up portrait of a real user smiling at the camera, soft window light, neutral background, talking head energy, no logo visible.`,
+    broll: `Slow motion macro of water droplets, weights racking, or shoes on pavement, abstract atmospheric b-roll, ${cfg.accent} colored highlights.`,
+    cta: `End card: ${brand} wordmark and ${cfg.site} call-to-action in clean centered composition, subtle glow, accent ring around logo mark, "${cfg.cta || 'Try it'}" text below.`,
+  };
+  const baseCam = {
+    hero: 'zoom', demo: 'pan', textcard: 'static', lifestyle: 'dolly', testimon: 'static', broll: 'pan', cta: 'zoom',
+  };
+  return {
+    type,
+    description: baseDescriptions[type] || baseDescriptions.broll,
+    camera: baseCam[type] || 'static',
+    duration: AI_STATE.dur,
+  };
+}
+
+function buildPromptFor(scene) {
+  const cfg = BK.get();
+  const tool = TOOL_PROMPTS[AI_STATE.tool] || TOOL_PROMPTS.generic;
+  const camHint = tool.cameraMap[scene.camera] || scene.camera;
+  const aspectStr = AI_STATE.aspect === '9x16' ? '9:16 vertical' : AI_STATE.aspect === '16x9' ? '16:9 horizontal' : '1:1 square';
+  let prompt = scene.description;
+  if (camHint) prompt += `. Camera: ${camHint}.`;
+  prompt += ` Brand palette: background ${cfg.bg}, accent ${cfg.accent}, text ${cfg.ink}.`;
+  prompt += ` Aspect ${aspectStr}, ${scene.duration}s duration.`;
+  prompt += tool.suffix;
+  return {
+    positive: tool.prefix + prompt,
+    negative: tool.negative || '',
+  };
+}
+
+/* Reference frame renderer per scene type */
+function renderSceneFrame(ctx, w, h, scene, idx) {
+  const cfg = BK.get();
+  const ink = BK.contrastInk();
+  BK.fillBackground(ctx, w, h);
+
+  const pad = Math.min(w, h) * 0.06;
+
+  // Type-specific composition
+  switch (scene.type) {
+    case 'hero': {
+      // phone silhouette center
+      const phoneH = h * 0.75;
+      const phoneW = phoneH * 0.46;
+      const px = w / 2 - phoneW / 2, py = h / 2 - phoneH / 2;
+      ctx.fillStyle = '#1a1a1a';
+      BK.roundRect(ctx, px, py, phoneW, phoneH, phoneW * 0.13); ctx.fill();
+      // glowing screen
+      const sg = ctx.createLinearGradient(px, py, px, py + phoneH);
+      sg.addColorStop(0, BK.mix(cfg.bg, cfg.accent, 0.32));
+      sg.addColorStop(1, cfg.bg);
+      const sp = phoneW * 0.04;
+      ctx.save();
+      BK.roundRect(ctx, px + sp, py + sp, phoneW - sp * 2, phoneH - sp * 2, phoneW * 0.1);
+      ctx.clip();
+      ctx.fillStyle = sg; ctx.fillRect(px, py, phoneW, phoneH);
+      BK.drawLogoMark(ctx, w / 2, h * 0.48, phoneW * 0.42);
+      ctx.fillStyle = ink;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = `800 ${Math.round(phoneW * 0.13)}px ${cfg.fontH}`;
+      ctx.fillText(cfg.short || cfg.name || '', w / 2, h * 0.62);
+      ctx.restore();
+      break;
+    }
+    case 'demo': {
+      // chat bubble UI
+      const margin = pad;
+      ctx.fillStyle = BK.hexA(ink, 0.05);
+      BK.roundRect(ctx, margin, margin, w - margin * 2, h - margin * 2, 30); ctx.fill();
+      ctx.font = `600 ${Math.round(h * 0.035)}px ${cfg.fontB}`;
+      ctx.fillStyle = BK.hexA(ink, 0.7);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillText(cfg.short || cfg.name || '', w / 2, margin + h * 0.025);
+
+      const bubbles = [
+        { side: 'r', text: 'bench 4x8 @ 185' },
+        { side: 'l', text: 'logged ✓ — bench press 4×8 @ 185 lb' },
+        { side: 'r', text: 'add 8oz water' },
+        { side: 'l', text: '✓ 8oz water · 32oz today' },
+      ];
+      let y = margin + h * 0.12;
+      bubbles.forEach(b => {
+        ctx.font = `500 ${Math.round(h * 0.028)}px ${cfg.fontB}`;
+        const tw = Math.min(ctx.measureText(b.text).width + h * 0.04, w - margin * 2.5);
+        const bh = h * 0.07;
+        const bx = b.side === 'r' ? w - margin - tw - pad * 0.4 : margin + pad * 0.4;
+        ctx.fillStyle = b.side === 'r' ? cfg.accent : BK.hexA(ink, 0.12);
+        BK.roundRect(ctx, bx, y, tw, bh, bh / 2); ctx.fill();
+        ctx.fillStyle = b.side === 'r' ? (BK.luminance(cfg.accent) > .5 ? '#0a0e14' : '#fff') : ink;
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText(b.text, bx + h * 0.02, y + bh / 2);
+        y += bh + h * 0.022;
+      });
+      break;
+    }
+    case 'textcard': {
+      ctx.fillStyle = ink;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = `900 ${Math.round(h * 0.085)}px ${cfg.fontH}`;
+      const txt = scene.description.replace(/^.*?"([^"]+)".*$/, '$1') || (cfg.tagline || 'Title');
+      const lines = BK.wrapText(ctx, txt, w * 0.84, 4);
+      let y = h / 2 - (lines.length - 1) * h * 0.05;
+      for (const ln of lines) { ctx.fillText(ln, w / 2, y); y += h * 0.1; }
+      ctx.fillStyle = cfg.accent;
+      ctx.fillRect(w / 2 - w * 0.08, h / 2 + (lines.length) * h * 0.05, w * 0.16, 6);
+      break;
+    }
+    case 'lifestyle': {
+      // gradient gym scene
+      const g = ctx.createLinearGradient(0, 0, w, h);
+      g.addColorStop(0, '#2a1810');
+      g.addColorStop(0.5, '#3a2418');
+      g.addColorStop(1, '#1a1208');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+      // sun
+      const sr = ctx.createRadialGradient(w * 0.75, h * 0.25, 0, w * 0.75, h * 0.25, w * 0.6);
+      sr.addColorStop(0, 'rgba(255,200,120,0.5)');
+      sr.addColorStop(1, 'rgba(255,200,120,0)');
+      ctx.fillStyle = sr; ctx.fillRect(0, 0, w, h);
+      // person silhouette
+      ctx.fillStyle = 'rgba(0,0,0,0.65)';
+      const psx = w / 2, psy = h * 0.65;
+      ctx.beginPath();
+      ctx.arc(psx, psy - h * 0.22, w * 0.06, 0, Math.PI * 2); ctx.fill();
+      ctx.fillRect(psx - w * 0.07, psy - h * 0.18, w * 0.14, h * 0.25);
+      // phone (held up)
+      ctx.fillStyle = '#000';
+      ctx.fillRect(psx + w * 0.04, psy - h * 0.05, w * 0.05, h * 0.08);
+      ctx.fillStyle = cfg.accent;
+      ctx.fillRect(psx + w * 0.045, psy - h * 0.04, w * 0.04, h * 0.06);
+      // caption
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.font = `700 ${Math.round(h * 0.032)}px ${cfg.fontH}`;
+      ctx.fillText('lifestyle / candid', w / 2, h - pad);
+      break;
+    }
+    case 'testimon': {
+      // talking-head composition mark
+      ctx.fillStyle = BK.mix(cfg.bg, '#222', 0.4);
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#444';
+      ctx.beginPath();
+      ctx.arc(w / 2, h * 0.45, w * 0.18, 0, Math.PI * 2); ctx.fill();
+      ctx.fillRect(w / 2 - w * 0.22, h * 0.55, w * 0.44, h * 0.5);
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = `700 ${Math.round(h * 0.04)}px ${cfg.fontH}`;
+      ctx.fillText('TESTIMONIAL', w / 2, h * 0.92);
+      break;
+    }
+    case 'broll': {
+      // abstract atmospheric
+      for (let i = 0; i < 14; i++) {
+        const cx = (i * 73 + 37) % w;
+        const cy = (i * 113 + 19) % h;
+        const r = (i * 17 + 50) % (Math.min(w, h) * 0.2);
+        const rg = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+        rg.addColorStop(0, BK.hexA(cfg.accent, 0.13));
+        rg.addColorStop(1, BK.hexA(cfg.accent, 0));
+        ctx.fillStyle = rg; ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+      }
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = `700 ${Math.round(h * 0.04)}px ${cfg.fontH}`;
+      ctx.fillText('B-ROLL · ATMOSPHERIC', w / 2, h - pad);
+      break;
+    }
+    case 'cta':
+    default: {
+      BK.drawLogoMark(ctx, w / 2, h * 0.38, Math.min(w, h) * 0.28);
+      ctx.fillStyle = ink;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = `800 ${Math.round(h * 0.07)}px ${cfg.fontH}`;
+      ctx.fillText(cfg.name || '', w / 2, h * 0.6);
+      ctx.fillStyle = cfg.accent;
+      ctx.font = `700 ${Math.round(h * 0.05)}px ${cfg.fontB}`;
+      ctx.fillText(cfg.cta || 'Try it', w / 2, h * 0.7);
+      ctx.fillStyle = BK.hexA(ink, 0.85);
+      ctx.font = `600 ${Math.round(h * 0.04)}px ${cfg.fontB}`;
+      ctx.fillText(cfg.site || '', w / 2, h * 0.78);
+      break;
+    }
+  }
+
+  // Top-left scene number + type
+  ctx.save();
+  ctx.fillStyle = BK.hexA('#000', 0.55);
+  BK.roundRect(ctx, pad * 0.6, pad * 0.6, w * 0.3, h * 0.045, h * 0.022);
+  ctx.fill();
+  ctx.fillStyle = cfg.accent;
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.font = `800 ${Math.round(h * 0.025)}px ${cfg.fontH}`;
+  ctx.fillText(`SCENE ${idx + 1} · ${scene.type.toUpperCase()}`, pad * 1.1, pad * 0.6 + h * 0.0225);
+  ctx.restore();
+}
+
+function buildStoryboard() {
+  const cfg = BK.get();
+  AI_STATE.theme = $('ai-theme').value;
+  AI_STATE.tool = $('ai-tool').value;
+  AI_STATE.aspect = $('ai-aspect').value;
+  AI_STATE.count = parseInt($('ai-count').value);
+  AI_STATE.dur = parseFloat($('ai-dur').value);
+
+  const types = defaultSceneTypes(AI_STATE.count);
+  AI_STATE.scenes = types.map((t, i) => generateScene(t, i, AI_STATE.theme));
+  refreshAIScenes();
+}
+
+function refreshAIScenes() {
+  const grid = $('aiSceneGrid');
+  grid.innerHTML = '';
+  if (!AI_STATE.scenes.length) {
+    grid.innerHTML = '<div style="color:#8a96a8;padding:24px;text-align:center;border:1px dashed rgba(255,255,255,.1);border-radius:12px">Click <b>Build storyboard</b> to generate scenes.</div>';
+    return;
+  }
+  const [W, H] = aiAspectDims();
+  AI_STATE.scenes.forEach((scene, i) => {
+    const card = document.createElement('div');
+    card.className = 'scene-card';
+
+    const head = document.createElement('div');
+    head.className = 'scene-head';
+    head.innerHTML = `<span class="scene-num">${i + 1}</span>`;
+    const sel = document.createElement('select');
+    SCENE_TYPES.forEach(st => {
+      const opt = document.createElement('option');
+      opt.value = st.id; opt.textContent = st.label;
+      if (scene.type === st.id) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    sel.addEventListener('change', () => {
+      const newScene = generateScene(sel.value, i, AI_STATE.theme);
+      AI_STATE.scenes[i] = newScene;
+      refreshAIScenes();
+    });
+    head.appendChild(sel);
+
+    const prev = document.createElement('div');
+    prev.className = 'scene-preview aspect-' + AI_STATE.aspect;
+    const pc = document.createElement('canvas');
+    const sc = AI_STATE.aspect === '9x16' ? 280 : (AI_STATE.aspect === '1x1' ? 320 : 480);
+    pc.width = sc;
+    pc.height = Math.round(sc * H / W);
+    pc.style.maxWidth = '100%';
+    prev.appendChild(pc);
+    const ctx = pc.getContext('2d');
+    ctx.setTransform(pc.width / W, 0, 0, pc.width / W, 0, 0);
+    renderSceneFrame(ctx, W, H, scene, i);
+
+    const body = document.createElement('div');
+    body.className = 'scene-body';
+
+    const dlab = document.createElement('label'); dlab.textContent = 'Scene description';
+    const dta = document.createElement('textarea'); dta.value = scene.description;
+    dta.addEventListener('input', () => { scene.description = dta.value; updatePromptBox(); });
+    body.appendChild(dlab); body.appendChild(dta);
+
+    const cwrap = document.createElement('div');
+    cwrap.style.display = 'grid'; cwrap.style.gridTemplateColumns = '1fr 1fr'; cwrap.style.gap = '8px';
+    const clab = document.createElement('label'); clab.textContent = 'Camera';
+    const csel = document.createElement('select');
+    ['static','pan','zoom','dolly'].forEach(c => { const o = document.createElement('option'); o.value=c;o.textContent=c; if (scene.camera===c) o.selected=true; csel.appendChild(o); });
+    csel.style.cssText = 'background:#131a25;border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:6px 8px;font-size:12px;color:#ecf4ff';
+    csel.addEventListener('change', () => { scene.camera = csel.value; updatePromptBox(); });
+    const cw1 = document.createElement('div'); cw1.appendChild(clab); cw1.appendChild(csel);
+
+    const dlab2 = document.createElement('label'); dlab2.textContent = 'Duration (s)';
+    const dinp = document.createElement('input'); dinp.type = 'number'; dinp.value = scene.duration; dinp.min = 1; dinp.max = 10;
+    dinp.style.cssText = 'background:#131a25;border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:6px 8px;font-size:12px;color:#ecf4ff;font:inherit';
+    dinp.addEventListener('input', () => { scene.duration = parseFloat(dinp.value) || 5; updatePromptBox(); });
+    const cw2 = document.createElement('div'); cw2.appendChild(dlab2); cw2.appendChild(dinp);
+
+    cwrap.appendChild(cw1); cwrap.appendChild(cw2);
+    body.appendChild(cwrap);
+
+    const plab = document.createElement('label'); plab.textContent = `${(TOOL_PROMPTS[AI_STATE.tool]||{}).label || 'Prompt'} prompt`;
+    const pbox = document.createElement('div'); pbox.className = 'prompt-box';
+    function updatePromptBox() {
+      const p = buildPromptFor(scene);
+      pbox.textContent = p.positive + (p.negative ? `\n\nNEGATIVE: ${p.negative}` : '');
+      // also re-render preview canvas
+      ctx.setTransform(pc.width / W, 0, 0, pc.width / W, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+      renderSceneFrame(ctx, W, H, scene, i);
+    }
+    updatePromptBox();
+    body.appendChild(plab); body.appendChild(pbox);
+
+    card.appendChild(head); card.appendChild(prev); card.appendChild(body);
+
+    const actions = document.createElement('div');
+    actions.className = 'scene-actions';
+    actions.innerHTML = `<button class="btn sm" type="button" data-copy>Copy prompt</button><button class="btn sm primary" type="button" data-png>Download reference PNG</button>`;
+    actions.querySelector('[data-copy]').onclick = () => {
+      const p = buildPromptFor(scene);
+      navigator.clipboard.writeText(p.positive + (p.negative ? `\n\nNEGATIVE: ${p.negative}` : '')).then(() => toast('Prompt copied'));
+    };
+    actions.querySelector('[data-png]').onclick = async () => {
+      const c = document.createElement('canvas');
+      c.width = W; c.height = H;
+      renderSceneFrame(c.getContext('2d'), W, H, scene, i);
+      const blob = await BK.canvasToBlob(c);
+      BK.downloadBlob(blob, `${BK.fileBase()}-scene-${String(i+1).padStart(2,'0')}-${scene.type}.png`);
+    };
+    card.appendChild(actions);
+
+    grid.appendChild(card);
+  });
+}
+
+$('ai-build').onclick = buildStoryboard;
+$('ai-randomize').onclick = () => {
+  if (!AI_STATE.scenes.length) return;
+  for (let i = AI_STATE.scenes.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [AI_STATE.scenes[i], AI_STATE.scenes[j]] = [AI_STATE.scenes[j], AI_STATE.scenes[i]];
+  }
+  refreshAIScenes();
+};
+$('ai-copy-all').onclick = () => {
+  if (!AI_STATE.scenes.length) { toast('Build a storyboard first'); return; }
+  const text = AI_STATE.scenes.map((s, i) => {
+    const p = buildPromptFor(s);
+    return `# Scene ${i+1} · ${s.type}\nCamera: ${s.camera}  ·  Duration: ${s.duration}s\n\n${p.positive}${p.negative ? `\n\nNEGATIVE: ${p.negative}` : ''}`;
+  }).join('\n\n---\n\n');
+  navigator.clipboard.writeText(text).then(() => toast('All prompts copied'));
+};
+$('ai-export-zip').onclick = async () => {
+  if (!AI_STATE.scenes.length) { toast('Build a storyboard first'); return; }
+  if (typeof JSZip === 'undefined') { toast('Zip not loaded'); return; }
+  showOverlay('Exporting storyboard…');
+  const [W, H] = aiAspectDims();
+  const zip = new JSZip();
+  const promptsJson = { brand: BK.get().name, aspect: AI_STATE.aspect, tool: AI_STATE.tool, theme: AI_STATE.theme, scenes: [] };
+  let promptsMd = `# ${BK.get().name || 'Brand'} — AI short storyboard\n\nAspect: ${AI_STATE.aspect}\nAI tool: ${(TOOL_PROMPTS[AI_STATE.tool]||{}).label || AI_STATE.tool}\nTheme: ${AI_STATE.theme || '(none)'}\n\nWorkflow:\n1. Use each \`scene-NN.png\` as the first-frame / image-to-video input\n2. Paste the matching positive prompt; copy the negative if provided\n3. Generate each scene at ${AI_STATE.dur}s duration\n4. Stitch in your editor; add brand audio/captions\n\n---\n`;
+  for (let i = 0; i < AI_STATE.scenes.length; i++) {
+    const scene = AI_STATE.scenes[i];
+    setOverlay(`Scene ${i+1}/${AI_STATE.scenes.length}`, (i / AI_STATE.scenes.length) * 100);
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    renderSceneFrame(c.getContext('2d'), W, H, scene, i);
+    const blob = await BK.canvasToBlob(c);
+    const num = String(i+1).padStart(2, '0');
+    zip.file(`references/${BK.fileBase()}-scene-${num}-${scene.type}.png`, blob);
+    const p = buildPromptFor(scene);
+    promptsJson.scenes.push({ index: i+1, type: scene.type, camera: scene.camera, duration: scene.duration, description: scene.description, prompt: p.positive, negative: p.negative });
+    promptsMd += `\n## Scene ${i+1} — ${scene.type}\n- Reference: \`references/${BK.fileBase()}-scene-${num}-${scene.type}.png\`\n- Camera: ${scene.camera}  · Duration: ${scene.duration}s\n\n**Prompt:**\n\n\`\`\`\n${p.positive}\n\`\`\`\n${p.negative ? `\n**Negative:**\n\n\`\`\`\n${p.negative}\n\`\`\`\n` : ''}\n`;
+  }
+  zip.file('prompts.json', JSON.stringify(promptsJson, null, 2));
+  zip.file('prompts.md', promptsMd);
+  setOverlay('Zipping…', 99);
+  const zb = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
+  BK.downloadBlob(zb, `${BK.fileBase()}-ai-storyboard.zip`);
+  hideOverlay(); toast('Storyboard exported');
+};
+
+/* ---------- Init ---------- */
+(function init() {
+  // capability pill
+  const mime = BK.preferredVideoMime();
+  const pill = $('capPill');
+  if (!mime) pill.textContent = 'video: not supported';
+  else if (mime.includes('mp4')) { pill.textContent = 'video: MP4 ✓'; pill.classList.add('ok'); }
+  else { pill.textContent = 'video: WebM ✓'; pill.classList.add('ok'); }
+
+  refreshTemplates();
+  refreshSafe();
+  refreshAIScenes();
+})();
+</script>
+</body>
+</html>

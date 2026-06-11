@@ -1,0 +1,1928 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="robots" content="noindex,nofollow" />
+<title>Asset Generator — The Tracker App</title>
+<link rel="icon" href="/public/favicon.svg" />
+<style>
+  :root {
+    --bg: #07090d;
+    --panel: #0e131b;
+    --panel-2: #131a25;
+    --line: rgba(255,255,255,.08);
+    --line-strong: rgba(255,255,255,.18);
+    --ink: #ecf4ff;
+    --ink-mute: #8a96a8;
+    --accent: #38ffd3;
+    --accent-ink: #021416;
+    --danger: #ff7f7f;
+    --radius: 12px;
+    --gap: 14px;
+  }
+  * { box-sizing: border-box; }
+  html, body { background: var(--bg); color: var(--ink); margin: 0; font: 14px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, system-ui, sans-serif; }
+  a { color: var(--accent); text-decoration: none; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+
+  header.topbar {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(12px);
+    background: rgba(7,9,13,.85);
+    border-bottom: 1px solid var(--line);
+    padding: 10px 18px;
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+  .topbar h1 { font-size: 15px; margin: 0; font-weight: 700; letter-spacing: .2px; }
+  .topbar .sub { color: var(--ink-mute); font-size: 12px; }
+  .topbar .spacer { flex: 1; }
+  .btn { background: var(--panel-2); border: 1px solid var(--line-strong); color: var(--ink); padding: 8px 12px; border-radius: 8px; font-size: 13px; }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
+  .btn.ghost { background: transparent; }
+  .btn.sm { padding: 5px 9px; font-size: 12px; border-radius: 6px; }
+  .btn.danger { color: var(--danger); border-color: rgba(255,127,127,.4); }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 999px; background: var(--panel-2); border: 1px solid var(--line); font-size: 11px; color: var(--ink-mute); }
+  .pill.ok { color: var(--accent); border-color: rgba(56,255,211,.35); }
+
+  main { display: grid; grid-template-columns: 340px 1fr; gap: 0; min-height: calc(100vh - 50px); }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+
+  /* ============ Config panel ============ */
+  aside.config {
+    background: var(--panel);
+    border-right: 1px solid var(--line);
+    padding: 16px;
+    overflow-y: auto;
+    position: sticky; top: 50px; align-self: start;
+    max-height: calc(100vh - 50px);
+  }
+  @media (max-width: 900px) { aside.config { position: static; max-height: none; } }
+  .section-title { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--ink-mute); margin: 18px 0 8px; }
+  .field { display: block; margin-bottom: 10px; }
+  .field label { display: block; font-size: 12px; color: var(--ink-mute); margin-bottom: 4px; }
+  .field input[type=text],
+  .field input[type=url],
+  .field textarea,
+  .field select {
+    width: 100%;
+    background: var(--panel-2);
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: var(--ink);
+    outline: none;
+  }
+  .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--accent); }
+  .field textarea { resize: vertical; min-height: 60px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .color-row { display: flex; align-items: center; gap: 8px; background: var(--panel-2); border: 1px solid var(--line-strong); border-radius: 8px; padding: 6px 8px; }
+  .color-row input[type=color] { -webkit-appearance: none; appearance: none; width: 28px; height: 28px; border: 0; padding: 0; background: transparent; cursor: pointer; }
+  .color-row input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
+  .color-row input[type=color]::-webkit-color-swatch { border: 1px solid var(--line-strong); border-radius: 6px; }
+  .color-row input[type=text] { flex: 1; background: transparent; border: 0; outline: none; color: var(--ink); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+
+  .upload {
+    border: 1px dashed var(--line-strong);
+    border-radius: 8px;
+    padding: 14px;
+    text-align: center;
+    color: var(--ink-mute);
+    background: var(--panel-2);
+    cursor: pointer;
+    transition: border-color .15s, color .15s;
+  }
+  .upload:hover { border-color: var(--accent); color: var(--ink); }
+  .upload.has-file { border-style: solid; border-color: var(--accent); color: var(--ink); }
+  .upload input { display: none; }
+  .upload-preview { display: flex; align-items: center; gap: 10px; }
+  .upload-preview img { width: 40px; height: 40px; object-fit: contain; background: rgba(255,255,255,.05); border-radius: 6px; }
+  .upload .clear { color: var(--danger); font-size: 11px; margin-left: 6px; background: none; border: none; padding: 0; }
+
+  /* ============ Content area ============ */
+  .content { padding: 20px; }
+  .toolbar {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 16px; padding: 10px 12px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  }
+  .toolbar .count { color: var(--ink-mute); font-size: 12px; }
+  .filter-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tab {
+    background: transparent; border: 1px solid var(--line); color: var(--ink-mute);
+    padding: 5px 10px; border-radius: 999px; font-size: 12px;
+  }
+  .tab.active { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); font-weight: 600; }
+
+  .grid {
+    display: grid; gap: var(--gap);
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    position: relative;
+  }
+  .card.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .card .preview {
+    aspect-ratio: 16/9;
+    background:
+      linear-gradient(45deg, rgba(255,255,255,.03) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.03) 75%),
+      linear-gradient(45deg, rgba(255,255,255,.03) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.03) 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 8px 8px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+  .card .preview canvas, .card .preview video, .card .preview img {
+    max-width: 100%; max-height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+  .card .info { padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
+  .card .info .name { font-size: 13px; font-weight: 600; }
+  .card .info .dims { color: var(--ink-mute); font-size: 11px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .card .actions { display: flex; gap: 6px; padding: 0 10px 10px; align-items: center; }
+  .card .actions .check { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-mute); margin-right: auto; }
+  .card .actions input[type=checkbox] { accent-color: var(--accent); }
+
+  /* Footer download bar */
+  .dl-bar {
+    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+    background: rgba(14,19,27,.95);
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    padding: 8px 8px 8px 16px;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 18px 40px rgba(0,0,0,.6);
+    backdrop-filter: blur(12px);
+    z-index: 40;
+  }
+  .dl-bar .num { color: var(--accent); font-weight: 700; }
+
+  /* Branded photo tool */
+  .photo-tool {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 14px; margin-bottom: 16px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  }
+  @media (max-width: 800px) { .photo-tool { grid-template-columns: 1fr; } }
+  .photo-tool h3 { margin: 0 0 10px; font-size: 14px; }
+  .photo-canvas-wrap {
+    background:
+      linear-gradient(45deg, rgba(255,255,255,.03) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.03) 75%),
+      linear-gradient(45deg, rgba(255,255,255,.03) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.03) 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 8px 8px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 240px; overflow: hidden;
+  }
+  .photo-canvas-wrap canvas, .photo-canvas-wrap .placeholder { max-width: 100%; max-height: 420px; }
+  .photo-controls .field { margin-bottom: 8px; }
+  .photo-controls .range-row { display: grid; grid-template-columns: 90px 1fr 40px; align-items: center; gap: 8px; }
+  .photo-controls .range-row input[type=range] { width: 100%; accent-color: var(--accent); }
+  .pos-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; max-width: 140px; }
+  .pos-grid button {
+    aspect-ratio: 1; background: var(--panel-2); border: 1px solid var(--line-strong);
+    border-radius: 6px; color: var(--ink-mute);
+  }
+  .pos-grid button.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .pos-grid button[disabled] { opacity: .25; cursor: not-allowed; }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+    background: var(--accent); color: var(--accent-ink); padding: 8px 16px; border-radius: 999px;
+    font-weight: 600; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 60;
+  }
+  .toast.show { opacity: 1; }
+
+  /* Loader overlay */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.7); display: none;
+    align-items: center; justify-content: center; flex-direction: column; gap: 12px;
+    z-index: 100; backdrop-filter: blur(4px);
+  }
+  .overlay.show { display: flex; }
+  .overlay .spinner {
+    width: 38px; height: 38px; border: 3px solid rgba(255,255,255,.15); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin .8s linear infinite;
+  }
+  .overlay .msg { color: var(--ink); font-size: 13px; }
+  .overlay .progress {
+    width: 240px; height: 6px; background: rgba(255,255,255,.1); border-radius: 999px; overflow: hidden;
+  }
+  .overlay .progress > div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .platform-bar {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    margin-bottom: 14px; padding: 8px 12px; font-size: 12px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  }
+  .platform-bar code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--accent); }
+  .hint { color: var(--ink-mute); font-size: 11px; margin-top: 6px; line-height: 1.5; }
+  .divider { height: 1px; background: var(--line); margin: 16px 0; }
+  details > summary { cursor: pointer; color: var(--ink-mute); font-size: 12px; padding: 4px 0; }
+  details[open] > summary { color: var(--ink); }
+  /* override sticky offset for topbar so brand-kit nav strip sits above it */
+  header.topbar { top: 38px; }
+</style>
+<script src="_brand-kit.js"></script>
+</head>
+<body>
+<div id="bkNav"></div>
+<script>document.getElementById('bkNav').innerHTML = BrandKit.navStrip('asset-generator');</script>
+
+<header class="topbar">
+  <h1>Asset Generator</h1>
+  <span class="sub" id="topSub">— pick a platform, grab the whole kit (ZIP groups assets per platform)</span>
+  <span class="spacer"></span>
+  <span class="pill" id="capPill">video: detecting…</span>
+  <button class="btn ghost sm" id="resetBtn" title="Reset configuration to defaults">Reset config</button>
+</header>
+
+<main>
+  <aside class="config">
+    <div class="section-title">Brand</div>
+
+    <div class="field">
+      <label for="cfg-name">Brand name</label>
+      <input type="text" id="cfg-name" placeholder="The Tracker App" />
+    </div>
+
+    <div class="field">
+      <label for="cfg-short">Short name (for square logos)</label>
+      <input type="text" id="cfg-short" placeholder="Tracker" />
+    </div>
+
+    <div class="field">
+      <label for="cfg-tagline">Tagline</label>
+      <textarea id="cfg-tagline" rows="2" placeholder="Track Fitness: Calories, Workouts, Hydration, Creatine."></textarea>
+    </div>
+
+    <div class="field">
+      <label for="cfg-site">Website</label>
+      <input type="url" id="cfg-site" placeholder="thetrackerapp.io" />
+    </div>
+
+    <div class="field">
+      <label for="cfg-cta">CTA / Call to action</label>
+      <input type="text" id="cfg-cta" placeholder="Try it free →" />
+    </div>
+
+    <div class="section-title">Visuals</div>
+
+    <div class="field">
+      <label for="cfg-icon">Icon / emoji (fallback when no logo uploaded)</label>
+      <input type="text" id="cfg-icon" maxlength="3" placeholder="🏋" />
+    </div>
+
+    <div class="field">
+      <label>Custom logo (PNG or SVG, transparent recommended)</label>
+      <label class="upload" id="logoUpload">
+        <div id="logoUploadInner">
+          <div>Click to upload logo</div>
+          <div class="hint" style="margin-top:4px">PNG/SVG · used when present</div>
+        </div>
+        <input type="file" id="cfg-logo" accept="image/png,image/svg+xml,image/jpeg,image/webp" />
+      </label>
+    </div>
+
+    <div class="field">
+      <label>Background color</label>
+      <div class="color-row">
+        <input type="color" id="cfg-bg-pick" />
+        <input type="text" id="cfg-bg" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Accent color</label>
+      <div class="color-row">
+        <input type="color" id="cfg-accent-pick" />
+        <input type="text" id="cfg-accent" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Ink / text color</label>
+      <div class="color-row">
+        <input type="color" id="cfg-ink-pick" />
+        <input type="text" id="cfg-ink" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Style</label>
+      <select id="cfg-style">
+        <option value="modern">Modern (gradient + glow)</option>
+        <option value="flat">Flat (clean, no gradient)</option>
+        <option value="mono">Monochrome (accent on black)</option>
+      </select>
+    </div>
+
+    <details>
+      <summary>Typography</summary>
+      <div class="field" style="margin-top:8px">
+        <label>Heading font stack</label>
+        <input type="text" id="cfg-font-h" placeholder='-apple-system, "SF Pro Display", Inter, sans-serif' />
+      </div>
+      <div class="field">
+        <label>Body font stack</label>
+        <input type="text" id="cfg-font-b" placeholder='-apple-system, "SF Pro Text", Inter, sans-serif' />
+      </div>
+    </details>
+
+    <div class="divider"></div>
+    <p class="hint">All settings are saved locally in your browser. Use <b>Reset config</b> to restore defaults. To reuse for another service, just change the fields — every preview re-renders instantly.</p>
+  </aside>
+
+  <section class="content">
+
+    <!-- Branded photo overlay tool -->
+    <div class="photo-tool" id="photoTool">
+      <div>
+        <h3>Add branding to your photos / screenshots</h3>
+        <div class="photo-canvas-wrap" id="photoCanvasWrap">
+          <div class="placeholder" style="color:var(--ink-mute);padding:30px;text-align:center">
+            Upload a photo or screenshot to brand it →
+          </div>
+        </div>
+      </div>
+      <div class="photo-controls">
+        <div class="field">
+          <label>Upload photo or screenshot</label>
+          <label class="upload" id="photoUpload">
+            <div id="photoUploadInner">Click or drop an image</div>
+            <input type="file" id="photoInput" accept="image/*" />
+          </label>
+        </div>
+
+        <div class="field">
+          <label>Watermark style</label>
+          <select id="wm-style">
+            <option value="badge">Logo badge (icon + name)</option>
+            <option value="bar">Bottom bar (name + website)</option>
+            <option value="mark">Icon mark only</option>
+            <option value="text">Text only (@name)</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Position</label>
+          <div class="pos-grid" id="posGrid">
+            <button data-pos="tl">↖</button>
+            <button data-pos="tc">↑</button>
+            <button data-pos="tr">↗</button>
+            <button data-pos="ml" disabled>·</button>
+            <button data-pos="mc" disabled>·</button>
+            <button data-pos="mr" disabled>·</button>
+            <button data-pos="bl">↙</button>
+            <button data-pos="bc" class="active">↓</button>
+            <button data-pos="br">↘</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Size</label>
+          <div class="range-row">
+            <span class="hint" style="margin:0">scale</span>
+            <input type="range" id="wm-size" min="6" max="22" value="12" step="0.5" />
+            <span id="wm-size-val" class="hint" style="margin:0;text-align:right">12%</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Opacity</label>
+          <div class="range-row">
+            <span class="hint" style="margin:0">opacity</span>
+            <input type="range" id="wm-opacity" min="20" max="100" value="92" step="1" />
+            <span id="wm-opacity-val" class="hint" style="margin:0;text-align:right">92%</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Padding from edge</label>
+          <div class="range-row">
+            <span class="hint" style="margin:0">padding</span>
+            <input type="range" id="wm-pad" min="0" max="8" value="3" step="0.5" />
+            <span id="wm-pad-val" class="hint" style="margin:0;text-align:right">3%</span>
+          </div>
+        </div>
+
+        <label class="field" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="wm-bg" checked /> <span>Add dark pill background behind watermark</span>
+        </label>
+
+        <button class="btn primary" id="downloadBrandedBtn" style="width:100%;margin-top:6px">Download branded photo</button>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="filter-tabs" id="filterTabs"></div>
+      <span class="spacer" style="flex:1"></span>
+      <span class="count"><span id="visibleCount">0</span> assets shown</span>
+      <button class="btn sm ghost" id="selectAllBtn">Select all visible</button>
+      <button class="btn sm ghost" id="selectNoneBtn">Clear selection</button>
+    </div>
+
+    <div class="platform-bar" id="platformBar" style="display:none"></div>
+
+    <div class="grid" id="grid"></div>
+
+    <p class="hint" style="margin-top:24px">
+      <b>ZIP layout:</b> "Download all (ZIP)" groups every asset into a folder named after each platform (e.g. <code>youtube/</code>, <code>tiktok/</code>) so you can open one folder and upload its whole kit. Select a platform tab first, then "Select all visible" + "Download selected" to grab just that network.
+    </p>
+    <p class="hint">
+      <b>Videos:</b> If your browser supports MP4 recording (Safari does, most Chromium does not) you'll get <code>.mp4</code> files. Otherwise files are exported as <code>.webm</code>, which uploads fine to YouTube, X, Instagram and TikTok and they re-encode it server side. To force MP4 everywhere, you can re-encode the .webm with <code>ffmpeg -i in.webm -c:v libx264 out.mp4</code>.
+    </p>
+  </section>
+</main>
+
+<div class="dl-bar">
+  <span><span class="num" id="selCount">0</span> selected</span>
+  <button class="btn sm" id="dlSelectedBtn">Download selected</button>
+  <button class="btn sm primary" id="dlAllBtn">Download all (ZIP)</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="overlay" id="overlay">
+  <div class="spinner"></div>
+  <div class="msg" id="overlayMsg">Working…</div>
+  <div class="progress"><div id="overlayBar"></div></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+/* ========================================================================
+   ASSET GENERATOR — single-page tool
+   ======================================================================== */
+
+const STORAGE_KEY = 'tta_asset_generator_cfg_v1';
+
+const DEFAULTS = {
+  name: 'The Tracker App',
+  short: 'Tracker',
+  tagline: 'Track Fitness: Calories, Workouts, Hydration, Creatine.',
+  site: 'thetrackerapp.io',
+  cta: 'Try it free →',
+  icon: '🏋',
+  bg: '#000000',
+  accent: '#38ffd3',
+  ink: '#ecf4ff',
+  style: 'modern',
+  logo: null, // dataURL
+  fontH: '-apple-system, "SF Pro Display", Inter, system-ui, sans-serif',
+  fontB: '-apple-system, "SF Pro Text", Inter, system-ui, sans-serif',
+};
+
+let CFG = loadConfig();
+let logoImg = null; // HTMLImageElement when CFG.logo present
+
+function loadConfig() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    return Object.assign({}, DEFAULTS, stored);
+  } catch { return { ...DEFAULTS }; }
+}
+function saveConfig() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(CFG)); } catch {}
+}
+
+/* ---------- DOM helpers ---------- */
+const $ = (id) => document.getElementById(id);
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 1800);
+}
+function showOverlay(msg) { $('overlayMsg').textContent = msg; $('overlayBar').style.width = '0%'; $('overlay').classList.add('show'); }
+function setOverlay(msg, pct) { if (msg) $('overlayMsg').textContent = msg; if (typeof pct === 'number') $('overlayBar').style.width = pct + '%'; }
+function hideOverlay() { $('overlay').classList.remove('show'); }
+function slug(s) { return (s || 'asset').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'asset'; }
+function fileBase() { return slug(CFG.short || CFG.name || 'brand'); }
+
+/* ---------- Drawing primitives ---------- */
+function fillBackground(ctx, w, h) {
+  if (CFG.style === 'modern') {
+    const g = ctx.createLinearGradient(0, 0, w, h);
+    g.addColorStop(0, CFG.bg);
+    g.addColorStop(1, mix(CFG.bg, CFG.accent, 0.12));
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+    // soft accent glow
+    const r = Math.max(w, h) * 0.6;
+    const rg = ctx.createRadialGradient(w * 0.85, h * 0.15, 0, w * 0.85, h * 0.15, r);
+    rg.addColorStop(0, hexA(CFG.accent, 0.22));
+    rg.addColorStop(1, hexA(CFG.accent, 0));
+    ctx.fillStyle = rg;
+    ctx.fillRect(0, 0, w, h);
+  } else if (CFG.style === 'mono') {
+    ctx.fillStyle = CFG.bg;
+    ctx.fillRect(0, 0, w, h);
+  } else {
+    ctx.fillStyle = CFG.bg;
+    ctx.fillRect(0, 0, w, h);
+  }
+}
+
+function hexA(hex, a) {
+  const { r, g, b } = parseHex(hex);
+  return `rgba(${r},${g},${b},${a})`;
+}
+function parseHex(hex) {
+  let h = (hex || '#000').replace('#', '');
+  if (h.length === 3) h = h.split('').map(c => c + c).join('');
+  const n = parseInt(h, 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+function mix(a, b, t) {
+  const A = parseHex(a), B = parseHex(b);
+  const r = Math.round(A.r + (B.r - A.r) * t);
+  const g = Math.round(A.g + (B.g - A.g) * t);
+  const bl = Math.round(A.b + (B.b - A.b) * t);
+  return `#${[r, g, bl].map(x => x.toString(16).padStart(2, '0')).join('')}`;
+}
+function luminance(hex) {
+  const { r, g, b } = parseHex(hex);
+  const a = [r, g, b].map(v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); });
+  return 0.2126 * a[0] + 0.7152 * a[1] + 0.0722 * a[2];
+}
+function contrastInk() {
+  return luminance(CFG.bg) > 0.5 ? '#0a0e14' : CFG.ink;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+/**
+ * Draw the brand mark (logo) into a square area.
+ * Uses uploaded image if present, otherwise renders a stylized icon circle.
+ */
+function drawLogoMark(ctx, cx, cy, size, opts = {}) {
+  const { ring = true, bg = true } = opts;
+  if (logoImg && logoImg.complete && logoImg.naturalWidth) {
+    // Fit image inside circle area, no background
+    const s = size;
+    const iw = logoImg.naturalWidth, ih = logoImg.naturalHeight;
+    const scale = Math.min(s / iw, s / ih);
+    const dw = iw * scale, dh = ih * scale;
+    ctx.drawImage(logoImg, cx - dw / 2, cy - dh / 2, dw, dh);
+    return;
+  }
+  // Default: circular badge with emoji
+  if (bg) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, size / 2, 0, Math.PI * 2);
+    const grad = ctx.createLinearGradient(cx - size / 2, cy - size / 2, cx + size / 2, cy + size / 2);
+    grad.addColorStop(0, mix(CFG.bg, CFG.accent, 0.18));
+    grad.addColorStop(1, mix(CFG.bg, '#000', 0.2));
+    ctx.fillStyle = grad;
+    ctx.fill();
+    if (ring) {
+      ctx.lineWidth = Math.max(2, size * 0.04);
+      ctx.strokeStyle = CFG.accent;
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+  // Emoji / icon glyph
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `${Math.round(size * 0.62)}px ${CFG.fontH}`;
+  ctx.fillText(CFG.icon || '★', cx, cy + size * 0.02);
+  ctx.restore();
+}
+
+/**
+ * Wrap text into max lines.
+ */
+function wrapText(ctx, text, maxWidth, maxLines = 3) {
+  const words = (text || '').split(/\s+/);
+  const lines = [];
+  let cur = '';
+  for (const w of words) {
+    const test = cur ? cur + ' ' + w : w;
+    if (ctx.measureText(test).width <= maxWidth) cur = test;
+    else { if (cur) lines.push(cur); cur = w; if (lines.length >= maxLines - 1) break; }
+  }
+  if (cur && lines.length < maxLines) lines.push(cur);
+  return lines;
+}
+
+/* ========================================================================
+   ASSET REGISTRY
+   Each asset: { id, name, category, w, h, render(ctx, cfg, frame?), type }
+   Static assets: type 'png' (default)
+   Videos: type 'video', renderFrame(ctx, t, dur), duration in seconds
+   ======================================================================== */
+
+const ASSETS = [];
+
+/* ---------- Logos & favicons ---------- */
+
+function drawSquareLogo(ctx, w, h, mode = 'badge') {
+  fillBackground(ctx, w, h);
+  const ink = contrastInk();
+  ctx.fillStyle = ink;
+
+  if (mode === 'mark') {
+    drawLogoMark(ctx, w / 2, h / 2, Math.min(w, h) * 0.62);
+    return;
+  }
+
+  // badge with name underneath
+  const markSize = Math.min(w, h) * 0.46;
+  const cx = w / 2, cy = h * 0.42;
+  drawLogoMark(ctx, cx, cy, markSize);
+  ctx.fillStyle = ink;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const txt = CFG.short || CFG.name || '';
+  ctx.font = `700 ${Math.round(h * 0.12)}px ${CFG.fontH}`;
+  ctx.fillText(txt, w / 2, h * 0.78);
+  if (CFG.site) {
+    ctx.fillStyle = hexA(ink, 0.6);
+    ctx.font = `500 ${Math.round(h * 0.05)}px ${CFG.fontB}`;
+    ctx.fillText(CFG.site, w / 2, h * 0.88);
+  }
+}
+
+function drawWordmark(ctx, w, h) {
+  fillBackground(ctx, w, h);
+  const ink = contrastInk();
+  const pad = h * 0.18;
+  const markSize = h - pad * 2;
+  drawLogoMark(ctx, pad + markSize / 2, h / 2, markSize);
+
+  const tx = pad * 2 + markSize;
+  ctx.fillStyle = ink;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.font = `700 ${Math.round(h * 0.4)}px ${CFG.fontH}`;
+  ctx.fillText(CFG.name || '', tx, h * 0.42);
+  if (CFG.tagline) {
+    ctx.fillStyle = hexA(ink, 0.65);
+    ctx.font = `500 ${Math.round(h * 0.14)}px ${CFG.fontB}`;
+    ctx.fillText(CFG.tagline.split('.')[0], tx, h * 0.72);
+  }
+}
+
+/* ---------- OG / share cards ---------- */
+function drawShareCard(ctx, w, h, opts = {}) {
+  fillBackground(ctx, w, h);
+  const ink = contrastInk();
+  const pad = Math.round(Math.min(w, h) * 0.07);
+
+  // Decorative side bar
+  if (CFG.style !== 'flat') {
+    const bw = w * 0.012;
+    ctx.fillStyle = CFG.accent;
+    ctx.fillRect(pad, pad, bw, h - pad * 2);
+  }
+
+  const textX = pad + (CFG.style !== 'flat' ? w * 0.012 + pad * 0.5 : 0);
+  const contentW = w - textX - pad - Math.min(w, h) * 0.3;
+
+  // Brand row (mark + name) at top
+  const markSize = Math.min(w, h) * 0.12;
+  drawLogoMark(ctx, textX + markSize / 2, pad + markSize / 2, markSize);
+  ctx.fillStyle = ink;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.font = `700 ${Math.round(markSize * 0.45)}px ${CFG.fontH}`;
+  ctx.fillText(CFG.name || '', textX + markSize + pad * 0.4, pad + markSize / 2);
+
+  // Headline
+  const headlineSize = Math.round(h * 0.11);
+  ctx.font = `800 ${headlineSize}px ${CFG.fontH}`;
+  ctx.fillStyle = ink;
+  const headline = opts.headline || CFG.tagline || '';
+  const lines = wrapText(ctx, headline, contentW, 3);
+  let ty = h * 0.42;
+  for (const line of lines) {
+    ctx.fillText(line, textX, ty);
+    ty += headlineSize * 1.15;
+  }
+
+  // Sub
+  if (opts.sub || CFG.cta) {
+    ctx.fillStyle = CFG.accent;
+    ctx.font = `600 ${Math.round(h * 0.045)}px ${CFG.fontB}`;
+    ctx.fillText(opts.sub || CFG.cta, textX, ty + h * 0.02);
+  }
+
+  // Bottom site URL
+  ctx.fillStyle = hexA(ink, 0.7);
+  ctx.font = `500 ${Math.round(h * 0.038)}px ${CFG.fontB}`;
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText(CFG.site || '', textX, h - pad * 0.7);
+
+  // Right side decorative big mark
+  if (CFG.style === 'modern') {
+    const big = Math.min(w, h) * 0.5;
+    ctx.save();
+    ctx.globalAlpha = 0.18;
+    drawLogoMark(ctx, w - pad - big / 2, h / 2, big, { bg: false, ring: false });
+    ctx.restore();
+  }
+}
+
+/* ---------- Banners / headers ---------- */
+function drawBanner(ctx, w, h, opts = {}) {
+  fillBackground(ctx, w, h);
+  const ink = contrastInk();
+  const pad = Math.round(Math.min(w, h) * 0.08);
+
+  // For YT banner: keep critical content within safe zone (center 1546×423)
+  const safe = opts.safeZone || null;
+  let cx = w / 2, cy = h / 2;
+  let safeW = w - pad * 2, safeH = h - pad * 2;
+  if (safe) {
+    safeW = safe.w; safeH = safe.h;
+    cx = w / 2; cy = h / 2;
+  }
+
+  // Background decor
+  if (CFG.style === 'modern') {
+    ctx.save();
+    ctx.globalAlpha = 0.16;
+    const big = h * 1.4;
+    drawLogoMark(ctx, w * 0.85, h * 0.5, big, { bg: false, ring: false });
+    ctx.restore();
+  }
+
+  // Mark
+  const markSize = Math.min(safeW, safeH) * 0.38;
+  const startX = cx - safeW / 2;
+  const markCX = startX + markSize / 2;
+  const markCY = cy - safeH * 0.18;
+  drawLogoMark(ctx, markCX, markCY, markSize);
+
+  // Brand name centered horizontally
+  ctx.fillStyle = ink;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `800 ${Math.round(safeH * 0.22)}px ${CFG.fontH}`;
+  ctx.fillText(CFG.name || '', cx, cy + safeH * 0.05);
+
+  ctx.fillStyle = hexA(ink, 0.7);
+  ctx.font = `500 ${Math.round(safeH * 0.09)}px ${CFG.fontB}`;
+  ctx.fillText(CFG.tagline || '', cx, cy + safeH * 0.22);
+
+  ctx.fillStyle = CFG.accent;
+  ctx.font = `600 ${Math.round(safeH * 0.08)}px ${CFG.fontB}`;
+  ctx.fillText(CFG.site || '', cx, cy + safeH * 0.38);
+}
+
+/* ---------- Social posts ---------- */
+function drawPost(ctx, w, h, msg) {
+  fillBackground(ctx, w, h);
+  const ink = contrastInk();
+  const pad = Math.round(Math.min(w, h) * 0.08);
+
+  // Top: mark + name
+  const markSize = Math.min(w, h) * 0.13;
+  drawLogoMark(ctx, pad + markSize / 2, pad + markSize / 2, markSize);
+  ctx.fillStyle = ink;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.font = `700 ${Math.round(markSize * 0.5)}px ${CFG.fontH}`;
+  ctx.fillText(CFG.name || '', pad + markSize + pad * 0.4, pad + markSize / 2);
+
+  const headline = (msg && msg.headline) || CFG.tagline || '';
+  const sub = (msg && msg.sub) || '';
+
+  // Big headline
+  const contentW = w - pad * 2;
+  ctx.fillStyle = ink;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  const size = Math.round(Math.min(w, h) * 0.082);
+  ctx.font = `800 ${size}px ${CFG.fontH}`;
+  const lines = wrapText(ctx, headline, contentW, 5);
+  let ty = h * 0.30;
+  for (const line of lines) { ctx.fillText(line, pad, ty); ty += size * 1.14; }
+
+  // Sub line in accent
+  if (sub) {
+    ctx.fillStyle = CFG.accent;
+    const ss = Math.round(Math.min(w, h) * 0.04);
+    ctx.font = `600 ${ss}px ${CFG.fontB}`;
+    ty += size * 0.2;
+    const sublines = wrapText(ctx, sub, contentW, 2);
+    for (const line of sublines) { ctx.fillText(line, pad, ty); ty += ss * 1.3; }
+  }
+
+  // Accent CTA pill
+  if (CFG.cta) {
+    const ctaSize = Math.round(Math.min(w, h) * 0.045);
+    ctx.font = `700 ${ctaSize}px ${CFG.fontB}`;
+    const ctaW = ctx.measureText(CFG.cta).width + pad * 1.4;
+    const ctaH = ctaSize * 2.2;
+    const ctaY = h - pad - ctaH - Math.min(w, h) * 0.07;
+    roundRect(ctx, pad, ctaY, ctaW, ctaH, ctaH / 2);
+    ctx.fillStyle = CFG.accent;
+    ctx.fill();
+    ctx.fillStyle = luminance(CFG.accent) > 0.5 ? '#0a0e14' : '#ffffff';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(CFG.cta, pad + pad * 0.7, ctaY + ctaH / 2);
+  }
+
+  // Bottom site
+  ctx.fillStyle = hexA(ink, 0.65);
+  ctx.textBaseline = 'alphabetic';
+  ctx.font = `500 ${Math.round(Math.min(w, h) * 0.035)}px ${CFG.fontB}`;
+  ctx.textAlign = 'left';
+  ctx.fillText(CFG.site || '', pad, h - pad * 0.6);
+}
+
+/* ---------- Mockups ---------- */
+function drawIPhoneMockup(ctx, w, h) {
+  fillBackground(ctx, w, h);
+  const ink = contrastInk();
+  const margin = Math.min(w, h) * 0.08;
+
+  // Phone body
+  const phoneH = h - margin * 2;
+  const phoneW = phoneH * 0.48;
+  const phoneX = w * 0.62 - phoneW / 2;
+  const phoneY = h / 2 - phoneH / 2;
+  const r = phoneW * 0.13;
+
+  // Shadow
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,.55)';
+  ctx.shadowBlur = phoneW * 0.18;
+  ctx.shadowOffsetY = phoneW * 0.08;
+  ctx.fillStyle = '#1a1a1a';
+  roundRect(ctx, phoneX, phoneY, phoneW, phoneH, r);
+  ctx.fill();
+  ctx.restore();
+
+  // Screen
+  const sPad = phoneW * 0.04;
+  const sx = phoneX + sPad, sy = phoneY + sPad, sw = phoneW - sPad * 2, sh = phoneH - sPad * 2;
+  ctx.save();
+  roundRect(ctx, sx, sy, sw, sh, r - sPad);
+  ctx.clip();
+
+  // Screen content: brand gradient
+  const sg = ctx.createLinearGradient(sx, sy, sx, sy + sh);
+  sg.addColorStop(0, mix(CFG.bg, CFG.accent, 0.18));
+  sg.addColorStop(1, CFG.bg);
+  ctx.fillStyle = sg;
+  ctx.fillRect(sx, sy, sw, sh);
+
+  // logo + name
+  drawLogoMark(ctx, sx + sw / 2, sy + sh * 0.32, sw * 0.34);
+  ctx.fillStyle = ink;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `800 ${Math.round(sw * 0.1)}px ${CFG.fontH}`;
+  ctx.fillText(CFG.short || CFG.name || '', sx + sw / 2, sy + sh * 0.55);
+  ctx.fillStyle = hexA(ink, 0.7);
+  ctx.font = `500 ${Math.round(sw * 0.045)}px ${CFG.fontB}`;
+  ctx.fillText((CFG.tagline || '').split('.')[0], sx + sw / 2, sy + sh * 0.63);
+
+  // notch
+  ctx.fillStyle = '#000';
+  const notchW = sw * 0.42, notchH = sw * 0.075;
+  roundRect(ctx, sx + sw / 2 - notchW / 2, sy + sw * 0.02, notchW, notchH, notchH / 2);
+  ctx.fill();
+  ctx.restore();
+
+  // Left content text
+  const tx = margin, txW = w * 0.5;
+  ctx.fillStyle = ink;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.font = `800 ${Math.round(h * 0.09)}px ${CFG.fontH}`;
+  const lines = wrapText(ctx, CFG.name || '', txW, 2);
+  let ty = h * 0.38;
+  for (const line of lines) { ctx.fillText(line, tx, ty); ty += h * 0.1; }
+  ctx.fillStyle = hexA(ink, 0.72);
+  ctx.font = `500 ${Math.round(h * 0.038)}px ${CFG.fontB}`;
+  const tlines = wrapText(ctx, CFG.tagline || '', txW, 3);
+  for (const line of tlines) { ctx.fillText(line, tx, ty); ty += h * 0.05; }
+  ctx.fillStyle = CFG.accent;
+  ctx.font = `700 ${Math.round(h * 0.04)}px ${CFG.fontB}`;
+  ctx.fillText(CFG.site || '', tx, h - margin * 0.8);
+}
+
+function drawDesktopMockup(ctx, w, h) {
+  fillBackground(ctx, w, h);
+  const ink = contrastInk();
+  const margin = Math.min(w, h) * 0.08;
+
+  // browser frame
+  const bx = margin, by = margin, bw = w - margin * 2, bh = h - margin * 2;
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,.5)';
+  ctx.shadowBlur = bw * 0.04;
+  ctx.shadowOffsetY = bw * 0.012;
+  ctx.fillStyle = '#1a1f29';
+  roundRect(ctx, bx, by, bw, bh, bw * 0.018);
+  ctx.fill();
+  ctx.restore();
+
+  // chrome bar
+  const barH = bh * 0.07;
+  ctx.fillStyle = '#252b37';
+  roundRect(ctx, bx, by, bw, barH, bw * 0.018);
+  ctx.fill();
+  ['#ff5f56', '#ffbd2e', '#27c93f'].forEach((c, i) => {
+    ctx.fillStyle = c;
+    ctx.beginPath();
+    ctx.arc(bx + barH * 0.5 + i * barH * 0.55, by + barH / 2, barH * 0.18, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  // URL
+  ctx.fillStyle = '#3a4150';
+  const urlW = bw * 0.45, urlH = barH * 0.55;
+  roundRect(ctx, bx + bw / 2 - urlW / 2, by + barH * 0.22, urlW, urlH, urlH / 2);
+  ctx.fill();
+  ctx.fillStyle = hexA(ink, 0.85);
+  ctx.font = `500 ${Math.round(urlH * 0.62)}px ${CFG.fontB}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('https://' + (CFG.site || ''), bx + bw / 2, by + barH * 0.22 + urlH / 2);
+
+  // Viewport content
+  const vx = bx, vy = by + barH, vw = bw, vh = bh - barH;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(vx, vy, vw, vh);
+  ctx.clip();
+  const vg = ctx.createLinearGradient(vx, vy, vx + vw, vy + vh);
+  vg.addColorStop(0, CFG.bg);
+  vg.addColorStop(1, mix(CFG.bg, CFG.accent, 0.18));
+  ctx.fillStyle = vg;
+  ctx.fillRect(vx, vy, vw, vh);
+
+  // mark + name centered
+  drawLogoMark(ctx, vx + vw * 0.5, vy + vh * 0.4, vh * 0.32);
+  ctx.fillStyle = ink;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `800 ${Math.round(vh * 0.11)}px ${CFG.fontH}`;
+  ctx.fillText(CFG.name || '', vx + vw * 0.5, vy + vh * 0.7);
+  ctx.fillStyle = hexA(ink, 0.7);
+  ctx.font = `500 ${Math.round(vh * 0.045)}px ${CFG.fontB}`;
+  ctx.fillText(CFG.tagline || '', vx + vw * 0.5, vy + vh * 0.8);
+  ctx.restore();
+}
+
+/* ========================================================================
+   VIDEO RENDERING (with start/end logo flash + tagline)
+   ======================================================================== */
+
+const VIDEO_DURATION = 7; // seconds
+const VIDEO_FPS = 30;
+
+/* Eased value 0..1 -> 0..1 (ease in out) */
+function ease(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
+function clamp01(x) { return Math.max(0, Math.min(1, x)); }
+
+function renderVideoFrame(ctx, w, h, t, msg) {
+  // Phase split: 0-1.5s intro logo, 1.5-5.0s tagline, 5.0-7.0s website outro flash
+  const intro = 1.5, mid = 5.0;
+  fillBackground(ctx, w, h);
+
+  // subtle animated accent glow
+  const px = w * (0.5 + 0.15 * Math.sin(t * 1.2));
+  const py = h * (0.5 + 0.15 * Math.cos(t * 1.0));
+  const r = Math.max(w, h) * 0.6;
+  ctx.save();
+  const rg = ctx.createRadialGradient(px, py, 0, px, py, r);
+  rg.addColorStop(0, hexA(CFG.accent, 0.18));
+  rg.addColorStop(1, hexA(CFG.accent, 0));
+  ctx.fillStyle = rg;
+  ctx.fillRect(0, 0, w, h);
+  ctx.restore();
+
+  const ink = contrastInk();
+
+  if (t < intro) {
+    // INTRO: logo scales in, name fades in
+    const p = ease(clamp01(t / intro));
+    const markSize = Math.min(w, h) * (0.32 + 0.08 * (1 - p)); // start slightly larger
+    ctx.save();
+    ctx.globalAlpha = p;
+    drawLogoMark(ctx, w / 2, h * 0.42, markSize);
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalAlpha = clamp01((t - intro * 0.4) / (intro * 0.6));
+    ctx.fillStyle = ink;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `800 ${Math.round(h * 0.07)}px ${CFG.fontH}`;
+    ctx.fillText(CFG.name || '', w / 2, h * 0.66);
+    ctx.restore();
+
+    // brief flash at start
+    if (t < 0.15) {
+      ctx.fillStyle = hexA('#ffffff', (0.15 - t) / 0.15 * 0.5);
+      ctx.fillRect(0, 0, w, h);
+    }
+  } else if (t < mid) {
+    // MID: tagline + small mark in corner
+    const localT = (t - intro) / (mid - intro);
+    const inP = ease(clamp01(localT * 4));
+    const outP = ease(clamp01((1 - localT) * 4));
+    const alpha = Math.min(inP, outP);
+
+    // tagline in center
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = ink;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const size = Math.round(h * 0.08);
+    ctx.font = `800 ${size}px ${CFG.fontH}`;
+    const tag = (msg && msg.headline) || CFG.tagline || '';
+    const lines = wrapText(ctx, tag, w * 0.82, 4);
+    let ty = h / 2 - (lines.length - 1) * size * 0.6;
+    for (const ln of lines) { ctx.fillText(ln, w / 2, ty); ty += size * 1.2; }
+    ctx.restore();
+
+    // small mark + name top-left
+    const ms = Math.min(w, h) * 0.08;
+    const pad = Math.min(w, h) * 0.04;
+    drawLogoMark(ctx, pad + ms / 2, pad + ms / 2, ms);
+    ctx.fillStyle = ink;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.font = `700 ${Math.round(ms * 0.45)}px ${CFG.fontH}`;
+    ctx.fillText(CFG.name || '', pad + ms + pad * 0.4, pad + ms / 2);
+  } else {
+    // OUTRO: logo flash + website
+    const localT = clamp01((t - mid) / (VIDEO_DURATION - mid));
+    // Flash white at start of outro
+    if (localT < 0.18) {
+      ctx.fillStyle = hexA('#ffffff', (0.18 - localT) / 0.18 * 0.85);
+      ctx.fillRect(0, 0, w, h);
+    }
+    const p = ease(localT);
+    const scale = 0.92 + 0.08 * p;
+    const markSize = Math.min(w, h) * 0.34 * scale;
+    drawLogoMark(ctx, w / 2, h * 0.4, markSize);
+
+    ctx.fillStyle = ink;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `800 ${Math.round(h * 0.06)}px ${CFG.fontH}`;
+    ctx.fillText(CFG.name || '', w / 2, h * 0.62);
+
+    ctx.fillStyle = CFG.accent;
+    ctx.font = `700 ${Math.round(h * 0.055)}px ${CFG.fontB}`;
+    ctx.fillText(CFG.site || '', w / 2, h * 0.72);
+
+    if (CFG.cta) {
+      ctx.fillStyle = hexA(ink, 0.85);
+      ctx.font = `600 ${Math.round(h * 0.045)}px ${CFG.fontB}`;
+      ctx.fillText(CFG.cta, w / 2, h * 0.8);
+    }
+  }
+}
+
+/* ========================================================================
+   PLATFORM-ORGANIZED ASSET LIBRARY
+   Each platform gets its own ZIP folder so uploads are 1:1 per network.
+   ======================================================================== */
+
+/* Message variants — index 0 is the required fitness highlight */
+const MESSAGES = [
+  { tag: 'Track Fitness', headline: 'Track Fitness: Calories, Workouts, Hydration, Creatine', sub: 'No app required — just send a text' },
+  { tag: 'Calories',      headline: 'Track Your Calories by Text',  sub: 'Snap a meal or type it — we log it' },
+  { tag: 'Workouts',      headline: 'Log Every Workout',            sub: 'Sets, reps & PRs — all by text' },
+  { tag: 'Hydration',     headline: 'Stay Hydrated',                sub: 'Water reminders that text you back' },
+  { tag: 'Creatine',      headline: 'Never Skip Creatine',          sub: 'Daily creatine reminders by text' },
+  { tag: 'No App',        headline: 'No App Required',              sub: 'Fitness tracking that lives in your texts' },
+  { tag: 'Coach',         headline: 'Your Fitness Coach, In Your Texts', sub: 'Calories · Workouts · Hydration · Creatine' },
+];
+
+/* Spec builders -> { n, w, h, t?, fn(ctx[, t]) } */
+const SPEC = {
+  avatar:  (w, h, mode = 'badge') => ({ n: `Profile avatar · ${w}×${h}`, w, h, fn: (c) => drawSquareLogo(c, w, h, mode) }),
+  banner:  (w, h, name, safe)     => ({ n: name || `Banner · ${w}×${h}`, w, h, fn: (c) => drawBanner(c, w, h, safe ? { safeZone: safe } : {}) }),
+  wordmark:(w, h)                 => ({ n: `Wordmark · ${w}×${h}`, w, h, fn: (c) => drawWordmark(c, w, h) }),
+  post:    (w, h, mi)             => ({ n: `Post · ${w}×${h} · ${MESSAGES[mi].tag}`, w, h, fn: (c) => drawPost(c, w, h, MESSAGES[mi]) }),
+  story:   (w, h, mi)             => ({ n: `Story / cover · ${w}×${h} · ${MESSAGES[mi].tag}`, w, h, fn: (c) => drawPost(c, w, h, MESSAGES[mi]) }),
+  card:    (w, h, mi)             => ({ n: `Card · ${w}×${h} · ${MESSAGES[mi].tag}`, w, h, fn: (c) => drawShareCard(c, w, h, { headline: MESSAGES[mi].headline, sub: MESSAGES[mi].sub }) }),
+  thumb:   (w, h, mi)             => ({ n: `Thumbnail · ${w}×${h} · ${MESSAGES[mi].tag}`, w, h, fn: (c) => drawShareCard(c, w, h, { headline: MESSAGES[mi].headline, sub: MESSAGES[mi].sub }) }),
+  pin:     (w, h, mi)             => ({ n: `Pin · ${w}×${h} · ${MESSAGES[mi].tag}`, w, h, fn: (c) => drawShareCard(c, w, h, { headline: MESSAGES[mi].headline, sub: MESSAGES[mi].sub }) }),
+  videoV:  (mi)                   => ({ n: `Vertical video · 1080×1920 · ${MESSAGES[mi].tag}`, w: 1080, h: 1920, t: 'video', fn: (c, t) => renderVideoFrame(c, 1080, 1920, t, MESSAGES[mi]) }),
+  videoH:  (mi)                   => ({ n: `Landscape video · 1920×1080 · ${MESSAGES[mi].tag}`, w: 1920, h: 1080, t: 'video', fn: (c, t) => renderVideoFrame(c, 1920, 1080, t, MESSAGES[mi]) }),
+  videoSq: (mi)                   => ({ n: `Square video · 1080×1080 · ${MESSAGES[mi].tag}`, w: 1080, h: 1080, t: 'video', fn: (c, t) => renderVideoFrame(c, 1080, 1080, t, MESSAGES[mi]) }),
+};
+
+const all = MESSAGES.map((m, i) => i);                 // [0..6]
+const firstN = (n) => all.slice(0, n);
+
+const PLATFORMS = [
+  { id: 'bitchute', name: 'BitChute', url: 'https://www.bitchute.com/thetrackerappio', specs: [
+    SPEC.avatar(400, 400),
+    SPEC.banner(2048, 1152, 'Channel image · 2048×1152 (16:9)'),
+    SPEC.thumb(1280, 720, 0),
+    SPEC.thumb(1280, 720, 2),
+    SPEC.videoH(0),
+    SPEC.videoV(0),
+    SPEC.post(1080, 1080, 0),
+  ]},
+  { id: 'rumble', name: 'Rumble', url: 'https://rumble.com/user/thetrackerappio/videos', specs: [
+    SPEC.avatar(400, 400),
+    SPEC.banner(3600, 600, 'Channel backsplash · 3600×600 (6:1)'),
+    SPEC.thumb(1280, 720, 0),
+    SPEC.thumb(1280, 720, 1),
+    SPEC.videoH(0),
+    SPEC.videoV(0),
+    SPEC.post(1080, 1080, 0),
+  ]},
+  { id: 'x-twitter', name: 'X (Twitter)', url: 'https://x.com/thetrackerappio', specs: [
+    SPEC.avatar(400, 400),
+    SPEC.banner(1500, 500, 'Header · 1500×500'),
+    SPEC.card(1200, 675, 0),
+    SPEC.post(1600, 900, 1),
+    SPEC.post(1080, 1080, 2),
+    SPEC.post(1080, 1350, 3),
+    SPEC.videoH(0),
+  ]},
+  { id: 'instagram', name: 'Instagram', url: 'https://www.instagram.com/thetrackerappio/', specs: [
+    SPEC.avatar(320, 320, 'mark'),
+    SPEC.post(1080, 1080, 0),
+    SPEC.post(1080, 1080, 2),
+    SPEC.post(1080, 1350, 1),
+    SPEC.story(1080, 1920, 0),
+    SPEC.story(1080, 1920, 3),
+    SPEC.videoV(0),
+  ]},
+  { id: 'threads', name: 'Threads', url: 'https://www.threads.com/@thetrackerappio', specs: [
+    ...all.map(i => SPEC.post(1080, 1080, i)),
+    ...all.map(i => SPEC.post(1080, 1350, i)),
+    ...all.map(i => SPEC.story(1080, 1920, i)),
+  ]},
+  { id: 'youtube', name: 'YouTube', url: 'https://www.youtube.com/@thetrackerappio', specs: [
+    SPEC.avatar(800, 800),
+    SPEC.banner(2560, 1440, 'Channel banner · 2560×1440 (safe area centered)', { w: 1546, h: 423 }),
+    ...all.map(i => SPEC.thumb(1280, 720, i)),
+    ...firstN(5).map(i => SPEC.post(1080, 1080, i)),
+    ...firstN(3).map(i => SPEC.story(1080, 1920, i)),
+    SPEC.videoV(0), SPEC.videoV(1),
+    SPEC.videoH(0), SPEC.videoH(1),
+  ]},
+  { id: 'tiktok', name: 'TikTok', url: 'https://www.tiktok.com/@thetrackerappio', specs: [
+    SPEC.avatar(200, 200, 'mark'),
+    SPEC.story(1080, 1920, 0),
+    SPEC.story(1080, 1920, 2),
+    SPEC.videoV(0),
+    SPEC.videoV(3),
+  ]},
+  { id: 'truth-social', name: 'Truth Social', url: 'https://truthsocial.com/@thetrackerappio', specs: [
+    SPEC.avatar(400, 400),
+    SPEC.banner(1500, 500, 'Header · 1500×500'),
+    SPEC.post(1080, 1080, 0),
+    SPEC.post(1080, 1080, 2),
+    SPEC.post(1080, 1350, 1),
+    SPEC.card(1200, 675, 0),
+    SPEC.videoSq(0),
+  ]},
+  { id: 'bluesky', name: 'Bluesky', url: 'https://bsky.app/profile/thetrackerappio.bsky.social', specs: [
+    SPEC.avatar(1000, 1000),
+    SPEC.banner(3000, 1000, 'Banner · 3000×1000 (3:1)'),
+    SPEC.post(1080, 1080, 0),
+    SPEC.post(1080, 1080, 1),
+    SPEC.post(1080, 1350, 2),
+    SPEC.card(1200, 675, 0),
+    SPEC.videoH(0),
+  ]},
+  { id: 'primal-nostr', name: 'Primal (Nostr)', url: 'https://primal.net/p/nprofile1qqsxuursje57m88jyee5zs3k92lfndgqf2myr3zzqhh4zzdtar5e0ksw0yyj6', specs: [
+    SPEC.avatar(400, 400),
+    SPEC.banner(1500, 500, 'Banner · 1500×500'),
+    ...all.map(i => SPEC.post(1080, 1080, i)),
+    ...all.map(i => SPEC.post(1080, 1350, i)),
+    ...firstN(5).map(i => SPEC.card(1200, 675, i)),
+  ]},
+  { id: 'reddit-sub', name: 'Reddit · r/TheTrackerApp', url: 'https://www.reddit.com/r/TheTrackerApp/', specs: [
+    SPEC.avatar(256, 256, 'mark'),
+    SPEC.banner(4000, 640, 'Subreddit banner · 4000×640'),
+  ]},
+  { id: 'reddit-user', name: 'Reddit · u/thetrackerappio', url: 'https://www.reddit.com/user/thetrackerappio/', specs: [
+    SPEC.avatar(256, 256),
+    SPEC.banner(1600, 600, 'Profile banner · 1600×600'),
+    SPEC.card(1200, 630, 0),
+  ]},
+  { id: 'tumblr', name: 'Tumblr', url: 'https://www.tumblr.com/thetrackerappio', specs: [
+    SPEC.avatar(128, 128),
+    SPEC.banner(3000, 900, 'Header · 3000×900'),
+    ...all.map(i => SPEC.post(1080, 1080, i)),
+    ...firstN(5).map(i => SPEC.post(1080, 1350, i)),
+  ]},
+  { id: 'mastodon', name: 'Mastodon', url: 'https://mastodon.social/@thetrackerappio', specs: [
+    SPEC.avatar(400, 400),
+    SPEC.banner(1500, 500, 'Header · 1500×500'),
+    ...all.map(i => SPEC.post(1080, 1080, i)),
+    ...firstN(6).map(i => SPEC.post(1080, 1350, i)),
+    ...firstN(6).map(i => SPEC.card(1200, 630, i)),
+  ]},
+  { id: 'pinterest', name: 'Pinterest', url: 'https://www.pinterest.com/thetrackerappio/', specs: [
+    SPEC.avatar(800, 800),
+    ...firstN(5).map(i => SPEC.pin(1000, 1500, i)),
+    SPEC.post(1080, 1080, 0),
+  ]},
+  { id: 'linkedin', name: 'LinkedIn (Jerome)', url: 'https://www.linkedin.com/in/jerome-belcher-7a062b273/', specs: [
+    SPEC.avatar(400, 400),
+    SPEC.banner(1584, 396, 'Banner · 1584×396'),
+    SPEC.card(1200, 627, 0),
+    SPEC.post(1080, 1080, 1),
+    SPEC.post(1080, 1350, 2),
+    SPEC.card(1200, 627, 5),
+    SPEC.videoH(0),
+  ]},
+  { id: 'substack', name: 'Substack (@romeofoxford)', url: 'https://substack.com/@romeofoxford', specs: [
+    SPEC.card(1200, 630, 0),
+  ]},
+  { id: 'kick', name: 'Kick (romeinexamerica111)', url: 'https://kick.com/romeinexamerica111', specs: [
+    SPEC.banner(1920, 480, 'Channel banner · 1920×480 (4:1)'),
+  ]},
+];
+
+/* Expand platform specs into the flat ASSETS registry */
+PLATFORMS.forEach(p => {
+  p.specs.forEach((s, i) => {
+    const isVideo = s.t === 'video';
+    ASSETS.push({
+      id: `${p.id}-${String(i + 1).padStart(2, '0')}`,
+      name: s.n,
+      platform: p.id,
+      platformName: p.name,
+      w: s.w, h: s.h,
+      type: isVideo ? 'video' : 'png',
+      duration: isVideo ? VIDEO_DURATION : undefined,
+      render: isVideo ? undefined : ((fn) => (c) => fn(c))(s.fn),
+      renderFrame: isVideo ? ((fn) => (c, w, h, t) => fn(c, t))(s.fn) : undefined,
+    });
+  });
+});
+
+/* ========================================================================
+   RECORDER (canvas -> mp4/webm)
+   ======================================================================== */
+function preferredVideoMime() {
+  const candidates = [
+    'video/mp4;codecs=avc1.42E01E',
+    'video/mp4;codecs=h264',
+    'video/mp4',
+    'video/webm;codecs=vp9',
+    'video/webm;codecs=vp8',
+    'video/webm',
+  ];
+  if (typeof MediaRecorder === 'undefined') return null;
+  for (const m of candidates) {
+    try { if (MediaRecorder.isTypeSupported(m)) return m; } catch {}
+  }
+  return null;
+}
+
+function recordCanvas(canvas, durationSec, mime) {
+  return new Promise((resolve, reject) => {
+    try {
+      const stream = canvas.captureStream(VIDEO_FPS);
+      const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8_000_000 });
+      const chunks = [];
+      rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+      rec.onstop = () => {
+        const blob = new Blob(chunks, { type: mime });
+        resolve(blob);
+      };
+      rec.onerror = (e) => reject(e.error || e);
+      rec.start();
+      setTimeout(() => { try { rec.stop(); } catch {} }, durationSec * 1000 + 100);
+    } catch (e) { reject(e); }
+  });
+}
+
+async function renderVideoBlob(asset, onProgress) {
+  const mime = preferredVideoMime();
+  if (!mime) throw new Error('MediaRecorder not supported in this browser');
+
+  const canvas = document.createElement('canvas');
+  canvas.width = asset.w; canvas.height = asset.h;
+  const ctx = canvas.getContext('2d');
+
+  // Prime with first frame
+  asset.renderFrame(ctx, asset.w, asset.h, 0);
+
+  const recPromise = recordCanvas(canvas, asset.duration, mime);
+
+  // Drive animation
+  const start = performance.now();
+  let stopped = false;
+  function tick() {
+    const elapsed = (performance.now() - start) / 1000;
+    if (elapsed >= asset.duration) { stopped = true; return; }
+    asset.renderFrame(ctx, asset.w, asset.h, elapsed);
+    if (onProgress) onProgress(elapsed / asset.duration);
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+
+  const blob = await recPromise;
+  return { blob, mime };
+}
+
+/* ========================================================================
+   STATE: selection
+   ======================================================================== */
+const selected = new Set();
+let currentFilter = 'All';
+
+/* ========================================================================
+   BUILD UI
+   ======================================================================== */
+function buildFilters() {
+  const wrap = $('filterTabs');
+  wrap.innerHTML = '';
+  const mk = (label, key) => {
+    const b = document.createElement('button');
+    b.className = 'tab' + (key === currentFilter ? ' active' : '');
+    b.textContent = label;
+    b.onclick = () => { currentFilter = key; buildFilters(); buildGrid(); };
+    wrap.appendChild(b);
+  };
+  mk(`All (${ASSETS.length})`, 'All');
+  PLATFORMS.forEach(p => mk(`${p.name} (${p.specs.length})`, p.id));
+}
+
+function buildGrid() {
+  const grid = $('grid');
+  grid.innerHTML = '';
+  const list = ASSETS.filter(a => currentFilter === 'All' || a.platform === currentFilter);
+  $('visibleCount').textContent = list.length;
+  updatePlatformBar();
+
+  for (const asset of list) {
+    const card = document.createElement('div');
+    card.className = 'card' + (selected.has(asset.id) ? ' selected' : '');
+    card.dataset.id = asset.id;
+
+    const prev = document.createElement('div');
+    prev.className = 'preview';
+    // preview aspect ratio matches asset
+    prev.style.aspectRatio = `${asset.w} / ${asset.h}`;
+
+    // Preview canvas (smaller for perf)
+    const maxPreviewW = 560;
+    const scale = Math.min(1, maxPreviewW / asset.w);
+    const pc = document.createElement('canvas');
+    pc.width = Math.round(asset.w * scale);
+    pc.height = Math.round(asset.h * scale);
+    pc.style.maxWidth = '100%'; pc.style.maxHeight = '100%';
+    prev.appendChild(pc);
+    card._previewCtx = pc.getContext('2d');
+    card._previewScale = scale;
+
+    if (asset.type === 'video') {
+      const tag = document.createElement('span');
+      tag.className = 'pill';
+      tag.textContent = 'VIDEO · ' + asset.duration + 's';
+      tag.style.position = 'absolute'; tag.style.top = '8px'; tag.style.right = '8px';
+      tag.style.background = 'rgba(0,0,0,.6)'; tag.style.color = '#fff';
+      prev.appendChild(tag);
+    }
+
+    card.appendChild(prev);
+
+    const info = document.createElement('div');
+    info.className = 'info';
+    info.innerHTML = `<div class="name"></div><div class="dims">${asset.w} × ${asset.h}${asset.type === 'video' ? ' · MP4/WebM' : ' · PNG'}</div>`;
+    info.querySelector('.name').textContent = asset.name;
+    card.appendChild(info);
+
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+    actions.innerHTML = `
+      <label class="check"><input type="checkbox" ${selected.has(asset.id) ? 'checked' : ''} /> select</label>
+      <button class="btn sm primary">Download</button>
+    `;
+    const cb = actions.querySelector('input');
+    cb.onchange = () => {
+      if (cb.checked) selected.add(asset.id); else selected.delete(asset.id);
+      card.classList.toggle('selected', cb.checked);
+      updateSelCount();
+    };
+    const dl = actions.querySelector('button');
+    dl.onclick = async () => {
+      dl.disabled = true; dl.textContent = 'Working…';
+      try {
+        await downloadAsset(asset);
+      } catch (e) { console.error(e); toast('Failed: ' + e.message); }
+      dl.disabled = false; dl.textContent = 'Download';
+    };
+    card.appendChild(actions);
+
+    grid.appendChild(card);
+
+    // Render preview
+    renderPreview(card, asset);
+  }
+  updateSelCount();
+}
+
+function updatePlatformBar() {
+  const bar = $('platformBar');
+  if (!bar) return;
+  const p = PLATFORMS.find(x => x.id === currentFilter);
+  if (!p) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  bar.innerHTML = `<b>${p.name}</b> &middot; <span style="color:var(--ink-mute)">${p.specs.length} assets</span> &middot; <a href="${p.url}" target="_blank" rel="noopener">${p.url}</a> &middot; <span style="color:var(--ink-mute)">ZIP folder: <code>${slug(p.name)}/</code></span>`;
+}
+
+function renderPreview(card, asset) {
+  const ctx = card._previewCtx;
+  const scale = card._previewScale;
+  const w = ctx.canvas.width, h = ctx.canvas.height;
+  ctx.save();
+  ctx.scale(scale, scale);
+  if (asset.type === 'video') {
+    asset.renderFrame(ctx, asset.w, asset.h, asset.duration * 0.55);
+  } else {
+    asset.render(ctx, asset.w, asset.h);
+  }
+  ctx.restore();
+}
+
+function refreshAllPreviews() {
+  document.querySelectorAll('.card').forEach(card => {
+    const id = card.dataset.id;
+    const asset = ASSETS.find(a => a.id === id);
+    if (asset) renderPreview(card, asset);
+  });
+}
+
+function updateSelCount() {
+  $('selCount').textContent = selected.size;
+}
+
+/* ========================================================================
+   DOWNLOADS
+   ======================================================================== */
+function renderToCanvas(asset) {
+  const c = document.createElement('canvas');
+  c.width = asset.w; c.height = asset.h;
+  const ctx = c.getContext('2d');
+  asset.render(ctx, asset.w, asset.h);
+  return c;
+}
+
+function canvasToBlob(canvas, type = 'image/png') {
+  return new Promise(res => canvas.toBlob(res, type, 0.95));
+}
+
+async function getAssetBlob(asset, onProgress) {
+  if (asset.type === 'video') {
+    const { blob, mime } = await renderVideoBlob(asset, onProgress);
+    const ext = mime.includes('mp4') ? 'mp4' : 'webm';
+    return { blob, ext, mime };
+  }
+  const c = renderToCanvas(asset);
+  const blob = await canvasToBlob(c, 'image/png');
+  return { blob, ext: 'png', mime: 'image/png' };
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+async function downloadAsset(asset) {
+  if (asset.type === 'video') {
+    showOverlay(`Rendering "${asset.name}"…`);
+  }
+  const { blob, ext } = await getAssetBlob(asset, (p) => setOverlay(null, p * 100));
+  downloadBlob(blob, `${fileBase()}-${asset.id}.${ext}`);
+  hideOverlay();
+  toast('Downloaded');
+}
+
+async function bulkDownload(list, asZip) {
+  if (!list.length) { toast('Nothing selected'); return; }
+  showOverlay(`Preparing ${list.length} asset${list.length === 1 ? '' : 's'}…`);
+  const total = list.length;
+
+  if (asZip) {
+    if (typeof JSZip === 'undefined') { hideOverlay(); toast('Zip library not loaded'); return; }
+    const zip = new JSZip();
+    for (let i = 0; i < list.length; i++) {
+      const asset = list[i];
+      setOverlay(`(${i + 1}/${total}) ${asset.name}`, (i / total) * 100);
+      try {
+        const { blob, ext } = await getAssetBlob(asset, (p) => {
+          setOverlay(`(${i + 1}/${total}) ${asset.name} — ${(p * 100).toFixed(0)}%`, ((i + p) / total) * 100);
+        });
+        const folder = slug(asset.platformName || asset.platform);
+        zip.file(`${folder}/${asset.id}-${slug(asset.name)}.${ext}`, blob);
+      } catch (e) {
+        console.error('Failed', asset.id, e);
+      }
+    }
+    setOverlay('Zipping…', 99);
+    const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
+    downloadBlob(zipBlob, `${fileBase()}-assets.zip`);
+    hideOverlay();
+    toast('ZIP downloaded');
+  } else {
+    for (let i = 0; i < list.length; i++) {
+      const asset = list[i];
+      setOverlay(`(${i + 1}/${total}) ${asset.name}`, (i / total) * 100);
+      try {
+        const { blob, ext } = await getAssetBlob(asset, (p) => {
+          setOverlay(`(${i + 1}/${total}) ${asset.name} — ${(p * 100).toFixed(0)}%`, ((i + p) / total) * 100);
+        });
+        downloadBlob(blob, `${fileBase()}-${asset.id}.${ext}`);
+        await new Promise(r => setTimeout(r, 250));
+      } catch (e) { console.error(e); }
+    }
+    hideOverlay();
+    toast('Done');
+  }
+}
+
+/* ========================================================================
+   PHOTO WATERMARK TOOL
+   ======================================================================== */
+const PHOTO_STATE = {
+  image: null, // HTMLImageElement
+  position: 'bc',
+  size: 12,
+  opacity: 92,
+  pad: 3,
+  bg: true,
+  style: 'badge',
+};
+
+function renderPhotoTool() {
+  const wrap = $('photoCanvasWrap');
+  if (!PHOTO_STATE.image) {
+    wrap.innerHTML = '<div class="placeholder" style="color:var(--ink-mute);padding:30px;text-align:center">Upload a photo or screenshot to brand it →</div>';
+    return;
+  }
+  const img = PHOTO_STATE.image;
+  const W = img.naturalWidth, H = img.naturalHeight;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, W, H);
+  drawWatermark(ctx, W, H, PHOTO_STATE);
+  canvas.style.maxWidth = '100%';
+  canvas.style.maxHeight = '420px';
+  wrap.innerHTML = '';
+  wrap.appendChild(canvas);
+  PHOTO_STATE._canvas = canvas;
+}
+
+function drawWatermark(ctx, W, H, S) {
+  const ink = CFG.ink;
+  ctx.save();
+  ctx.globalAlpha = S.opacity / 100;
+
+  const minDim = Math.min(W, H);
+  const padPx = (S.pad / 100) * minDim;
+
+  let wmW, wmH;
+  if (S.style === 'mark') { wmW = wmH = (S.size / 100) * minDim; }
+  else if (S.style === 'text') {
+    const fontSize = (S.size / 100) * minDim * 0.6;
+    ctx.font = `700 ${fontSize}px ${CFG.fontH}`;
+    const text = '@' + (CFG.short || CFG.name || '').toLowerCase().replace(/\s+/g, '');
+    wmW = ctx.measureText(text).width + fontSize * 0.6;
+    wmH = fontSize * 1.6;
+  }
+  else if (S.style === 'bar') {
+    wmW = W - padPx * 2;
+    wmH = (S.size / 100) * minDim * 0.9;
+  }
+  else { // badge
+    wmW = (S.size / 100) * minDim * 3.6;
+    wmH = (S.size / 100) * minDim * 1.0;
+  }
+
+  // Position
+  let x, y;
+  const pos = S.position;
+  if (pos[1] === 'l') x = padPx;
+  else if (pos[1] === 'r') x = W - padPx - wmW;
+  else x = (W - wmW) / 2;
+
+  if (pos[0] === 't') y = padPx;
+  else if (pos[0] === 'b') y = H - padPx - wmH;
+  else y = (H - wmH) / 2;
+
+  // Bar style spans full width
+  if (S.style === 'bar') {
+    x = padPx;
+    if (pos[0] === 't') y = padPx;
+    else if (pos[0] === 'b') y = H - padPx - wmH;
+    else y = (H - wmH) / 2;
+  }
+
+  // Optional dark pill background
+  if (S.bg && S.style !== 'mark') {
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    roundRect(ctx, x, y, wmW, wmH, wmH / 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  if (S.style === 'mark') {
+    drawLogoMark(ctx, x + wmW / 2, y + wmH / 2, wmW * 0.95);
+  } else if (S.style === 'text') {
+    const fontSize = wmH / 1.6;
+    ctx.fillStyle = ink;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `700 ${fontSize}px ${CFG.fontH}`;
+    const text = '@' + (CFG.short || CFG.name || '').toLowerCase().replace(/\s+/g, '');
+    ctx.fillText(text, x + wmW / 2, y + wmH / 2);
+  } else if (S.style === 'bar') {
+    // mark + name on left, site on right
+    const innerPad = wmH * 0.4;
+    const markSize = wmH * 0.65;
+    drawLogoMark(ctx, x + innerPad + markSize / 2, y + wmH / 2, markSize);
+    ctx.fillStyle = ink;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.font = `700 ${Math.round(wmH * 0.36)}px ${CFG.fontH}`;
+    ctx.fillText(CFG.name || '', x + innerPad + markSize + innerPad * 0.6, y + wmH / 2);
+    if (CFG.site) {
+      ctx.fillStyle = CFG.accent;
+      ctx.textAlign = 'right';
+      ctx.font = `600 ${Math.round(wmH * 0.32)}px ${CFG.fontB}`;
+      ctx.fillText(CFG.site, x + wmW - innerPad, y + wmH / 2);
+    }
+  } else { // badge
+    const innerPad = wmH * 0.28;
+    const markSize = wmH * 0.65;
+    drawLogoMark(ctx, x + innerPad + markSize / 2, y + wmH / 2, markSize);
+    ctx.fillStyle = ink;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.font = `700 ${Math.round(wmH * 0.32)}px ${CFG.fontH}`;
+    const txt = CFG.short || CFG.name || '';
+    ctx.fillText(txt, x + innerPad + markSize + innerPad * 0.6, y + wmH * 0.4);
+    if (CFG.site) {
+      ctx.fillStyle = hexA(ink, 0.7);
+      ctx.font = `500 ${Math.round(wmH * 0.22)}px ${CFG.fontB}`;
+      ctx.fillText(CFG.site, x + innerPad + markSize + innerPad * 0.6, y + wmH * 0.7);
+    }
+  }
+  ctx.restore();
+}
+
+/* ========================================================================
+   CONFIG WIRING
+   ======================================================================== */
+function applyConfigToForm() {
+  $('cfg-name').value = CFG.name;
+  $('cfg-short').value = CFG.short;
+  $('cfg-tagline').value = CFG.tagline;
+  $('cfg-site').value = CFG.site;
+  $('cfg-cta').value = CFG.cta;
+  $('cfg-icon').value = CFG.icon;
+  $('cfg-bg').value = CFG.bg; $('cfg-bg-pick').value = CFG.bg;
+  $('cfg-accent').value = CFG.accent; $('cfg-accent-pick').value = CFG.accent;
+  $('cfg-ink').value = CFG.ink; $('cfg-ink-pick').value = CFG.ink;
+  $('cfg-style').value = CFG.style;
+  $('cfg-font-h').value = CFG.fontH;
+  $('cfg-font-b').value = CFG.fontB;
+  updateLogoUploadUI();
+}
+
+function updateLogoUploadUI() {
+  const inner = $('logoUploadInner');
+  const wrap = $('logoUpload');
+  if (CFG.logo) {
+    wrap.classList.add('has-file');
+    inner.innerHTML = `
+      <div class="upload-preview">
+        <img src="${CFG.logo}" alt="logo preview" />
+        <div style="text-align:left">
+          <div style="color:var(--ink);font-size:13px">Custom logo loaded</div>
+          <button class="clear" id="clearLogoBtn">Remove</button>
+        </div>
+      </div>`;
+    setTimeout(() => {
+      const btn = $('clearLogoBtn');
+      if (btn) btn.onclick = (e) => {
+        e.preventDefault(); e.stopPropagation();
+        CFG.logo = null; logoImg = null; saveConfig();
+        updateLogoUploadUI(); refreshAllPreviews(); renderPhotoTool();
+      };
+    });
+  } else {
+    wrap.classList.remove('has-file');
+    inner.innerHTML = `<div>Click to upload logo</div><div class="hint" style="margin-top:4px">PNG/SVG · used when present</div>`;
+  }
+}
+
+function bindConfigForm() {
+  const tieText = (id, key) => {
+    $(id).addEventListener('input', () => {
+      CFG[key] = $(id).value;
+      saveConfig();
+      refreshAllPreviews();
+      renderPhotoTool();
+    });
+  };
+  tieText('cfg-name', 'name');
+  tieText('cfg-short', 'short');
+  tieText('cfg-tagline', 'tagline');
+  tieText('cfg-site', 'site');
+  tieText('cfg-cta', 'cta');
+  tieText('cfg-icon', 'icon');
+  tieText('cfg-font-h', 'fontH');
+  tieText('cfg-font-b', 'fontB');
+  $('cfg-style').addEventListener('change', () => { CFG.style = $('cfg-style').value; saveConfig(); refreshAllPreviews(); renderPhotoTool(); });
+
+  const tieColor = (textId, pickId, key) => {
+    $(textId).addEventListener('input', () => {
+      let v = $(textId).value.trim(); if (!v.startsWith('#')) v = '#' + v;
+      CFG[key] = v; $(pickId).value = isHex(v) ? v : $(pickId).value;
+      saveConfig(); refreshAllPreviews(); renderPhotoTool();
+    });
+    $(pickId).addEventListener('input', () => {
+      CFG[key] = $(pickId).value; $(textId).value = $(pickId).value;
+      saveConfig(); refreshAllPreviews(); renderPhotoTool();
+    });
+  };
+  tieColor('cfg-bg', 'cfg-bg-pick', 'bg');
+  tieColor('cfg-accent', 'cfg-accent-pick', 'accent');
+  tieColor('cfg-ink', 'cfg-ink-pick', 'ink');
+
+  $('cfg-logo').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const dataUrl = await readFileAsDataURL(file);
+    CFG.logo = dataUrl;
+    await loadLogoImage();
+    saveConfig();
+    updateLogoUploadUI();
+    refreshAllPreviews();
+    renderPhotoTool();
+  });
+
+  $('resetBtn').addEventListener('click', () => {
+    if (!confirm('Reset all configuration to defaults?')) return;
+    CFG = { ...DEFAULTS };
+    logoImg = null;
+    saveConfig();
+    applyConfigToForm();
+    refreshAllPreviews();
+    renderPhotoTool();
+  });
+}
+
+function isHex(v) { return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v); }
+
+function readFileAsDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+async function loadLogoImage() {
+  if (!CFG.logo) { logoImg = null; return; }
+  try { logoImg = await loadImage(CFG.logo); } catch { logoImg = null; }
+}
+
+/* ========================================================================
+   PHOTO TOOL WIRING
+   ======================================================================== */
+function bindPhotoTool() {
+  $('photoInput').addEventListener('change', async (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    const dataUrl = await readFileAsDataURL(file);
+    PHOTO_STATE.image = await loadImage(dataUrl);
+    $('photoUploadInner').textContent = file.name;
+    $('photoUpload').classList.add('has-file');
+    renderPhotoTool();
+  });
+
+  // drag/drop
+  const drop = $('photoUpload');
+  ['dragover', 'dragenter'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('has-file'); }));
+  ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); }));
+  drop.addEventListener('drop', async (e) => {
+    const file = e.dataTransfer.files[0]; if (!file) return;
+    const dataUrl = await readFileAsDataURL(file);
+    PHOTO_STATE.image = await loadImage(dataUrl);
+    $('photoUploadInner').textContent = file.name;
+    renderPhotoTool();
+  });
+
+  $('posGrid').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-pos]'); if (!b || b.disabled) return;
+    document.querySelectorAll('#posGrid button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    PHOTO_STATE.position = b.dataset.pos;
+    renderPhotoTool();
+  });
+
+  const tie = (id, key, suffix) => {
+    $(id).addEventListener('input', () => {
+      PHOTO_STATE[key] = parseFloat($(id).value);
+      if (suffix) $(id + '-val').textContent = $(id).value + suffix;
+      renderPhotoTool();
+    });
+  };
+  tie('wm-size', 'size', '%');
+  tie('wm-opacity', 'opacity', '%');
+  tie('wm-pad', 'pad', '%');
+
+  $('wm-style').addEventListener('change', () => { PHOTO_STATE.style = $('wm-style').value; renderPhotoTool(); });
+  $('wm-bg').addEventListener('change', () => { PHOTO_STATE.bg = $('wm-bg').checked; renderPhotoTool(); });
+
+  $('downloadBrandedBtn').addEventListener('click', async () => {
+    if (!PHOTO_STATE._canvas) { toast('Upload a photo first'); return; }
+    const blob = await canvasToBlob(PHOTO_STATE._canvas, 'image/png');
+    downloadBlob(blob, `${fileBase()}-branded-${Date.now()}.png`);
+    toast('Downloaded');
+  });
+}
+
+/* ========================================================================
+   INIT
+   ======================================================================== */
+async function init() {
+  applyConfigToForm();
+  await loadLogoImage();
+  bindConfigForm();
+  bindPhotoTool();
+  buildFilters();
+  buildGrid();
+
+  $('selectAllBtn').onclick = () => {
+    const list = ASSETS.filter(a => currentFilter === 'All' || a.platform === currentFilter);
+    list.forEach(a => selected.add(a.id));
+    buildGrid();
+  };
+  $('selectNoneBtn').onclick = () => { selected.clear(); buildGrid(); };
+
+  $('dlSelectedBtn').onclick = () => {
+    const list = ASSETS.filter(a => selected.has(a.id));
+    bulkDownload(list, false);
+  };
+  $('dlAllBtn').onclick = () => {
+    // If selection exists, zip selected; otherwise zip all
+    const list = selected.size ? ASSETS.filter(a => selected.has(a.id)) : ASSETS;
+    bulkDownload(list, true);
+  };
+
+  // Video capability pill
+  const mime = preferredVideoMime();
+  const pill = $('capPill');
+  if (!mime) { pill.textContent = 'video: not supported'; }
+  else if (mime.includes('mp4')) { pill.textContent = 'video: MP4 ✓'; pill.classList.add('ok'); }
+  else { pill.textContent = 'video: WebM ✓'; pill.classList.add('ok'); }
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

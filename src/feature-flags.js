@@ -159,8 +159,10 @@ const DEFAULT_FLAGS = {
   },
 };
 
-let cachedFlags = null;
-let lastFetch = 0;
+// Check for server-injected flags first (avoids an extra HTTP request on load)
+let cachedFlags = typeof window !== "undefined" && window.__CONTROL_FLAGS__ ? window.__CONTROL_FLAGS__ : null;
+// If we have injected flags, treat them as freshly fetched.
+let lastFetch = cachedFlags ? Date.now() : 0;
 let knownVersion = null;        // last `version` we saw from /api/control-version
 let versionPollTimer = null;    // setInterval handle
 

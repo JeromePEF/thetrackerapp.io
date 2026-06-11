@@ -164,16 +164,19 @@ function resolveMessagingServices(flags) {
   };
 }
 
-function buildInjection(messagingServices) {
+function buildInjection(messagingServices, flags) {
   const preloadLinks = PRELOAD_SVGS.map(
     (file) => `<link rel="preload" as="image" href="/SVGS/${file}" />`,
   ).join("\n    ");
-  const json = JSON.stringify(messagingServices);
+  const msgJson = JSON.stringify(messagingServices);
+  // Inject the full upstream flags object so the client doesn't need to
+  // make an extra round-trip to /api/control on initial page load.
+  const flagsJson = JSON.stringify(flags || {});
   // The script is a plain (non-module) inline script so it runs BEFORE the
   // deferred <script type="module" src=".../main.js"> below it. That means
-  // `window.__MESSAGING_SERVICES__` is guaranteed to exist by the time
-  // main.js's first line executes.
-  const inlineScript = `<script>window.__MESSAGING_SERVICES__=${json};</script>`;
+  // `window.__MESSAGING_SERVICES__` and `window.__CONTROL_FLAGS__` are
+  // guaranteed to exist by the time main.js's first line executes.
+  const inlineScript = `<script>window.__MESSAGING_SERVICES__=${msgJson}; window.__CONTROL_FLAGS__=${flagsJson};</script>`;
   return `    ${preloadLinks}\n    ${inlineScript}\n  `;
 }
 
@@ -197,7 +200,7 @@ export default async function handler(req, res) {
 
   const flags = await fetchUpstreamFlags();
   const messagingServices = resolveMessagingServices(flags);
-  const injection = buildInjection(messagingServices);
+  const injection = buildInjection(messagingServices, flags);
 
   // Insert before `</head>`. If the marker isn't found (shouldn't happen
   // with a sane Vite build), just append at the end of the document so we
