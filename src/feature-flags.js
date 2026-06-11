@@ -10,9 +10,9 @@
 // avoids repeated fetches across navigations within a single session while
 // allowing flag changes to propagate quickly once the edge refreshes.
 
-const CONTROL_API_URL = "/api/control";
+const CONTROL_API_URL = "https://api.thetrackerapp.io/control";
 const CACHE_KEY = "tracker.featureFlags";
-const CACHE_TTL = 60 * 1000; // 60 seconds (Vercel edge handles longer caching)
+const CACHE_TTL = 30 * 1000; // 30 seconds for live data freshness
 
 // Default flags (fallback if API unavailable)
 // SAFE-BY-DEFAULT: this is what the frontend uses when fetchFeatureFlags()
@@ -160,7 +160,13 @@ const DEFAULT_FLAGS = {
 };
 
 // Check for server-injected flags first (avoids an extra HTTP request on load)
-let cachedFlags = typeof window !== "undefined" && window.__CONTROL_FLAGS__ ? window.__CONTROL_FLAGS__ : null;
+let injectedFlags = typeof window !== "undefined" && window.__CONTROL_FLAGS__ ? window.__CONTROL_FLAGS__ : null;
+// If the injected flags don't have the expected data (e.g. server fetch failed
+// and it injected an empty object), treat it as a miss so the client fetches directly.
+if (injectedFlags && Object.keys(injectedFlags).length === 0) {
+  injectedFlags = null;
+}
+let cachedFlags = injectedFlags;
 // If we have injected flags, treat them as freshly fetched.
 let lastFetch = cachedFlags ? Date.now() : 0;
 let knownVersion = null;        // last `version` we saw from /api/control-version
@@ -285,12 +291,32 @@ export function getCachedFlags() {
   return cachedFlags;
 }
 
-export async function fetchFeatureFlags() {
+export async function fetchFeatureFlags(forceRefresh = false) {
   const now = Date.now();
 
-  // Check memory cache
-  if (cachedFlags && now - lastFetch < CACHE_TTL) {
+  // Check memory cache. Subtract a small buffer (500ms) to ensure
+  // setIntervals of 30s don't accidentally hit the cache if they fire a
+  // few ms early.
+  if (!forceRefresh && cachedFlags && now - lastFetch < (CACHE_TTL - 500)) {
     return cachedFlags;
+  }
+
+  // Check localStorage cache
+  if (!forceRefresh) {
+    try {
+      const stored = localStorage.getItem(CACHE_KEY);
+      if (stored) {
+        const { flags, timestamp, version } = JSON.parse(stored);
+        if (now - timestamp < CACHE_TTL) {
+          cachedFlags = flags;
+          lastFetch = timestamp;
+          if (version && !knownVersion) knownVersion = version;
+          return flags;
+        }
+      }
+    } catch (e) {
+      // ignore parse errors
+    }
   }
 
   // Check localStorage cache
