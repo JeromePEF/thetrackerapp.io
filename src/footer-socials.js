@@ -153,9 +153,8 @@ export async function initFooterSocials() {
   if (bootstrapped) return;
   bootstrapped = true;
   try {
-    const res = await fetch("/api/control", { headers: { Accept: "application/json" } });
-    if (!res.ok) return;
-    const data = await res.json();
+    const { fetchFeatureFlags } = await import("./feature-flags.js");
+    const data = await fetchFeatureFlags();
     applyFooterSocials(data?.socials);
   } catch {
     /* silent – socials are a nice-to-have */

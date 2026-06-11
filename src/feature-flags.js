@@ -336,19 +336,18 @@ export async function fetchFeatureFlags(forceRefresh = false) {
   }
 
   // Learn the current version first so we can cache-bust correctly.
-  if (!knownVersion) {
+  // We ONLY await this if it's a background poll or forceRefresh. On initial
+  // load, we want to fetch the flags as fast as possible without an extra
+  // round-trip to the Vercel proxy.
+  if (!knownVersion && forceRefresh) {
     knownVersion = await fetchControlVersion();
   }
 
-  // Fetch from API. The same-origin /api/control hits the Vercel server-side
-  // proxy which fetches https://api.thetrackerapp.io/control. When that
-  // server-side fetch is blocked (Cloudflare WAF returns 403 to Vercel's
-  // IPs), the proxy returns FALLBACK_FLAGS with header `x-control-source:
-  // fallback`. In that case we attempt a direct-from-browser fetch since
-  // real-user browsers usually clear Cloudflare's bot challenge.
+  // Fetch directly from upstream API. The browser usually clears CF bot checks.
   let flags = null;
   try {
-    const response = await fetch(controlUrlForVersion(knownVersion), {
+    const fetchUrl = forceRefresh ? controlUrlForVersion(knownVersion) : CONTROL_API_URL;
+    const response = await fetch(fetchUrl, {
       method: "GET",
       headers: {
         Accept: "application/json",
@@ -360,31 +359,6 @@ export async function fetchFeatureFlags(forceRefresh = false) {
     }
 
     flags = await response.json();
-
-    // Proxy is serving fallback (upstream unreachable from Vercel). Try a
-    // direct browser fetch — real users carry CF bot-check cookies + a
-    // browser UA so this usually succeeds even when the proxy can't.
-    const source = response.headers.get("x-control-source");
-    if (source === "fallback") {
-      try {
-        const direct = await fetch("https://api.thetrackerapp.io/control", {
-          method: "GET",
-          headers: { Accept: "application/json" },
-          cache: "no-store",
-          credentials: "omit",
-        });
-        if (direct.ok) {
-          const directFlags = await direct.json();
-          if (directFlags && typeof directFlags === "object") {
-            flags = directFlags;
-          }
-        }
-      } catch (e) {
-        // Direct upstream also unreachable. Keep the fallback flags — they're
-        // safe-by-default so the page just hides gated content.
-        console.warn("control direct upstream also unavailable:", e?.message || e);
-      }
-    }
 
     cachedFlags = flags;
     lastFetch = now;
