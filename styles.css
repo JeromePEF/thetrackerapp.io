@@ -3476,3 +3476,31 @@ footer { position: relative; }
     margin-top: 0.1rem !important;
   }
 }
+
+/* FLOATING DELTA SMOKE EFFECT */
+.floating-delta {
+  color: #38ffd3;
+  font-weight: bold;
+  font-size: 0.9em;
+  pointer-events: none;
+  animation: smoke-up 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  z-index: 100;
+  white-space: nowrap;
+  text-shadow: 0 0 8px rgba(56, 255, 211, 0.6);
+}
+
+@keyframes smoke-up {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-25px) scale(1.1) translateX(5px);
+    filter: blur(2px);
+  }
+}

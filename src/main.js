@@ -1076,12 +1076,43 @@ function setStatsLink(linkEl, metricSheetUrl, masterSheetUrl) {
   }
 }
 
+function spawnFloatingDelta(target, formattedDelta) {
+  const floater = document.createElement("span");
+  floater.className = "floating-delta";
+  floater.textContent = `+${formattedDelta}`;
+  
+  const parent = target.parentElement;
+  if (parent) {
+    parent.style.position = "relative";
+    floater.style.position = "absolute";
+    floater.style.left = "calc(100% + 6px)";
+    floater.style.bottom = "0";
+    
+    parent.appendChild(floater);
+    
+    setTimeout(() => {
+      if (floater.parentElement) {
+        floater.parentElement.removeChild(floater);
+      }
+    }, 1500);
+  }
+}
+
 function setCounterValue(target, value) {
   if (!target) {
     return;
   }
 
-  target.textContent = formatNumber(value || 0);
+  const newVal = value || 0;
+  const prevVal = target.dataset.prevValue ? parseFloat(target.dataset.prevValue) : newVal;
+
+  if (newVal > prevVal) {
+    const delta = newVal - prevVal;
+    spawnFloatingDelta(target, formatNumber(delta));
+  }
+
+  target.dataset.prevValue = newVal;
+  target.textContent = formatNumber(newVal);
 }
 
 function setCounterValueWithDecimals(target, value, fractionDigits = 1) {
@@ -1089,7 +1120,16 @@ function setCounterValueWithDecimals(target, value, fractionDigits = 1) {
     return;
   }
 
-  target.textContent = formatDecimal(typeof value === "number" ? value : toNumber(value), fractionDigits);
+  const newVal = typeof value === "number" ? value : toNumber(value);
+  const prevVal = target.dataset.prevValue ? parseFloat(target.dataset.prevValue) : newVal;
+
+  if (newVal > prevVal) {
+    const delta = newVal - prevVal;
+    spawnFloatingDelta(target, formatDecimal(delta, fractionDigits));
+  }
+
+  target.dataset.prevValue = newVal;
+  target.textContent = formatDecimal(newVal, fractionDigits);
 }
 
 function applyUserLiveMetrics(liveMetrics) {
@@ -3139,3 +3179,27 @@ initOnboardingGuide();
 init();
 initFeatureSections();
 handleLiveFeedVisibility();
+
+
+window.simulateStatsIncrease = function() {
+  const targets = [
+    { id: "usersTodayCount", isDec: false, bump: 1 },
+    { id: "usersWeekCount", isDec: false, bump: 1 },
+    { id: "workoutsLoggedCount", isDec: false, bump: Math.floor(Math.random() * 3) + 1 },
+    { id: "caloriesTrackedCount", isDec: false, bump: Math.floor(Math.random() * 500) + 100 },
+    { id: "gallonsDrankCount", isDec: true, bump: +(Math.random() * 0.5).toFixed(1) }
+  ];
+  
+  targets.forEach(t => {
+    const el = document.getElementById(t.id);
+    if (el && el.dataset.prevValue !== undefined) {
+      const current = parseFloat(el.dataset.prevValue);
+      if (t.isDec) {
+        setCounterValueWithDecimals(el, current + t.bump, 1);
+      } else {
+        setCounterValue(el, current + t.bump);
+      }
+    }
+  });
+  console.log("Simulated stat increase!");
+};
