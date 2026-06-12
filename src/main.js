@@ -1062,6 +1062,7 @@ function normalizeLeaderboardEntry(entry) {
     exercise,
     name: splitLine?.left || `${emoji ? `${emoji} ` : ""}${name}`,
     value: lineValue,
+    rank: entry?.rank,
   };
 }
 
@@ -1640,7 +1641,7 @@ function renderLeaderboard(entries) {
       const displayValue = convertUnitValueLabel(normalized.value || "-") || "-";
       const displayExercise = normalized.exercise || "N/A";
       return `<li>
-        <span class="leaderboard-cell leaderboard-cell-rank leaderboard-rank">#${index + 1}</span>
+        <span class="leaderboard-cell leaderboard-cell-rank leaderboard-rank">#${normalized.rank || 1}</span>
         <span class="leaderboard-cell leaderboard-cell-exercise leaderboard-user">${escapeHtml(displayExercise)}</span>
         <span class="leaderboard-cell leaderboard-cell-name leaderboard-user">${escapeHtml(displayName)}</span>
         <span class="leaderboard-cell leaderboard-cell-value leaderboard-score">${escapeHtml(displayValue)}</span>
@@ -1668,7 +1669,7 @@ function renderGroupLeaderboard(entries) {
       const displayValue = convertUnitValueLabel(normalized.value || "-") || "-";
       const displayExercise = normalized.exercise || "N/A";
       return `<li>
-        <span class="leaderboard-cell leaderboard-cell-rank leaderboard-rank">#${index + 1}</span>
+        <span class="leaderboard-cell leaderboard-cell-rank leaderboard-rank">#${normalized.rank || 1}</span>
         <span class="leaderboard-cell leaderboard-cell-exercise leaderboard-user">${escapeHtml(displayExercise)}</span>
         <span class="leaderboard-cell leaderboard-cell-name leaderboard-user">${escapeHtml(displayName)}</span>
         <span class="leaderboard-cell leaderboard-cell-value leaderboard-score">${escapeHtml(displayValue)}</span>
@@ -1681,19 +1682,19 @@ function renderGroupLeaderboard(entries) {
 }
 
 function renderStreakLeaderboard(entries) {
-  latestStreakEntries = Array.isArray(entries) ? entries : [];
+  latestStreakEntries = Array.isArray(entries) ? entries.slice(0, 5) : [];
 
   if (!els.streakLeaderboardList) {
     return;
   }
 
-  if (!entries.length) {
+  if (!latestStreakEntries.length) {
     els.streakLeaderboardList.innerHTML = "";
     setStatus(els.streakLeaderboardState, "No streak rows yet.", "");
     return;
   }
 
-  els.streakLeaderboardList.innerHTML = entries
+  els.streakLeaderboardList.innerHTML = latestStreakEntries
     .map((entry, index) => {
       const normalized = normalizeLeaderboardEntry(entry);
       const displayName = normalized.name || "No data";
