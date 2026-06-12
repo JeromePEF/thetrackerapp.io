@@ -1945,6 +1945,15 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
     grid-row: 1;
   }
 
+  .header-logo .logo-icon {
+    width: 26px !important;
+    height: 26px !important;
+  }
+
+  .header-logo .logo-text-svg {
+    font-size: 16px !important;
+  }
+
   .app-links {
     display: none;
   }
