@@ -1435,7 +1435,6 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
   width: 100%;
   align-items: flex-start;
   gap: 0.55rem;
-  /* Bumped from 0.78 → 0.95rem for clarity at scaled viewports. */
   font-size: 0.95rem;
   line-height: 1.4;
   color: #d7e4f4;
@@ -1521,7 +1520,8 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
   display: block;
   line-height: 1.4;
   word-wrap: break-word;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word; /* Let it break cleanly without bleeding out */
+  max-width: 100%;
 }
 .consent-row-text a {
   color: #38ffd3;
@@ -1932,14 +1932,17 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
   }
 
   .header-row {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 1fr auto;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.5rem 0.25rem;
   }
 
   .header-logo {
     display: flex !important;
+    margin-left: -0.25rem; /* Slight nudge left */
+    grid-column: 1;
+    grid-row: 1;
   }
 
   .app-links {
@@ -1947,13 +1950,19 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
   }
 
   .header-stats {
-    display: none;
+    display: flex !important;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: flex-start;
+    gap: 0.4rem;
   }
 
   .header-auth {
     display: flex !important;
     align-items: center;
     gap: 0.5rem;
+    grid-column: 2;
+    grid-row: 1;
   }
   
   .login-link {
