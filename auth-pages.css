@@ -21,7 +21,6 @@ html,
 body {
   margin: 0;
   min-height: 100%;
-  overflow-x: hidden;
 }
 
 body {
@@ -32,9 +31,10 @@ body {
 
 .auth-shell,
 .dashboard-shell {
-  width: min(1180px, calc(100% - 1.5rem));
+  width: 100%;
+  max-width: 1180px;
   margin: 0 auto;
-  padding: 1rem 0 1.5rem;
+  padding: 1rem 0.75rem 1.5rem;
 }
 
 .auth-top-nav {
@@ -42,6 +42,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .auth-brand {
@@ -563,6 +564,7 @@ a:focus-visible {
 }
 
 .dashboard-layout {
+  min-width: 0;
   margin-top: 0.9rem;
   display: grid;
   grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
@@ -617,6 +619,7 @@ a:focus-visible {
 }
 
 .dashboard-content {
+  min-width: 0;
   min-height: 520px;
 }
 
@@ -1413,7 +1416,7 @@ a:focus-visible {
 
 @media (max-width: 520px) {
   .auth-top-nav {
-    flex-wrap: nowrap;
+    flex-wrap: wrap; /* allow wrapping to avoid blow-outs on small phones */
     gap: 0.4rem;
   }
 
@@ -1485,7 +1488,7 @@ body.dashboard-page {
 
 body.login-page .auth-shell,
 body.dashboard-page .dashboard-shell {
-  width: min(1240px, calc(100% - 1.5rem));
+  max-width: 1240px;
 }
 
 body.login-page .auth-brand,
@@ -2154,4 +2157,10 @@ body.dashboard-page .integration-card .panel-actions {
   body.dashboard-page .account-edit-row {
     grid-template-columns: 1fr;
   }
+}
+.dashboard-sidebar,
+.dashboard-content,
+.dashboard-panel {
+  min-width: 0;
+  max-width: 100%;
 }
