@@ -3454,7 +3454,9 @@ footer { position: relative; }
 
 @media (max-width: 640px) {
   .site-header .container.header-row {
-    padding: 0 0.5rem !important;
+    padding: 0 0.5rem 0 0.2rem !important; /* Small gap on right, tighter on left */
+    width: 100% !important;
+    max-width: 100% !important;
   }
   
   .consent-row {

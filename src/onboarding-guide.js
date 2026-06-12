@@ -16,7 +16,7 @@ export function initOnboardingGuide() {
   arrow.id = "onboardingGuideArrow";
   arrow.innerHTML = `
     <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
-      <path d="M35,10 L65,10 L65,60 L85,60 L50,95 L15,60 L35,60 Z" fill="rgba(255, 0, 0, 0.85)" stroke="red" stroke-width="2" stroke-linejoin="miter"/>
+      <path d="M42,10 L58,10 L58,65 L75,65 L50,95 L25,65 L42,65 Z" fill="rgba(255, 0, 0, 0.85)" stroke="red" stroke-width="1.5" stroke-linejoin="miter"/>
     </svg>
   `;
   document.body.appendChild(arrow);
@@ -47,6 +47,11 @@ export function initOnboardingGuide() {
   let currentState = 'identity'; // 'identity', 'consent', 'submit', 'done'
 
   function updateGuide() {
+    const serviceSelect = document.getElementById("serviceSelect");
+    if (serviceSelect && serviceSelect.value === "telegram") {
+      hideGuide();
+      return;
+    }
     if (currentState === 'identity') {
       positionGuide(identityInput);
     } else if (currentState === 'consent') {
@@ -64,6 +69,12 @@ export function initOnboardingGuide() {
 
   // Initial display
   setTimeout(updateGuide, 500); // Wait for layout to settle
+
+  // Add listener for service selection to hide guide for Telegram
+  const serviceSelect = document.getElementById("serviceSelect");
+  if (serviceSelect) {
+    serviceSelect.addEventListener("change", updateGuide);
+  }
 
   // Event listeners to progress the state
   identityInput.addEventListener("focus", () => {
@@ -142,19 +153,32 @@ window.fetch = async function(...args) {
 
       // Fake progress
       let currentPercent = 0;
-      const interval = setInterval(() => {
-        if (currentPercent < 90) {
-          currentPercent += Math.floor(Math.random() * 15) + 5;
-          if (currentPercent > 90) currentPercent = 90;
-          percentText.textContent = `${currentPercent}%`;
+      let lastTime = performance.now();
+      let animFrame;
+
+      function updateProgress(time) {
+        const delta = time - lastTime;
+        lastTime = time;
+
+        if (currentPercent < 99) {
+          // Slow down as it approaches 99
+          const remaining = 99 - currentPercent;
+          const speed = Math.max(0.005, remaining * 0.002); // percent per ms
+          currentPercent += speed * delta;
+          if (currentPercent > 99) currentPercent = 99;
+          
+          const displayPercent = Math.floor(currentPercent);
+          percentText.textContent = `${displayPercent}%`;
           progress.style.strokeDashoffset = 283 - (283 * currentPercent) / 100;
+          animFrame = requestAnimationFrame(updateProgress);
         }
-      }, 200);
+      }
+      animFrame = requestAnimationFrame(updateProgress);
 
       try {
         const response = await originalFetch.apply(this, args);
         
-        clearInterval(interval);
+        cancelAnimationFrame(animFrame);
         
         if (response.ok) {
           currentPercent = 100;
@@ -183,7 +207,7 @@ window.fetch = async function(...args) {
         
         return response;
       } catch (e) {
-        clearInterval(interval);
+        cancelAnimationFrame(animFrame);
         overlay.style.display = "none";
         throw e;
       }
