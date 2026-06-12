@@ -4,6 +4,7 @@ export function initOnboardingGuide() {
   const consentCheckbox = document.getElementById("consentCheckbox");
   const submitButton = document.getElementById("signupSubmitButton");
   const form = document.getElementById("signupForm");
+  const statusEl = document.getElementById("signupStatus");
 
   if (!identityInput || !consentWrap || !consentCheckbox || !submitButton || !form) return;
 
@@ -16,7 +17,7 @@ export function initOnboardingGuide() {
   arrow.id = "onboardingGuideArrow";
   arrow.innerHTML = `
     <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
-      <path d="M42,10 L58,10 L58,65 L75,65 L50,95 L25,65 L42,65 Z" fill="rgba(255, 0, 0, 0.85)" stroke="red" stroke-width="1.5" stroke-linejoin="miter"/>
+      <path d="M50,15 L50,85 M30,65 L50,85 L70,65" fill="none" stroke="red" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 0 4px red);" />
     </svg>
   `;
   document.body.appendChild(arrow);
@@ -65,12 +66,10 @@ export function initOnboardingGuide() {
 
   // Update position on resize and scroll
   window.addEventListener("resize", updateGuide);
-  // Optional: window.addEventListener("scroll", updateGuide);
 
   // Initial display
   setTimeout(updateGuide, 500); // Wait for layout to settle
 
-  // Add listener for service selection to hide guide for Telegram
   const serviceSelect = document.getElementById("serviceSelect");
   if (serviceSelect) {
     serviceSelect.addEventListener("change", updateGuide);
@@ -116,7 +115,7 @@ export function initOnboardingGuide() {
         <svg class="onboarding-circle" viewBox="0 0 100 100">
           <circle class="onboarding-circle-bg" cx="50" cy="50" r="45"></circle>
           <circle class="onboarding-circle-progress" cx="50" cy="50" r="45"></circle>
-          </svg>
+        </svg>
         <svg class="onboarding-checkmark-svg" viewBox="0 0 100 100" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%;">
           <path class="onboarding-checkmark" d="M30 50 L45 65 L70 35" fill="none" stroke="#00ff00" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" style="stroke-dasharray: 100; stroke-dashoffset: 100;"></path>
         </svg>
@@ -126,93 +125,105 @@ export function initOnboardingGuide() {
     </div>
   `;
   document.body.appendChild(overlay);
-}
 
-// Hook into the global fetch to show/hide loading animation for /api/onboarding or /signup
-const originalFetch = window.fetch;
-window.fetch = async function(...args) {
-  const url = args[0];
-  const isSignup = typeof url === 'string' && (url.includes('/api/onboarding') || url.includes('/signup') || url.includes('/api/welcome'));
-  
-  if (isSignup && args[1] && args[1].method === 'POST') {
-    const overlay = document.getElementById("onboardingLoadingOverlay");
-    const progress = document.querySelector(".onboarding-circle-progress");
-    const percentText = document.querySelector(".onboarding-percentage");
-    const checkmark = document.querySelector(".onboarding-checkmark");
-    const loadingText = document.querySelector(".onboarding-loading-text");
-    
-    if (overlay && progress && percentText && checkmark) {
-      overlay.style.display = "flex";
-      document.querySelector(".onboarding-checkmark-svg").style.display = "none";
-      progress.style.display = "block";
-      progress.style.strokeDasharray = "283"; // 2 * pi * 45
-      progress.style.strokeDashoffset = "283";
-      percentText.style.display = "block";
-      percentText.textContent = "0%";
-      loadingText.textContent = "Submitting...";
+  // --- Loading Animation Logic using MutationObserver on #signupStatus ---
+  let currentPercent = 0;
+  let lastTime = 0;
+  let animFrame = null;
+  let isAnimating = false;
 
-      // Fake progress
-      let currentPercent = 0;
-      let lastTime = performance.now();
-      let animFrame;
+  const progressRing = overlay.querySelector(".onboarding-circle-progress");
+  const percentText = overlay.querySelector(".onboarding-percentage");
+  const checkmarkSvg = overlay.querySelector(".onboarding-checkmark-svg");
+  const checkmarkPath = overlay.querySelector(".onboarding-checkmark");
+  const loadingText = overlay.querySelector(".onboarding-loading-text");
 
-      function updateProgress(time) {
-        const delta = time - lastTime;
-        lastTime = time;
+  function updateProgress(time) {
+    if (!lastTime) lastTime = time;
+    const delta = time - lastTime;
+    lastTime = time;
 
-        if (currentPercent < 99) {
-          // Slow down as it approaches 99
-          const remaining = 99 - currentPercent;
-          const speed = Math.max(0.005, remaining * 0.002); // percent per ms
-          currentPercent += speed * delta;
-          if (currentPercent > 99) currentPercent = 99;
-          
-          const displayPercent = Math.floor(currentPercent);
-          percentText.textContent = `${displayPercent}%`;
-          progress.style.strokeDashoffset = 283 - (283 * currentPercent) / 100;
-          animFrame = requestAnimationFrame(updateProgress);
-        }
-      }
+    if (currentPercent < 99) {
+      const remaining = 99 - currentPercent;
+      const speed = Math.max(0.002, remaining * 0.0015); // continuous slow down
+      currentPercent += speed * delta;
+      if (currentPercent > 99) currentPercent = 99;
+      
+      const displayPercent = Math.floor(currentPercent);
+      percentText.textContent = `${displayPercent}%`;
+      progressRing.style.strokeDashoffset = 283 - (283 * currentPercent) / 100;
       animFrame = requestAnimationFrame(updateProgress);
-
-      try {
-        const response = await originalFetch.apply(this, args);
-        
-        cancelAnimationFrame(animFrame);
-        
-        if (response.ok) {
-          currentPercent = 100;
-          percentText.textContent = "100%";
-          progress.style.strokeDashoffset = 0;
-          
-          setTimeout(() => {
-            progress.style.display = "none";
-            percentText.style.display = "none";
-            document.querySelector(".onboarding-checkmark-svg").style.display = "block";
-            loadingText.textContent = "Success!";
-            
-            // Draw checkmark animation
-            checkmark.animate([
-              { strokeDasharray: "100", strokeDashoffset: "100" },
-              { strokeDashoffset: "0" }
-            ], { duration: 500, fill: "forwards" });
-
-            setTimeout(() => {
-              overlay.style.display = "none";
-            }, 2000);
-          }, 300);
-        } else {
-          overlay.style.display = "none";
-        }
-        
-        return response;
-      } catch (e) {
-        cancelAnimationFrame(animFrame);
-        overlay.style.display = "none";
-        throw e;
-      }
     }
   }
-  
-  return originalFetch.apply(this, args);
-};
+
+  function startLoading() {
+    if (isAnimating) return;
+    isAnimating = true;
+    
+    currentState = 'done';
+    updateGuide();
+
+    overlay.style.display = "flex";
+    checkmarkSvg.style.display = "none";
+    progressRing.style.display = "block";
+    progressRing.style.strokeDasharray = "283";
+    progressRing.style.strokeDashoffset = "283";
+    percentText.style.display = "block";
+    percentText.textContent = "0%";
+    loadingText.textContent = "Submitting...";
+
+    currentPercent = 0;
+    lastTime = 0;
+    animFrame = requestAnimationFrame(updateProgress);
+  }
+
+  function finishLoadingSuccess() {
+    if (!isAnimating) return;
+    cancelAnimationFrame(animFrame);
+    currentPercent = 100;
+    percentText.textContent = "100%";
+    progressRing.style.strokeDashoffset = 0;
+    
+    setTimeout(() => {
+      progressRing.style.display = "none";
+      percentText.style.display = "none";
+      checkmarkSvg.style.display = "block";
+      loadingText.textContent = "Success!";
+      
+      checkmarkPath.animate([
+        { strokeDashoffset: "100" },
+        { strokeDashoffset: "0" }
+      ], { duration: 500, fill: "forwards" });
+
+      setTimeout(() => {
+        overlay.style.display = "none";
+        isAnimating = false;
+      }, 2000);
+    }, 300);
+  }
+
+  function stopLoadingError() {
+    if (!isAnimating) return;
+    cancelAnimationFrame(animFrame);
+    overlay.style.display = "none";
+    isAnimating = false;
+  }
+
+  if (statusEl) {
+    const observer = new MutationObserver(() => {
+      const text = statusEl.textContent || "";
+      const isError = statusEl.classList.contains("error");
+      const isSuccess = statusEl.classList.contains("success");
+
+      if (text.includes("Submitting signup")) {
+        startLoading();
+      } else if (isSuccess || text.includes("Signup sent")) {
+        finishLoadingSuccess();
+      } else if (isError) {
+        stopLoadingError();
+      }
+    });
+
+    observer.observe(statusEl, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+  }
+}

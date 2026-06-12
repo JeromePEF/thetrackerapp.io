@@ -3453,8 +3453,12 @@ footer { position: relative; }
 }
 
 @media (max-width: 640px) {
+  .site-header {
+    padding-right: 0.2rem !important;
+    padding-left: 0.2rem !important;
+  }
   .site-header .container.header-row {
-    padding: 0 0.5rem 0 0.2rem !important; /* Small gap on right, tighter on left */
+    padding: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
   }
