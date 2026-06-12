@@ -15,13 +15,13 @@ export function initOnboardingGuide() {
   const arrow = document.createElement("div");
   arrow.id = "onboardingGuideArrow";
   arrow.innerHTML = `
-    <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-      <path d="M10,10 L90,90 M70,90 L90,90 L90,70" stroke="red" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+      <path d="M35,10 L65,10 L65,60 L85,60 L50,95 L15,60 L35,60 Z" fill="rgba(255, 0, 0, 0.85)" stroke="red" stroke-width="2" stroke-linejoin="miter"/>
     </svg>
   `;
   document.body.appendChild(arrow);
 
-  function positionGuide(targetEl, offsetArrowX = 0, offsetArrowY = 0) {
+  function positionGuide(targetEl) {
     if (!targetEl) return;
     const rect = targetEl.getBoundingClientRect();
     const scrollY = window.scrollY || window.pageYOffset;
@@ -34,9 +34,9 @@ export function initOnboardingGuide() {
     guideBox.style.height = `${rect.height + 10}px`;
 
     arrow.style.display = "block";
-    // Point arrow from top-left to the element
-    arrow.style.top = `${rect.top + scrollY - 80 + offsetArrowY}px`;
-    arrow.style.left = `${rect.left + scrollX - 80 + offsetArrowX}px`;
+    // Point arrow from top center to the element
+    arrow.style.top = `${rect.top + scrollY - 65}px`;
+    arrow.style.left = `${rect.left + scrollX + (rect.width / 2) - 30}px`;
   }
 
   function hideGuide() {
@@ -48,11 +48,11 @@ export function initOnboardingGuide() {
 
   function updateGuide() {
     if (currentState === 'identity') {
-      positionGuide(identityInput, 0, -20);
+      positionGuide(identityInput);
     } else if (currentState === 'consent') {
-      positionGuide(consentWrap, 20, -10);
+      positionGuide(consentCheckbox);
     } else if (currentState === 'submit') {
-      positionGuide(submitButton, 50, -10);
+      positionGuide(submitButton);
     } else {
       hideGuide();
     }
@@ -105,7 +105,9 @@ export function initOnboardingGuide() {
         <svg class="onboarding-circle" viewBox="0 0 100 100">
           <circle class="onboarding-circle-bg" cx="50" cy="50" r="45"></circle>
           <circle class="onboarding-circle-progress" cx="50" cy="50" r="45"></circle>
-          <path class="onboarding-checkmark" d="M30 50 L45 65 L70 35" fill="none" stroke="#00ff00" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" style="display:none;"></path>
+          </svg>
+        <svg class="onboarding-checkmark-svg" viewBox="0 0 100 100" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%;">
+          <path class="onboarding-checkmark" d="M30 50 L45 65 L70 35" fill="none" stroke="#00ff00" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" style="stroke-dasharray: 100; stroke-dashoffset: 100;"></path>
         </svg>
         <div class="onboarding-percentage">0%</div>
       </div>
@@ -130,7 +132,7 @@ window.fetch = async function(...args) {
     
     if (overlay && progress && percentText && checkmark) {
       overlay.style.display = "flex";
-      checkmark.style.display = "none";
+      document.querySelector(".onboarding-checkmark-svg").style.display = "none";
       progress.style.display = "block";
       progress.style.strokeDasharray = "283"; // 2 * pi * 45
       progress.style.strokeDashoffset = "283";
@@ -162,7 +164,7 @@ window.fetch = async function(...args) {
           setTimeout(() => {
             progress.style.display = "none";
             percentText.style.display = "none";
-            checkmark.style.display = "block";
+            document.querySelector(".onboarding-checkmark-svg").style.display = "block";
             loadingText.textContent = "Success!";
             
             // Draw checkmark animation
