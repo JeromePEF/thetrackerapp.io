@@ -16,11 +16,16 @@
   box-sizing: border-box;
 }
 
+html, body {
+  overflow: auto !important;
+  height: auto !important;
+  min-height: 100vh !important;
+}
+
 body {
   font-family: "Space Grotesk", sans-serif;
   background: var(--bg);
   color: var(--text);
-  min-height: 100vh;
 }
 
 #pricingApp {
@@ -581,23 +586,23 @@ body {
    single-row layout still differentiates them visually. */
 .pricing-card-premium,
 .pricing-card[data-tier-type="premium"] {
-  border-color: rgba(186, 104, 200, 0.32);
+  border-color: rgba(255, 51, 51, 0.32);
 }
 
 .pricing-card-premium .price-amount,
 .pricing-card[data-tier-type="premium"] .price-amount {
-  color: #d68ee0;
+  color: #ff5555;
 }
 
 .pricing-card-premium.pricing-card-featured,
 .pricing-card[data-tier-type="premium"].pricing-card-featured {
-  border-color: rgba(186, 104, 200, 0.6);
-  box-shadow: 0 14px 40px rgba(186, 104, 200, 0.22);
+  border-color: rgba(255, 51, 51, 0.6);
+  box-shadow: 0 14px 40px rgba(255, 51, 51, 0.22);
 }
 
 .pricing-card-premium .featured-badge,
 .pricing-card[data-tier-type="premium"] .featured-badge {
-  background: linear-gradient(135deg, #ba68c8, #7b1fa2);
+  background: linear-gradient(135deg, #ff5555, #cc0000); color: #fff;
 }
 
 /* Skeleton shown briefly before /api/control resolves */
