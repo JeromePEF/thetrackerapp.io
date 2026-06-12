@@ -3,6 +3,7 @@ import { inject } from "@vercel/analytics";
 import { initGoogleAnalytics } from "./google-analytics.js";
 import { attachRefToPayload, captureRefFromUrl } from "./affiliate-ref.js";
 import { fetchFeatureFlags, applyFeatureFlags } from "./feature-flags.js";
+import { initOnboardingGuide } from "./onboarding-guide.js";
 
 // All known messaging providers. Display is gated by the server-injected
 // `window.__MESSAGING_SERVICES__` object (see /api/home.js) AND the
@@ -3134,6 +3135,7 @@ async function handleLiveFeedVisibility() {
 
 inject();
 initGoogleAnalytics();
+initOnboardingGuide();
 init();
 initFeatureSections();
 handleLiveFeedVisibility();
