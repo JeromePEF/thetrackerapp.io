@@ -25,6 +25,10 @@ export function initOnboardingGuide() {
   function positionGuide(targetEl) {
     if (!targetEl) return;
     const rect = targetEl.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0 || targetEl.disabled) {
+      hideGuide();
+      return;
+    }
     const scrollY = window.scrollY || window.pageYOffset;
     const scrollX = window.scrollX || window.pageXOffset;
 
@@ -64,11 +68,28 @@ export function initOnboardingGuide() {
     }
   }
 
-  // Update position on resize and scroll
-  window.addEventListener("resize", updateGuide);
-
-  // Initial display
-  setTimeout(updateGuide, 500); // Wait for layout to settle
+  // Update position via requestAnimationFrame loop
+  let trackingFrame;
+  function trackPosition() {
+    const serviceSelect = document.getElementById("serviceSelect");
+    if (serviceSelect && serviceSelect.value === "telegram") {
+      hideGuide();
+    } else if (identityInput && identityInput.disabled) {
+      hideGuide();
+    } else {
+      if (currentState === 'identity' && identityInput) {
+        positionGuide(identityInput);
+      } else if (currentState === 'consent' && consentCheckbox) {
+        positionGuide(consentCheckbox);
+      } else if (currentState === 'submit' && submitButton) {
+        positionGuide(submitButton);
+      } else {
+        hideGuide();
+      }
+    }
+    trackingFrame = requestAnimationFrame(trackPosition);
+  }
+  trackPosition();
 
   const serviceSelect = document.getElementById("serviceSelect");
   if (serviceSelect) {

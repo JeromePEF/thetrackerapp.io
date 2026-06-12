@@ -3454,13 +3454,18 @@ footer { position: relative; }
 
 @media (max-width: 640px) {
   .site-header {
-    padding-right: 0.2rem !important;
-    padding-left: 0.2rem !important;
+    padding: 0.5rem 0 0.3rem !important;
   }
   .site-header .container.header-row {
-    padding: 0 !important;
+    padding: 0 0.5rem !important; /* Proper gap on both sides */
     width: 100% !important;
     max-width: 100% !important;
+  }
+  .header-logo {
+    margin-left: 0 !important; /* Stop the logo from shifting left */
+  }
+  .header-auth {
+    margin-right: 0 !important;
   }
   
   .consent-row {
@@ -3479,14 +3484,14 @@ footer { position: relative; }
 
 /* FLOATING DELTA SMOKE EFFECT */
 .floating-delta {
-  color: #38ffd3;
+  color: #ff3333;
   font-weight: bold;
   font-size: 0.9em;
   pointer-events: none;
   animation: smoke-up 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
   z-index: 100;
   white-space: nowrap;
-  text-shadow: 0 0 8px rgba(56, 255, 211, 0.6);
+  text-shadow: 0 0 2px rgba(255, 0, 0, 0.8);
 }
 
 @keyframes smoke-up {
@@ -3501,6 +3506,6 @@ footer { position: relative; }
   100% {
     opacity: 0;
     transform: translateY(-25px) scale(1.1) translateX(5px);
-    filter: blur(2px);
+    filter: blur(0);
   }
 }
