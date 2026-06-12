@@ -36,7 +36,12 @@ async function fetchUpstreamVersion() {
   try {
     const res = await fetch(UPSTREAM_URL, {
       method: "GET",
-      headers: { Accept: "application/json" },
+      headers: {
+        Accept: "application/json",
+        "Accept-Language": "en-US,en;q=0.9",
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15 TheTrackerApp/ControlVersionProxy",
+      },
       signal: controller.signal,
       cache: "no-store",
     });
