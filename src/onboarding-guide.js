@@ -53,7 +53,8 @@ export function initOnboardingGuide() {
 
   function updateGuide() {
     const serviceSelect = document.getElementById("serviceSelect");
-    if (serviceSelect && serviceSelect.value === "telegram") {
+    const serviceVal = serviceSelect ? serviceSelect.value : "";
+    if (serviceVal === "telegram" || serviceVal === "discord" || serviceVal === "slack" || serviceVal === "google-chat") {
       hideGuide();
       return;
     }
@@ -72,7 +73,8 @@ export function initOnboardingGuide() {
   let trackingFrame;
   function trackPosition() {
     const serviceSelect = document.getElementById("serviceSelect");
-    if (serviceSelect && serviceSelect.value === "telegram") {
+    const serviceVal = serviceSelect ? serviceSelect.value : "";
+    if (serviceVal === "telegram" || serviceVal === "discord" || serviceVal === "slack" || serviceVal === "google-chat") {
       hideGuide();
     } else if (identityInput && identityInput.disabled) {
       hideGuide();
