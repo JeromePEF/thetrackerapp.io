@@ -69,7 +69,7 @@ body {
 /* Override .container default to match hero-fullscreen-layout edges */
 .site-header .container.header-row {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto auto 1fr auto;
   align-items: center;
   width: 100% !important;
   max-width: 1600px !important;
@@ -1834,13 +1834,18 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
   }
 
   .header-row {
-    grid-template-columns: 1fr auto auto;
+    grid-template-columns: auto 1fr auto;
     align-items: center;
     gap: 0.5rem;
   }
 
-  .app-links {
+  .header-logo {
     grid-column: 1;
+    grid-row: 1;
+  }
+
+  .app-links {
+    grid-column: 2;
     grid-row: 1;
   }
 
@@ -1928,9 +1933,13 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
 
   .header-row {
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
     align-items: center;
     gap: 0.5rem;
+  }
+
+  .header-logo {
+    display: flex !important;
   }
 
   .app-links {
@@ -1945,7 +1954,6 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
     display: flex !important;
     align-items: center;
     gap: 0.5rem;
-    margin-left: auto;
   }
   
   .login-link {
