@@ -1042,18 +1042,25 @@ function normalizeLeaderboardEntry(entry) {
   const emojiMatch = rawEmoji.match(/\p{Extended_Pictographic}/u);
   const emoji = emojiMatch ? emojiMatch[0] : "";
 
-  const valueLabel = String(entry?.valueLabel || entry?.value || entry?.details || "").trim();
-  const score = Math.max(toNumber(entry?.score), 0);
-  const lineValue = valueLabel || (score > 0 ? formatNumber(score) : "-");
-  const rawLine = String(entry?.line || "").trim();
-  const line = rawLine || `${emoji ? `${emoji} ` : ""}${name} | ${lineValue}`;
-  const splitLine = splitLeaderboardLine(line);
+  // The backend sends the fully formatted "Name | Value Unit" string in `display`
+  const displayStr = String(entry?.display || "").trim();
+  let lineValue = "";
+  let splitLine = null;
+
+  if (displayStr) {
+    splitLine = splitLeaderboardLine(displayStr);
+    lineValue = splitLine?.right || displayStr;
+  } else {
+    // Fallback if `display` is missing
+    const rawVal = entry?.valueLabel || entry?.value || entry?.score || entry?.details || "";
+    const unitStr = entry?.unit ? ` ${entry.unit}` : "";
+    lineValue = String(rawVal).trim() ? `${rawVal}${unitStr}`.trim() : "-";
+  }
 
   return {
     exercise,
     name: splitLine?.left || `${emoji ? `${emoji} ` : ""}${name}`,
-    value: splitLine?.right || lineValue,
-    line,
+    value: lineValue,
   };
 }
 

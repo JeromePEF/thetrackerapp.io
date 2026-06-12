@@ -112,11 +112,15 @@ function renderComponents(components) {
   const host = document.getElementById("servicesGrid");
   if (!host) return;
   const list = Array.isArray(components) ? components : [];
-  if (!list.length) {
+  
+  const EXCLUDED_COMPONENTS = ["Payments (Stripe)", "iMessage Delivery", "Web Dashboard"];
+  const filteredList = list.filter(c => !EXCLUDED_COMPONENTS.includes(c.name));
+  
+  if (!filteredList.length) {
     host.innerHTML = `<p class="status-empty">No component data available right now.</p>`;
     return;
   }
-  host.innerHTML = list
+  host.innerHTML = filteredList
     .map((c) => {
       const meta = metaFor(c.status);
       return `
@@ -137,8 +141,9 @@ function renderComponents(components) {
 function renderSupportLine(data) {
   const supportEl = document.getElementById("statusSupport");
   if (!supportEl) return;
-  const email = data?.support?.contactEmail || SUPPORT_EMAIL_FALLBACK;
-  supportEl.innerHTML = `Questions? <a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>`;
+  // User requested to remove Questions? entirely.
+  supportEl.innerHTML = "";
+  supportEl.style.display = "none";
 }
 
 async function refresh() {
