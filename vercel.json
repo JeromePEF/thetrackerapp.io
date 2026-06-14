@@ -43,6 +43,7 @@
     { "source": "/dashboard-endpoints", "destination": "/api/dashboard-endpoints" },
     { "source": "/@:username", "destination": "/user" },
     { "source": "/", "destination": "/api/home" },
+    { "source": "/blog/rss.xml", "destination": "/api/blog-rss" },
     { "source": "/blog/:slug", "destination": "/blog-post" }
   ],
   "functions": {
