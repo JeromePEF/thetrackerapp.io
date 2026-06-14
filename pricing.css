@@ -106,35 +106,12 @@ body {
 /* Main */
 .pricing-main {
   flex: 1;
-  padding: 3rem 2rem;
-  max-width: 1200px;
+  padding: 2rem 1.5rem 3rem;
   margin: 0 auto;
   width: 100%;
-}
-
-/* Hero */
-.pricing-hero {
-  text-align: center;
-  margin-bottom: 3rem;
-  padding: 2rem 1rem;
-}
-
-.pricing-hero h1 {
-  font-family: "Orbitron", sans-serif;
-  font-size: clamp(2rem, 5vw, 3.5rem);
-  font-weight: 800;
-  margin-bottom: 0.75rem;
-  background: linear-gradient(135deg, #fff, #38ffd3);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  letter-spacing: -0.02em;
-}
-
-.hero-subtitle {
-  font-size: 1.1rem;
-  color: var(--text-muted);
-  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 /* Billing Toggle */
@@ -479,29 +456,27 @@ body {
   display: grid;
   gap: 1.1rem;
   justify-content: center;
-  max-width: 1200px;
+  max-width: 1500px;
   margin: 0 auto;
+  width: 100%;
 }
 
-.pricing-cards-row-1 { grid-template-columns: minmax(280px, 420px); }
-.pricing-cards-row-2 { grid-template-columns: repeat(2, minmax(260px, 360px)); }
-.pricing-cards-row-3 { grid-template-columns: repeat(3, minmax(240px, 320px)); }
+.pricing-cards-row-1 { grid-template-columns: minmax(280px, 500px); }
+.pricing-cards-row-2 { grid-template-columns: repeat(2, minmax(300px, 500px)); }
+.pricing-cards-row-3 { grid-template-columns: repeat(3, minmax(280px, 420px)); }
 
 /* 4-up layout (Monthly / Yearly / Premium / Premium Yearly).
-   - ≥1280px: full 4-up row, each card ~270px wide.
-   - 760–1279px: 2x2 grid (much more readable than cramped 4-up).
-   - <760px: stack to 1-up.
-   This was the main bleed-fix — 4 cards were trying to fit at narrower
-   widths than the content could handle. */
+   Desktop: full 4-up row filling the 1600px shell.
+   Phone: 2x2 quad view. */
 .pricing-cards-row-4 {
-  grid-template-columns: repeat(4, minmax(240px, 280px));
+  grid-template-columns: repeat(4, minmax(260px, 340px));
 }
 
 .pricing-cards-row-5 {
-  grid-template-columns: repeat(5, minmax(190px, 230px));
+  grid-template-columns: repeat(5, minmax(200px, 260px));
 }
 
-@media (max-width: 1279px) {
+@media (max-width: 1100px) {
   .pricing-cards-row-4 {
     grid-template-columns: repeat(2, minmax(260px, 360px));
     max-width: 760px;
