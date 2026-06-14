@@ -103,6 +103,13 @@ body {
   color: var(--accent);
 }
 
+/* Main content layout — pin header top, footer bottom, cards centered */
+#main-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
 /* Main */
 .pricing-main {
   flex: 1;
