@@ -5,7 +5,15 @@
     <link>https://thetrackerapp.io/blog</link>
     <description>Fitness tips, workout guides, nutrition advice, and app updates from TheTrackerApp team.</description>
     <language>en-us</language>
-    <lastBuildDate>Mon, 01 Jan 2024 00:00:00 GMT</lastBuildDate>
+    <lastBuildDate>Sun, 14 Jun 2026 19:39:30 GMT</lastBuildDate>
     <atom:link href="https://thetrackerapp.io/blog/rss.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>The Importance of Tracking</title>
+      <link>https://thetrackerapp.io/blog/the-importance-of-tracking</link>
+      <guid isPermaLink="true">https://thetrackerapp.io/blog/the-importance-of-tracking</guid>
+      <description>Why tracking your workouts, nutrition, and body measurements is the single most effective habit for reaching your fitness goals — and how to do it without another app.</description>
+      <pubDate>Wed, 10 Jun 2026 10:00:00 GMT</pubDate>
+      <enclosure url="https://thetrackerapp.io/og-image.png?v=2" type="image/jpeg" />
+    </item>
   </channel>
 </rss>

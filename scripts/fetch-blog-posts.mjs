@@ -170,8 +170,23 @@ ${items}
 async function main() {
   console.log("[blog:fetch] Starting blog post fetch...");
 
-  const posts = await fetchAllBlogPosts();
+  let posts = await fetchAllBlogPosts();
   console.log(`[blog:fetch] Total posts fetched: ${posts.length}`);
+
+  if (!posts.length) {
+    const seedPath = resolve(PUBLIC_DIR, "blog-posts.json");
+    if (existsSync(seedPath)) {
+      try {
+        const seed = JSON.parse(readFileSync(seedPath, "utf8"));
+        if (Array.isArray(seed) && seed.length) {
+          posts = seed;
+          console.log(`[blog:fetch] Using ${seed.length} seed posts from ${seedPath}`);
+        }
+      } catch {
+        /* keep empty */
+      }
+    }
+  }
 
   writePostsIndex(posts);
   writeIndividualPosts(posts);
