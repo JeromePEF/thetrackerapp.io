@@ -163,6 +163,16 @@ body {
   text-underline-offset: 2px;
 }
 
+.stats-oz {
+  color: var(--ink-muted, #8a96a8);
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.62rem;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  margin-left: 0.2rem;
+}
+
 .app-links a:hover,
 .site-footer a:hover,
 .app-links a:focus-visible,

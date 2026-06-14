@@ -220,6 +220,7 @@ const els = {
   workoutsLoggedCount: document.getElementById("workoutsLoggedCount"),
   caloriesTrackedCount: document.getElementById("caloriesTrackedCount"),
   gallonsDrankCount: document.getElementById("gallonsDrankCount"),
+  gallonsDrankOz: document.getElementById("gallonsDrankOz"),
   usersTodayLink: document.getElementById("usersTodayLink"),
   usersWeekLink: document.getElementById("usersWeekLink"),
   usersOnlineLink: document.getElementById("usersOnlineLink"),
@@ -1143,6 +1144,14 @@ function setCounterValueWithDecimals(target, value, fractionDigits = 1) {
   target.textContent = formatDecimal(newVal, fractionDigits);
 }
 
+function setGallonsDrank(value) {
+  setCounterValueWithDecimals(els.gallonsDrankCount, value, 1);
+  if (els.gallonsDrankOz) {
+    const num = typeof value === "number" ? value : toNumber(value);
+    els.gallonsDrankOz.textContent = ` gal · ${formatNumber(Math.round(num * 128))} oz`;
+  }
+}
+
 function applyUserLiveMetrics(liveMetrics) {
   if (!liveMetrics) {
     return;
@@ -1166,7 +1175,7 @@ function applyActivityLiveMetrics(liveMetrics) {
 
   setCounterValue(els.workoutsLoggedCount, liveMetrics.workoutsLogged?.value);
   setCounterValue(els.caloriesTrackedCount, liveMetrics.caloriesTracked?.value);
-  setCounterValueWithDecimals(els.gallonsDrankCount, liveMetrics.gallonsDrank?.value, 1);
+  setGallonsDrank(liveMetrics.gallonsDrank?.value);
 
   setStatsLink(els.workoutsLoggedLink, liveMetrics.workoutsLogged?.sheetUrl, master);
   setStatsLink(els.caloriesTrackedLink, liveMetrics.caloriesTracked?.sheetUrl, master);
@@ -1897,7 +1906,7 @@ async function loadLeaderboard() {
     if (!hasLoadedActivityMetrics) {
       setCounterValue(els.workoutsLoggedCount, payload.workoutsLogged);
       setCounterValue(els.caloriesTrackedCount, payload.caloriesTracked);
-      setCounterValueWithDecimals(els.gallonsDrankCount, payload.gallonsDrank, 1);
+      setGallonsDrank(payload.gallonsDrank);
     }
 
     renderPebbleLeaderboard(payload.pebble || {});
@@ -1931,7 +1940,7 @@ async function loadLeaderboard() {
     if (!hasLoadedActivityMetrics) {
       setCounterValue(els.workoutsLoggedCount, 0);
       setCounterValue(els.caloriesTrackedCount, 0);
-      setCounterValueWithDecimals(els.gallonsDrankCount, 0, 1);
+      setGallonsDrank(0);
     }
     setStepsTapeVisibility(false);
     if (els.stepsTapeState) {
