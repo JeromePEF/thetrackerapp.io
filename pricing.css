@@ -328,65 +328,6 @@ body {
   color: var(--accent);
 }
 
-/* CTA */
-.pricing-cta {
-  text-align: center;
-  padding: 3rem 2rem;
-  background: linear-gradient(135deg, rgba(56, 255, 211, 0.1), transparent);
-  border: 1px solid var(--accent-dim);
-  border-radius: 16px;
-}
-
-.pricing-cta h2 {
-  font-family: "Orbitron", sans-serif;
-  font-size: 1.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.pricing-cta p {
-  color: var(--text-muted);
-  margin-bottom: 1.5rem;
-}
-
-.cta-button {
-  display: inline-block;
-  padding: 1rem 2.5rem;
-  background: var(--accent);
-  color: #000;
-  font-weight: 700;
-  text-decoration: none;
-  border-radius: 8px;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.cta-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(56, 255, 211, 0.3);
-}
-
-/* Footer */
-.pricing-footer {
-  padding: 1.5rem 2rem;
-  border-top: 1px solid var(--border);
-  text-align: center;
-}
-
-.footer-links {
-  display: flex;
-  justify-content: center;
-  gap: 2rem;
-}
-
-.footer-links a {
-  color: var(--text-muted);
-  text-decoration: none;
-  font-size: 0.85rem;
-}
-
-.footer-links a:hover {
-  color: var(--accent);
-}
-
 /* Responsive */
 @media (max-width: 900px) {
   .pricing-cards {

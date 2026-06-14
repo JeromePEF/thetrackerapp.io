@@ -13,6 +13,7 @@
 
 import { fetchFeatureFlags, applyFeatureFlags } from "./feature-flags.js";
 import { getBillingPrices, subscribeBillingPrices } from "./billing-prices.js";
+import "./footer-socials.js";
 
 const container = document.getElementById("pricingContainer");
 const subtitle = document.getElementById("pricingSubtitle");
