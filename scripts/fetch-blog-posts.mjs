@@ -106,6 +106,67 @@ function writeIndividualPosts(posts) {
   console.log(`[blog:fetch] Wrote ${count} individual post files to ${BLOG_POSTS_DIR}/`);
 }
 
+function escapeXml(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function toRfc822(dateStr) {
+  try {
+    const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return null;
+    return d.toUTCString();
+  } catch {
+    return null;
+  }
+}
+
+function writeRssFeed(posts) {
+  const BLOG_URL = "https://thetrackerapp.io/blog";
+  const items = posts
+    .filter((p) => p.slug && p.title)
+    .map((post) => {
+      const link = `${BLOG_URL}/${encodeURIComponent(post.slug)}`;
+      const pubDate = toRfc822(post.publishedAt) || toRfc822(post.updatedAt) || "";
+      const description = escapeXml(post.excerpt || post.description || post.summary || post.subtitle || "");
+      const image = post.featuredImage || post.image || post.ogImage || "";
+
+      return `    <item>
+      <title>${escapeXml(post.title)}</title>
+      <link>${escapeXml(link)}</link>
+      <guid isPermaLink="true">${escapeXml(link)}</guid>
+      <description>${description}</description>
+      ${pubDate ? `<pubDate>${pubDate}</pubDate>\n` : ""}${image ? `      <enclosure url="${escapeXml(image)}" type="image/jpeg" />\n` : ""}    </item>`;
+    })
+    .join("\n");
+
+  const now = new Date().toUTCString();
+  const rss = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>TheTrackerApp Blog</title>
+    <link>${BLOG_URL}</link>
+    <description>Fitness tips, workout guides, nutrition advice, and app updates from TheTrackerApp team.</description>
+    <language>en-us</language>
+    <lastBuildDate>${now}</lastBuildDate>
+    <atom:link href="${BLOG_URL}/rss.xml" rel="self" type="application/rss+xml" />
+${items}
+  </channel>
+</rss>
+`;
+
+  if (!existsSync(resolve(PUBLIC_DIR, "blog"))) {
+    mkdirSync(resolve(PUBLIC_DIR, "blog"), { recursive: true });
+  }
+  const filePath = resolve(PUBLIC_DIR, "blog", "rss.xml");
+  writeFileSync(filePath, rss, "utf8");
+  console.log(`[blog:fetch] Wrote RSS feed (${items.split("<item>").length - 1} items) to ${filePath}`);
+}
+
 async function main() {
   console.log("[blog:fetch] Starting blog post fetch...");
 
@@ -114,6 +175,7 @@ async function main() {
 
   writePostsIndex(posts);
   writeIndividualPosts(posts);
+  writeRssFeed(posts);
 
   console.log("[blog:fetch] Done.");
 }
