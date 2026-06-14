@@ -15,9 +15,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
-    <script type="module" crossorigin src="/assets/status-BFvw0Ysy.js"></script>
+    <script type="module" crossorigin src="/assets/status-CX8eA9JK.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-Bchw24nj.js">
-    <link rel="stylesheet" crossorigin href="/assets/status-zZS6GRyB.css">
+    <link rel="stylesheet" crossorigin href="/assets/status-hh8QkcSq.css">
   </head>
   <body>
     <div class="status-page">
@@ -61,6 +61,23 @@
         </section>
 
         <p class="status-support" id="statusSupport">Questions? <a href="mailto:support@thetrackerapp.io">support@thetrackerapp.io</a></p>
+
+        <!-- Uptime — 90-day bar chart -->
+        <section class="uptime-section" id="uptimeSection">
+          <h2>Uptime</h2>
+          <div class="uptime-summary">
+            <span class="uptime-percent" id="uptimePercent">—</span>
+            <span class="uptime-label">last 90 days</span>
+          </div>
+          <div class="uptime-bars" id="uptimeBars" role="img" aria-label="90-day uptime chart">
+            <!-- JS populates 90 bars -->
+          </div>
+          <div class="uptime-legend">
+            <span class="legend-item legend-operational">Operational</span>
+            <span class="legend-item legend-degraded">Degraded</span>
+            <span class="legend-item legend-outage">Outage</span>
+          </div>
+        </section>
       </main>
 
       <footer class="status-footer">

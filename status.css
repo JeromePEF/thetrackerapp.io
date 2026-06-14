@@ -273,6 +273,89 @@ body {
 }
 
 /* ============================================================================
+   Uptime bars
+   ============================================================================ */
+.uptime-section h2 {
+  font-family: "Orbitron", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 0.4rem;
+}
+
+.uptime-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin-bottom: 0.85rem;
+}
+
+.uptime-percent {
+  font-family: "Orbitron", sans-serif;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--tone-operational);
+}
+
+.uptime-label {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.uptime-bars {
+  display: flex;
+  gap: 2px;
+  align-items: flex-end;
+  height: 40px;
+  margin-bottom: 0.5rem;
+}
+
+.uptime-bar {
+  flex: 1;
+  min-width: 2px;
+  border-radius: 2px 2px 0 0;
+  transition: opacity 0.15s;
+}
+
+.uptime-bar:hover {
+  opacity: 0.8;
+}
+
+.uptime-bar[data-tone="operational"] { background: var(--tone-operational); }
+.uptime-bar[data-tone="degraded"]    { background: var(--tone-degraded); }
+.uptime-bar[data-tone="partial"]     { background: var(--tone-partial); }
+.uptime-bar[data-tone="major"]       { background: var(--tone-major); }
+.uptime-bar[data-tone="maintenance"] { background: var(--tone-maintenance); }
+
+.uptime-legend {
+  display: flex;
+  gap: 1.2rem;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.legend-item::before {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.legend-operational::before { background: var(--tone-operational); }
+.legend-degraded::before    { background: var(--tone-degraded); }
+.legend-outage::before      { background: var(--tone-major); }
+
+/* ============================================================================
    Responsive
    ============================================================================ */
 @media (max-width: 560px) {
