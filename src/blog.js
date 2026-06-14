@@ -94,7 +94,7 @@ function updateRecentPosts() {
   blogRecentPostsSection.hidden = false;
 }
 
-// Fetch blog posts
+// Fetch blog posts — tries API first, falls back to pre-built JSON for SEO
 async function fetchPosts() {
   blogPostsList.innerHTML = '<p class="loading-state">Loading posts...</p>';
 
@@ -115,6 +115,11 @@ async function fetchPosts() {
     posts = data.posts || [];
     totalPages = data.totalPages || 1;
 
+    // If API returned 0 posts, try pre-built blog-posts.json fallback (SEO)
+    if (!posts.length && currentPage === 1 && !currentTag && !searchQuery) {
+      await loadPrebuiltPosts();
+    }
+
     renderPosts();
     renderPagination();
     updateTagFilter(data.tags || []);
@@ -122,9 +127,40 @@ async function fetchPosts() {
     updateRecentPosts();
   } catch (error) {
     console.error("Error fetching posts:", error);
-    blogPostsList.innerHTML = `
-      <p class="loading-state">Unable to load blog posts. Please try again later.</p>
-    `;
+    // Try fallback on error too
+    if (currentPage === 1 && !currentTag && !searchQuery) {
+      await loadPrebuiltPosts();
+    }
+    if (!posts.length) {
+      blogPostsList.innerHTML = `
+        <p class="loading-state">Unable to load blog posts. Please try again later.</p>
+      `;
+    }
+  }
+}
+
+// Load blog posts from pre-built JSON (stored by npm run blog:fetch for SEO)
+async function loadPrebuiltPosts() {
+  try {
+    const res = await fetch("/blog-posts.json");
+    if (!res.ok) return;
+    const allPosts = await res.json();
+    if (!allPosts.length) return;
+
+    const start = (currentPage - 1) * 12;
+    const pagePosts = allPosts.slice(start, start + 12);
+
+    posts = pagePosts;
+    totalPages = Math.ceil(allPosts.length / 12);
+
+    const allTags = [...new Set(allPosts.flatMap((p) => p.tags || []))].sort();
+    renderPosts();
+    renderPagination();
+    updateTagFilter(allTags);
+    updateStructuredData();
+    updateRecentPosts();
+  } catch (e) {
+    // Ignore fallback errors
   }
 }
 
@@ -322,6 +358,53 @@ async function init() {
 
   // Fetch posts
   fetchPosts();
+
+  // Email subscription form
+  wireEmailForm();
+}
+
+function wireEmailForm() {
+  const form = document.getElementById("blogEmailForm");
+  const input = document.getElementById("blogEmailInput");
+  const submit = document.getElementById("blogEmailSubmit");
+  const status = document.getElementById("blogEmailStatus");
+  if (!form || !input || !submit || !status) return;
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = input.value.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      status.textContent = "Please enter a valid email.";
+      status.className = "blog-email-status error";
+      return;
+    }
+
+    submit.disabled = true;
+    status.textContent = "Subscribing...";
+    status.className = "blog-email-status";
+
+    try {
+      const res = await fetch("https://api.thetrackerapp.io/api/blog/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (res.ok) {
+        input.value = "";
+        status.textContent = "Subscribed!";
+        status.className = "blog-email-status success";
+      } else {
+        const body = await res.json().catch(() => ({}));
+        status.textContent = body.error || "Something went wrong.";
+        status.className = "blog-email-status error";
+      }
+    } catch {
+      status.textContent = "Network error. Try again.";
+      status.className = "blog-email-status error";
+    } finally {
+      submit.disabled = false;
+    }
+  });
 }
 
 init();

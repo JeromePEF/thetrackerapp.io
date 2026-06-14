@@ -80,6 +80,11 @@
 
           <div class="blog-sidebar-section">
             <p class="blog-sidebar-title">Subscribe</p>
+            <form id="blogEmailForm" class="blog-email-form" novalidate>
+              <input type="email" id="blogEmailInput" class="blog-email-input" placeholder="your@email.com" required aria-label="Email address" />
+              <button type="submit" id="blogEmailSubmit" class="blog-email-submit">Join</button>
+            </form>
+            <p id="blogEmailStatus" class="blog-email-status"></p>
             <p class="blog-sidebar-rss">
               <a href="https://thetrackerapp.io/blog/rss.xml" rel="alternate" type="application/rss+xml">RSS Feed</a>
             </p>

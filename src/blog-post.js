@@ -141,7 +141,7 @@ function markdownToHtml(md) {
   return html;
 }
 
-// Fetch a single blog post
+// Fetch a single blog post — API first, then pre-built JSON fallback
 async function fetchPost(slug) {
   if (!slug) {
     document.getElementById("blogPostContent").innerHTML =
@@ -153,15 +153,26 @@ async function fetchPost(slug) {
     const response = await fetch(`${API_BASE}/api/blog/posts/${slug}`);
 
     if (!response.ok) {
-      throw new Error("Post not found");
+      throw new Error("Post not found in API");
     }
 
     const post = await response.json();
+    if (!post || post.error) throw new Error("Post not found");
     renderPost(post);
-  } catch (error) {
-    console.error("Error fetching post:", error);
-    document.getElementById("blogPostContent").innerHTML =
-      '<p class="loading-state">Post not found or unavailable. <a href="/blog">Browse all posts</a>.</p>';
+  } catch (apiError) {
+    console.warn("API post fetch failed, trying pre-built fallback:", apiError.message);
+    // Fall back to pre-built JSON stored by npm run blog:fetch
+    try {
+      const fallbackRes = await fetch(`/blog-posts/${slug}.json`);
+      if (!fallbackRes.ok) throw new Error("Post not found");
+      const post = await fallbackRes.json();
+      if (!post) throw new Error("Empty post data");
+      renderPost(post);
+    } catch (fallbackError) {
+      console.error("Error fetching post:", fallbackError.message);
+      document.getElementById("blogPostContent").innerHTML =
+        '<p class="loading-state">Post not found or unavailable. <a href="/blog">Browse all posts</a>.</p>';
+    }
   }
 }
 

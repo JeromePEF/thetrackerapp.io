@@ -41,12 +41,12 @@
         "blogPost": []
       }
     </script>
-    <script type="module" crossorigin src="/assets/blog-DgEfFHJO.js"></script>
+    <script type="module" crossorigin src="/assets/blog-CgDM3-yX.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-Bchw24nj.js">
     <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-Dk1G9xmN.js">
     <link rel="modulepreload" crossorigin href="/assets/preload-helper-C5agPA9e.js">
     <link rel="modulepreload" crossorigin href="/assets/feature-flags-DYCiIttL.js">
-    <link rel="stylesheet" crossorigin href="/assets/blog-BgEr9oTs.css">
+    <link rel="stylesheet" crossorigin href="/assets/blog-CkylH7eK.css">
     <link rel="stylesheet" crossorigin href="/assets/info-pages-iuJ7kj43.css">
   </head>
   <body>
@@ -85,6 +85,11 @@
 
           <div class="blog-sidebar-section">
             <p class="blog-sidebar-title">Subscribe</p>
+            <form id="blogEmailForm" class="blog-email-form" novalidate>
+              <input type="email" id="blogEmailInput" class="blog-email-input" placeholder="your@email.com" required aria-label="Email address" />
+              <button type="submit" id="blogEmailSubmit" class="blog-email-submit">Join</button>
+            </form>
+            <p id="blogEmailStatus" class="blog-email-status"></p>
             <p class="blog-sidebar-rss">
               <a href="https://thetrackerapp.io/blog/rss.xml" rel="alternate" type="application/rss+xml">RSS Feed</a>
             </p>

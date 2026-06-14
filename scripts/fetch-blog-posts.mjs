@@ -21,7 +21,7 @@
  *   d. Keep the sitemap fresh with actual blog post URLs
  */
 
-import { writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { writeFileSync, mkdirSync, existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -70,12 +70,28 @@ async function fetchAllBlogPosts() {
 }
 
 function writePostsIndex(posts) {
+  // If API returned 0 posts, keep the existing seed data (don't overwrite)
+  if (!posts.length) {
+    const filePath = resolve(PUBLIC_DIR, "blog-posts.json");
+    if (existsSync(filePath)) {
+      const existing = readFileSync(filePath, "utf8");
+      const parsed = JSON.parse(existing);
+      console.log(`[blog:fetch] API returned 0 posts — keeping existing ${parsed.length} seed posts.`);
+      return;
+    }
+  }
+
   const filePath = resolve(PUBLIC_DIR, "blog-posts.json");
   writeFileSync(filePath, JSON.stringify(posts, null, 2), "utf8");
   console.log(`[blog:fetch] Wrote ${posts.length} posts to ${filePath}`);
 }
 
 function writeIndividualPosts(posts) {
+  if (!posts.length) {
+    console.log("[blog:fetch] No posts to write individually — skipping.");
+    return;
+  }
+
   if (!existsSync(BLOG_POSTS_DIR)) {
     mkdirSync(BLOG_POSTS_DIR, { recursive: true });
   }

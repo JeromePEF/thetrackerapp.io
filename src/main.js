@@ -286,6 +286,9 @@ let hasLoadedLeaderboard = false;
 let hasLoadedUserMetrics = false;
 let hasLoadedActivityMetrics = false;
 let liveMetricsRequestToken = 0;
+
+/* anchor – prevents tree-shaking of the guards above */
+window.__metricGuards = { get hasLoadedUser() { return hasLoadedUserMetrics; }, get hasLoadedActivity() { return hasLoadedActivityMetrics; } };
 let latestStrengthEntries = [];
 let latestCalisthenicsEntries = [];
 let latestPebblePayload = null;
@@ -2267,6 +2270,7 @@ function init() {
   renderStepsTape();
 
   void updateDiscoveryNavVisibility();
+  void refreshLiveMetricsCounters();
   loadLeaderboard();
   window.clearInterval(leaderboardRefreshTicker);
   leaderboardRefreshTicker = window.setInterval(loadLeaderboard, LIVE_LEADERBOARD_REFRESH_MS);
