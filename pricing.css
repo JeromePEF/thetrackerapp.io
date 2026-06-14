@@ -103,8 +103,13 @@ body {
   color: var(--accent);
 }
 
-/* Main content layout — pin header top, footer bottom, cards centered */
-#main-content {
+/* Override homepage overflow/height for a full-viewport flex layout */
+html, body {
+  overflow: auto;
+  height: 100%;
+}
+
+#pricingShell {
   display: flex;
   flex-direction: column;
   min-height: 100vh;

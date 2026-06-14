@@ -28,4 +28,4 @@ import"./modulepreload-polyfill-B7MX_D3K.js";/* empty css               */import
         ${p(r)}
       </a>
     </article>
-  `}m();var S=0;function C(){let e=document.getElementById(`appShell`);if(!e)return;if(window.matchMedia(`(max-width: 900px)`).matches){e.style.transform=`none`,e.style.left=`0px`,e.style.top=`0px`;return}e.style.transform=`scale(1)`,e.style.left=`0px`,e.style.top=`0px`;let t=window.innerWidth,n=window.innerHeight,r=e.scrollWidth,i=e.scrollHeight;if(!r||!i||!t||!n)return;let a=Math.min(t/r,n/i,1),o=Math.max((t-r*a)/2,0),s=Math.max((n-i*a)/2,0);e.style.left=`${o}px`,e.style.top=`${s}px`,e.style.transform=`scale(${a})`}function w(){window.cancelAnimationFrame(S),S=window.requestAnimationFrame(C)}window.addEventListener(`resize`,w),window.addEventListener(`orientationchange`,w),document.fonts?.ready&&document.fonts.ready.then(w).catch(()=>{}),w();
+  `}m();
