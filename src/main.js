@@ -2253,12 +2253,36 @@ function wireEvents() {
 
 }
 
+function hydrateInitialData() {
+  const m = window.__INITIAL_METRICS__;
+  if (m && typeof m === "object") {
+    setCounterValue(els.usersTodayCount, m.usersToday ?? 0);
+    setCounterValue(els.usersWeekCount, m.usersThisWeek ?? 0);
+    setCounterValue(els.workoutsLoggedCount, m.workoutsLogged ?? 0);
+    setCounterValue(els.caloriesTrackedCount, m.caloriesTracked ?? 0);
+    setGallonsDrank(m.gallonsDrank ?? 0);
+    hasLoadedUserMetrics = true;
+    hasLoadedActivityMetrics = true;
+  }
+
+  const lb = window.__INITIAL_LEADERBOARD__;
+  if (lb && typeof lb === "object") {
+    renderLeaderboard(lb.entries || []);
+    renderGroupLeaderboard(lb.groupEntries || []);
+    renderStreakLeaderboard(lb.streakEntries || []);
+    renderStreakLiveCallout(lb.streakLiveMessage || "");
+    hasLoadedLeaderboard = true;
+  }
+}
+
 function init() {
   if (redirectDashboardHostHomeToDashboardPage()) {
     return;
   }
 
   captureRefFromUrl();
+
+  hydrateInitialData();
 
   activeUnitSystem = storedUnitSystem() || defaultUnitSystemFromLocale();
   syncUnitToggleButtonLabel();
