@@ -23,7 +23,7 @@
  *   /affiliate/connect
  */
 
-import { statSync, writeFileSync, existsSync } from "node:fs";
+import { statSync, writeFileSync, existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -100,6 +100,33 @@ function lastmodFor(filePath) {
   return statSync(abs).mtime.toISOString().slice(0, 10);
 }
 
+// ---------------------------------------------------------------------------
+// Blog post URLs — read from the pre-fetched blog-posts.json (if available).
+// Run `npm run blog:fetch` before building to keep the sitemap fresh.
+// ---------------------------------------------------------------------------
+function loadBlogPostUrls() {
+  const blogDataPath = resolve(ROOT, "public", "blog-posts.json");
+  if (!existsSync(blogDataPath)) {
+    console.warn("[sitemap] No blog-posts.json found — run npm run blog:fetch first.");
+    return [];
+  }
+  try {
+    const raw = readFileSync(blogDataPath, "utf8");
+    const posts = JSON.parse(raw);
+    return posts
+      .filter((p) => p.slug && p.publishedAt)
+      .map((p) => ({
+        path: `/blog/${p.slug}`,
+        lastmodDate: p.updatedAt || p.publishedAt,
+      }));
+  } catch (err) {
+    console.warn("[sitemap] Failed to parse blog-posts.json:", err.message);
+    return [];
+  }
+}
+
+const blogPostUrls = loadBlogPostUrls();
+
 const urlEntries = PUBLIC_ROUTES.map((route) => {
   const lastmod = lastmodFor(route.file);
   return [
@@ -112,13 +139,27 @@ const urlEntries = PUBLIC_ROUTES.map((route) => {
   ].join("\n");
 }).join("\n");
 
+// Blog post URL entries
+const blogUrlEntries = blogPostUrls.map((p) => {
+  const lastmod = p.lastmodDate ? p.lastmodDate.slice(0, 10) : new Date().toISOString().slice(0, 10);
+  return [
+    "  <url>",
+    `    <loc>${SITE}${p.path}</loc>`,
+    `    <lastmod>${lastmod}</lastmod>`,
+    "    <changefreq>monthly</changefreq>",
+    "    <priority>0.7</priority>",
+    "  </url>",
+  ].join("\n");
+}).join("\n");
+
 const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urlEntries}
+${blogUrlEntries}
 </urlset>
 `;
 
 const outPath = resolve(ROOT, "public/sitemap.xml");
 writeFileSync(outPath, xml, "utf8");
 
-console.log(`[sitemap] Wrote ${PUBLIC_ROUTES.length} URLs to ${outPath}`);
+console.log(`[sitemap] Wrote ${PUBLIC_ROUTES.length + blogPostUrls.length} URLs (${PUBLIC_ROUTES.length} static + ${blogPostUrls.length} blog posts) to ${outPath}`);

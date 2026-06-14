@@ -20,6 +20,7 @@
     "billing:budget:help": "node scripts/gcp-billing-budget.mjs --help",
     "billing:gemini": "node scripts/gcp-gemini-billing.mjs",
     "billing:gemini:help": "node scripts/gcp-gemini-billing.mjs --help",
+    "blog:fetch": "node scripts/fetch-blog-posts.mjs",
     "sitemap:build": "node scripts/generate-sitemap.mjs"
   },
   "devDependencies": {

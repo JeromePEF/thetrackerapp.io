@@ -40,6 +40,12 @@ const ALLOWED_PREFIXES = [
   "/api/affiliate/history",
   "/api/affiliate/signup",
   "/api/affiliate/agreement",
+  "/api/u",
+  "/api/user/public",
+  "/api/user/public-profile",
+  "/api/public-profile",
+  "/api/user/visibility",
+  "/api/profile/visibility",
 ];
 
 function headerValue(value) {

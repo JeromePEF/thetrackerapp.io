@@ -3,7 +3,7 @@
 // Calls GET /api/leaderboard?category=&metric=&range=&limit=&offset=
 // (See PERSONAL_TRAINERS_AND_LEADERBOARD_SPEC.txt → PART C.)
 //
-// Every name links to /u/<username> (a public profile page).
+// Every name links to /@<username> (a public profile page).
 
 const API_BASE = "https://api.thetrackerapp.io";
 
@@ -171,7 +171,7 @@ function renderRow(entry) {
     ? `<span class="flair-badges">${flair.badges.slice(0, 3).map((b) => `<span title="${escapeHtml(typeof b === "string" ? b : b.label || b.id)}">${escapeHtml(typeof b === "string" ? "🏅" : b.emoji || "🏅")}</span>`).join("")}</span>`
     : "";
   const pt = entry.personalTrainer
-    ? `<a class="coach-link" href="/u/${encodeURIComponent(entry.personalTrainer.username)}">@${escapeHtml(entry.personalTrainer.username)}</a>`
+    ? `<a class="coach-link" href="/@${encodeURIComponent(entry.personalTrainer.username)}">@${escapeHtml(entry.personalTrainer.username)}</a>`
     : `<span class="coach-link">—</span>`;
   const trend = entry.trend
     ? `<span class="trend-delta ${/^[-]/.test(entry.trend) ? "down" : /^[+]/.test(entry.trend) ? "up" : ""}">${escapeHtml(entry.trend)}</span>`
@@ -181,7 +181,7 @@ function renderRow(entry) {
     <tr>
       <td class="col-rank rank-${rank}"><span class="rank-medal">${rank}</span></td>
       <td class="col-name">
-        <a class="athlete-cell" href="/u/${encodeURIComponent(username)}">
+        <a class="athlete-cell" href="/@${encodeURIComponent(username)}">
           <span class="athlete-avatar">${escapeHtml(initial)}</span>
           <span>
             <span class="athlete-name">${escapeHtml(displayName)}</span>

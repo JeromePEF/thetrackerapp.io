@@ -88,18 +88,25 @@ const ALL_SERVICES = [
 ];
 
 // Pick the messaging-services map. Preference order:
-//   1. `window.__MESSAGING_SERVICES__` — injected server-side by
+//   1. `featureFlags.messagingServices` — the freshest data from the runtime
+//      /api/control fetch (or the live feature-flags cache). Takes priority
+//      over the server-injected snapshot so live toggles take effect.
+//   2. `window.__MESSAGING_SERVICES__` — injected server-side by
 //      /api/home.js BEFORE main.js executes, so this is available
 //      synchronously on the very first paint with zero extra round-trips.
-//   2. The runtime `feature-flags.js` cache (populated by /api/control).
-//      Used in dev mode or when /api/home is bypassed.
+//      Used when featureFlags is null (initial sync call) or in dev mode.
 // iMessage is forced ON in BOTH paths (product rule).
 function resolveMessagingServicesMap(featureFlags) {
   let map = null;
-  if (typeof window !== "undefined" && window.__MESSAGING_SERVICES__ && typeof window.__MESSAGING_SERVICES__ === "object") {
-    map = window.__MESSAGING_SERVICES__;
-  } else if (featureFlags && featureFlags.messagingServices && typeof featureFlags.messagingServices === "object") {
+  if (featureFlags && featureFlags.messagingServices && typeof featureFlags.messagingServices === "object") {
     map = featureFlags.messagingServices;
+    try {
+      window.__MESSAGING_SERVICES__ = featureFlags.messagingServices;
+    } catch {
+      /* no window — SSR or test */
+    }
+  } else if (typeof window !== "undefined" && window.__MESSAGING_SERVICES__ && typeof window.__MESSAGING_SERVICES__ === "object") {
+    map = window.__MESSAGING_SERVICES__;
   }
   // Defensive default: iMessage on, the rest off. Caller can still override
   // by re-rendering once real flags arrive.
@@ -1142,7 +1149,6 @@ function applyUserLiveMetrics(liveMetrics) {
 
   setCounterValue(els.usersTodayCount, liveMetrics.usersUsingToday?.value);
   setCounterValue(els.usersWeekCount, liveMetrics.totalUsersThisWeek?.value);
-  setCounterValue(els.usersOnlineCount, liveMetrics.usersOnline?.value);
   setStatsLink(els.usersTodayLink, liveMetrics.usersUsingToday?.sheetUrl, master);
   setStatsLink(els.usersWeekLink, liveMetrics.totalUsersThisWeek?.sheetUrl, master);
   setStatsLink(els.usersOnlineLink, liveMetrics.usersOnline?.sheetUrl, master);
@@ -1882,8 +1888,8 @@ async function loadLeaderboard() {
     if (!hasLoadedUserMetrics) {
       setCounterValue(els.usersTodayCount, payload.usersToday);
       setCounterValue(els.usersWeekCount, payload.usersThisWeek);
-      setCounterValue(els.usersOnlineCount, payload.usersOnline);
     }
+    setCounterValue(els.usersOnlineCount, payload.usersOnline);
 
     if (!hasLoadedActivityMetrics) {
       setCounterValue(els.workoutsLoggedCount, payload.workoutsLogged);
@@ -1919,9 +1925,11 @@ async function loadLeaderboard() {
     }
     setLiveWorkoutEvents([]);
     setCounterValue(els.usersOnlineCount, 0);
-    setCounterValue(els.workoutsLoggedCount, 0);
-    setCounterValue(els.caloriesTrackedCount, 0);
-    setCounterValueWithDecimals(els.gallonsDrankCount, 0, 1);
+    if (!hasLoadedActivityMetrics) {
+      setCounterValue(els.workoutsLoggedCount, 0);
+      setCounterValue(els.caloriesTrackedCount, 0);
+      setCounterValueWithDecimals(els.gallonsDrankCount, 0, 1);
+    }
     setStepsTapeVisibility(false);
     if (els.stepsTapeState) {
       els.stepsTapeState.textContent = `Step counter unavailable: ${error.message}`;

@@ -3,128 +3,153 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blog | The Tracker App - Fitness Tips, Updates & Insights</title>
-    <meta name="description" content="Read the latest fitness tips, app updates, and health insights from The Tracker App team. Stay informed about SMS, iMessage, and Telegram workout tracking." />
-    <meta name="keywords" content="fitness blog, workout tips, calorie tracking tips, SMS fitness, iMessage workout, nutrition advice, body measurement tracking" />
-    <meta name="theme-color" content="#000000" />
-
+    <title>Blog | TheTrackerApp - Fitness Tips, Workout Guides & Updates</title>
+    <meta name="description" content="Read the latest fitness tips, workout guides, nutrition advice, and app updates from TheTrackerApp team. Track calories, workouts, and body measurements via SMS, iMessage, and Telegram." />
+    <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://thetrackerapp.io/blog" />
     <link rel="icon" href="/favicon.svg?v=5" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3" sizes="180x180" />
+    <link rel="manifest" href="/site.webmanifest" />
 
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Blog | The Tracker App" />
-    <meta property="og:description" content="Read the latest fitness tips, app updates, and health insights from The Tracker App team." />
+    <meta property="og:title" content="Blog | TheTrackerApp" />
+    <meta property="og:description" content="Read the latest fitness tips, workout guides, nutrition advice, and app updates from TheTrackerApp team." />
     <meta property="og:url" content="https://thetrackerapp.io/blog" />
     <meta property="og:image" content="https://thetrackerapp.io/og-image.png?v=2" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
-    <script type="module" crossorigin src="/assets/blog-BXSJL_C1.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-BJzIe6l4.js">
-    <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-pGyTMR37.js">
-    <link rel="modulepreload" crossorigin href="/assets/preload-helper-lqsI3teB.js">
-    <link rel="modulepreload" crossorigin href="/assets/feature-flags-DmYA39an.js">
-    <link rel="stylesheet" crossorigin href="/assets/blog-BIU_sKfm.css">
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Blog",
+        "@id": "https://thetrackerapp.io/blog#Blog",
+        "url": "https://thetrackerapp.io/blog",
+        "name": "TheTrackerApp Blog",
+        "description": "Fitness tips, workout guides, nutrition advice, and app updates from TheTrackerApp team.",
+        "publisher": {
+          "@type": "Organization",
+          "@id": "https://thetrackerapp.io/#Organization",
+          "name": "TheTrackerApp",
+          "url": "https://thetrackerapp.io"
+        },
+        "blogPost": []
+      }
+    </script>
+    <script type="module" crossorigin src="/assets/blog-DgEfFHJO.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-Bchw24nj.js">
+    <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-Dk1G9xmN.js">
+    <link rel="modulepreload" crossorigin href="/assets/preload-helper-C5agPA9e.js">
+    <link rel="modulepreload" crossorigin href="/assets/feature-flags-DYCiIttL.js">
+    <link rel="stylesheet" crossorigin href="/assets/blog-BgEr9oTs.css">
     <link rel="stylesheet" crossorigin href="/assets/info-pages-iuJ7kj43.css">
   </head>
   <body>
-    <div id="appShell">
-      <header class="site-header">
-        <div class="container header-row">
-          <a href="/" class="header-logo" aria-label="Home" style="display:flex; align-items:center; gap:8px; text-decoration:none;">
-            <svg class="logo-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 32px; height: 32px;">
-              <circle cx="32" cy="32" r="30.5" fill="transparent" stroke="#38ffd3" stroke-width="3"/>
-              <text x="50%" y="50%" dy="0.35em" text-anchor="middle" font-size="32" fill="#fff">🏋️</text>
-            </svg>
-            <span class="logo-text-svg" style="font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 20px; color: #fff; fill: #fff; letter-spacing: -0.02em;">thetrackerapp.io</span>
-          </a>
-          <nav class="app-links" aria-label="Navigation">
-            <a href="/">Home</a>
-            <a href="/blog" class="active">Blog</a>
-            <a href="/press">Press</a>
-            <a href="/tools/tdee-calculator">Free Tools</a>
-          </nav>
-          <div class="header-auth">
-            <a id="loginLink" class="login-link" href="/login">Login</a>
-            <a id="dashboardLink" class="dashboard-link" href="https://dashboard.thetrackerapp.io/dashboard" hidden>Dashboard</a>
-          </div>
-        </div>
+    <div class="info-shell">
+      <header class="info-nav">
+        <p class="info-brand">TheTrackerApp</p>
+        <nav class="info-links" aria-label="Primary">
+          <a href="/">Home</a>
+          <a href="/blog" class="info-button is-primary">Blog</a>
+          <a href="/press">Press</a>
+          <a href="/pricing">Pricing</a>
+          <a href="/tools/tdee-calculator">Free Tools</a>
+          <a id="loginLink" class="info-button" href="/login">Login</a>
+          <a id="dashboardLink" class="info-button" href="https://dashboard.thetrackerapp.io/dashboard" hidden>Dashboard</a>
+        </nav>
       </header>
 
-      <main class="container page-content">
-        <section class="page-hero">
-          <h1>The Tracker App Blog</h1>
-          <p class="hero-subtitle">Fitness tips, app updates, and insights from The Tracker App team</p>
-        </section>
-
-        <!-- Blog Post Creation (Admin Only) -->
-        <section id="blogCreateSection" class="blog-create-section" hidden>
-          <h2>Create New Post</h2>
-          <form id="blogCreateForm" class="blog-create-form">
-            <label for="blogTitle">
-              Title *
-              <input type="text" id="blogTitle" name="title" required placeholder="Enter post title" />
-            </label>
-            <label for="blogSlug">
-              URL Slug *
-              <input type="text" id="blogSlug" name="slug" required placeholder="my-post-title" />
-              <small class="field-help">Used in the URL: /blog/my-post-title</small>
-            </label>
-            <label for="blogExcerpt">
-              Excerpt *
-              <textarea id="blogExcerpt" name="excerpt" required placeholder="Brief summary of the post..." rows="2"></textarea>
-            </label>
-            <label for="blogContent">
-              Content (Markdown) *
-              <textarea id="blogContent" name="content" required placeholder="Write your post content in Markdown..." rows="12"></textarea>
-            </label>
-            <label for="blogTags">
-              Tags (comma-separated)
-              <input type="text" id="blogTags" name="tags" placeholder="fitness, tracking, tips" />
-            </label>
-            <label for="blogFeaturedImage">
-              Featured Image URL
-              <input type="url" id="blogFeaturedImage" name="featuredImage" placeholder="https://..." />
-            </label>
-            <div class="form-actions">
-              <button type="submit" class="btn-primary">Publish Post</button>
-              <button type="button" id="blogPreviewBtn" class="btn-secondary">Preview</button>
-            </div>
-            <p id="blogCreateStatus" class="form-status" role="status"></p>
-          </form>
-        </section>
-
-        <!-- Blog Posts List -->
-        <section class="blog-posts-section">
-          <div class="blog-filters">
+      <main class="blog-layout">
+        <aside class="blog-sidebar" aria-label="Blog sidebar">
+          <div class="blog-sidebar-section">
+            <p class="blog-sidebar-title">Search</p>
             <input type="search" id="blogSearch" placeholder="Search posts..." aria-label="Search blog posts" />
+          </div>
+
+          <div class="blog-sidebar-section">
+            <p class="blog-sidebar-title">Filter by Tag</p>
             <select id="blogTagFilter" aria-label="Filter by tag">
               <option value="">All Tags</option>
             </select>
           </div>
 
-          <div id="blogPostsList" class="blog-posts-grid">
-            <p class="loading-state">Loading posts...</p>
+          <div class="blog-sidebar-section" id="blogRecentPostsSection" hidden>
+            <p class="blog-sidebar-title">Recent Posts</p>
+            <ol id="blogRecentPosts" class="blog-recent-list"></ol>
           </div>
 
-          <div id="blogPagination" class="blog-pagination" hidden>
-            <button id="blogPrevPage" class="btn-secondary" disabled>Previous</button>
-            <span id="blogPageInfo">Page 1</span>
-            <button id="blogNextPage" class="btn-secondary">Next</button>
+          <div class="blog-sidebar-section">
+            <p class="blog-sidebar-title">Subscribe</p>
+            <p class="blog-sidebar-rss">
+              <a href="https://thetrackerapp.io/blog/rss.xml" rel="alternate" type="application/rss+xml">RSS Feed</a>
+            </p>
           </div>
-        </section>
+        </aside>
+
+        <article class="blog-main">
+          <header class="info-hero blog-hero">
+            <p class="info-kicker">Content</p>
+            <h1>TheTrackerApp Blog</h1>
+            <p>Fitness tips, workout guides, nutrition advice, and app updates from TheTrackerApp team. Learn how to track calories, log workouts, and measure progress using SMS, iMessage, and Telegram.</p>
+          </header>
+
+          <section id="blogCreateSection" class="blog-create-section" hidden>
+            <h2>Create New Post</h2>
+            <form id="blogCreateForm" class="blog-create-form">
+              <label for="blogTitle">
+                Title *
+                <input type="text" id="blogTitle" name="title" required placeholder="Enter post title" />
+              </label>
+              <label for="blogSlug">
+                URL Slug *
+                <input type="text" id="blogSlug" name="slug" required placeholder="my-post-title" />
+                <small class="field-help">Used in the URL: /blog/my-post-title</small>
+              </label>
+              <label for="blogExcerpt">
+                Excerpt *
+                <textarea id="blogExcerpt" name="excerpt" required placeholder="Brief summary of the post..." rows="2"></textarea>
+              </label>
+              <label for="blogContent">
+                Content (Markdown) *
+                <textarea id="blogContent" name="content" required placeholder="Write your post content in Markdown..." rows="12"></textarea>
+              </label>
+              <label for="blogTags">
+                Tags (comma-separated)
+                <input type="text" id="blogTags" name="tags" placeholder="fitness, tracking, tips" />
+              </label>
+              <label for="blogFeaturedImage">
+                Featured Image URL
+                <input type="url" id="blogFeaturedImage" name="featuredImage" placeholder="https://..." />
+              </label>
+              <div class="form-actions">
+                <button type="submit" class="btn-primary">Publish Post</button>
+                <button type="button" id="blogPreviewBtn" class="btn-secondary">Preview</button>
+              </div>
+              <p id="blogCreateStatus" class="form-status" role="status"></p>
+            </form>
+          </section>
+
+          <section class="blog-posts-section">
+            <div id="blogPostsList" class="blog-posts-grid">
+              <p class="loading-state">Loading posts...</p>
+            </div>
+
+            <div id="blogPagination" class="blog-pagination" hidden>
+              <button id="blogPrevPage" class="btn-secondary" disabled>Previous</button>
+              <span id="blogPageInfo">Page 1</span>
+              <button id="blogNextPage" class="btn-secondary">Next</button>
+            </div>
+          </section>
+        </article>
       </main>
 
-      <footer class="site-footer">
-        <div class="container footer-row">
-          <a data-feature="footer.contact" href="mailto:contact@thetrackerapp.io">contact@thetrackerapp.io</a>
-          <a data-feature="footer.blog" href="/blog">Blog</a>
-          <a data-feature="footer.press" href="/press">Press</a>
-          <a data-feature="footer.privacy" href="/privacy">Privacy Policy</a>
-          <a data-feature="footer.terms" href="/terms">Terms</a>
-        </div>
+      <footer class="legal-footer">
+        <p>&copy; 2026 TheTrackerApp &middot; <a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot; <a href="/status">Status</a> &middot; <a href="/blog">Blog</a></p>
       </footer>
     </div>
 

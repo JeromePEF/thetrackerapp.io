@@ -1867,6 +1867,53 @@ body.dashboard-page .account-readonly-value {
   font-size: 0.94rem;
 }
 
+body.dashboard-page .account-public-profile {
+  margin-top: 1.2rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+body.dashboard-page .account-public-profile h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+body.dashboard-page .account-public-desc {
+  margin: 0.4rem 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+
+body.dashboard-page .account-public-desc a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+body.dashboard-page .public-profile-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+body.dashboard-page .toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0.4rem 0;
+}
+
+body.dashboard-page .toggle-row input[type="checkbox"] {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
 body.dashboard-page .affiliate-empty-billing {
   margin-top: 0.7rem;
 }

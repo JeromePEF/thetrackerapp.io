@@ -22,6 +22,7 @@ export default defineConfig({
         affiliateConnect: resolve(__dirname, "affiliate/connect.html"),
         // New pages
         blog: resolve(__dirname, "blog.html"),
+        blogPost: resolve(__dirname, "blog-post.html"),
         press: resolve(__dirname, "press.html"),
         products: resolve(__dirname, "products.html"),
         brackets: resolve(__dirname, "brackets.html"),
@@ -39,6 +40,7 @@ export default defineConfig({
         bmiCalculator: resolve(__dirname, "tools/bmi-calculator.html"),
         aiMealPlanner: resolve(__dirname, "tools/ai-meal-planner.html"),
         foodDiary: resolve(__dirname, "tools/food-diary.html"),
+        user: resolve(__dirname, "user.html"),
       },
     },
   },

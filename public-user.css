@@ -1,0 +1,377 @@
+:root {
+  --bg: #000000;
+  --panel: #0d0d0d;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.14);
+  --ink: #ecf4ff;
+  --ink-muted: #8a96a8;
+  --ink-inverse: #021416;
+  --accent: #38ffd3;
+  --accent-soft: #24a7b4;
+  --accent-ink: #021416;
+  --success: #5be7a9;
+  --error: #ff7f7f;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: "Space Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+}
+
+body.user-page {
+  background: radial-gradient(ellipse 60% 50% at 50% -20%, rgba(36, 167, 180, 0.08), transparent 60%),
+    var(--bg);
+}
+
+/* ---- Shell ---- */
+
+.user-shell {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1rem 1rem 2rem;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- Top Nav ---- */
+
+.user-top-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.user-brand {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.user-brand span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-nav-links {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+}
+
+.user-nav-links a {
+  text-decoration: none;
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 0.42rem 0.72rem;
+  font-size: 0.88rem;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.user-nav-links a:hover {
+  border-color: var(--accent);
+  background: rgba(56, 255, 211, 0.06);
+}
+
+/* ---- Layout ---- */
+
+.user-layout {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 2rem;
+}
+
+/* ---- Profile Header ---- */
+
+.user-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  width: 100%;
+  max-width: 560px;
+}
+
+.user-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-soft), var(--accent));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--accent-ink);
+  flex-shrink: 0;
+  border: 3px solid var(--accent);
+}
+
+.user-info {
+  min-width: 0;
+}
+
+.user-display-name {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+.user-handle {
+  margin: 0.2rem 0 0;
+  font-size: 1rem;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.user-joined {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+
+/* ---- Stats Bar ---- */
+
+.user-stats-bar {
+  display: flex;
+  gap: 2rem;
+  margin-top: 2rem;
+  padding: 1rem 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  width: 100%;
+  max-width: 560px;
+  justify-content: center;
+}
+
+.user-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.user-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.user-stat-label {
+  font-size: 0.8rem;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ---- Heatmaps ---- */
+
+.user-heatmaps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  width: 100%;
+  margin-top: 2rem;
+}
+
+.user-heatmap-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.user-heatmap-head {
+  margin-bottom: 0.65rem;
+}
+
+.user-heatmap-head h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.user-heatmap-head p {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+}
+
+.heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 0.26rem;
+}
+
+.heatmap-cell {
+  aspect-ratio: 1 / 1;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+.heatmap-cell[data-level="1"] {
+  background: rgba(63, 224, 197, 0.18);
+}
+
+.heatmap-cell[data-level="2"] {
+  background: rgba(63, 224, 197, 0.34);
+}
+
+.heatmap-cell[data-level="3"] {
+  background: rgba(63, 224, 197, 0.56);
+}
+
+.heatmap-cell[data-level="4"] {
+  background: rgba(63, 224, 197, 0.82);
+}
+
+.heatmap-empty {
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+  margin: 0.5rem 0;
+}
+
+/* ---- Error State ---- */
+
+.user-error {
+  width: 100%;
+  max-width: 480px;
+}
+
+.user-error-card {
+  text-align: center;
+  padding: 2.5rem 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.user-error-card h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.4rem;
+  color: var(--ink);
+}
+
+.user-error-card p {
+  margin: 0 0 1.5rem;
+  color: var(--ink-muted);
+}
+
+.user-error-card .btn-primary {
+  display: inline-block;
+  padding: 0.65rem 1.4rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.user-error-card .btn-primary:hover {
+  background: #5fffe0;
+}
+
+/* ---- Loading ---- */
+
+.user-loading {
+  text-align: center;
+  color: var(--ink-muted);
+  padding: 3rem 0;
+}
+
+/* ---- Footer ---- */
+
+.user-footer {
+  text-align: center;
+  padding-top: 2rem;
+  border-top: 1px solid var(--line);
+  margin-top: 2rem;
+}
+
+.user-footer p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--ink-muted);
+}
+
+.user-footer a {
+  color: var(--ink-muted);
+  text-decoration: none;
+}
+
+.user-footer a:hover {
+  color: var(--accent);
+}
+
+/* ---- Responsive ---- */
+
+@media (max-width: 768px) {
+  .user-heatmaps {
+    grid-template-columns: 1fr;
+  }
+
+  .user-profile-header {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .user-stats-bar {
+    gap: 1.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .user-shell {
+    padding: 0.75rem 0.75rem 1.5rem;
+  }
+
+  .user-display-name {
+    font-size: 1.4rem;
+  }
+
+  .user-avatar {
+    width: 64px;
+    height: 64px;
+    font-size: 1.5rem;
+  }
+
+  .user-stat-value {
+    font-size: 1.2rem;
+  }
+}

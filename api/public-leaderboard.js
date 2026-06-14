@@ -412,6 +412,42 @@ async function getSheetLeaderboards() {
   };
 }
 
+async function getDashboardMetricsFromSheet() {
+  try {
+    const csvText = await fetchText(csvUrl("DashboardData"));
+    const rows = parseCsv(csvText);
+    if (rows.length < 2) {
+      throw new Error("DashboardData sheet returned no data rows.");
+    }
+
+    const headers = rows[0].map((h) => String(h).trim().toLowerCase());
+    const windowIdx = headers.indexOf("window");
+    const usersIdx = headers.indexOf("users active");
+    const workoutsIdx = headers.indexOf("workouts logged");
+    const caloriesIdx = headers.indexOf("calories tracked");
+    const gallonsIdx = headers.indexOf("gallons drank");
+
+    const todayRow = rows.slice(1).find((row) => (row[windowIdx] || "").trim().toLowerCase() === "today");
+    const weekRow = rows.slice(1).find((row) => (row[windowIdx] || "").trim().toLowerCase() === "week");
+
+    return {
+      usersToday: toNumber(todayRow?.[usersIdx]) ?? 0,
+      usersThisWeek: toNumber(weekRow?.[usersIdx]) ?? toNumber(todayRow?.[usersIdx]) ?? 0,
+      workoutsLogged: toNumber(todayRow?.[workoutsIdx]) ?? 0,
+      caloriesTracked: toNumber(todayRow?.[caloriesIdx]) ?? 0,
+      gallonsDrank: toNumber(todayRow?.[gallonsIdx]) ?? 0,
+    };
+  } catch {
+    return {
+      usersToday: 0,
+      usersThisWeek: 0,
+      workoutsLogged: 0,
+      caloriesTracked: 0,
+      gallonsDrank: 0,
+    };
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== "GET") {
     return res.status(405).json({ ok: false, error: "Method not allowed" });
@@ -425,10 +461,11 @@ export default async function handler(req, res) {
     // Keep the public page available if the new backend snapshot is temporarily down.
   }
 
-  const [sheetResult, pebbleResult, liveStreakResult] = await Promise.allSettled([
+  const [sheetResult, pebbleResult, liveStreakResult, metricsResult] = await Promise.allSettled([
     getSheetLeaderboards(),
     getPebble(),
     fetchJson("/api/streaks/live"),
+    getDashboardMetricsFromSheet(),
   ]);
 
   if (sheetResult.status !== "fulfilled") {
@@ -443,6 +480,8 @@ export default async function handler(req, res) {
     sheetResult.value.streakEntries[0]?.message ||
     "";
 
+  const metrics = metricsResult.status === "fulfilled" ? metricsResult.value : {};
+
   return res.status(200).json({
     ok: true,
     generatedAt: new Date().toISOString(),
@@ -450,12 +489,12 @@ export default async function handler(req, res) {
     ...sheetResult.value,
     streakLiveMessage,
     pebble: pebbleResult.status === "fulfilled" ? pebbleResult.value : {},
-    usersToday: 0,
-    usersThisWeek: 0,
+    usersToday: metrics.usersToday ?? 0,
+    usersThisWeek: metrics.usersThisWeek ?? 0,
     usersOnline: 0,
-    workoutsLogged: 0,
-    caloriesTracked: 0,
-    gallonsDrank: 0,
+    workoutsLogged: metrics.workoutsLogged ?? 0,
+    caloriesTracked: metrics.caloriesTracked ?? 0,
+    gallonsDrank: metrics.gallonsDrank ?? 0,
     directories: {},
   });
 }

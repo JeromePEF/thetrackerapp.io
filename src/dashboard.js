@@ -197,6 +197,16 @@ const els = {
   accountUsernameStatus: document.getElementById("accountUsernameStatus"),
   accountAgeStatus: document.getElementById("accountAgeStatus"),
 
+  publicProfileUrl: document.getElementById("publicProfileUrl"),
+  publicProfileUsername: document.getElementById("publicProfileUsername"),
+  toggleWorkoutVisibility: document.getElementById("toggleWorkoutVisibility"),
+  toggleNutritionVisibility: document.getElementById("toggleNutritionVisibility"),
+  toggleWaterVisibility: document.getElementById("toggleWaterVisibility"),
+  savePublicProfileButton: document.getElementById("savePublicProfileButton"),
+  publicProfileSaved: document.getElementById("publicProfileSaved"),
+  publicProfileStatus: document.getElementById("publicProfileStatus"),
+  publicProfileToggles: document.getElementById("publicProfileToggles"),
+
   navPersonalTrainer: document.getElementById("navPersonalTrainer"),
   personalTrainerPanel: document.getElementById("tabPersonalTrainer"),
   personalTrainerStatusValue: document.getElementById("personalTrainerStatusValue"),
@@ -1272,6 +1282,7 @@ function renderAccountInfo() {
   const user = readAuthUser();
 
   syncEditableAccountInputs(user);
+  hydratePublicProfileVisibility();
 
   if (els.accountEmailValue) {
     els.accountEmailValue.textContent = user?.email || "-";
@@ -1644,6 +1655,104 @@ function wireAccountEditing() {
     els.verifyAccountEmailButton.addEventListener("click", () => {
       void requestAccountEmailVerification();
     });
+  }
+}
+
+function wirePublicProfileVisibility() {
+  if (els.savePublicProfileButton) {
+    els.savePublicProfileButton.addEventListener("click", () => {
+      void savePublicProfileVisibility();
+    });
+  }
+  const toggles = [els.toggleWorkoutVisibility, els.toggleNutritionVisibility, els.toggleWaterVisibility];
+  toggles.forEach((toggle) => {
+    if (toggle) {
+      toggle.addEventListener("change", () => {
+        if (els.publicProfileSaved) els.publicProfileSaved.hidden = true;
+        if (els.publicProfileStatus) {
+          els.publicProfileStatus.textContent = "";
+          els.publicProfileStatus.classList.remove("is-error", "is-success");
+        }
+      });
+    }
+  });
+}
+
+function hydratePublicProfileVisibility() {
+  const user = readAuthUser();
+  if (!user) return;
+
+  const username = String(user.username || "").trim();
+  if (els.publicProfileToggles) {
+    els.publicProfileToggles.hidden = !username;
+  }
+  if (els.savePublicProfileButton) {
+    els.savePublicProfileButton.hidden = !username;
+  }
+  if (els.publicProfileUsername) {
+    els.publicProfileUsername.textContent = username || "you";
+  }
+  if (els.publicProfileUrl) {
+    els.publicProfileUrl.href = username ? `/@${encodeURIComponent(username)}` : "/@";
+  }
+
+  const visibility = state.backendSnapshot?.publicProfileVisibility || {};
+  if (els.toggleWorkoutVisibility) {
+    els.toggleWorkoutVisibility.checked = visibility.workouts !== false;
+  }
+  if (els.toggleNutritionVisibility) {
+    els.toggleNutritionVisibility.checked = visibility.nutrition !== false;
+  }
+  if (els.toggleWaterVisibility) {
+    els.toggleWaterVisibility.checked = visibility.water !== false;
+  }
+}
+
+async function savePublicProfileVisibility() {
+  if (els.publicProfileStatus) {
+    els.publicProfileStatus.textContent = "Saving...";
+    els.publicProfileStatus.classList.remove("is-error", "is-success");
+  }
+  if (els.publicProfileSaved) {
+    els.publicProfileSaved.hidden = true;
+  }
+
+  const visibility = {
+    workouts: els.toggleWorkoutVisibility?.checked ?? true,
+    nutrition: els.toggleNutritionVisibility?.checked ?? true,
+    water: els.toggleWaterVisibility?.checked ?? true,
+  };
+
+  try {
+    const token = getAuthToken();
+    const res = await fetch(`${API_BASE}/api/user/visibility`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: token ? `Bearer ${token}` : "",
+      },
+      body: JSON.stringify({ visibility }),
+    });
+
+    if (!res.ok) throw new Error(`Server error (${res.status})`);
+    const data = await res.json();
+    if (!data?.ok) throw new Error(data?.error || "Failed to save");
+
+    if (state.backendSnapshot) {
+      state.backendSnapshot.publicProfileVisibility = visibility;
+    }
+
+    if (els.publicProfileSaved) els.publicProfileSaved.hidden = false;
+    if (els.publicProfileStatus) {
+      els.publicProfileStatus.textContent = "Visibility updated.";
+      els.publicProfileStatus.classList.add("is-success");
+    }
+  } catch (err) {
+    if (els.publicProfileStatus) {
+      els.publicProfileStatus.textContent = err.message || "Save failed.";
+      els.publicProfileStatus.classList.add("is-error");
+    }
+    console.warn("savePublicProfileVisibility failed:", err);
   }
 }
 
@@ -5687,6 +5796,7 @@ function wireInitialActions() {
   wireExport();
   wireGoals();
   wireAccountEditing();
+  wirePublicProfileVisibility();
   wireBilling();
   wireIntegrations();
   wireAi();

@@ -41,7 +41,9 @@
   ],
   "rewrites": [
     { "source": "/dashboard-endpoints", "destination": "/api/dashboard-endpoints" },
-    { "source": "/", "destination": "/api/home" }
+    { "source": "/@:username", "destination": "/user" },
+    { "source": "/", "destination": "/api/home" },
+    { "source": "/blog/:slug", "destination": "/blog-post" }
   ],
   "functions": {
     "api/home.js": {

@@ -21,6 +21,8 @@ const blogPageInfo = document.getElementById("blogPageInfo");
 const blogCreateSection = document.getElementById("blogCreateSection");
 const blogCreateForm = document.getElementById("blogCreateForm");
 const blogCreateStatus = document.getElementById("blogCreateStatus");
+const blogRecentPosts = document.getElementById("blogRecentPosts");
+const blogRecentPostsSection = document.getElementById("blogRecentPostsSection");
 
 // Check if user is admin
 async function checkAdmin() {
@@ -39,6 +41,57 @@ async function checkAdmin() {
     // Ignore
   }
   return false;
+}
+
+// Update JSON-LD structured data for SEO
+function updateStructuredData() {
+  const scriptEl = document.querySelector('script[type="application/ld+json"]');
+  if (!scriptEl || !posts.length) return;
+
+  try {
+    const data = JSON.parse(scriptEl.textContent);
+    data.blogPost = posts.map((post) => ({
+      "@type": "BlogPosting",
+      "@id": `https://thetrackerapp.io/blog/${post.slug}#BlogPosting`,
+      "url": `https://thetrackerapp.io/blog/${post.slug}`,
+      "headline": post.title,
+      "description": post.excerpt,
+      "datePublished": post.publishedAt,
+      "dateModified": post.updatedAt || post.publishedAt,
+      ...(post.author && {
+        "author": {
+          "@type": "Person",
+          "name": post.author,
+        },
+      }),
+      ...(post.featuredImage && {
+        "image": post.featuredImage,
+      }),
+      "publisher": {
+        "@type": "Organization",
+        "@id": "https://thetrackerapp.io/#Organization",
+        "name": "TheTrackerApp",
+        "url": "https://thetrackerapp.io",
+      },
+    }));
+    scriptEl.textContent = JSON.stringify(data, null, 6);
+  } catch (e) {
+    // Ignore JSON parse errors
+  }
+}
+
+// Update recent posts sidebar
+function updateRecentPosts() {
+  if (!blogRecentPosts || !posts.length) return;
+
+  const recent = posts.slice(0, 8);
+  blogRecentPosts.innerHTML = recent
+    .map(
+      (post) => `
+    <li><a href="/blog/${post.slug}">${post.title}</a></li>`
+    )
+    .join("");
+  blogRecentPostsSection.hidden = false;
 }
 
 // Fetch blog posts
@@ -65,6 +118,8 @@ async function fetchPosts() {
     renderPosts();
     renderPagination();
     updateTagFilter(data.tags || []);
+    updateStructuredData();
+    updateRecentPosts();
   } catch (error) {
     console.error("Error fetching posts:", error);
     blogPostsList.innerHTML = `
@@ -219,6 +274,7 @@ blogPrevPage?.addEventListener("click", () => {
   if (currentPage > 1) {
     currentPage--;
     fetchPosts();
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 });
 
@@ -226,6 +282,7 @@ blogNextPage?.addEventListener("click", () => {
   if (currentPage < totalPages) {
     currentPage++;
     fetchPosts();
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 });
 
@@ -252,8 +309,10 @@ async function init() {
 
   // Check auth state
   const isAuthenticated = localStorage.getItem("tracker.authenticated") === "true";
-  document.getElementById("loginLink").hidden = isAuthenticated;
-  document.getElementById("dashboardLink").hidden = !isAuthenticated;
+  const loginLink = document.getElementById("loginLink");
+  const dashboardLink = document.getElementById("dashboardLink");
+  if (loginLink) loginLink.hidden = isAuthenticated;
+  if (dashboardLink) dashboardLink.hidden = !isAuthenticated;
 
   // Check if admin
   const isAdmin = await checkAdmin();

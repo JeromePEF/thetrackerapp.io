@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title id="userPageTitle">User Profile | The Tracker App</title>
+    <meta id="userPageDescription" name="description" content="View fitness activity, workout heatmaps, and tracking stats on The Tracker App." />
+    <meta name="theme-color" content="#000000" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" id="ogTitle" content="User Profile | The Tracker App" />
+    <meta property="og:description" id="ogDescription" content="View fitness activity, workout heatmaps, and tracking stats." />
+    <meta property="og:url" id="ogUrl" content="https://thetrackerapp.io/@" />
+    <meta property="og:site_name" content="The Tracker App" />
+    <meta property="og:image" content="https://thetrackerapp.io/og-image.png?v=2" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" id="twitterTitle" content="User Profile | The Tracker App" />
+    <meta name="twitter:description" id="twitterDescription" content="View fitness activity, workout heatmaps, and tracking stats." />
+    <meta name="twitter:image" content="https://thetrackerapp.io/og-image.png?v=2" />
+
+    <link rel="canonical" id="canonicalUrl" href="https://thetrackerapp.io/@" />
+    <link rel="icon" href="/favicon.svg?v=5" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3" sizes="180x180" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="public-user.css" />
+  </head>
+  <body class="user-page">
+    <div class="user-shell">
+      <header class="user-top-nav">
+        <a href="/" class="header-logo user-brand" aria-label="Home">
+          <svg class="logo-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 28px; height: 28px;">
+            <circle cx="32" cy="32" r="30.5" fill="transparent" stroke="#38ffd3" stroke-width="3"/>
+            <text x="50%" y="50%" dy="0.35em" text-anchor="middle" font-size="28" fill="#fff">🏋️</text>
+          </svg>
+          <span class="logo-text-svg" style="font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 18px; color: #fff; letter-spacing: -0.02em;">thetrackerapp.io</span>
+        </a>
+        <nav class="user-nav-links" aria-label="Primary">
+          <a href="/">Home</a>
+          <a href="/leaderboard">Leaderboard</a>
+          <a href="/login">Login</a>
+        </nav>
+      </header>
+
+      <main class="user-layout">
+        <section class="user-profile-header" id="userProfileHeader">
+          <div class="user-avatar" id="userAvatar"></div>
+          <div class="user-info">
+            <h1 class="user-display-name" id="userDisplayName">@username</h1>
+            <p class="user-handle" id="userHandle"></p>
+            <p class="user-joined" id="userJoined"></p>
+          </div>
+        </section>
+
+        <section class="user-stats-bar" id="userStatsBar">
+          <div class="user-stat-item">
+            <span class="user-stat-value" id="userStatWorkouts">-</span>
+            <span class="user-stat-label">Workouts</span>
+          </div>
+          <div class="user-stat-item">
+            <span class="user-stat-value" id="userStatStreak">-</span>
+            <span class="user-stat-label">Day Streak</span>
+          </div>
+          <div class="user-stat-item">
+            <span class="user-stat-value" id="userStatDays">-</span>
+            <span class="user-stat-label">Active Days</span>
+          </div>
+        </section>
+
+        <section class="user-heatmaps" id="userHeatmaps">
+          <article class="user-heatmap-card" id="workoutHeatmapCard">
+            <div class="user-heatmap-head">
+              <h3>Workout Activity</h3>
+              <p>Last 12 weeks</p>
+            </div>
+            <div id="userWorkoutHeatmap" class="heatmap-grid"></div>
+          </article>
+
+          <article class="user-heatmap-card" id="nutritionHeatmapCard">
+            <div class="user-heatmap-head">
+              <h3>Nutrition Activity</h3>
+              <p>Last 12 weeks</p>
+            </div>
+            <div id="userNutritionHeatmap" class="heatmap-grid"></div>
+          </article>
+
+          <article class="user-heatmap-card" id="waterHeatmapCard">
+            <div class="user-heatmap-head">
+              <h3>Hydration Activity</h3>
+              <p>Last 12 weeks</p>
+            </div>
+            <div id="userWaterHeatmap" class="heatmap-grid"></div>
+          </article>
+        </section>
+
+        <section class="user-error" id="userError" hidden>
+          <div class="user-error-card">
+            <h2 id="userErrorTitle">User Not Found</h2>
+            <p id="userErrorMessage">This user doesn't exist or hasn't set up their public profile yet.</p>
+            <a href="/" class="btn-primary">Back to Home</a>
+          </div>
+        </section>
+
+        <section class="user-loading" id="userLoading">
+          <p>Loading profile…</p>
+        </section>
+      </main>
+
+      <footer class="user-footer">
+        <p>
+          <a href="/">The Tracker App</a>
+          &middot;
+          <a href="/privacy">Privacy</a>
+          &middot;
+          <a href="/terms">Terms</a>
+        </p>
+      </footer>
+    </div>
+
+    <script type="module" src="/src/user.js"></script>
+  </body>
+</html>
