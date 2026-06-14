@@ -34,9 +34,9 @@
       href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
-    <script type="module" crossorigin src="/assets/user-Cg8CT4-o.js"></script>
+    <script type="module" crossorigin src="/assets/user-9VPqtsnJ.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-Bchw24nj.js">
-    <link rel="stylesheet" crossorigin href="/assets/user-DxFjd6Y9.css">
+    <link rel="stylesheet" crossorigin href="/assets/user-DnuJJZDi.css">
   </head>
   <body class="user-page">
     <div class="user-shell">
@@ -81,29 +81,70 @@
         </section>
 
         <section class="user-heatmaps" id="userHeatmaps">
+          <article class="user-heatmap-card user-heatmap-merged" id="mergedHeatmapCard">
+            <div class="user-heatmap-head">
+              <h3>Merged Activity</h3>
+              <p>Workouts + Nutrition + Hydration &mdash; Last 52 weeks</p>
+            </div>
+            <div class="heatmap-chart" id="userMergedHeatmap"></div>
+          </article>
+
           <article class="user-heatmap-card" id="workoutHeatmapCard">
             <div class="user-heatmap-head">
               <h3>Workout Activity</h3>
-              <p>Last 12 weeks</p>
+              <p>Last 52 weeks</p>
             </div>
-            <div id="userWorkoutHeatmap" class="heatmap-grid"></div>
+            <div class="heatmap-chart" id="userWorkoutHeatmap"></div>
           </article>
 
           <article class="user-heatmap-card" id="nutritionHeatmapCard">
             <div class="user-heatmap-head">
               <h3>Nutrition Activity</h3>
-              <p>Last 12 weeks</p>
+              <p>Last 52 weeks</p>
             </div>
-            <div id="userNutritionHeatmap" class="heatmap-grid"></div>
+            <div class="heatmap-chart" id="userNutritionHeatmap"></div>
           </article>
 
           <article class="user-heatmap-card" id="waterHeatmapCard">
             <div class="user-heatmap-head">
               <h3>Hydration Activity</h3>
-              <p>Last 12 weeks</p>
+              <p>Last 52 weeks</p>
             </div>
-            <div id="userWaterHeatmap" class="heatmap-grid"></div>
+            <div class="heatmap-chart" id="userWaterHeatmap"></div>
           </article>
+        </section>
+
+        <section class="user-leaderboard" id="userLeaderboard">
+          <article class="user-lb-card" id="strengthCard">
+            <div class="user-lb-head">
+              <h3>Strength Leaderboard</h3>
+              <span class="user-lb-badge">LIVE</span>
+            </div>
+            <div id="userStrengthRows" class="user-lb-rows"></div>
+          </article>
+
+          <article class="user-lb-card" id="calisthenicsCard">
+            <div class="user-lb-head">
+              <h3>Calisthenics Leaderboard</h3>
+              <span class="user-lb-badge">LIVE</span>
+            </div>
+            <div id="userCalisthenicsRows" class="user-lb-rows"></div>
+          </article>
+
+          <article class="user-lb-card" id="streaksCard">
+            <div class="user-lb-head">
+              <h3>Top Streaks</h3>
+              <span class="user-lb-badge">LIVE</span>
+            </div>
+            <div id="userStreaksRows" class="user-lb-rows"></div>
+          </article>
+        </section>
+
+        <section class="user-recent-workouts" id="userRecentWorkouts">
+          <div class="user-section-head">
+            <h3>Recent Workouts</h3>
+          </div>
+          <div id="userRecentWorkoutList" class="user-recent-list"></div>
         </section>
 
         <section class="user-error" id="userError" hidden>

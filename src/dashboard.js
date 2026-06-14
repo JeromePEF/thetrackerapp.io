@@ -202,6 +202,8 @@ const els = {
   toggleWorkoutVisibility: document.getElementById("toggleWorkoutVisibility"),
   toggleNutritionVisibility: document.getElementById("toggleNutritionVisibility"),
   toggleWaterVisibility: document.getElementById("toggleWaterVisibility"),
+  toggleLeaderboardVisibility: document.getElementById("toggleLeaderboardVisibility"),
+  toggleRecentWorkoutsVisibility: document.getElementById("toggleRecentWorkoutsVisibility"),
   savePublicProfileButton: document.getElementById("savePublicProfileButton"),
   publicProfileSaved: document.getElementById("publicProfileSaved"),
   publicProfileStatus: document.getElementById("publicProfileStatus"),
@@ -1664,7 +1666,7 @@ function wirePublicProfileVisibility() {
       void savePublicProfileVisibility();
     });
   }
-  const toggles = [els.toggleWorkoutVisibility, els.toggleNutritionVisibility, els.toggleWaterVisibility];
+  const toggles = [els.toggleWorkoutVisibility, els.toggleNutritionVisibility, els.toggleWaterVisibility, els.toggleLeaderboardVisibility, els.toggleRecentWorkoutsVisibility];
   toggles.forEach((toggle) => {
     if (toggle) {
       toggle.addEventListener("change", () => {
@@ -1696,7 +1698,9 @@ function hydratePublicProfileVisibility() {
     els.publicProfileUrl.href = username ? `/@${encodeURIComponent(username)}` : "/@";
   }
 
-  const visibility = state.backendSnapshot?.publicProfileVisibility || {};
+  const visibility = state.backendSnapshot?.publicProfileVisibility
+    || state.backendSnapshot?.profile?.publicVisibility
+    || {};
   if (els.toggleWorkoutVisibility) {
     els.toggleWorkoutVisibility.checked = visibility.workouts !== false;
   }
@@ -1705,6 +1709,12 @@ function hydratePublicProfileVisibility() {
   }
   if (els.toggleWaterVisibility) {
     els.toggleWaterVisibility.checked = visibility.water !== false;
+  }
+  if (els.toggleLeaderboardVisibility) {
+    els.toggleLeaderboardVisibility.checked = visibility.leaderboard !== false;
+  }
+  if (els.toggleRecentWorkoutsVisibility) {
+    els.toggleRecentWorkoutsVisibility.checked = visibility.recentWorkouts !== false;
   }
 }
 
@@ -1721,6 +1731,8 @@ async function savePublicProfileVisibility() {
     workouts: els.toggleWorkoutVisibility?.checked ?? true,
     nutrition: els.toggleNutritionVisibility?.checked ?? true,
     water: els.toggleWaterVisibility?.checked ?? true,
+    leaderboard: els.toggleLeaderboardVisibility?.checked ?? true,
+    recentWorkouts: els.toggleRecentWorkoutsVisibility?.checked ?? true,
   };
 
   try {

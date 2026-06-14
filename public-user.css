@@ -200,8 +200,8 @@ body.user-page {
 
 .user-heatmaps {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
   width: 100%;
   margin-top: 2rem;
 }
@@ -209,8 +209,17 @@ body.user-page {
 .user-heatmap-card {
   border: 1px solid var(--line);
   border-radius: 14px;
-  padding: 1rem;
+  padding: 1.2rem;
   background: rgba(255, 255, 255, 0.02);
+}
+
+.user-heatmap-merged {
+  border-color: rgba(56, 255, 211, 0.18);
+  background: rgba(56, 255, 211, 0.03);
+}
+
+.user-heatmap-merged .user-heatmap-head h3 {
+  color: var(--accent);
 }
 
 .user-heatmap-head {
@@ -230,39 +239,317 @@ body.user-page {
   color: var(--ink-muted);
 }
 
-.heatmap-grid {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 0.26rem;
+/* -- Heatmap Chart -- */
+
+.heatmap-chart {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
-.heatmap-cell {
-  aspect-ratio: 1 / 1;
-  border-radius: 5px;
+.heatmap-table {
+  position: relative;
+  display: inline-block;
+  min-width: min-content;
+}
+
+.heatmap-month-row {
+  display: grid;
+  align-items: end;
+}
+
+.heatmap-month-label {
+  font-size: 0.6rem;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.heatmap-body-row {
+  display: flex;
+}
+
+.heatmap-day-labels {
+  display: flex;
+  flex-direction: column;
+  padding-right: 4px;
+  flex-shrink: 0;
+}
+
+.heatmap-day-labels span {
+  font-size: 0.58rem;
+  color: var(--ink-muted);
+  display: flex;
+  align-items: center;
+}
+
+.heatmap-week-grid {
+  display: grid;
+  grid-auto-flow: column;
+}
+
+.hc-cell {
+  width: 13px;
+  height: 13px;
+  border-radius: 2px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.02);
+  cursor: pointer;
 }
 
-.heatmap-cell[data-level="1"] {
-  background: rgba(63, 224, 197, 0.18);
+.hc-cell:hover {
+  outline: 2px solid rgba(255, 255, 255, 0.35);
+  outline-offset: -1px;
 }
 
-.heatmap-cell[data-level="2"] {
-  background: rgba(63, 224, 197, 0.34);
+/* Skeleton loading */
+.hc-skeleton {
+  animation: hc-pulse 1.2s ease-in-out infinite;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.03);
 }
 
-.heatmap-cell[data-level="3"] {
-  background: rgba(63, 224, 197, 0.56);
+@keyframes hc-pulse {
+  0%, 100% { opacity: 0.3; }
+  50%      { opacity: 0.7; }
 }
 
-.heatmap-cell[data-level="4"] {
-  background: rgba(63, 224, 197, 0.82);
+/* -- Heatmap Tooltip -- */
+
+.heatmap-tooltip {
+  display: none;
+  position: absolute;
+  transform: translate(-50%, -100%);
+  background: rgba(20, 20, 25, 0.95);
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* ---- Heatmap Colors ---- */
+
+/* Workouts — blue */
+.hc-cell[data-category="workouts"][data-level="1"] {
+  background: rgba(72, 147, 255, 0.18);
+}
+.hc-cell[data-category="workouts"][data-level="2"] {
+  background: rgba(72, 147, 255, 0.32);
+}
+.hc-cell[data-category="workouts"][data-level="3"] {
+  background: rgba(72, 147, 255, 0.50);
+}
+.hc-cell[data-category="workouts"][data-level="4"] {
+  background: rgba(72, 147, 255, 0.72);
+}
+.hc-cell[data-category="workouts"][data-level="5"] {
+  background: rgba(72, 147, 255, 0.95);
+}
+
+/* Nutrition — green */
+.hc-cell[data-category="nutrition"][data-level="1"] {
+  background: rgba(70, 210, 120, 0.18);
+}
+.hc-cell[data-category="nutrition"][data-level="2"] {
+  background: rgba(70, 210, 120, 0.32);
+}
+.hc-cell[data-category="nutrition"][data-level="3"] {
+  background: rgba(70, 210, 120, 0.50);
+}
+.hc-cell[data-category="nutrition"][data-level="4"] {
+  background: rgba(70, 210, 120, 0.72);
+}
+.hc-cell[data-category="nutrition"][data-level="5"] {
+  background: rgba(70, 210, 120, 0.95);
+}
+
+/* Hydration — tan / amber */
+.hc-cell[data-category="water"][data-level="1"] {
+  background: rgba(210, 160, 90, 0.18);
+}
+.hc-cell[data-category="water"][data-level="2"] {
+  background: rgba(210, 160, 90, 0.32);
+}
+.hc-cell[data-category="water"][data-level="3"] {
+  background: rgba(210, 160, 90, 0.50);
+}
+.hc-cell[data-category="water"][data-level="4"] {
+  background: rgba(210, 160, 90, 0.72);
+}
+.hc-cell[data-category="water"][data-level="5"] {
+  background: rgba(210, 160, 90, 0.95);
+}
+
+/* Merged — teal / accent */
+.hc-cell[data-category="merged"][data-level="1"] {
+  background: rgba(56, 255, 211, 0.15);
+}
+.hc-cell[data-category="merged"][data-level="2"] {
+  background: rgba(56, 255, 211, 0.28);
+}
+.hc-cell[data-category="merged"][data-level="3"] {
+  background: rgba(56, 255, 211, 0.46);
+}
+.hc-cell[data-category="merged"][data-level="4"] {
+  background: rgba(56, 255, 211, 0.68);
+}
+.hc-cell[data-category="merged"][data-level="5"] {
+  background: rgba(56, 255, 211, 0.92);
 }
 
 .heatmap-empty {
   font-size: 0.85rem;
   color: var(--ink-muted);
   margin: 0.5rem 0;
+}
+
+/* ---- Leaderboard Standings ---- */
+
+.user-leaderboard {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  width: 100%;
+  margin-top: 2rem;
+}
+
+.user-lb-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.user-lb-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.user-lb-head h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.user-lb-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.18rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(56, 255, 211, 0.14);
+  color: var(--accent);
+}
+
+.user-lb-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.user-lb-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.user-lb-rank {
+  font-size: 1rem;
+  font-weight: 700;
+  min-width: 2.2rem;
+  text-align: center;
+  color: var(--accent);
+}
+
+.user-lb-exercise {
+  flex: 1;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--ink);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.user-lb-value {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.user-streak-summary {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: var(--ink-muted);
+  font-style: italic;
+  line-height: 1.4;
+}
+
+/* ---- Recent Workouts ---- */
+
+.user-recent-workouts {
+  width: 100%;
+  margin-top: 2rem;
+}
+
+.user-section-head {
+  margin-bottom: 0.75rem;
+}
+
+.user-section-head h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.user-recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.user-recent-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.user-recent-date {
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+  min-width: 3.5rem;
+}
+
+.user-recent-exercise {
+  flex: 1;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.user-recent-detail {
+  font-size: 0.8rem;
+  color: var(--accent-soft);
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 /* ---- Error State ---- */
@@ -342,7 +629,7 @@ body.user-page {
 /* ---- Responsive ---- */
 
 @media (max-width: 768px) {
-  .user-heatmaps {
+  .user-leaderboard {
     grid-template-columns: 1fr;
   }
 
@@ -373,5 +660,16 @@ body.user-page {
 
   .user-stat-value {
     font-size: 1.2rem;
+  }
+
+  .hc-cell {
+    width: 10px;
+    height: 10px;
+  }
+
+  .heatmap-day-labels span {
+    font-size: 0.5rem;
+    line-height: 10px;
+    height: 10px;
   }
 }
