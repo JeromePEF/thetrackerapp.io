@@ -351,60 +351,6 @@ body {
   color: var(--accent);
 }
 
-/* FAQ */
-.pricing-faq {
-  margin-bottom: 4rem;
-}
-
-.pricing-faq h2 {
-  font-family: "Orbitron", sans-serif;
-  font-size: 1.5rem;
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.faq-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.faq-item {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.faq-item summary {
-  padding: 1rem 1.25rem;
-  font-weight: 600;
-  cursor: pointer;
-  list-style: none;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.faq-item summary::after {
-  content: "+";
-  color: var(--accent);
-  font-size: 1.25rem;
-}
-
-.faq-item[open] summary::after {
-  content: "−";
-}
-
-.faq-item p {
-  padding: 0 1.25rem 1rem;
-  color: var(--text-muted);
-  font-size: 0.9rem;
-  line-height: 1.6;
-}
-
 /* CTA */
 .pricing-cta {
   text-align: center;
@@ -477,9 +423,6 @@ body {
     order: -1;
   }
   
-  .faq-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (max-width: 640px) {

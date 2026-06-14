@@ -33,6 +33,7 @@ export default defineConfig({
         guide: resolve(__dirname, "guide.html"),
         status: resolve(__dirname, "status.html"),
         trust: resolve(__dirname, "trust.html"),
+        faq: resolve(__dirname, "faq.html"),
         changelog: resolve(__dirname, "changelog.html"),
         leaderboard: resolve(__dirname, "leaderboard.html"),
         // Free Tools (SEO pages)
