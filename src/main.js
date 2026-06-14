@@ -1918,23 +1918,27 @@ async function loadLeaderboard() {
     latestPebblePayload = null;
     latestStreakEntries = [];
     latestStreakCallout = "";
-    els.leaderboardList.innerHTML = "";
-    els.groupLeaderboardList.innerHTML = "";
-    els.pebbleCaloriesList.innerHTML = "";
-    els.pebbleWorkoutsList.innerHTML = "";
-    els.pebbleStepsList.innerHTML = "";
-    if (els.streakLeaderboardList) {
-      els.streakLeaderboardList.innerHTML = "";
+
+    if (!hasLoadedLeaderboard) {
+      els.leaderboardList.innerHTML = "";
+      els.groupLeaderboardList.innerHTML = "";
+      els.pebbleCaloriesList.innerHTML = "";
+      els.pebbleWorkoutsList.innerHTML = "";
+      els.pebbleStepsList.innerHTML = "";
+      if (els.streakLeaderboardList) {
+        els.streakLeaderboardList.innerHTML = "";
+      }
+      if (els.streakLiveCallout) {
+        els.streakLiveCallout.textContent = "";
+      }
+      if (els.pebbleSleepList) {
+        els.pebbleSleepList.innerHTML = "";
+      }
+      if (els.pebbleMilesList) {
+        els.pebbleMilesList.innerHTML = "";
+      }
     }
-    if (els.streakLiveCallout) {
-      els.streakLiveCallout.textContent = "";
-    }
-    if (els.pebbleSleepList) {
-      els.pebbleSleepList.innerHTML = "";
-    }
-    if (els.pebbleMilesList) {
-      els.pebbleMilesList.innerHTML = "";
-    }
+
     setLiveWorkoutEvents([]);
     setCounterValue(els.usersOnlineCount, 0);
     if (!hasLoadedActivityMetrics) {
