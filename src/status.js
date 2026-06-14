@@ -192,7 +192,8 @@ function renderUptime(days) {
   barsEl.innerHTML = days
     .map((d) => {
       const meta = metaFor(d.status);
-      return `<div class="uptime-bar" data-tone="${meta.tone}" title="${d.date} · ${meta.label}" role="img" aria-label="${d.date}: ${meta.label}"></div>`;
+      const height = d.status === "operational" ? "100%" : d.status === "degraded" ? "55%" : "25%";
+      return `<div class="uptime-bar" data-tone="${meta.tone}" style="height:${height}" title="${d.date} · ${meta.label}" role="img" aria-label="${d.date}: ${meta.label}"></div>`;
     })
     .join("");
 }
