@@ -50,6 +50,18 @@
   border: none;
 }
 
+/* Loading state */
+.stream-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  color: var(--ink-muted);
+  font-size: 1.25rem;
+  text-align: center;
+  padding: 2rem;
+}
+
 /* Offline state */
 .stream-offline {
   display: flex;
