@@ -1,6 +1,5 @@
 // Stream page — YouTube live stream embed
-import { fetchFeatureFlags, getCachedFlags, applyFeatureFlags } from "./feature-flags.js";
-import "./footer-socials.js";
+import { initFeatureFlags } from "./feature-flags.js";
 
 function extractYouTubeId(url) {
   if (!url) return null;
@@ -52,30 +51,20 @@ function renderStream(streamUrl) {
   `;
 }
 
-async function checkMaintenanceMode() {
-  try {
-    const flags = await fetchFeatureFlags();
-    if (flags.maintenanceMode) {
-      const overlay = document.getElementById("maintenanceOverlay");
-      const message = document.getElementById("maintenanceMessage");
-      if (overlay) {
-        overlay.hidden = false;
-        if (message && flags.maintenanceMessage) {
-          message.textContent = flags.maintenanceMessage;
-        }
-      }
-      return true;
-    }
-  } catch (e) {
-    console.warn("Could not check maintenance mode:", e);
-  }
-  return false;
-}
-
 async function init() {
-  await checkMaintenanceMode();
-  const flags = getCachedFlags();
-  if (flags) applyFeatureFlags(flags);
+  const flags = await initFeatureFlags();
+
+  if (flags.maintenanceMode) {
+    const overlay = document.getElementById("maintenanceOverlay");
+    const message = document.getElementById("maintenanceMessage");
+    if (overlay) {
+      overlay.hidden = false;
+      if (message && flags.maintenanceMessage) {
+        message.textContent = flags.maintenanceMessage;
+      }
+    }
+  }
+
   const streamUrl = flags?.youtubeStreamUrl || "";
   renderStream(streamUrl);
 }
