@@ -1,5 +1,5 @@
 // Stream page — YouTube live stream embed
-import { initFeatureFlags } from "./feature-flags.js";
+import { fetchFeatureFlags, applyFeatureFlags } from "./feature-flags.js";
 
 function extractYouTubeId(url) {
   if (!url) return null;
@@ -52,7 +52,20 @@ function renderStream(streamUrl) {
 }
 
 async function init() {
-  const flags = await initFeatureFlags();
+  let flags = await fetchFeatureFlags();
+
+  if (!flags?.youtubeStreamUrl) {
+    flags = await fetchFeatureFlags(true);
+  }
+
+  applyFeatureFlags(flags);
+
+  try {
+    const { applyFooterSocials } = await import("./footer-socials.js");
+    applyFooterSocials(flags?.socials);
+  } catch {
+    /* socials optional */
+  }
 
   if (flags.maintenanceMode) {
     const overlay = document.getElementById("maintenanceOverlay");
