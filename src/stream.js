@@ -1,24 +1,7 @@
 // Stream page — YouTube live stream embed
 import { fetchFeatureFlags, applyFeatureFlags } from "./feature-flags.js";
 
-const STREAM_CACHE_KEY = "tracker.streamUrl";
-
-function getCachedStreamUrl() {
-  try {
-    const raw = localStorage.getItem(STREAM_CACHE_KEY);
-    if (!raw) return null;
-    const { url } = JSON.parse(raw);
-    return url || null;
-  } catch {}
-  return null;
-}
-
-function setCachedStreamUrl(url) {
-  if (!url) return;
-  try {
-    localStorage.setItem(STREAM_CACHE_KEY, JSON.stringify({ url }));
-  } catch {}
-}
+const STREAM_URL = "https://www.youtube.com/watch?v=iiRNq1sxr0U";
 
 function extractYouTubeId(url) {
   if (!url) return null;
@@ -40,37 +23,29 @@ function buildEmbedUrl(videoId) {
   return `https://www.youtube.com/embed/${videoId}?origin=${encodeURIComponent("https://thetrackerapp.io")}`;
 }
 
-function hideLoading() {
-  const el = document.getElementById("streamLoading");
-  if (el) el.hidden = true;
-}
-
-function showOffline() {
-  const el = document.getElementById("streamOffline");
-  if (el) el.hidden = false;
-}
-
-function renderStream(streamUrl) {
+function renderStream() {
   const wrapper = document.getElementById("streamEmbedWrapper");
+  const loading = document.getElementById("streamLoading");
   const offline = document.getElementById("streamOffline");
   if (!wrapper) return;
 
-  const videoId = extractYouTubeId(streamUrl);
-
+  const videoId = extractYouTubeId(STREAM_URL);
   if (!videoId) {
     wrapper.innerHTML = "";
-    hideLoading();
+    if (loading) loading.hidden = true;
     if (offline) offline.hidden = false;
     return;
   }
 
-  hideLoading();
+  if (loading) loading.hidden = true;
   if (offline) offline.hidden = true;
 
   wrapper.innerHTML = `<iframe src="${buildEmbedUrl(videoId)}" title="The Tracker App Live Stream" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
 }
 
-async function refreshFromUpstream() {
+async function init() {
+  renderStream();
+
   try {
     const flags = await fetchFeatureFlags(true);
     if (flags) {
@@ -87,32 +62,8 @@ async function refreshFromUpstream() {
           if (msg && flags.maintenanceMessage) msg.textContent = flags.maintenanceMessage;
         }
       }
-      if (flags.youtubeStreamUrl) {
-        setCachedStreamUrl(flags.youtubeStreamUrl);
-        return flags.youtubeStreamUrl;
-      }
     }
   } catch {}
-  return null;
-}
-
-async function init() {
-  let streamUrl = getCachedStreamUrl();
-
-  if (streamUrl) {
-    renderStream(streamUrl);
-  } else {
-    streamUrl = await refreshFromUpstream();
-  }
-
-  if (streamUrl) {
-    renderStream(streamUrl);
-  } else if (!getCachedStreamUrl()) {
-    hideLoading();
-    showOffline();
-  }
-
-  refreshFromUpstream();
 }
 
 init();
