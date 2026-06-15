@@ -1,5 +1,6 @@
 // Stream page — YouTube live stream embed
-import { fetchFeatureFlags, getCachedFlags } from "./feature-flags.js";
+import { fetchFeatureFlags, getCachedFlags, applyFeatureFlags } from "./feature-flags.js";
+import "./footer-socials.js";
 
 function extractYouTubeId(url) {
   if (!url) return null;
@@ -74,6 +75,7 @@ async function checkMaintenanceMode() {
 async function init() {
   await checkMaintenanceMode();
   const flags = getCachedFlags();
+  if (flags) applyFeatureFlags(flags);
   const streamUrl = flags?.youtubeStreamUrl || "";
   renderStream(streamUrl);
 }
