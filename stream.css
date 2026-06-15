@@ -1,0 +1,103 @@
+/* Stream page — full-viewport YouTube embed layout */
+
+/* Override styles.css body rules to allow natural scrolling / fill */
+.stream-page {
+  overflow: hidden;
+  height: 100dvh;
+}
+
+/* Override #appShell fixed canvas — stream page fills the viewport natively */
+.stream-page #appShell {
+  position: relative;
+  left: auto;
+  top: auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+
+/* Header row on stream — full width with same padding */
+.stream-page .site-header .container.header-row {
+  max-width: 100% !important;
+}
+
+/* Main area fills remaining space between header and footer */
+.stream-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: #000;
+}
+
+.stream-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.stream-embed-wrapper {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.stream-embed-wrapper iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* Offline state */
+.stream-offline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  color: var(--ink-muted);
+  font-size: 1.25rem;
+  text-align: center;
+  padding: 2rem;
+}
+
+/* Footer — compact on stream page */
+.stream-page .site-footer {
+  flex-shrink: 0;
+}
+
+/* Maintenance overlay (matches community.css) */
+.maintenance-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.maintenance-content {
+  text-align: center;
+  padding: 3rem;
+  max-width: 500px;
+}
+
+.maintenance-icon {
+  font-size: 4rem;
+  margin-bottom: 1.5rem;
+}
+
+.maintenance-content h2 {
+  font-family: "Orbitron", sans-serif;
+  font-size: 2rem;
+  margin: 0 0 1rem;
+  color: #fff;
+}
+
+.maintenance-content p {
+  color: #9eb0c5;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}

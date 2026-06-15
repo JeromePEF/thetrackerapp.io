@@ -34,7 +34,6 @@ export default defineConfig({
         status: resolve(__dirname, "status.html"),
         trust: resolve(__dirname, "trust.html"),
         faq: resolve(__dirname, "faq.html"),
-        changelog: resolve(__dirname, "changelog.html"),
         leaderboard: resolve(__dirname, "leaderboard.html"),
         // Free Tools (SEO pages)
         tdeeCalculator: resolve(__dirname, "tools/tdee-calculator.html"),
@@ -42,6 +41,7 @@ export default defineConfig({
         aiMealPlanner: resolve(__dirname, "tools/ai-meal-planner.html"),
         foodDiary: resolve(__dirname, "tools/food-diary.html"),
         user: resolve(__dirname, "user.html"),
+        stream: resolve(__dirname, "stream.html"),
       },
     },
   },

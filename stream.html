@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Live Stream | The Tracker App</title>
+    <meta name="description" content="Watch The Tracker App live stream. Real-time fitness tracking, workouts, and community action." />
+    <meta name="theme-color" content="#0a0a0c" />
+    <link rel="icon" href="/favicon.svg?v=5" type="image/svg+xml" />
+    <link rel="canonical" href="https://thetrackerapp.io/stream" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3" sizes="180x180" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Live Stream | The Tracker App" />
+    <meta property="og:description" content="Watch The Tracker App live stream. Real-time fitness tracking, workouts, and community action." />
+    <meta property="og:url" content="https://thetrackerapp.io/stream" />
+    <meta property="og:site_name" content="The Tracker App" />
+    <meta property="og:image" content="https://thetrackerapp.io/og-image.png?v=2" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="The Tracker App live stream" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Live Stream | The Tracker App" />
+    <meta name="twitter:description" content="Watch The Tracker App live stream. Real-time fitness tracking, workouts, and community action." />
+    <meta name="twitter:image" content="https://thetrackerapp.io/og-image.png?v=2" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="stream.css" />
+  </head>
+  <body class="stream-page">
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <div id="appShell">
+      <header class="site-header">
+        <div class="container header-row">
+          <a href="/" class="header-logo" aria-label="Home" style="display:flex; align-items:center; gap:8px; text-decoration:none;">
+            <svg class="logo-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 32px; height: 32px;">
+              <circle cx="32" cy="32" r="30.5" fill="transparent" stroke="#38ffd3" stroke-width="3"/>
+              <text x="50%" y="50%" dy="0.35em" text-anchor="middle" font-size="32" fill="#fff">🏋️</text>
+            </svg>
+            <span class="logo-text-svg" style="font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 20px; color: #fff; fill: #fff; letter-spacing: -0.02em;">thetrackerapp.io</span>
+          </a>
+          <nav class="app-links" aria-label="Navigation">
+            <a href="/">Home</a>
+            <a href="/pricing">Pricing</a>
+            <a href="/blog" data-feature="blog">Blog</a>
+            <a href="/products" data-feature="products">Products</a>
+            <a href="/workout-resources">Resources</a>
+          </nav>
+          <div class="header-stats" aria-label="Stream status" id="streamStatus">
+            <p><span class="live-dot" aria-hidden="true" style="display:inline-block;vertical-align:middle;width:8px;height:8px;border-radius:50%;background:#38ffd3;margin-right:4px;"></span>LIVE</p>
+          </div>
+          <div class="header-auth">
+            <span class="header-login-emoji" aria-hidden="true">🏋</span>
+            <a id="loginLink" class="login-link" href="/login">Login</a>
+            <a id="dashboardLink" class="dashboard-link" href="https://dashboard.thetrackerapp.io/dashboard" hidden aria-hidden="true">Dashboard</a>
+          </div>
+        </div>
+      </header>
+
+      <main class="stream-main" id="main-content">
+        <div class="stream-container" id="streamContainer">
+          <p class="stream-offline" id="streamOffline" hidden>No live stream is currently scheduled. Check back soon!</p>
+          <div class="stream-embed-wrapper" id="streamEmbedWrapper">
+            <!-- YouTube iframe inserted by JS -->
+          </div>
+        </div>
+      </main>
+
+      <footer class="site-footer">
+        <div class="container footer-row">
+          <a href="mailto:contact@thetrackerapp.io" data-feature="footer.contact" hidden>contact@thetrackerapp.io</a>
+          <a href="/pricing">Pricing</a>
+          <a href="/community" data-feature="footer.community" hidden>Community & FAQ</a>
+          <a href="/blog" data-feature="footer.blog" hidden>Blog</a>
+          <a href="/press" data-feature="footer.press" hidden>Press</a>
+          <a href="/guide" data-feature="footer.guide" hidden>Guide</a>
+          <a href="/status" data-feature="footer.status" hidden>Status</a>
+          <a href="/trust" data-feature="footer.trust" hidden>Trust</a>
+          <a href="/llms.txt" data-feature="footer.llmsTxt" hidden>llms.txt</a>
+          <a href="/privacy" data-feature="footer.privacy" hidden>Privacy</a>
+          <a href="/terms" data-feature="footer.terms" hidden>Terms</a>
+        </div>
+      </footer>
+    </div>
+
+    <!-- Maintenance Overlay -->
+    <div id="maintenanceOverlay" class="maintenance-overlay" hidden>
+      <div class="maintenance-content">
+        <div class="maintenance-icon">🔧</div>
+        <h2>We'll Be Right Back</h2>
+        <p id="maintenanceMessage">We're making some improvements. Check back soon!</p>
+      </div>
+    </div>
+
+    <script type="module" src="src/stream.js"></script>
+  </body>
+</html>
