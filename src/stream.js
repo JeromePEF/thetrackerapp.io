@@ -1,48 +1,72 @@
 // Stream page — YouTube live stream embed
 import { fetchFeatureFlags, applyFeatureFlags } from "./feature-flags.js";
 
-const STREAM_URL = "https://www.youtube.com/watch?v=iiRNq1sxr0U";
+const CACHE_KEY = "tracker.streamVideoId";
 
-function extractYouTubeId(url) {
+function getCachedVideoId() {
   try {
-    const u = new URL(url);
-    if (u.hostname.includes("youtube.com") || u.hostname.includes("youtu.be")) {
-      if (u.pathname.startsWith("/live/")) return u.pathname.split("/")[2];
-      if (u.pathname.startsWith("/watch")) return u.searchParams.get("v");
-      if (u.hostname === "youtu.be") return u.pathname.slice(1);
-      const segs = u.pathname.split("/").filter(Boolean);
-      if (segs[0] === "embed") return segs[1];
-    }
-  } catch (_) { return null; }
+    const stored = localStorage.getItem(CACHE_KEY);
+    if (stored) return JSON.parse(stored).videoId || null;
+  } catch {}
   return null;
 }
 
-function buildEmbedUrl() {
-  const videoId = extractYouTubeId(STREAM_URL) || "";
+function setCachedVideoId(videoId) {
+  if (!videoId) return;
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ videoId }));
+  } catch {}
+}
+
+function buildEmbedUrl(videoId) {
   return `https://www.youtube.com/embed/${videoId}?origin=${encodeURIComponent("https://thetrackerapp.io")}`;
 }
 
-function renderStream() {
+function renderStream(videoId) {
   const wrapper = document.getElementById("streamEmbedWrapper");
   const loading = document.getElementById("streamLoading");
   const offline = document.getElementById("streamOffline");
   if (!wrapper) return;
 
-  const embedUrl = buildEmbedUrl();
-  if (!embedUrl) {
+  if (!videoId) {
     if (loading) loading.hidden = true;
     if (offline) offline.hidden = false;
+    wrapper.innerHTML = "";
     return;
   }
 
   if (loading) loading.hidden = true;
   if (offline) offline.hidden = true;
 
-  wrapper.innerHTML = `<iframe src="${embedUrl}" title="The Tracker App Live Stream" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
+  wrapper.innerHTML = `<iframe src="${buildEmbedUrl(videoId)}" title="The Tracker App Live Stream" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
+}
+
+async function fetchLatestVideoId() {
+  try {
+    const res = await fetch("/api/stream-url");
+    if (res.ok) {
+      const data = await res.json();
+      return data.videoId || null;
+    }
+  } catch {}
+  return null;
 }
 
 async function init() {
-  renderStream();
+  let videoId = getCachedVideoId();
+
+  if (videoId) {
+    renderStream(videoId);
+  }
+
+  const latest = await fetchLatestVideoId();
+
+  if (latest) {
+    setCachedVideoId(latest);
+    if (latest !== videoId) renderStream(latest);
+  } else if (!videoId) {
+    renderStream(null);
+  }
 
   try {
     const flags = await fetchFeatureFlags(true);
