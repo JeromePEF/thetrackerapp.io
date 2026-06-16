@@ -165,6 +165,8 @@ async function fetchLiveVideoId() {
     });
     if (!res.ok) return null;
     const html = await res.text();
+    const liveMatch = html.match(/"isLive":true.*?"videoId":"([^"]+)"/);
+    if (liveMatch) return liveMatch[1];
     const match = html.match(/"videoId":"([^"]+)"/);
     return match ? match[1] : null;
   } catch {
