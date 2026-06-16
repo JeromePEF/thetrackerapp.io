@@ -1543,14 +1543,27 @@ function applyPhoneFormat(input) {
   const isImessageKind = svc.identityKind === "imessage-contact";
   if (!isPhoneKind && !isImessageKind) return;
   if (isImessageKind && input.value.includes("@")) return;
-  const digits = input.value.replace(/\D+/g, "");
+  const raw = input.value;
+  const digits = raw.replace(/\D+/g, "");
+  const hasLetter = /[a-zA-Z]/.test(raw);
+
+  if (isImessageKind && hasLetter) {
+    if (/[()\-]/.test(raw)) {
+      const cursor = typeof input.selectionStart === "number" ? input.selectionStart : 0;
+      const stripped = raw.replace(/[()\-\s]/g, "");
+      const removed = raw.length - stripped.length;
+      input.value = stripped;
+      input.setSelectionRange(Math.max(0, cursor - removed), Math.max(0, cursor - removed));
+    }
+    return;
+  }
+
+  if (isImessageKind && digits.length < 3) return;
   if (!digits) return;
-  const alreadyFormatted = /[()\-]/.test(input.value);
-  if (!isPhoneKind && !alreadyFormatted && digits.length < 10) return;
   const cursor = typeof input.selectionStart === "number" ? input.selectionStart : 0;
-  const digitsBefore = input.value.slice(0, cursor).replace(/\D+/g, "").length;
+  const digitsBefore = raw.slice(0, cursor).replace(/\D+/g, "").length;
   const formatted = formatPhoneLive(digits);
-  if (formatted === input.value) return;
+  if (formatted === raw) return;
   input.value = formatted;
   let pos = 0;
   let seen = 0;
