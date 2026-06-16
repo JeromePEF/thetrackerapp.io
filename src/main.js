@@ -1152,7 +1152,7 @@ function setGallonsDrank(value) {
 }
 
 function applyUserLiveMetrics(liveMetrics) {
-  if (!liveMetrics) {
+  if (!liveMetrics || hasLoadedUserMetrics) {
     return;
   }
 
@@ -1166,7 +1166,7 @@ function applyUserLiveMetrics(liveMetrics) {
 }
 
 function applyActivityLiveMetrics(liveMetrics) {
-  if (!liveMetrics) {
+  if (!liveMetrics || hasLoadedActivityMetrics) {
     return;
   }
 
