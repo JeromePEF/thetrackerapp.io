@@ -52,6 +52,31 @@ async function fetchLatestVideoId() {
   return null;
 }
 
+function viewerId() {
+  let id = sessionStorage.getItem("stream.viewerId");
+  if (!id) {
+    id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+    sessionStorage.setItem("stream.viewerId", id);
+  }
+  return id;
+}
+
+async function pingViewer() {
+  try {
+    const res = await fetch(`/api/control?action=viewer-ping&viewer=${viewerId()}`);
+    if (res.ok) {
+      const data = await res.json();
+      const el = document.getElementById("viewerCount");
+      if (el) el.textContent = data.viewers || 0;
+    }
+  } catch {}
+}
+
+function startViewerPing() {
+  pingViewer();
+  setInterval(pingViewer, 15000);
+}
+
 async function init() {
   let videoId = getCachedVideoId();
 
@@ -67,6 +92,8 @@ async function init() {
   } else if (!videoId) {
     renderStream(null);
   }
+
+  startViewerPing();
 
   try {
     const flags = await fetchFeatureFlags(true);

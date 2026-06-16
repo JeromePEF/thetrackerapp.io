@@ -221,16 +221,38 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  // /api/control?action=stream-video — scrape current live video ID
-  const url = new URL(req.url, "https://thetrackerapp.io");
-  if (url.searchParams.get("action") === "stream-video") {
-    const videoId = await fetchLiveVideoId();
-    if (videoId) {
-      res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=30");
-      return res.status(200).json({ videoId });
+  // Viewer counter: track active viewers with 30s expiry
+  const viewerTTL = 30000;
+  if (!globalThis.__streamViewers) globalThis.__streamViewers = new Map();
+
+  function cleanViewers() {
+    const now = Date.now();
+    for (const [id, ts] of globalThis.__streamViewers) {
+      if (now - ts > viewerTTL) globalThis.__streamViewers.delete(id);
     }
-    res.setHeader("Cache-Control", "public, s-maxage=30, stale-while-revalidate=30");
-    return res.status(200).json({ videoId: null });
+  }
+
+  const url = new URL(req.url, "https://thetrackerapp.io");
+  const action = url.searchParams.get("action");
+
+  if (action === "stream-video") {
+    const videoId = await fetchLiveVideoId();
+    res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=30");
+    return res.status(200).json({ videoId: videoId || null });
+  }
+
+  if (action === "viewer-ping") {
+    const viewerId = url.searchParams.get("viewer") || "anon";
+    cleanViewers();
+    globalThis.__streamViewers.set(viewerId, Date.now());
+    res.setHeader("Cache-Control", "no-store");
+    return res.status(200).json({ viewers: globalThis.__streamViewers.size });
+  }
+
+  if (action === "viewers") {
+    cleanViewers();
+    res.setHeader("Cache-Control", "no-store");
+    return res.status(200).json({ viewers: globalThis.__streamViewers.size });
   }
 
   const { data, fresh } = await fetchUpstream();
