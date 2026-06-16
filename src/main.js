@@ -219,14 +219,13 @@ const els = {
   usersOnlineCount: document.getElementById("usersOnlineCount"),
   workoutsLoggedCount: document.getElementById("workoutsLoggedCount"),
   caloriesTrackedCount: document.getElementById("caloriesTrackedCount"),
-  gallonsDrankCount: document.getElementById("gallonsDrankCount"),
-  gallonsDrankOz: document.getElementById("gallonsDrankOz"),
+  waterDrankCount: document.getElementById("waterDrankCount"),
   usersTodayLink: document.getElementById("usersTodayLink"),
   usersWeekLink: document.getElementById("usersWeekLink"),
   usersOnlineLink: document.getElementById("usersOnlineLink"),
   workoutsLoggedLink: document.getElementById("workoutsLoggedLink"),
   caloriesTrackedLink: document.getElementById("caloriesTrackedLink"),
-  gallonsDrankLink: document.getElementById("gallonsDrankLink"),
+  waterDrankLink: document.getElementById("waterDrankLink"),
   leaderboardList: document.getElementById("leaderboardList"),
   leaderboardState: document.getElementById("leaderboardState"),
   groupLeaderboardList: document.getElementById("groupLeaderboardList"),
@@ -1145,10 +1144,10 @@ function setCounterValueWithDecimals(target, value, fractionDigits = 1) {
 }
 
 function setGallonsDrank(value) {
-  setCounterValueWithDecimals(els.gallonsDrankCount, value, 1);
-  if (els.gallonsDrankOz) {
-    const num = typeof value === "number" ? value : toNumber(value);
-    els.gallonsDrankOz.textContent = ` gal · ${formatNumber(Math.round(num * 128))} oz`;
+  const gallons = typeof value === "number" ? value : toNumber(value);
+  const ounces = Math.round(gallons * 128);
+  if (els.waterDrankCount) {
+    els.waterDrankCount.innerHTML = `${formatNumber(ounces)}<span style="font-size:50%"> oz</span>`;
   }
 }
 
@@ -1179,7 +1178,7 @@ function applyActivityLiveMetrics(liveMetrics) {
 
   setStatsLink(els.workoutsLoggedLink, liveMetrics.workoutsLogged?.sheetUrl, master);
   setStatsLink(els.caloriesTrackedLink, liveMetrics.caloriesTracked?.sheetUrl, master);
-  setStatsLink(els.gallonsDrankLink, liveMetrics.gallonsDrank?.sheetUrl, master);
+  setStatsLink(els.waterDrankLink, liveMetrics.gallonsDrank?.sheetUrl, master);
 }
 
 function formatNumber(value) {
@@ -1526,6 +1525,33 @@ function applyPebbleStepsTapePayload(pebblePayload) {
 
 function normalizePhone(value) {
   return value.replace(/\D+/g, "");
+}
+
+function formatPhoneLive(value) {
+  const digits = String(value || "").replace(/\D+/g, "");
+  if (!digits) return "";
+  if (digits.length <= 3) return `(${digits}`;
+  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+}
+
+function applyPhoneFormat(input) {
+  if (!input) return;
+  if (currentService()?.identityKind !== "phone") return;
+  const digits = input.value.replace(/\D+/g, "");
+  if (!digits) return;
+  const cursor = typeof input.selectionStart === "number" ? input.selectionStart : 0;
+  const digitsBefore = input.value.slice(0, cursor).replace(/\D+/g, "").length;
+  const formatted = formatPhoneLive(digits);
+  if (formatted === input.value) return;
+  input.value = formatted;
+  let pos = 0;
+  let seen = 0;
+  for (let i = 0; i < formatted.length; i++) {
+    if (/\d/.test(formatted[i]) && ++seen > digitsBefore) break;
+    pos = i + 1;
+  }
+  input.setSelectionRange(pos, pos);
 }
 
 function validEmail(value) {
@@ -2234,6 +2260,12 @@ function wireEvents() {
 
   if (els.signupForm) {
     els.signupForm.addEventListener("submit", handleSignup);
+  }
+
+  if (els.serviceIdentityInput) {
+    els.serviceIdentityInput.addEventListener("input", () => {
+      applyPhoneFormat(els.serviceIdentityInput);
+    });
   }
 
   if (els.serviceCarousel) {
@@ -3237,7 +3269,7 @@ window.simulateStatsIncrease = function() {
     { id: "usersWeekCount", isDec: false, bump: 1 },
     { id: "workoutsLoggedCount", isDec: false, bump: Math.floor(Math.random() * 3) + 1 },
     { id: "caloriesTrackedCount", isDec: false, bump: Math.floor(Math.random() * 500) + 100 },
-    { id: "gallonsDrankCount", isDec: true, bump: +(Math.random() * 0.5).toFixed(1) }
+    { id: "waterDrankCount", isDec: false, bump: Math.floor(Math.random() * 64) + 16 }
   ];
   
   targets.forEach(t => {
