@@ -1542,9 +1542,11 @@ function applyPhoneFormat(input) {
   const isPhoneKind = svc.identityKind === "phone";
   const isImessageKind = svc.identityKind === "imessage-contact";
   if (!isPhoneKind && !isImessageKind) return;
+  if (isImessageKind && input.value.includes("@")) return;
   const digits = input.value.replace(/\D+/g, "");
   if (!digits) return;
-  if (isImessageKind && input.value.includes("@")) return;
+  const alreadyFormatted = /[()\-]/.test(input.value);
+  if (!isPhoneKind && !alreadyFormatted && digits.length < 10) return;
   const cursor = typeof input.selectionStart === "number" ? input.selectionStart : 0;
   const digitsBefore = input.value.slice(0, cursor).replace(/\D+/g, "").length;
   const formatted = formatPhoneLive(digits);
