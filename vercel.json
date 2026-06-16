@@ -2,6 +2,17 @@
   "cleanUrls": true,
   "redirects": [
     {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.thetrackerapp.io"
+        }
+      ],
+      "destination": "https://thetrackerapp.io/:path*",
+      "permanent": true
+    },
+    {
       "source": "/affiliate/dashboard",
       "destination": "https://dashboard.thetrackerapp.io/dashboard?view=affiliate",
       "permanent": false
@@ -44,7 +55,8 @@
     { "source": "/@:username", "destination": "/user" },
     { "source": "/", "destination": "/api/home" },
     { "source": "/blog/:slug", "destination": "/blog-post" },
-    { "source": "/blog/rss.xml", "destination": "/blog/rss.xml" }
+    { "source": "/blog/rss.xml", "destination": "/blog/rss.xml" },
+    { "source": "/api/stream-url", "destination": "/api/control?action=stream-video" }
   ],
   "functions": {
     "api/home.js": {
