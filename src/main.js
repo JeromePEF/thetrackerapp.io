@@ -1537,9 +1537,14 @@ function formatPhoneLive(value) {
 
 function applyPhoneFormat(input) {
   if (!input) return;
-  if (currentService()?.identityKind !== "phone") return;
+  const svc = currentService();
+  if (!svc) return;
+  const isPhoneKind = svc.identityKind === "phone";
+  const isImessageKind = svc.identityKind === "imessage-contact";
+  if (!isPhoneKind && !isImessageKind) return;
   const digits = input.value.replace(/\D+/g, "");
   if (!digits) return;
+  if (isImessageKind && input.value.includes("@")) return;
   const cursor = typeof input.selectionStart === "number" ? input.selectionStart : 0;
   const digitsBefore = input.value.slice(0, cursor).replace(/\D+/g, "").length;
   const formatted = formatPhoneLive(digits);
