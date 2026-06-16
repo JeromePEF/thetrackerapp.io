@@ -40,9 +40,29 @@ function startViewerPing() {
   setInterval(pingViewer, 15000);
 }
 
+function countryFlag(code) {
+  if (!code || code.length !== 2) return "";
+  const a = code.toUpperCase().charCodeAt(0) - 65 + 0x1F1E6;
+  const b = code.toUpperCase().charCodeAt(1) - 65 + 0x1F1E6;
+  return String.fromCodePoint(a, b);
+}
+
+async function loadCountryFlag() {
+  try {
+    const res = await fetch("https://ipapi.co/json/");
+    if (res.ok) {
+      const data = await res.json();
+      const flag = countryFlag(data.country_code);
+      const el = document.getElementById("countryFlag");
+      if (el && flag) el.textContent = flag;
+    }
+  } catch {}
+}
+
 async function init() {
   renderStream();
   startViewerPing();
+  loadCountryFlag();
 
   try {
     const flags = await fetchFeatureFlags(true);
