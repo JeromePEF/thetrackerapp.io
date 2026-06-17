@@ -101,6 +101,30 @@ async function fetchUpstreamFlags() {
     return data;
   } catch (err) {
     console.warn("home renderer: upstream fetch failed:", err.message);
+    // Retry via Vercel edge proxy as fallback
+    try {
+      clearTimeout(timeout);
+      const retryCtrl = new AbortController();
+      const retryTimer = setTimeout(() => retryCtrl.abort(), 8000);
+      const proxyUrl = process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}/api/control`
+        : "https://thetrackerapp.io/api/control";
+      const res = await fetch(proxyUrl, {
+        headers: { Accept: "application/json" },
+        signal: retryCtrl.signal,
+      });
+      clearTimeout(retryTimer);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && typeof data === "object") {
+          cachedFlags = data;
+          cachedFlagsAt = now;
+          return data;
+        }
+      }
+    } catch {
+      /* fallback failed too — return null */
+    }
     return null;
   } finally {
     clearTimeout(timeout);
