@@ -457,7 +457,7 @@ function renderProfile(data) {
   if (els.userStatWorkouts) els.userStatWorkouts.textContent = formatNumber(totalWorkouts);
   if (els.userStatStreak) els.userStatStreak.textContent = formatNumber(streak);
   if (els.userStatDays) els.userStatDays.textContent = formatNumber(activeDays);
-  if (els.userStatsBar) els.userStatsBar.hidden = visibility.statsBar !== true;
+  if (els.userStatsBar) els.userStatsBar.hidden = (visibility && visibility.statsBar) !== true;
 
   var heatmap = data.heatmap || {};
   var days = heatmap.days || [];
