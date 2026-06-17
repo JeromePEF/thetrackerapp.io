@@ -1721,6 +1721,7 @@ function hydratePublicProfileVisibility() {
   const username = String(user.username || "").trim();
   if (els.publicProfileToggles) {
     els.publicProfileToggles.hidden = !username;
+    if (username) els.publicProfileToggles.classList.add("is-loading");
   }
   if (els.savePublicProfileButton) {
     els.savePublicProfileButton.hidden = !username;
@@ -1735,6 +1736,13 @@ function hydratePublicProfileVisibility() {
   const visibility = state.backendSnapshot?.publicProfileVisibility
     || state.backendSnapshot?.profile?.publicVisibility
     || {};
+
+  const hasData = state.backendSnapshot && (visibility.workouts !== undefined || visibility.merged !== undefined);
+  if (!hasData) return;
+
+  if (els.publicProfileToggles) {
+    els.publicProfileToggles.classList.remove("is-loading");
+  }
   if (els.toggleWorkoutVisibility) {
     els.toggleWorkoutVisibility.checked = visibility.workouts === true;
   }
