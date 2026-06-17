@@ -1675,6 +1675,7 @@ function wirePublicProfileVisibility() {
           els.publicProfileStatus.textContent = "";
           els.publicProfileStatus.classList.remove("is-error", "is-success");
         }
+        updatePublicProfilePreview(readAuthUser());
       });
     }
   });
@@ -1702,20 +1703,53 @@ function hydratePublicProfileVisibility() {
     || state.backendSnapshot?.profile?.publicVisibility
     || {};
   if (els.toggleWorkoutVisibility) {
-    els.toggleWorkoutVisibility.checked = visibility.workouts !== false;
+    els.toggleWorkoutVisibility.checked = visibility.workouts === true;
   }
   if (els.toggleNutritionVisibility) {
-    els.toggleNutritionVisibility.checked = visibility.nutrition !== false;
+    els.toggleNutritionVisibility.checked = visibility.nutrition === true;
   }
   if (els.toggleWaterVisibility) {
-    els.toggleWaterVisibility.checked = visibility.water !== false;
+    els.toggleWaterVisibility.checked = visibility.water === true;
   }
   if (els.toggleLeaderboardVisibility) {
-    els.toggleLeaderboardVisibility.checked = visibility.leaderboard !== false;
+    els.toggleLeaderboardVisibility.checked = visibility.leaderboard === true;
   }
   if (els.toggleRecentWorkoutsVisibility) {
-    els.toggleRecentWorkoutsVisibility.checked = visibility.recentWorkouts !== false;
+    els.toggleRecentWorkoutsVisibility.checked = visibility.recentWorkouts === true;
   }
+
+  updatePublicProfilePreview(user);
+}
+
+function updatePublicProfilePreview(user) {
+  const preview = document.getElementById("publicProfilePreview");
+  const list = document.getElementById("publicProfilePreviewList");
+  const previewUrl = document.getElementById("publicProfilePreviewUrl");
+  const previewUsername = document.getElementById("publicProfilePreviewUsername");
+  if (!preview || !list) return;
+
+  const username = String(user?.username || "").trim();
+  if (!username) {
+    preview.hidden = true;
+    return;
+  }
+
+  if (previewUrl) previewUrl.href = `/@${encodeURIComponent(username)}`;
+  if (previewUsername) previewUsername.textContent = username;
+
+  const items = [];
+  if (els.toggleWorkoutVisibility?.checked) items.push("52-week workout heatmap & activity calendar");
+  if (els.toggleNutritionVisibility?.checked) items.push("52-week nutrition / meal logging heatmap");
+  if (els.toggleWaterVisibility?.checked) items.push("52-week hydration / water intake heatmap");
+  if (els.toggleLeaderboardVisibility?.checked) items.push("Strength, calisthenics & streak leaderboard rankings");
+  if (els.toggleRecentWorkoutsVisibility?.checked) items.push("Recent logged workouts with exercise details");
+
+  if (items.length === 0) {
+    list.innerHTML = "<li>Only your display name and join date will be visible.</li>";
+  } else {
+    list.innerHTML = items.map(i => `<li>${i}</li>`).join("");
+  }
+  preview.hidden = false;
 }
 
 async function savePublicProfileVisibility() {

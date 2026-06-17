@@ -333,24 +333,29 @@
               </p>
               <div class="public-profile-toggles" id="publicProfileToggles">
                 <label class="toggle-row">
-                  <input type="checkbox" id="toggleWorkoutVisibility" checked />
+                  <input type="checkbox" id="toggleWorkoutVisibility" />
                   <span>Workout Activity</span>
+                  <span class="toggle-desc">Shows your 52-week workout heatmap and activity calendar.</span>
                 </label>
                 <label class="toggle-row">
-                  <input type="checkbox" id="toggleNutritionVisibility" checked />
+                  <input type="checkbox" id="toggleNutritionVisibility" />
                   <span>Nutrition Activity</span>
+                  <span class="toggle-desc">Shows your 52-week nutrition/meal logging heatmap.</span>
                 </label>
                 <label class="toggle-row">
-                  <input type="checkbox" id="toggleWaterVisibility" checked />
+                  <input type="checkbox" id="toggleWaterVisibility" />
                   <span>Hydration Activity</span>
+                  <span class="toggle-desc">Shows your 52-week water intake heatmap.</span>
                 </label>
                 <label class="toggle-row">
-                  <input type="checkbox" id="toggleLeaderboardVisibility" checked />
+                  <input type="checkbox" id="toggleLeaderboardVisibility" />
                   <span>Leaderboard Standings</span>
+                  <span class="toggle-desc">Shows your ranking on strength, calisthenics, and streak leaderboards.</span>
                 </label>
                 <label class="toggle-row">
-                  <input type="checkbox" id="toggleRecentWorkoutsVisibility" checked />
+                  <input type="checkbox" id="toggleRecentWorkoutsVisibility" />
                   <span>Recent Workouts</span>
+                  <span class="toggle-desc">Shows your most recent logged workouts with exercise details.</span>
                 </label>
               </div>
               <div class="panel-actions" style="margin-top: 0.75rem;">
@@ -358,6 +363,10 @@
                 <span id="publicProfileSaved" class="account-save-check" hidden>✓ Updated</span>
               </div>
               <p id="publicProfileStatus" class="stats-status" role="status" aria-live="polite"></p>
+              <div class="public-profile-preview" id="publicProfilePreview" hidden>
+                <h4>What will be visible at <a id="publicProfilePreviewUrl" href="/@" target="_blank" rel="noopener noreferrer">/@<span id="publicProfilePreviewUsername">you</span></a></h4>
+                <ul id="publicProfilePreviewList"></ul>
+              </div>
             </section>
 
             <section class="account-readonly-grid" aria-label="Account metadata">
