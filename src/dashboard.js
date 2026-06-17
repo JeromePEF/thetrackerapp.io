@@ -571,6 +571,17 @@ function readAuthUser() {
   }
 }
 
+function getAuthToken() {
+  try {
+    const raw = localStorage.getItem(AUTH_SESSION_KEY);
+    if (!raw) return "";
+    const parsed = JSON.parse(raw);
+    return String(parsed?.token || parsed?.accessToken || "").trim();
+  } catch {
+    return "";
+  }
+}
+
 function readSessionToken() {
   try {
     const raw = window.localStorage.getItem(AUTH_SESSION_KEY);
