@@ -871,13 +871,29 @@ function normalizeBackendSnapshot(body) {
     goals: (root.goals && typeof root.goals === "object" ? root.goals : {}) || {},
     sheetUrl,
     billingStatus: String(
-      membership.status || profile.stripeSubscriptionStatus || root.billingStatus || root.subscriptionStatus || "",
+      membership.status
+      || root.billing?.status
+      || root.subscription?.status
+      || profile.stripeSubscriptionStatus
+      || profile.subscriptionStatus
+      || root.billingStatus
+      || root.subscriptionStatus
+      || root.status
+      || "",
     ).trim(),
     billingPlan: String(
-      membership.plan || membership.selectedPlan || profile.stripePlanKey || root.plan || root.planName || "",
+      membership.plan
+      || membership.selectedPlan
+      || root.billing?.plan
+      || profile.stripePlanKey
+      || profile.currentPlan
+      || profile.planKey
+      || root.plan
+      || root.planName
+      || "",
     ).trim(),
     billingLastPaymentDate: deriveLastPaymentDate(root),
-    billingNextBillingDate: deriveNextBillingDate(root),
+    billingNextBillingDate: deriveNextBillingDate(root) || deriveCurrentPeriodEnd(root),
     billingPortalUrl: deriveBillingPortalUrl(root),
   };
 }
@@ -4668,7 +4684,7 @@ async function hydratePortalForContact(contact) {
   const body = await getAuthedJson([
     `${API_BASE}/api/portal${query}`,
     `${API_BASE}/api/account/portal${query}`,
-    `${API_BASE}/api/user/portal${query}`,
+    `${API_BASE}/api/user/profile${query}`,
     `${API_BASE}/api/portal`,
     "/api/portal",
   ]);
