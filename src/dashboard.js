@@ -925,6 +925,11 @@ function persistAuthFromSnapshot(snapshot) {
       billingLastPaymentDate: snapshot.billingLastPaymentDate || current.billingLastPaymentDate || "",
       billingNextBillingDate: snapshot.billingNextBillingDate || current.billingNextBillingDate || "",
       sheetUrl: snapshot.sheetUrl || current.sheetUrl || "",
+      accountId: current.accountId || snapshot.profile?.accountId || snapshot.contact || "",
+      canonical: current.canonical || snapshot.contact || snapshot.profile?.contact || "",
+      method: current.method || snapshot.profile?.method || snapshot.profile?.signupMethod || snapshot.profile?.signInMethod || "",
+      loginAt: current.loginAt || snapshot.loginAt || snapshot.profile?.lastLoginAt || "",
+      maskedCredential: current.maskedCredential || snapshot.profile?.maskedCredential || snapshot.profile?.primaryEmail || "",
     });
 
     if (!normalized) {
