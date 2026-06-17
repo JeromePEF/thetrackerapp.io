@@ -1,41 +1,50 @@
-BACKEND — Public Profile Visibility API Fix
-=============================================
+BACKEND — Public Profile Visibility API (UPDATED)
+=====================================================
+Date: 2026-06-17
 
-Endpoint: POST /api/user/visibility
+ENDPOINT: POST /api/user/visibility
+  Authorization: Bearer <token>
+  Body:
+    {
+      "visibility": {
+        "merged": true/false,
+        "workouts": true/false,
+        "nutrition": true/false,
+        "water": true/false,
+        "statsBar": true/false,
+        "leaderboard": true/false,
+        "recentWorkouts": true/false,
+        "publicLeaderboard": true/false
+      }
+    }
+  → { "ok": true, "visibility": { ... } }
 
-The frontend sends:
+CRITICAL — Must persist these values per-user and return them in
+/api/portal, /api/account/portal, and /api/user/profile responses
+under one of these keys:
+
+  root.publicVisibility
+  root.publicProfileVisibility       (camelCase — dashboard checks first)
+  root.profile.publicVisibility
+
+Example portal response snippet:
 {
-  "visibility": {
-    "workouts": true/false,
-    "nutrition": true/false,
-    "water": true/false,
-    "leaderboard": true/false,
-    "recentWorkouts": true/false
-  }
-}
-
-The backend MUST:
-1. Store these booleans per user.
-2. Return them in the user profile / portal response under one of these keys:
-   - publicProfileVisibility
-   - publicVisibility   (currently checked by user.js)
-   - profile.publicVisibility
-
-Example response from /api/portal, /api/user/profile, /api/user/public, etc.:
-{
-  "publicVisibility": {
-    "workouts": true,
+  "publicProfileVisibility": {
+    "merged": false,
+    "workouts": false,
     "nutrition": false,
     "water": false,
-    "leaderboard": true,
-    "recentWorkouts": false
+    "statsBar": false,
+    "leaderboard": false,
+    "recentWorkouts": false,
+    "publicLeaderboard": false
   }
 }
 
-CRITICAL: The frontend now checks `visibility.xxx === true` (not `!== false`).
-If a key is missing or undefined, the section will be HIDDEN (max privacy default).
+The frontend checks `visibility.xxx === true`. Missing keys or undefined
+means HIDDEN. ALL DEFAULTS MUST BE FALSE (max privacy).
 
-Also: the dashboard Account tab loads these values on page load via
-`state.backendSnapshot.publicProfileVisibility` or `state.backendSnapshot.profile.publicVisibility`.
-If the backend doesn't return them, the checkboxes show unchecked and the user
-can't see their current saved state.
+The frontend now also caches visibility in localStorage as a fallback
+(key: "tracker.publicVisibility"), but the backend is the authoritative
+source. On dashboard refresh, the /api/portal response must include the
+saved visibility so the checkboxes show the current state.
