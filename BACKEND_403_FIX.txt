@@ -1,0 +1,40 @@
+BACKEND — All Dashboard API Calls Return 403
+=============================================
+Date: 2026-06-17 (updated)
+
+Every authenticated API call from the dashboard returns HTTP 403.
+
+The proxy at api/backend-proxy.js now correctly forwards responses —
+it's passing through the 403 status FROM the upstream API. The upstream
+at https://api.thetrackerapp.io is returning 403 for requests from
+Vercel's IPs.
+
+EXAMPLE REQUEST:
+  GET https://dashboard.thetrackerapp.io/api/backend-proxy?target=%2Fapi%2Fportal%3Fcontact%3Dfide.operandi%2540gmail.com
+  Authorization: Bearer <session_token>
+
+  The proxy forwards to:
+  GET https://api.thetrackerapp.io/api/portal?contact=fide.operandi@gmail.com
+  Authorization: Bearer <session_token>
+
+  The UPSTREAM returns 403 (not the proxy).
+
+
+CLOUDFLARE WAF:
+  The previous fix applied WAF bypass for "Skip Public Endpoints" on
+  thetrackerapp.io zone. The API is at api.thetrackerapp.io — a DIFFERENT
+  subdomain that may need its own WAF rule.
+
+  Verify: from a Vercel function, does this return 200 or 403?
+    curl -H "Authorization: Bearer <token>" \
+      "https://api.thetrackerapp.io/api/portal?contact=fide.operandi@gmail.com"
+
+  If it returns 403 from Vercel but 200 from your machine,
+  Cloudflare WAF is blocking Vercel's IPs on the api subdomain.
+
+
+ALSO CHECK:
+  The session token may be expired. The dashboard stores it at
+  localStorage key "tracker.auth.session" with an expiresAt field.
+  If the JWT is expired, the backend would return 401 (not 403).
+  A 403 suggests a WAF/firewall block, not an auth failure.
