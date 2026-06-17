@@ -1165,6 +1165,59 @@ function applyUserLiveMetrics(liveMetrics) {
   setStatsLink(els.usersOnlineLink, liveMetrics.usersOnline?.sheetUrl, master);
 }
 
+function applyLiveStats(ls) {
+  if (!ls || typeof ls !== "object") return;
+
+  setCounterValue(els.usersTodayCount, ls.usersUsingToday ?? 0);
+  setCounterValue(els.usersWeekCount, ls.totalUsersThisWeek ?? 0);
+  setCounterValue(els.workoutsLoggedCount, ls.workoutsLogged ?? 0);
+  setCounterValue(els.caloriesTrackedCount, ls.caloriesTracked ?? 0);
+  setGallonsDrank(ls.gallonsDrank ?? 0);
+  hasLoadedUserMetrics = true;
+  hasLoadedActivityMetrics = true;
+
+  const toEntry = (row) => {
+    const username = row.username || row.canonical || "User";
+    const emoji = (username.match(/\p{Extended_Pictographic}/u) || [])[0] || "";
+    const name = username.replace(/\p{Extended_Pictographic}/gu, "").trim() || "User";
+    const valueLabel = row.display || `${row.value || row.count || 0} ${row.unit || ""}`.trim();
+    return {
+      exercise: row.exercise || "",
+      rank: row.rank || 1,
+      name,
+      emoji,
+      score: row.value || row.count || 0,
+      unit: row.unit || "",
+      valueLabel,
+      line: `${emoji ? emoji + " " : ""}${name} | ${valueLabel}`,
+    };
+  };
+
+  const strengthRows = ls.strengthLeaderboard?.rows || [];
+  const calisthenicsRows = ls.calisthenicsLeaderboard?.rows || [];
+  const streakRows = ls.topStreaks?.rows || [];
+
+  if (strengthRows.length) {
+    renderLeaderboard(strengthRows.map(toEntry));
+  }
+  if (calisthenicsRows.length) {
+    renderGroupLeaderboard(calisthenicsRows.map(toEntry));
+  }
+  if (streakRows.length) {
+    const streaks = streakRows.map((row) => {
+      const username = row.username || row.canonical || "User";
+      const emoji = (username.match(/\p{Extended_Pictographic}/u) || [])[0] || "";
+      const name = username.replace(/\p{Extended_Pictographic}/gu, "").trim() || "User";
+      const valueLabel = row.display || `${row.value || 0} ${row.unit || "days"}`.trim();
+      const message = row.message || `${emoji ? emoji + " " : ""}${name} just logged ${row.value || 0} days in a row!`;
+      return { rank: row.rank || 1, name, emoji, score: row.value || 0, valueLabel, line: `${emoji ? emoji + " " : ""}${name} | ${valueLabel}`, message };
+    });
+    renderStreakLeaderboard(streaks);
+    renderStreakLiveCallout(streaks[0]?.message || "");
+  }
+  hasLoadedLeaderboard = true;
+}
+
 function applyActivityLiveMetrics(liveMetrics) {
   if (!liveMetrics || hasLoadedActivityMetrics) {
     return;
@@ -3024,6 +3077,7 @@ async function initFeatureSections() {
   try {
     const flags = await fetchFeatureFlags();
     applyFeatureFlags(flags);
+    applyLiveStats(flags?.liveStats);
     // If the server-side injection (window.__MESSAGING_SERVICES__) was
     // absent (e.g. local `vite` dev, or /api/home unavailable), the
     // service carousel was rendered with the safe-default subset. Now
