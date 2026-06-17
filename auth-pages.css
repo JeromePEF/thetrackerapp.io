@@ -2242,6 +2242,74 @@ body.dashboard-page .integration-card .panel-actions {
     grid-template-columns: 1fr;
   }
 }
+
+/* Email verification overlay */
+.email-verify-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.email-verify-card {
+  background: #111;
+  border: 1px solid rgba(56, 255, 211, 0.2);
+  border-radius: 16px;
+  padding: 2.5rem 2rem;
+  max-width: 420px;
+  width: calc(100% - 2rem);
+  text-align: center;
+}
+
+.email-verify-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.email-verify-card h2 {
+  font-family: "Orbitron", sans-serif;
+  font-size: 1.3rem;
+  margin: 0 0 0.75rem;
+  color: #f4fbff;
+}
+
+.email-verify-card p {
+  font-size: 0.9rem;
+  color: rgba(230, 238, 245, 0.65);
+  margin: 0 0 1.5rem;
+  line-height: 1.5;
+}
+
+.email-verify-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.email-verify-actions .btn-primary,
+.email-verify-actions .btn-secondary {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 0.95rem;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+}
+
+.email-verify-actions .btn-primary {
+  background: linear-gradient(135deg, #38ffd3, #00d4aa);
+  color: #000;
+  font-weight: 700;
+}
+
+.email-verify-actions .btn-secondary {
+  background: transparent;
+  color: rgba(230, 238, 245, 0.6);
+  border: 1px solid rgba(230, 238, 245, 0.2);
+}
 .dashboard-sidebar,
 .dashboard-content,
 .dashboard-panel {

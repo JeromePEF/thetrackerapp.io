@@ -48,6 +48,19 @@
     </script>
   </head>
   <body class="dashboard-page">
+    <div id="emailVerifyOverlay" class="email-verify-overlay" hidden>
+      <div class="email-verify-card">
+        <div class="email-verify-icon">📧</div>
+        <h2>Verify Your Email</h2>
+        <p id="emailVerifyPrompt">Verify your email to unlock all features including affiliate access, data export, and account recovery.</p>
+        <div class="email-verify-actions">
+          <button id="emailVerifySendBtn" type="button" class="btn-primary">Send Verification Email</button>
+          <button id="emailVerifySkipBtn" type="button" class="btn-secondary">Skip for now</button>
+        </div>
+        <p id="emailVerifyStatus" class="stats-status" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+
     <div class="dashboard-shell">
       <header class="auth-top-nav">
         <a href="/" class="header-logo auth-brand" aria-label="Home" style="margin:0; display:flex; align-items:center; gap:8px; text-decoration:none;">

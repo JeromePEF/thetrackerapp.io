@@ -184,6 +184,8 @@ const els = {
   accountContactValue: document.getElementById("accountContactValue"),
   accountLoginAtValue: document.getElementById("accountLoginAtValue"),
   accountEmailInput: document.getElementById("accountEmailInput"),
+
+  emailVerifyPrompt: document.getElementById("emailVerifyPrompt"),
   accountUsernameInput: document.getElementById("accountUsernameInput"),
   accountAgeInput: document.getElementById("accountAgeInput"),
   saveAccountEmailButton: document.getElementById("saveAccountEmailButton"),
@@ -5869,6 +5871,73 @@ function wireLogout() {
   }
 }
 
+function initEmailVerificationOverlay() {
+  const overlay = document.getElementById("emailVerifyOverlay");
+  if (!overlay) return;
+
+  const user = readAuthUser() || {};
+  const email = String(user.email || "").trim();
+  const verified = readAccountEmailVerified(user);
+
+  if (verified || !email) {
+    overlay.hidden = true;
+    return;
+  }
+
+  if (sessionStorage.getItem("tracker.emailVerifySkipped")) {
+    overlay.hidden = true;
+    return;
+  }
+
+  if (els.emailVerifyPrompt) {
+    els.emailVerifyPrompt.textContent = `Verify ${email} to unlock all features including affiliate access, data export, and account recovery.`;
+  }
+
+  overlay.hidden = false;
+
+  const sendBtn = document.getElementById("emailVerifySendBtn");
+  const skipBtn = document.getElementById("emailVerifySkipBtn");
+  const status = document.getElementById("emailVerifyStatus");
+
+  if (skipBtn) {
+    skipBtn.addEventListener("click", () => {
+      overlay.hidden = true;
+      sessionStorage.setItem("tracker.emailVerifySkipped", "1");
+    });
+  }
+
+  if (sendBtn) {
+    sendBtn.addEventListener("click", async () => {
+      if (sendBtn.disabled) return;
+      sendBtn.disabled = true;
+      sendBtn.textContent = "Sending...";
+      if (status) {
+        status.textContent = "";
+        status.classList.remove("is-error", "is-success");
+      }
+
+      try {
+        await requestAccountEmailVerification();
+        if (status) {
+          status.textContent = "Verification email sent! Check your inbox.";
+          status.classList.add("is-success");
+        }
+        setTimeout(() => {
+          overlay.hidden = true;
+          sessionStorage.setItem("tracker.emailVerifySkipped", "1");
+        }, 2000);
+      } catch (err) {
+        if (status) {
+          status.textContent = err.message || "Failed to send. Try again.";
+          status.classList.add("is-error");
+        }
+        sendBtn.disabled = false;
+        sendBtn.textContent = "Send Verification Email";
+      }
+    });
+  }
+}
+
 function init() {
   enforceDashboardAccess();
   renderAccountInfo();
@@ -5888,6 +5957,8 @@ function init() {
   void loadBackendUserSnapshot().finally(() => {
     void bootData();
   });
+
+  initEmailVerificationOverlay();
 }
 
 // ============================================
