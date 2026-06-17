@@ -6083,7 +6083,11 @@ function initDeleteAccountFlow() {
 
         const data = await res.json().catch(() => null);
         if (!res.ok || (data && data.ok === false)) {
-          throw new Error(data?.error || `Request failed (${res.status})`);
+          throw new Error(data?.error || `Server error (${res.status})`);
+        }
+        if (status) {
+          status.textContent = "Deletion request submitted. Your data will be permanently removed.";
+          status.classList.add("is-success");
         }
 
         if (status) {
