@@ -1068,9 +1068,7 @@ function normalizeLeaderboardEntry(entry) {
     lineValue = String(rawVal).trim() ? `${rawVal}${unitStr}`.trim() : "-";
   }
 
-  const canonical = String(entry?.canonical || "").trim();
-  const looksSafe = canonical && !canonical.includes("@") && /[a-zA-Z]/.test(canonical) && canonical.length < 40;
-  const slug = looksSafe ? canonical : name.replace(/\s+/g, "");
+  const slug = name.replace(/\s+/g, "");
 
   return {
     exercise,
