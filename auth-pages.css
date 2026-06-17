@@ -1495,7 +1495,6 @@ body.login-page .auth-brand,
 body.dashboard-page .auth-brand {
   font-family: "Orbitron", sans-serif;
   letter-spacing: 0.08em;
-  text-transform: uppercase;
   color: #f4fbff;
 }
 
