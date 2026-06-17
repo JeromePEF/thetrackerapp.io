@@ -457,13 +457,18 @@ function renderProfile(data) {
   if (els.userStatWorkouts) els.userStatWorkouts.textContent = formatNumber(totalWorkouts);
   if (els.userStatStreak) els.userStatStreak.textContent = formatNumber(streak);
   if (els.userStatDays) els.userStatDays.textContent = formatNumber(activeDays);
+  if (els.userStatsBar) els.userStatsBar.hidden = visibility.statsBar !== true;
 
   var heatmap = data.heatmap || {};
   var days = heatmap.days || [];
   var visibility = data.publicVisibility || {};
 
-  renderHeatmapChart(els.userMergedHeatmap, days, "merged");
-  if (els.mergedHeatmapCard) els.mergedHeatmapCard.hidden = false;
+  if (visibility.merged === true) {
+    renderHeatmapChart(els.userMergedHeatmap, days, "merged");
+    if (els.mergedHeatmapCard) els.mergedHeatmapCard.hidden = false;
+  } else if (els.mergedHeatmapCard) {
+    els.mergedHeatmapCard.hidden = true;
+  }
 
   if (visibility.workouts === true) {
     renderHeatmapChart(els.userWorkoutHeatmap, days, "workouts");

@@ -204,6 +204,9 @@ const els = {
   toggleWaterVisibility: document.getElementById("toggleWaterVisibility"),
   toggleLeaderboardVisibility: document.getElementById("toggleLeaderboardVisibility"),
   toggleRecentWorkoutsVisibility: document.getElementById("toggleRecentWorkoutsVisibility"),
+  toggleMergedVisibility: document.getElementById("toggleMergedVisibility"),
+  toggleStatsBarVisibility: document.getElementById("toggleStatsBarVisibility"),
+  togglePublicLeaderboardConsent: document.getElementById("togglePublicLeaderboardConsent"),
   savePublicProfileButton: document.getElementById("savePublicProfileButton"),
   publicProfileSaved: document.getElementById("publicProfileSaved"),
   publicProfileStatus: document.getElementById("publicProfileStatus"),
@@ -1677,7 +1680,7 @@ function wirePublicProfileVisibility() {
       void savePublicProfileVisibility();
     });
   }
-  const toggles = [els.toggleWorkoutVisibility, els.toggleNutritionVisibility, els.toggleWaterVisibility, els.toggleLeaderboardVisibility, els.toggleRecentWorkoutsVisibility];
+  const toggles = [els.toggleWorkoutVisibility, els.toggleNutritionVisibility, els.toggleWaterVisibility, els.toggleLeaderboardVisibility, els.toggleRecentWorkoutsVisibility, els.toggleMergedVisibility, els.toggleStatsBarVisibility, els.togglePublicLeaderboardConsent];
   toggles.forEach((toggle) => {
     if (toggle) {
       toggle.addEventListener("change", () => {
@@ -1728,6 +1731,15 @@ function hydratePublicProfileVisibility() {
   if (els.toggleRecentWorkoutsVisibility) {
     els.toggleRecentWorkoutsVisibility.checked = visibility.recentWorkouts === true;
   }
+  if (els.toggleMergedVisibility) {
+    els.toggleMergedVisibility.checked = visibility.merged === true;
+  }
+  if (els.toggleStatsBarVisibility) {
+    els.toggleStatsBarVisibility.checked = visibility.statsBar === true;
+  }
+  if (els.togglePublicLeaderboardConsent) {
+    els.togglePublicLeaderboardConsent.checked = visibility.publicLeaderboard === true;
+  }
 
   updatePublicProfilePreview(user);
 }
@@ -1749,11 +1761,14 @@ function updatePublicProfilePreview(user) {
   if (previewUsername) previewUsername.textContent = username;
 
   const items = [];
+  if (els.toggleMergedVisibility?.checked) items.push("Combined workout + nutrition + hydration heatmap");
   if (els.toggleWorkoutVisibility?.checked) items.push("52-week workout heatmap & activity calendar");
   if (els.toggleNutritionVisibility?.checked) items.push("52-week nutrition / meal logging heatmap");
   if (els.toggleWaterVisibility?.checked) items.push("52-week hydration / water intake heatmap");
+  if (els.toggleStatsBarVisibility?.checked) items.push("Total workouts, current streak & active days count");
   if (els.toggleLeaderboardVisibility?.checked) items.push("Strength, calisthenics & streak leaderboard rankings");
   if (els.toggleRecentWorkoutsVisibility?.checked) items.push("Recent logged workouts with exercise details");
+  if (els.togglePublicLeaderboardConsent?.checked) items.push("Your name & stats may appear on public site leaderboards");
 
   if (items.length === 0) {
     list.innerHTML = "<li>Only your display name and join date will be visible.</li>";
@@ -1773,11 +1788,14 @@ async function savePublicProfileVisibility() {
   }
 
   const visibility = {
-    workouts: els.toggleWorkoutVisibility?.checked ?? true,
-    nutrition: els.toggleNutritionVisibility?.checked ?? true,
-    water: els.toggleWaterVisibility?.checked ?? true,
-    leaderboard: els.toggleLeaderboardVisibility?.checked ?? true,
-    recentWorkouts: els.toggleRecentWorkoutsVisibility?.checked ?? true,
+    merged: els.toggleMergedVisibility?.checked ?? false,
+    workouts: els.toggleWorkoutVisibility?.checked ?? false,
+    nutrition: els.toggleNutritionVisibility?.checked ?? false,
+    water: els.toggleWaterVisibility?.checked ?? false,
+    statsBar: els.toggleStatsBarVisibility?.checked ?? false,
+    leaderboard: els.toggleLeaderboardVisibility?.checked ?? false,
+    recentWorkouts: els.toggleRecentWorkoutsVisibility?.checked ?? false,
+    publicLeaderboard: els.togglePublicLeaderboardConsent?.checked ?? false,
   };
 
   try {
