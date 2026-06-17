@@ -6105,7 +6105,7 @@ function initDeleteAccountFlow() {
           localStorage.removeItem("tracker.auth.user");
           localStorage.removeItem("tracker.authenticated");
           window.location.href = "https://thetrackerapp.io/login?deleted=1";
-        }, 5000);
+        }, 2000);
       } catch (err) {
         if (status) {
           status.textContent = err.message || "Failed to submit deletion request.";
