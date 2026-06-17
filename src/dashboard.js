@@ -1730,7 +1730,7 @@ function hydratePublicProfileVisibility() {
     els.publicProfileUsername.textContent = username || "you";
   }
   if (els.publicProfileUrl) {
-    els.publicProfileUrl.href = username ? `/@${encodeURIComponent(username)}` : "/@";
+    els.publicProfileUrl.href = username ? `https://thetrackerapp.io/@${encodeURIComponent(username)}` : "https://thetrackerapp.io/@";
   }
 
   const visibility = state.backendSnapshot?.publicProfileVisibility
@@ -1778,7 +1778,7 @@ function updatePublicProfilePreview(user) {
     return;
   }
 
-  if (previewUrl) previewUrl.href = `/@${encodeURIComponent(username)}`;
+  if (previewUrl) previewUrl.href = `https://thetrackerapp.io/@${encodeURIComponent(username)}`;
   if (previewUsername) previewUsername.textContent = username;
 
   const items = [];
@@ -4776,14 +4776,13 @@ async function loadBillingOverview() {
       }
     }
     const status = applyBillingPayload(portalPayload);
-    const plan = deriveBillingPlan(portalPayload);
-    const portalUrl = deriveBillingPortalUrl(portalPayload);
 
-    if (status || plan || portalUrl) {
+    if (status) {
       setStatus(els.billingActionStatus, "Billing synced from backend.", "is-success");
     } else {
       setStatus(els.billingActionStatus, "Billing response received, but status is missing.", "is-error");
     }
+    renderAccountInfo();
   } catch (error) {
     const message = String(error?.message || "Unable to load billing status.");
     if (/404/.test(message)) {
