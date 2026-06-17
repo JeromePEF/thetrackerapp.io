@@ -1068,12 +1068,16 @@ function normalizeLeaderboardEntry(entry) {
     lineValue = String(rawVal).trim() ? `${rawVal}${unitStr}`.trim() : "-";
   }
 
+  const canonical = String(entry?.canonical || "").trim();
+  const looksSafe = canonical && !canonical.includes("@") && /[a-zA-Z]/.test(canonical) && canonical.length < 40;
+  const slug = looksSafe ? canonical : name.replace(/\s+/g, "");
+
   return {
     exercise,
     name: splitLine?.left || `${emoji ? `${emoji} ` : ""}${name}`,
     value: lineValue,
     rank: entry?.rank,
-    canonical: entry?.canonical || "",
+    canonical: slug,
   };
 }
 
