@@ -1180,7 +1180,7 @@ function applyLiveStats(ls) {
     const username = row.username || row.canonical || "User";
     const emoji = (username.match(/\p{Extended_Pictographic}/u) || [])[0] || "";
     const name = username.replace(/\p{Extended_Pictographic}/gu, "").trim() || "User";
-    const valueLabel = row.display || `${row.value || row.count || 0} ${row.unit || ""}`.trim();
+    const display = row.display || "";
     return {
       exercise: row.exercise || "",
       rank: row.rank || 1,
@@ -1188,8 +1188,7 @@ function applyLiveStats(ls) {
       emoji,
       score: row.value || row.count || 0,
       unit: row.unit || "",
-      valueLabel,
-      line: `${emoji ? emoji + " " : ""}${name} | ${valueLabel}`,
+      display,
     };
   };
 
@@ -1208,9 +1207,9 @@ function applyLiveStats(ls) {
       const username = row.username || row.canonical || "User";
       const emoji = (username.match(/\p{Extended_Pictographic}/u) || [])[0] || "";
       const name = username.replace(/\p{Extended_Pictographic}/gu, "").trim() || "User";
-      const valueLabel = row.display || `${row.value || 0} ${row.unit || "days"}`.trim();
+      const display = row.display || "";
       const message = row.message || `${emoji ? emoji + " " : ""}${name} just logged ${row.value || 0} days in a row!`;
-      return { rank: row.rank || 1, name, emoji, score: row.value || 0, valueLabel, line: `${emoji ? emoji + " " : ""}${name} | ${valueLabel}`, message };
+      return { rank: row.rank || 1, name, emoji, score: row.value || 0, display, message };
     });
     renderStreakLeaderboard(streaks);
     renderStreakLiveCallout(streaks[0]?.message || "");
@@ -1990,10 +1989,12 @@ async function loadLeaderboard() {
 
   try {
     const payload = await fetchPublicLeaderboardSnapshot();
-    renderLeaderboard(payload.entries);
-    renderGroupLeaderboard(payload.groupEntries || []);
-    renderStreakLeaderboard(payload.streakEntries || []);
-    renderStreakLiveCallout(payload.streakLiveMessage || payload.streakEntries?.[0]?.message || "");
+    if (!hasLoadedLeaderboard) {
+      renderLeaderboard(payload.entries);
+      renderGroupLeaderboard(payload.groupEntries || []);
+      renderStreakLeaderboard(payload.streakEntries || []);
+      renderStreakLiveCallout(payload.streakLiveMessage || payload.streakEntries?.[0]?.message || "");
+    }
     setLiveWorkoutEvents(payload.liveEvents || []);
 
     if (!hasLoadedUserMetrics) {
