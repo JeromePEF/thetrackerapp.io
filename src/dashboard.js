@@ -604,15 +604,12 @@ function buildAuthedProxyUrl(endpoint) {
     const parsed = new URL(raw, window.location.origin);
     const apiOrigin = new URL(API_BASE).origin;
     const isBackendApi = parsed.origin === apiOrigin && parsed.pathname.startsWith("/api/");
-    const isLocalApi = parsed.origin === window.location.origin && parsed.pathname.startsWith("/api/");
 
-    if (!isBackendApi && !isLocalApi) {
+    if (isBackendApi) {
       return parsed.toString();
     }
 
-    const proxyUrl = new URL(BACKEND_PROXY_ENDPOINT, window.location.origin);
-    proxyUrl.searchParams.set("target", `${parsed.pathname}${parsed.search}`);
-    return proxyUrl.toString();
+    return parsed.toString();
   } catch {
     return raw;
   }
