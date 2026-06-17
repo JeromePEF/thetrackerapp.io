@@ -210,7 +210,6 @@ const els = {
   toggleStatsBarVisibility: document.getElementById("toggleStatsBarVisibility"),
   togglePublicLeaderboardConsent: document.getElementById("togglePublicLeaderboardConsent"),
   savePublicProfileButton: document.getElementById("savePublicProfileButton"),
-  loadPublicProfileButton: document.getElementById("loadPublicProfileButton"),
   publicProfileSaved: document.getElementById("publicProfileSaved"),
   publicProfileStatus: document.getElementById("publicProfileStatus"),
   publicProfileToggles: document.getElementById("publicProfileToggles"),
@@ -895,6 +894,7 @@ function normalizeBackendSnapshot(body) {
     billingLastPaymentDate: deriveLastPaymentDate(root),
     billingNextBillingDate: deriveNextBillingDate(root) || deriveCurrentPeriodEnd(root),
     billingPortalUrl: deriveBillingPortalUrl(root),
+    publicProfileVisibility: root.publicProfileVisibility || root.publicVisibility || null,
   };
 }
 
@@ -1699,11 +1699,6 @@ function wirePublicProfileVisibility() {
       void savePublicProfileVisibility();
     });
   }
-  if (els.loadPublicProfileButton) {
-    els.loadPublicProfileButton.addEventListener("click", () => {
-      void loadPublicProfileVisibility();
-    });
-  }
   const toggles = [els.toggleWorkoutVisibility, els.toggleNutritionVisibility, els.toggleWaterVisibility, els.toggleLeaderboardVisibility, els.toggleRecentWorkoutsVisibility, els.toggleMergedVisibility, els.toggleStatsBarVisibility, els.togglePublicLeaderboardConsent];
   toggles.forEach((toggle) => {
     if (toggle) {
@@ -1800,47 +1795,6 @@ function updatePublicProfilePreview(user) {
     list.innerHTML = items.map(i => `<li>${i}</li>`).join("");
   }
   preview.hidden = false;
-}
-
-async function loadPublicProfileVisibility() {
-  if (els.publicProfileStatus) {
-    els.publicProfileStatus.textContent = "Loading from backend...";
-    els.publicProfileStatus.classList.remove("is-error", "is-success");
-  }
-
-  try {
-    const body = await loadBackendUserSnapshot();
-    if (!body) throw new Error("No response from backend");
-
-    const visibility = body.publicProfileVisibility
-      || body.publicVisibility
-      || body.profile?.publicVisibility
-      || {};
-
-    if (els.toggleMergedVisibility) els.toggleMergedVisibility.checked = visibility.merged === true;
-    if (els.toggleWorkoutVisibility) els.toggleWorkoutVisibility.checked = visibility.workouts === true;
-    if (els.toggleNutritionVisibility) els.toggleNutritionVisibility.checked = visibility.nutrition === true;
-    if (els.toggleWaterVisibility) els.toggleWaterVisibility.checked = visibility.water === true;
-    if (els.toggleStatsBarVisibility) els.toggleStatsBarVisibility.checked = visibility.statsBar === true;
-    if (els.toggleLeaderboardVisibility) els.toggleLeaderboardVisibility.checked = visibility.leaderboard === true;
-    if (els.toggleRecentWorkoutsVisibility) els.toggleRecentWorkoutsVisibility.checked = visibility.recentWorkouts === true;
-    if (els.togglePublicLeaderboardConsent) els.togglePublicLeaderboardConsent.checked = visibility.publicLeaderboard === true;
-
-    updatePublicProfilePreview(readAuthUser());
-
-    const anyChecked = Object.values(visibility).some(v => v === true);
-    if (els.publicProfileStatus) {
-      els.publicProfileStatus.textContent = anyChecked
-        ? "Loaded from backend."
-        : "Backend returned all false. Save your settings first.";
-      els.publicProfileStatus.classList.add(anyChecked ? "is-success" : "is-error");
-    }
-  } catch (err) {
-    if (els.publicProfileStatus) {
-      els.publicProfileStatus.textContent = err.message || "Failed to load from backend.";
-      els.publicProfileStatus.classList.add("is-error");
-    }
-  }
 }
 
 async function savePublicProfileVisibility() {
