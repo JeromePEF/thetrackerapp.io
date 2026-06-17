@@ -1,0 +1,154 @@
+BACKEND BILLING DEBUG — Why Dashboard Shows "-" and "Just a moment..."
+=====================================================================
+Date: 2026-06-17
+User: fide.operandi@gmail.com (TRK-571341)
+
+The dashboard billing section always shows:
+  Current Status: -
+  Current Plan: -
+  Last Payment: -
+  Next Billing Date: -
+  Just a moment...
+
+This means the /api/portal endpoint response does not include billing
+fields at ANY of the paths the dashboard checks.
+
+
+WHAT THE DASHBOARD DOES
+------------------------
+
+On page load, the dashboard calls loadBackendUserSnapshot() which fetches:
+
+  1. GET /api/portal?contact=fide.operandi@gmail.com
+  2. GET /api/portal
+  3. GET /api/account/portal?contact=fide.operandi@gmail.com
+  4. GET /api/user/profile?contact=fide.operandi@gmail.com
+  5. GET /api/portal (via Vercel proxy)
+
+It stops at the FIRST endpoint that returns HTTP 200 with valid JSON.
+
+Then normalizeBackendSnapshot(rawResponse) extracts billing fields by
+checking MANY path variations.  Here's exactly what it looks for:
+
+
+=== BILLING STATUS (shown in "Current Status") ===
+Checked in order (first non-empty value wins):
+
+  raw.membership.status
+  raw.billing.status
+  raw.billing.subscriptionStatus
+  raw.profile.stripeSubscriptionStatus
+  raw.profile.subscriptionStatus
+  raw.billingStatus
+  raw.subscriptionStatus
+  raw.status
+  raw.subscription.status
+  raw.portal.membership.status
+  raw.portal.billing.status
+  raw.portal.billingStatus
+  raw.portal.subscriptionStatus
+  raw.portal.status
+  raw.portal.subscription.status
+  raw.data.billingStatus
+  raw.data.subscriptionStatus
+  raw.data.status
+  raw.data.subscription.status
+
+
+=== BILLING PLAN (shown in "Current Plan") ===
+Checked in order:
+
+  raw.membership.plan
+  raw.membership.planName
+  raw.membership.selectedPlan
+  raw.billing.plan
+  raw.billing.selectedPlan
+  raw.profile.stripePlanKey
+  raw.profile.currentPlan
+  raw.profile.planKey
+  raw.plan
+  raw.planName
+  raw.priceNickname
+  raw.subscription.plan
+  raw.subscription.priceNickname
+  raw.subscription.interval
+  raw.portal.membership.plan
+  raw.portal.billing.plan
+  raw.portal.plan
+  raw.portal.planName
+  raw.portal.priceNickname
+  raw.portal.subscription.plan
+  raw.portal.subscription.priceNickname
+  raw.portal.subscription.interval
+  raw.data.plan
+  raw.data.planName
+  raw.data.priceNickname
+
+
+=== NEXT BILLING DATE (shown in "Next Billing Date") ===
+Checked in order:
+
+  raw.currentPeriodEnd
+  raw.profile.stripeCurrentPeriodEnd
+  raw.profile.currentPeriodEnd
+  raw.profile.current_period_end
+  raw.membership.stripeCurrentPeriodEnd
+  raw.membership.currentPeriodEnd
+  raw.membership.trialEnd
+  raw.membership.nextBillingDate
+  raw.subscription.currentPeriodEnd
+  raw.subscription.current_period_end
+
+
+=== LAST PAYMENT DATE ===
+Checked in order (many paths across raw, membership, billing,
+subscription, portal, data sub-objects).
+
+
+=== BILLING PORTAL URL ===
+Checked in order:
+
+  raw.profile.billingPortalUrl
+  raw.membership.billingPortalUrl
+  raw.billing.billingPortalUrl
+  raw.billingPortalUrl
+  raw.portal.membership.billingPortalUrl
+  raw.profile.stripePortalUrl
+  raw.profile.stripe_customer_portal_url
+
+
+=== WHAT YOU NEED TO VERIFY ===
+
+1. Run this exact request (use the same auth token the dashboard sends):
+
+     curl -H "Authorization: Bearer <token>" \
+       "https://api.thetrackerapp.io/api/portal?contact=fide.operandi@gmail.com"
+
+2. Check the JSON response.  Does it contain ANY of the fields above?
+
+3. If the response has billing data but at a different path than what's
+   listed above, tell us the EXACT path and we'll add it.
+
+4. If the response has NO billing data at all, the issue is that the
+   /api/portal endpoint is not including membership/billing/profile
+   data for this user.
+
+5. The most common fix: ensure the portal response includes:
+
+     {
+       "membership": {
+         "status": "active",
+         "plan": "monthly",
+         "currentPeriodEnd": "2026-07-01T00:00:00.000Z"
+       }
+     }
+
+   OR at minimum:
+
+     {
+       "billingStatus": "active",
+       "billingPlan": "monthly",
+       "currentPeriodEnd": "2026-07-01T00:00:00.000Z"
+     }
+
+   Either format works — the dashboard checks both.
