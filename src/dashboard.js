@@ -5921,12 +5921,6 @@ function initEmailVerificationOverlay() {
 
   const user = readAuthUser() || {};
   const email = String(user.email || "").trim();
-
-  if (!email) {
-    overlay.hidden = true;
-    return;
-  }
-
   const verified = user.emailVerified === true || user.emailVerified === "true";
 
   if (verified) {
@@ -5934,15 +5928,24 @@ function initEmailVerificationOverlay() {
     return;
   }
 
-  if (els.emailVerifyPrompt) {
-    els.emailVerifyPrompt.textContent = `Verify ${email} to unlock all features including affiliate access, data export, and account recovery.`;
-  }
-
-  overlay.hidden = false;
-
+  const prompt = document.getElementById("emailVerifyPrompt");
+  const inputRow = document.getElementById("emailVerifyInputRow");
+  const input = document.getElementById("emailVerifyInput");
   const sendBtn = document.getElementById("emailVerifySendBtn");
   const skipBtn = document.getElementById("emailVerifySkipBtn");
   const status = document.getElementById("emailVerifyStatus");
+
+  if (!email) {
+    if (prompt) prompt.textContent = "Add your email address to unlock all features including affiliate access, data export, and account recovery.";
+    if (inputRow) inputRow.hidden = false;
+    if (sendBtn) sendBtn.textContent = "Save & Verify";
+  } else {
+    if (prompt) prompt.textContent = `Verify ${email} to unlock all features including affiliate access, data export, and account recovery.`;
+    if (inputRow) inputRow.hidden = true;
+    if (sendBtn) sendBtn.textContent = "Send Verification Email";
+  }
+
+  overlay.hidden = false;
 
   if (skipBtn) {
     skipBtn.addEventListener("click", () => {
@@ -5953,14 +5956,21 @@ function initEmailVerificationOverlay() {
   if (sendBtn) {
     sendBtn.addEventListener("click", async () => {
       if (sendBtn.disabled) return;
-      sendBtn.disabled = true;
-      sendBtn.textContent = "Sending...";
-      if (status) {
-        status.textContent = "";
-        status.classList.remove("is-error", "is-success");
+
+      const newEmail = (input?.value || "").trim();
+      if (!email && !newEmail) {
+        if (status) { status.textContent = "Enter an email address."; status.classList.add("is-error"); }
+        return;
       }
 
+      sendBtn.disabled = true;
+      sendBtn.textContent = "Sending...";
+      if (status) { status.textContent = ""; status.classList.remove("is-error", "is-success"); }
+
       try {
+        if (!email && newEmail) {
+          await saveAccountField("email");
+        }
         await requestAccountEmailVerification();
         if (status) {
           status.textContent = "Verification email sent! Check your inbox.";
@@ -5969,11 +5979,11 @@ function initEmailVerificationOverlay() {
         sendBtn.textContent = "Verification Sent ✓";
       } catch (err) {
         if (status) {
-          status.textContent = err.message || "Failed to send. Try again.";
+          status.textContent = err.message || "Failed. Try again.";
           status.classList.add("is-error");
         }
         sendBtn.disabled = false;
-        sendBtn.textContent = "Send Verification Email";
+        sendBtn.textContent = !email ? "Save & Verify" : "Send Verification Email";
       }
     });
   }
