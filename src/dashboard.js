@@ -4359,6 +4359,11 @@ function applyBillingPayload(payload) {
     els.billingNoAccount.hidden = Boolean(portalUrl);
   }
 
+  const subscribeLink = document.getElementById("billingSubscribeLink");
+  if (subscribeLink) {
+    subscribeLink.hidden = Boolean(portalUrl);
+  }
+
   state.billingPortalUrl = portalUrl || "";
   persistBillingOverview(status, plan, lastPaymentDate, nextBillingDate);
   return status;
@@ -5958,9 +5963,9 @@ function init() {
   });
   void loadBackendUserSnapshot().finally(() => {
     void bootData();
+    initEmailVerificationOverlay();
   });
 
-  initEmailVerificationOverlay();
   initDeleteAccountFlow();
 }
 
