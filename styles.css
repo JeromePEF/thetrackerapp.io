@@ -396,6 +396,15 @@ body {
   white-space: nowrap;
 }
 
+.leaderboard-profile-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.leaderboard-profile-link:hover {
+  color: var(--accent);
+}
+
 #leaderboardList .leaderboard-cell-value,
 #groupLeaderboardList .leaderboard-cell-value {
   justify-content: flex-end;

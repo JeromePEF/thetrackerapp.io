@@ -1073,6 +1073,7 @@ function normalizeLeaderboardEntry(entry) {
     name: splitLine?.left || `${emoji ? `${emoji} ` : ""}${name}`,
     value: lineValue,
     rank: entry?.rank,
+    canonical: entry?.canonical || "",
   };
 }
 
@@ -1189,6 +1190,7 @@ function applyLiveStats(ls) {
       score: row.value || row.count || 0,
       unit: row.unit || "",
       display,
+      canonical: row.canonical || "",
     };
   };
 
@@ -1209,7 +1211,7 @@ function applyLiveStats(ls) {
       const name = username.replace(/\p{Extended_Pictographic}/gu, "").trim() || "User";
       const display = row.display || "";
       const message = row.message || `${emoji ? emoji + " " : ""}${name} just logged ${row.value || 0} days in a row!`;
-      return { rank: row.rank || 1, name, emoji, score: row.value || 0, display, message };
+      return { rank: row.rank || 1, name, emoji, score: row.value || 0, display, message, canonical: row.canonical || "" };
     });
     renderStreakLeaderboard(streaks);
     renderStreakLiveCallout(streaks[0]?.message || "");
@@ -1756,10 +1758,11 @@ function renderLeaderboard(entries) {
       const displayName = normalized.name || "No data";
       const displayValue = convertUnitValueLabel(normalized.value || "-") || "-";
       const displayExercise = normalized.exercise || "N/A";
+      const profileLink = normalized.canonical ? `<a href="/@${escapeHtml(normalized.canonical)}" class="leaderboard-profile-link">${escapeHtml(displayName)}</a>` : escapeHtml(displayName);
       return `<li>
         <span class="leaderboard-cell leaderboard-cell-rank leaderboard-rank">#${normalized.rank || 1}</span>
         <span class="leaderboard-cell leaderboard-cell-exercise leaderboard-user">${escapeHtml(displayExercise)}</span>
-        <span class="leaderboard-cell leaderboard-cell-name leaderboard-user">${escapeHtml(displayName)}</span>
+        <span class="leaderboard-cell leaderboard-cell-name leaderboard-user">${profileLink}</span>
         <span class="leaderboard-cell leaderboard-cell-value leaderboard-score">${escapeHtml(displayValue)}</span>
       </li>`;
     })
@@ -1784,10 +1787,11 @@ function renderGroupLeaderboard(entries) {
       const displayName = normalized.name || "No data";
       const displayValue = convertUnitValueLabel(normalized.value || "-") || "-";
       const displayExercise = normalized.exercise || "N/A";
+      const profileLink = normalized.canonical ? `<a href="/@${escapeHtml(normalized.canonical)}" class="leaderboard-profile-link">${escapeHtml(displayName)}</a>` : escapeHtml(displayName);
       return `<li>
         <span class="leaderboard-cell leaderboard-cell-rank leaderboard-rank">#${normalized.rank || 1}</span>
         <span class="leaderboard-cell leaderboard-cell-exercise leaderboard-user">${escapeHtml(displayExercise)}</span>
-        <span class="leaderboard-cell leaderboard-cell-name leaderboard-user">${escapeHtml(displayName)}</span>
+        <span class="leaderboard-cell leaderboard-cell-name leaderboard-user">${profileLink}</span>
         <span class="leaderboard-cell leaderboard-cell-value leaderboard-score">${escapeHtml(displayValue)}</span>
       </li>`;
     })
@@ -1815,9 +1819,10 @@ function renderStreakLeaderboard(entries) {
       const normalized = normalizeLeaderboardEntry(entry);
       const displayName = normalized.name || "No data";
       const displayValue = convertUnitValueLabel(normalized.value || "-") || "-";
+      const profileLink = normalized.canonical ? `<a href="/@${escapeHtml(normalized.canonical)}" class="leaderboard-profile-link">${escapeHtml(displayName)}</a>` : escapeHtml(displayName);
       return `<li>
         <span class="streak-cell leaderboard-rank">#${index + 1}</span>
-        <span class="streak-cell streak-cell-name leaderboard-user">${escapeHtml(displayName)}</span>
+        <span class="streak-cell streak-cell-name leaderboard-user">${profileLink}</span>
         <span class="streak-cell streak-cell-value leaderboard-score">${escapeHtml(displayValue)}</span>
       </li>`;
     })
