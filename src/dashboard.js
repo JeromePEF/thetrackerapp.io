@@ -5925,9 +5925,15 @@ function initEmailVerificationOverlay() {
 
   const user = readAuthUser() || {};
   const email = String(user.email || "").trim();
-  const verified = readAccountEmailVerified(user);
 
-  if (verified || !email) {
+  if (!email) {
+    overlay.hidden = true;
+    return;
+  }
+
+  const verified = user.emailVerified === true || user.emailVerified === "true";
+
+  if (verified) {
     overlay.hidden = true;
     return;
   }
