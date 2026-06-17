@@ -576,7 +576,7 @@ function getAuthToken() {
     const raw = localStorage.getItem(AUTH_SESSION_KEY);
     if (!raw) return "";
     const parsed = JSON.parse(raw);
-    return String(parsed?.token || parsed?.accessToken || "").trim();
+    return String(parsed?.value || parsed?.token || parsed?.accessToken || "").trim();
   } catch {
     return "";
   }
