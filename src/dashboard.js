@@ -6085,17 +6085,27 @@ function initDeleteAccountFlow() {
         if (!res.ok || (data && data.ok === false)) {
           throw new Error(data?.error || `Server error (${res.status})`);
         }
+
+        const downloadUrl = data?.downloadUrl || "";
+        const recoveryCode = data?.recoveryCode || "";
+        const expiresAt = data?.expiresAt || "";
+
+        const msgParts = ["Account deletion started."];
+        if (downloadUrl) msgParts.push(`Download your data: ${downloadUrl}`);
+        if (recoveryCode) msgParts.push(`Recovery code: ${recoveryCode}`);
+        if (expiresAt) msgParts.push(`Restore available until: ${new Date(expiresAt).toLocaleDateString()}`);
+
         if (status) {
-          status.textContent = "Deletion request submitted. Your data will be permanently removed.";
+          status.innerHTML = msgParts.join("<br>");
           status.classList.add("is-success");
         }
 
-        if (status) {
-          status.textContent = "Deletion request submitted. The backend will process your request.";
-          status.classList.add("is-success");
-        }
-        confirmSection.hidden = true;
-        confirmBtn.textContent = "Yes, Delete All My Data";
+        setTimeout(() => {
+          localStorage.removeItem("tracker.auth.session");
+          localStorage.removeItem("tracker.auth.user");
+          localStorage.removeItem("tracker.authenticated");
+          window.location.href = "https://thetrackerapp.io/login?deleted=1";
+        }, 5000);
       } catch (err) {
         if (status) {
           status.textContent = err.message || "Failed to submit deletion request.";
