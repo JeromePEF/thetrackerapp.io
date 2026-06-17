@@ -5999,6 +5999,7 @@ function init() {
   });
 
   initDeleteAccountFlow();
+  initEmailVerificationOverlay();
 }
 
 function initDeleteAccountFlow() {
