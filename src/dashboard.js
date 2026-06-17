@@ -6006,7 +6006,7 @@ async function checkDeletionStatus() {
       headers: { Authorization: token ? `Bearer ${token}` : "" },
     });
     const data = await res.json().catch(() => null);
-    if (!data?.deleted) return;
+    if (!data?.deleted) return false;
 
     card.hidden = false;
 
@@ -6080,7 +6080,10 @@ async function checkDeletionStatus() {
         }
       });
     }
-  } catch {}
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function init() {
@@ -6103,11 +6106,16 @@ function init() {
   });
   void loadBackendUserSnapshot().finally(() => {
     void bootData();
-    initEmailVerificationOverlay();
+    if (document.getElementById("deletionStatusCard")?.hidden !== false) {
+      initEmailVerificationOverlay();
+    }
   });
 
   initDeleteAccountFlow();
-  initEmailVerificationOverlay();
+
+  checkDeletionStatus().then(isDeleted => {
+    if (!isDeleted) initEmailVerificationOverlay();
+  });
 }
 
 function initDeleteAccountFlow() {
