@@ -427,6 +427,25 @@
               <button id="exportJsonButton" type="button" class="btn-secondary">Export to JSON</button>
             </div>
             <p id="exportStatus" class="stats-status" role="status" aria-live="polite"></p>
+
+            <hr style="margin: 2rem 0 1rem; border-color: rgba(166,193,225,0.1);">
+
+            <header class="panel-head" style="padding: 0;">
+              <h2 style="color: #ef4444;">Delete Account & Data</h2>
+              <p>Permanently delete all your data from The Tracker App. This action cannot be undone.</p>
+            </header>
+            <div id="deleteAccountSection">
+              <button id="deleteAccountBtn" type="button" class="btn-secondary" style="border-color: #ef4444; color: #ef4444;">Request Data Deletion</button>
+            </div>
+            <div id="deleteConfirmSection" hidden>
+              <p style="margin: 0.75rem 0; font-size: 0.9rem;">Type <strong id="deleteConfirmText">username-Delete</strong> to confirm:</p>
+              <input id="deleteConfirmInput" type="text" class="account-edit-input" placeholder="Type confirmation here" style="max-width: 300px;">
+              <div class="panel-actions" style="margin-top: 0.75rem;">
+                <button id="deleteConfirmBtn" type="button" class="btn-primary" style="background: #ef4444;" disabled>Yes, Delete All My Data</button>
+                <button id="deleteCancelBtn" type="button" class="btn-secondary">Cancel</button>
+              </div>
+            </div>
+            <p id="deleteStatus" class="stats-status" role="status" aria-live="polite"></p>
           </article>
 
           <article id="tabGoals" class="dashboard-panel" data-tab-panel="goals" hidden>

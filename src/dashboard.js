@@ -1343,10 +1343,13 @@ function renderAccountInfo() {
   }
 
   if (els.billingStatusValue) {
-    els.billingStatusValue.textContent = user?.billingStatus || state.backendSnapshot?.billingStatus || "-";
+    const billingStatus = user?.billingStatus || state.backendSnapshot?.billingStatus || "";
+    els.billingStatusValue.textContent = billingStatus || "-";
+    const isActive = billingStatus === "active" || billingStatus === "trialing";
+    els.billingStatusValue.style.color = isActive ? "#22c55e" : "#ef4444";
   }
   if (els.billingPlanValue) {
-    els.billingPlanValue.textContent = user?.billingPlan || state.backendSnapshot?.billingPlan || "-";
+    els.billingPlanValue.textContent = formatPlanLabel(user?.billingPlan || state.backendSnapshot?.billingPlan) || "-";
   }
   if (els.billingLastPaymentValue) {
     els.billingLastPaymentValue.textContent = formatBillingDate(
@@ -4306,6 +4309,19 @@ function deriveCheckoutUrl(payload) {
   return "";
 }
 
+function formatPlanLabel(raw) {
+  const key = String(raw || "").trim().toLowerCase();
+  const labels = {
+    "weekly": "Weekly",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "premium": "Monthly – Premium",
+    "premiumyearly": "Yearly – Premium",
+    "free": "Free",
+  };
+  return labels[key] || raw || "-";
+}
+
 function applyBillingPayload(payload) {
   const status = deriveBillingStatus(payload);
   const plan = deriveBillingPlan(payload);
@@ -4315,13 +4331,11 @@ function applyBillingPayload(payload) {
 
   if (els.billingStatusValue) {
     els.billingStatusValue.textContent = status || "-";
+    const isActive = status === "active" || status === "trialing";
+    els.billingStatusValue.style.color = isActive ? "#22c55e" : "#ef4444";
   }
-  if (plan && els.billingPlanValue) {
-    const norm = normalizePlanKey(plan);
-    const priced = getBillingPricesSync()?.[norm];
-    els.billingPlanValue.textContent = priced?.formatted
-      ? `${plan} · ${priced.formatted}`
-      : plan;
+  if (els.billingPlanValue) {
+    els.billingPlanValue.textContent = formatPlanLabel(plan);
   }
   if (els.billingLastPaymentValue) {
     els.billingLastPaymentValue.textContent = formatBillingDate(lastPaymentDate) || "-";
@@ -4759,10 +4773,8 @@ async function finalizeBillingFromRedirect() {
 async function loadBillingOverview() {
   const contact = resolveBillingContact();
   if (!contact) {
-    setStatus(els.billingActionStatus, "Missing contact on session. Re-login to sync billing.", "is-error");
     return;
   }
-  setStatus(els.billingActionStatus, "Loading billing status...");
 
   try {
     const portalPayload = await hydratePortalForContact(contact);
@@ -4774,13 +4786,7 @@ async function loadBillingOverview() {
         renderSheetLink();
       }
     }
-    const status = applyBillingPayload(portalPayload);
-
-    if (status) {
-      setStatus(els.billingActionStatus, "Billing synced from backend.", "is-success");
-    } else {
-      setStatus(els.billingActionStatus, "Billing response received, but status is missing.", "is-error");
-    }
+    applyBillingPayload(portalPayload);
     renderAccountInfo();
   } catch (error) {
     const message = String(error?.message || "Unable to load billing status.");
@@ -5884,11 +5890,6 @@ function initEmailVerificationOverlay() {
     return;
   }
 
-  if (sessionStorage.getItem("tracker.emailVerifySkipped")) {
-    overlay.hidden = true;
-    return;
-  }
-
   if (els.emailVerifyPrompt) {
     els.emailVerifyPrompt.textContent = `Verify ${email} to unlock all features including affiliate access, data export, and account recovery.`;
   }
@@ -5902,7 +5903,6 @@ function initEmailVerificationOverlay() {
   if (skipBtn) {
     skipBtn.addEventListener("click", () => {
       overlay.hidden = true;
-      sessionStorage.setItem("tracker.emailVerifySkipped", "1");
     });
   }
 
@@ -5922,10 +5922,7 @@ function initEmailVerificationOverlay() {
           status.textContent = "Verification email sent! Check your inbox.";
           status.classList.add("is-success");
         }
-        setTimeout(() => {
-          overlay.hidden = true;
-          sessionStorage.setItem("tracker.emailVerifySkipped", "1");
-        }, 2000);
+        sendBtn.textContent = "Verification Sent ✓";
       } catch (err) {
         if (status) {
           status.textContent = err.message || "Failed to send. Try again.";
@@ -5959,6 +5956,97 @@ function init() {
   });
 
   initEmailVerificationOverlay();
+  initDeleteAccountFlow();
+}
+
+function initDeleteAccountFlow() {
+  const deleteBtn = document.getElementById("deleteAccountBtn");
+  const confirmSection = document.getElementById("deleteConfirmSection");
+  const confirmInput = document.getElementById("deleteConfirmInput");
+  const confirmBtn = document.getElementById("deleteConfirmBtn");
+  const cancelBtn = document.getElementById("deleteCancelBtn");
+  const confirmText = document.getElementById("deleteConfirmText");
+  const status = document.getElementById("deleteStatus");
+
+  if (!deleteBtn || !confirmSection) return;
+
+  const user = readAuthUser() || {};
+  const username = String(user.username || "user").trim();
+  const deletePhrase = `${username}-Delete`;
+
+  if (confirmText) confirmText.textContent = deletePhrase;
+
+  deleteBtn.addEventListener("click", () => {
+    deleteBtn.parentElement.hidden = true;
+    confirmSection.hidden = false;
+    if (confirmInput) {
+      confirmInput.value = "";
+      confirmInput.focus();
+    }
+  });
+
+  if (cancelBtn) {
+    cancelBtn.addEventListener("click", () => {
+      confirmSection.hidden = true;
+      deleteBtn.parentElement.hidden = false;
+      if (status) {
+        status.textContent = "";
+        status.classList.remove("is-error", "is-success");
+      }
+    });
+  }
+
+  if (confirmInput && confirmBtn) {
+    confirmInput.addEventListener("input", () => {
+      confirmBtn.disabled = confirmInput.value.trim() !== deletePhrase;
+    });
+  }
+
+  if (confirmBtn) {
+    confirmBtn.addEventListener("click", async () => {
+      if (confirmBtn.disabled) return;
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = "Deleting...";
+      if (status) {
+        status.textContent = "";
+        status.classList.remove("is-error", "is-success");
+      }
+
+      try {
+        const token = getAuthToken();
+        const res = await fetch(`${API_BASE}/api/account/delete`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: token ? `Bearer ${token}` : "",
+          },
+          body: JSON.stringify({
+            confirmation: deletePhrase,
+            requestedAt: new Date().toISOString(),
+          }),
+        });
+
+        const data = await res.json().catch(() => null);
+        if (!res.ok || (data && data.ok === false)) {
+          throw new Error(data?.error || `Request failed (${res.status})`);
+        }
+
+        if (status) {
+          status.textContent = "Deletion request submitted. The backend will process your request.";
+          status.classList.add("is-success");
+        }
+        confirmSection.hidden = true;
+        confirmBtn.textContent = "Yes, Delete All My Data";
+      } catch (err) {
+        if (status) {
+          status.textContent = err.message || "Failed to submit deletion request.";
+          status.classList.add("is-error");
+        }
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = "Yes, Delete All My Data";
+      }
+    });
+  }
 }
 
 // ============================================
