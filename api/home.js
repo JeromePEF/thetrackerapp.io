@@ -196,7 +196,68 @@ async function fetchText(url) {
   }
 }
 
-// ── Dashboard metrics from Google Sheets ────────────────────────────────────
+// ── Metrics & leaderboard from control API liveStats ─────────────────────────
+
+function metricsFromLiveStats(ls) {
+  if (!ls || typeof ls !== "object") return null;
+  return {
+    usersToday: ls.usersUsingToday ?? 0,
+    usersThisWeek: ls.totalUsersThisWeek ?? 0,
+    workoutsLogged: ls.workoutsLogged ?? 0,
+    caloriesTracked: ls.caloriesTracked ?? 0,
+    gallonsDrank: ls.gallonsDrank ?? 0,
+  };
+}
+
+function leaderboardFromLiveStats(ls) {
+  if (!ls || typeof ls !== "object") return null;
+  const toEntry = (row) => {
+    const username = row.username || row.canonical || "User";
+    const emoji = (username.match(/\p{Extended_Pictographic}/u) || [])[0] || "";
+    const name = username.replace(/\p{Extended_Pictographic}/gu, "").trim() || "User";
+    const valueLabel = row.display || `${row.value || 0} ${row.unit || ""}`.trim();
+    return {
+      exercise: row.exercise || "",
+      rank: row.rank || 1,
+      name,
+      emoji,
+      score: row.value || row.count || 0,
+      unit: row.unit || "",
+      valueLabel,
+      line: `${emoji ? emoji + " " : ""}${name} | ${valueLabel}`,
+    };
+  };
+
+  const strength = ls.strengthLeaderboard?.rows || [];
+  const calisthenics = ls.calisthenicsLeaderboard?.rows || [];
+  const streaks = ls.topStreaks?.rows || [];
+
+  const streakEntries = streaks.map((row) => {
+    const username = row.username || row.canonical || "User";
+    const emoji = (username.match(/\p{Extended_Pictographic}/u) || [])[0] || "";
+    const name = username.replace(/\p{Extended_Pictographic}/gu, "").trim() || "User";
+    const valueLabel = row.display || `${row.value || 0} ${row.unit || "days"}`.trim();
+    const message = row.message || `${emoji ? emoji + " " : ""}${name} just logged ${row.value || 0} days in a row!`;
+    return {
+      rank: row.rank || 1,
+      name,
+      emoji,
+      score: row.value || 0,
+      valueLabel,
+      line: `${emoji ? emoji + " " : ""}${name} | ${valueLabel}`,
+      message,
+    };
+  });
+
+  return {
+    entries: strength.map(toEntry),
+    groupEntries: calisthenics.map(toEntry),
+    streakEntries,
+    streakLiveMessage: streakEntries[0]?.message || "",
+  };
+}
+
+// ── Dashboard metrics from Google Sheets (fallback) ───────────────────────────────
 
 async function fetchDashboardMetrics() {
   const now = Date.now();
@@ -328,11 +389,11 @@ export default async function handler(req, res) {
     return res.status(502).send("Homepage template missing.");
   }
 
-  const [flags, metrics, leaderboard] = await Promise.all([
-    fetchUpstreamFlags(),
-    fetchDashboardMetrics(),
-    fetchSheetLeaderboard(),
-  ]);
+  const flags = await fetchUpstreamFlags();
+
+  const liveStats = flags?.liveStats;
+  const metrics = metricsFromLiveStats(liveStats) || await fetchDashboardMetrics();
+  const leaderboard = leaderboardFromLiveStats(liveStats) || await fetchSheetLeaderboard();
 
   const messagingServices = resolveMessagingServices(flags);
   const metricsJson = metrics ? JSON.stringify(metrics) : null;
