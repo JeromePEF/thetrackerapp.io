@@ -1,0 +1,60 @@
+BACKEND — Subscribe Buttons for No-Plan Users
+==============================================
+Date: 2026-06-17
+
+When a user has no subscription (billingStatus is empty, "none", or
+no portalUrl), the dashboard billing tab should show plan selection
+buttons instead of just a pricing page link.
+
+
+NEEDED: Endpoint to Create a Stripe Checkout Session
+-----------------------------------------------------
+POST /api/stripe/checkout-session
+Authorization: Bearer <token>
+Content-Type: application/json
+
+Request body:
+{
+  "plan": "monthly" | "yearly" | "weekly" | "premium" | "premiumYearly",
+  "successUrl": "https://dashboard.thetrackerapp.io/dashboard?billing=success&session_id={CHECKOUT_SESSION_ID}",
+  "cancelUrl": "https://dashboard.thetrackerapp.io/dashboard?billing=cancelled"
+}
+
+Response:
+{
+  "ok": true,
+  "url": "https://checkout.stripe.com/c/pay/cs_test_..."
+}
+
+The dashboard will open this URL in the same tab for the user to
+complete payment. After successful checkout, the dashboard detects
+?billing=success in the URL and finalizes via:
+  GET /api/stripe/checkout-complete?session_id=...
+
+
+PLAN PRICING (from /api/billing/stripe-prices):
+-----------------------------------------------
+The dashboard already fetches prices from this endpoint. Plans to show:
+
+  weekly         → $3/week
+  monthly        → $10/month
+  yearly         → $96/year ($8/month equivalent)
+  premium        → Premium Monthly ($19.99)
+  premiumYearly  → Premium Yearly ($200/year)
+
+
+FRONTEND FLOW:
+--------------
+1. Dashboard calls GET /api/portal → sees no billingPortalUrl
+2. Shows 5 plan buttons (weekly, monthly, yearly, premium, premiumYearly)
+3. User clicks a plan → POST /api/stripe/checkout-session { plan: "yearly" }
+4. Response has { url: "https://checkout.stripe.com/..." }
+5. Dashboard redirects browser to the Stripe Checkout URL
+6. Stripe handles payment, redirects back to dashboard?billing=success
+7. Dashboard calls GET /api/stripe/checkout-complete?session_id=...
+8. Dashboard reloads /api/portal → now has billingPortalUrl → shows
+   "Manage Billing →" button
+
+This endpoint should already exist — the dashboard previously had
+checkout buttons for plan upgrades. It just needs to work for initial
+subscriptions too.

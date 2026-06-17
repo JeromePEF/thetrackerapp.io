@@ -4327,6 +4327,29 @@ function formatPlanLabel(raw) {
   return labels[key] || raw || "-";
 }
 
+function wireBillingPlanButtons() {
+  const container = document.getElementById("billingPlanButtons");
+  if (!container) return;
+
+  const buttons = container.querySelectorAll(".billing-plan-btn");
+  buttons.forEach((btn) => {
+    if (btn.dataset.wired) return;
+    btn.dataset.wired = "1";
+    btn.addEventListener("click", async () => {
+      const plan = btn.dataset.plan;
+      if (!plan) return;
+      btn.disabled = true;
+      btn.textContent = "Redirecting to Stripe...";
+      try {
+        await startStripeCheckoutForPlan(plan, btn);
+      } catch (err) {
+        btn.textContent = "Failed — try again";
+        btn.disabled = false;
+      }
+    });
+  });
+}
+
 function applyBillingPayload(payload) {
   const status = deriveBillingStatus(payload);
   const plan = deriveBillingPlan(payload);
@@ -4362,6 +4385,15 @@ function applyBillingPayload(payload) {
   const subscribeLink = document.getElementById("billingSubscribeLink");
   if (subscribeLink) {
     subscribeLink.hidden = Boolean(portalUrl);
+  }
+
+  const planButtons = document.getElementById("billingPlanButtons");
+  if (planButtons) {
+    planButtons.hidden = Boolean(portalUrl);
+  }
+
+  if (!portalUrl) {
+    wireBillingPlanButtons();
   }
 
   state.billingPortalUrl = portalUrl || "";
