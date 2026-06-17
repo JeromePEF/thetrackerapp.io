@@ -2356,6 +2356,76 @@ body.dashboard-page .integration-card .panel-actions {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* Account deletion status card */
+.deletion-status-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 2rem;
+}
+
+.deletion-status-content {
+  max-width: 500px;
+  text-align: center;
+  background: #111;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 16px;
+  padding: 2.5rem 2rem;
+}
+
+.deletion-status-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.deletion-status-content h2 {
+  font-family: "Orbitron", sans-serif;
+  font-size: 1.3rem;
+  margin: 0 0 0.75rem;
+  color: #ef4444;
+}
+
+.deletion-status-content p {
+  font-size: 0.9rem;
+  color: rgba(230, 238, 245, 0.7);
+  margin: 0 0 0.5rem;
+  line-height: 1.5;
+}
+
+.deletion-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+}
+
+.deletion-actions .btn-primary,
+.deletion-actions .btn-secondary {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 0.95rem;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.deletion-actions .btn-primary {
+  background: linear-gradient(135deg, #38ffd3, #00d4aa);
+  color: #000;
+  font-weight: 700;
+}
+
+.deletion-actions .btn-secondary {
+  background: transparent;
+  color: rgba(230, 238, 245, 0.6);
+  border: 1px solid rgba(230, 238, 245, 0.2);
+}
 .dashboard-sidebar,
 .dashboard-content,
 .dashboard-panel {

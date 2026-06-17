@@ -53,6 +53,9 @@
         <div class="email-verify-icon">📧</div>
         <h2>Verify Your Email</h2>
         <p id="emailVerifyPrompt">Verify your email to unlock all features including affiliate access, data export, and account recovery.</p>
+        <div id="emailVerifyInputRow" hidden style="margin-bottom: 1rem;">
+          <input id="emailVerifyInput" type="email" class="account-edit-input" placeholder="you@example.com" style="width: 100%; padding: 0.6rem; border-radius: 6px;" />
+        </div>
         <div class="email-verify-actions">
           <button id="emailVerifySendBtn" type="button" class="btn-primary">Send Verification Email</button>
           <button id="emailVerifySkipBtn" type="button" class="btn-secondary">Skip for now</button>
@@ -63,7 +66,7 @@
 
     <div class="dashboard-shell">
       <header class="auth-top-nav">
-        <a href="/" class="header-logo auth-brand" aria-label="Home" style="margin:0; display:flex; align-items:center; gap:8px; text-decoration:none;">
+        <a href="https://thetrackerapp.io/" class="header-logo auth-brand" aria-label="Home" style="margin:0; display:flex; align-items:center; gap:8px; text-decoration:none;">
             <svg class="logo-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 28px; height: 28px;">
               <circle cx="32" cy="32" r="30.5" fill="transparent" stroke="#38ffd3" stroke-width="3"/>
               <text x="50%" y="50%" dy="0.35em" text-anchor="middle" font-size="28" fill="#fff">🏋️</text>
@@ -71,12 +74,25 @@
             <span class="logo-text-svg" style="font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 18px; color: #fff; fill: #fff; letter-spacing: -0.02em;">thetrackerapp.io</span>
           </a>
         <nav class="auth-links" aria-label="Primary">
-          <a href="https://thetrackerapp.io/">Home</a>
           <a href="#" id="dashboardLogoutLink" class="auth-links-logout">Logout</a>
         </nav>
       </header>
 
       <main class="dashboard-layout">
+        <section id="deletionStatusCard" class="deletion-status-card" hidden>
+          <div class="deletion-status-content">
+            <div class="deletion-status-icon">⏳</div>
+            <h2>Account Deletion Scheduled</h2>
+            <p id="deletionCountdown"></p>
+            <p id="deletionExpiry"></p>
+            <div class="deletion-actions">
+              <a id="deletionDownloadLink" class="btn-primary" href="#" target="_blank" rel="noopener noreferrer">Download My Data</a>
+              <button id="deletionRestoreBtn" type="button" class="btn-secondary">Restore My Account</button>
+            </div>
+            <p id="deletionStatus" class="stats-status" role="status" aria-live="polite"></p>
+          </div>
+        </section>
+
         <aside class="dashboard-sidebar" aria-label="Dashboard sections">
           <h1>Dashboard</h1>
           <nav id="dashboardNav">

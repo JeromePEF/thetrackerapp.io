@@ -5989,6 +5989,87 @@ function initEmailVerificationOverlay() {
   }
 }
 
+async function checkDeletionStatus() {
+  const card = document.getElementById("deletionStatusCard");
+  if (!card) return;
+
+  const user = readAuthUser() || {};
+  const contact = user.canonical || user.email || "";
+  if (!contact) return;
+
+  try {
+    const token = getAuthToken();
+    const res = await fetch(`${API_BASE}/api/account/deletion-status?contact=${encodeURIComponent(contact)}`, {
+      headers: { Authorization: token ? `Bearer ${token}` : "" },
+    });
+    const data = await res.json().catch(() => null);
+    if (!data?.deleted) return;
+
+    card.hidden = false;
+
+    const sidebar = document.querySelector(".dashboard-sidebar");
+    if (sidebar) sidebar.hidden = true;
+
+    document.querySelectorAll("[data-tab-panel]").forEach(el => el.hidden = true);
+
+    const countdown = document.getElementById("deletionCountdown");
+    const expiry = document.getElementById("deletionExpiry");
+    const downloadLink = document.getElementById("deletionDownloadLink");
+    const restoreBtn = document.getElementById("deletionRestoreBtn");
+    const status = document.getElementById("deletionStatus");
+
+    if (data.expiresAt) {
+      const exp = new Date(data.expiresAt);
+      if (expiry) expiry.textContent = `Expires: ${exp.toLocaleString()}`;
+
+      const update = () => {
+        const diff = exp - Date.now();
+        if (diff <= 0) {
+          if (countdown) countdown.textContent = "Deletion window has expired.";
+          return;
+        }
+        const days = Math.floor(diff / 86400000);
+        const hours = Math.floor((diff % 86400000) / 3600000);
+        const mins = Math.floor((diff % 3600000) / 60000);
+        const secs = Math.floor((diff % 60000) / 1000);
+        if (countdown) countdown.textContent = `Time remaining: ${days}d ${hours}h ${mins}m ${secs}s`;
+      };
+      update();
+      setInterval(update, 1000);
+    }
+
+    if (data.downloadUrl && downloadLink) {
+      downloadLink.href = data.downloadUrl;
+      downloadLink.hidden = false;
+    }
+
+    if (data.canRestore !== false && restoreBtn && data.recoveryCode) {
+      restoreBtn.hidden = false;
+      restoreBtn.addEventListener("click", async () => {
+        restoreBtn.disabled = true;
+        restoreBtn.textContent = "Restoring...";
+        try {
+          const r = await fetch(`${API_BASE}/api/account/restore`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ recoveryCode: data.recoveryCode }),
+          });
+          const rd = await r.json().catch(() => null);
+          if (!r.ok || (rd && rd.ok === false)) throw new Error(rd?.error || `Error ${r.status}`);
+          if (status) { status.textContent = "Account restored! Redirecting to dashboard..."; status.classList.add("is-success"); }
+          setTimeout(() => { window.location.reload(); }, 2000);
+        } catch (err) {
+          if (status) { status.textContent = err.message || "Restore failed."; status.classList.add("is-error"); }
+          restoreBtn.disabled = false;
+          restoreBtn.textContent = "Restore My Account";
+        }
+      });
+    }
+  } catch {}
+}
+
 function init() {
   enforceDashboardAccess();
   renderAccountInfo();
@@ -6001,6 +6082,8 @@ function init() {
 
   const initialTab = resolveInitialTab();
   setActiveTab(initialTab, false);
+
+  void checkDeletionStatus();
 
   void finalizeBillingFromRedirect().finally(() => {
     void loadBillingOverview();
