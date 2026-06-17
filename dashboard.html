@@ -471,36 +471,8 @@
               <p id="billingPlanRow"><strong>Current Plan:</strong> <span id="billingPlanValue">-</span></p>
               <p id="billingLastPaymentRow"><strong>Last Payment:</strong> <span id="billingLastPaymentValue">-</span></p>
               <p id="billingNextBillingRow"><strong>Next Billing Date:</strong> <span id="billingNextBillingValue">-</span></p>
-              <p id="billingCancelNotice" class="stats-status is-error" hidden></p>
+              <p id="billingNoAccount" hidden>No billing account. Subscribe to a plan to get started.</p>
             </div>
-
-            <!-- Checkout-in-progress card. Renders when membership.status is
-                 one of: checkout_pending / incomplete / incomplete_expired /
-                 trialing_pending_payment / requires_payment_method / unpaid.
-                 The plan + next-billing rows are hidden in those states so
-                 the user doesn't think they're already subscribed. -->
-            <div id="billingCheckoutPendingCard" class="billing-checkout-pending" hidden>
-              <div class="billing-checkout-pending-icon" aria-hidden="true">⏳</div>
-              <div class="billing-checkout-pending-body">
-                <h3 class="billing-checkout-pending-title">Checkout in progress</h3>
-                <p class="billing-checkout-pending-msg" id="billingCheckoutPendingMsg">
-                  Complete payment to activate your subscription.
-                </p>
-                <div class="billing-checkout-pending-actions">
-                  <button type="button" id="billingResumeCheckoutBtn" class="btn-primary">Resume checkout</button>
-                  <button type="button" id="billingAbandonCheckoutBtn" class="btn-secondary">Choose a different plan</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Upgrade tier cards. Populated by renderBillingUpgrades() in
-                 dashboard.js using the `billing` block from /api/control.
-                 Hidden when no upgrade paths apply to the user's current plan. -->
-            <section id="billingUpgradeSection" class="billing-upgrade-section" hidden>
-              <h3 class="billing-upgrade-title">Upgrade your plan</h3>
-              <p class="billing-upgrade-sub">Switch billing intervals or unlock Premium features.</p>
-              <div id="billingUpgradeGrid" class="billing-upgrade-grid"></div>
-            </section>
 
             <div class="panel-actions">
               <a
@@ -510,11 +482,8 @@
                 target="_blank"
                 rel="noopener noreferrer"
                 hidden
-                >Open Stripe Billing</a
+                >Manage Billing →</a
               >
-              <button id="billingYearlyButton" type="button" class="btn-primary" hidden>Start Monthly Checkout</button>
-              <button id="billingResumeButton" type="button" class="btn-primary" hidden>Resume Subscription</button>
-              <button id="billingCancelButton" type="button" class="btn-secondary" hidden>Cancel Subscription</button>
             </div>
             <p id="billingActionStatus" class="stats-status" role="status" aria-live="polite"></p>
           </article>

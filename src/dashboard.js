@@ -300,13 +300,8 @@ const els = {
   billingLastPaymentValue: document.getElementById("billingLastPaymentValue"),
   billingNextBillingValue: document.getElementById("billingNextBillingValue"),
   billingManageLink: document.getElementById("billingManageLink"),
-  billingYearlyButton: document.getElementById("billingYearlyButton"),
-  billingCancelButton: document.getElementById("billingCancelButton"),
-  billingResumeButton: document.getElementById("billingResumeButton"),
-  billingCancelNotice: document.getElementById("billingCancelNotice"),
+  billingNoAccount: document.getElementById("billingNoAccount"),
   billingActionStatus: document.getElementById("billingActionStatus"),
-  billingPlanRow: document.getElementById("billingPlanRow"),
-  billingLastPaymentRow: document.getElementById("billingLastPaymentRow"),
   billingNextBillingRow: document.getElementById("billingNextBillingRow"),
   billingCheckoutPendingCard: document.getElementById("billingCheckoutPendingCard"),
   billingCheckoutPendingMsg: document.getElementById("billingCheckoutPendingMsg"),
@@ -4300,34 +4295,13 @@ function applyBillingPayload(payload) {
   const status = deriveBillingStatus(payload);
   const plan = deriveBillingPlan(payload);
   const portalUrl = deriveBillingPortalUrl(payload);
-  const cancelAtPeriodEnd = deriveCancelAtPeriodEnd(payload);
-  const currentPeriodEnd = deriveCurrentPeriodEnd(payload);
   const lastPaymentDate = deriveLastPaymentDate(payload);
   const nextBillingDate = deriveNextBillingDate(payload);
-  const checkoutUrl = deriveCheckoutUrl(payload);
 
-  const normalizedStatus = String(status || "").toLowerCase();
-  const hasActiveSub = ACTIVE_SUB_STATUSES.has(normalizedStatus);
-  const isCheckoutPending = CHECKOUT_PENDING_STATUSES.has(normalizedStatus);
-
-  if (status && els.billingStatusValue) {
-    els.billingStatusValue.textContent = isCheckoutPending
-      ? "checkout pending"
-      : status;
+  if (els.billingStatusValue) {
+    els.billingStatusValue.textContent = status || "-";
   }
-
-  // Plan + billing-date rows hidden while checkout is pending so the user
-  // doesn't see "Current Plan: yearly · $96/year" while their payment is
-  // actually still incomplete (the exact fierylion bug from the backend doc).
-  if (els.billingPlanRow) els.billingPlanRow.hidden = isCheckoutPending;
-  if (els.billingLastPaymentRow) els.billingLastPaymentRow.hidden = isCheckoutPending;
-  if (els.billingNextBillingRow) els.billingNextBillingRow.hidden = isCheckoutPending;
-
-  if (plan && els.billingPlanValue && !isCheckoutPending) {
-    // Append the Stripe-formatted price when we know it for this plan so
-    // the user sees "weekly · $3/week" / "monthly · $10/month" / etc.
-    // Weekly subscribers still see their price here even though weekly is
-    // hidden from the /pricing page.
+  if (plan && els.billingPlanValue) {
     const norm = normalizePlanKey(plan);
     const priced = getBillingPricesSync()?.[norm];
     els.billingPlanValue.textContent = priced?.formatted
@@ -4340,68 +4314,18 @@ function applyBillingPayload(payload) {
   if (els.billingNextBillingValue) {
     els.billingNextBillingValue.textContent = formatBillingDate(nextBillingDate) || "-";
   }
+
   if (els.billingManageLink) {
     const hasPortalUrl = Boolean(portalUrl);
-    els.billingManageLink.hidden = !hasPortalUrl || isCheckoutPending;
+    els.billingManageLink.hidden = !hasPortalUrl;
     els.billingManageLink.href = hasPortalUrl ? portalUrl : "#";
   }
-  state.billingPortalUrl = portalUrl || state.billingPortalUrl || "";
-  state.billingCheckoutUrl = checkoutUrl || "";
-  state.billingPendingPlan = isCheckoutPending ? plan : "";
-  syncAffiliateBillingButton();
 
-  // Show the checkout-in-progress card when status is in the pending set.
-  if (els.billingCheckoutPendingCard) {
-    els.billingCheckoutPendingCard.hidden = !isCheckoutPending;
-    if (isCheckoutPending && els.billingCheckoutPendingMsg) {
-      const planLabel = plan ? ` for ${plan}` : "";
-      els.billingCheckoutPendingMsg.textContent = checkoutUrl
-        ? `You started checkout${planLabel} but haven't completed payment yet. Resume below to finish.`
-        : `You started checkout${planLabel} but haven't completed payment yet. Choose a plan below or click resume.`;
-    }
-    if (els.billingResumeCheckoutBtn) {
-      // If we have the existing checkout URL, the button just opens it.
-      // Otherwise, fire a new checkout-session for the pending plan.
-      els.billingResumeCheckoutBtn.hidden = false;
-    }
+  if (els.billingNoAccount) {
+    els.billingNoAccount.hidden = Boolean(portalUrl);
   }
 
-  const scheduledForCancel = cancelAtPeriodEnd === true && hasActiveSub;
-
-  if (els.billingCancelNotice) {
-    if (scheduledForCancel) {
-      const dateLabel = formatBillingDate(currentPeriodEnd);
-      els.billingCancelNotice.textContent = dateLabel
-        ? `Subscription is set to cancel on ${dateLabel}. Resume any time before then to keep your plan.`
-        : "Subscription is set to cancel at the end of the current period.";
-      els.billingCancelNotice.hidden = false;
-    } else {
-      els.billingCancelNotice.hidden = true;
-      els.billingCancelNotice.textContent = "";
-    }
-  }
-
-  if (els.billingYearlyButton) {
-    // Hide "Start Monthly Checkout" if there's already an active/trialing subscription.
-    els.billingYearlyButton.hidden = hasActiveSub || isCheckoutPending;
-  }
-  if (els.billingCancelButton) {
-    els.billingCancelButton.hidden = !(hasActiveSub && !scheduledForCancel);
-  }
-  if (els.billingResumeButton) {
-    els.billingResumeButton.hidden = !scheduledForCancel;
-  }
-
-  // Render upgrade tier cards. Hidden when checkout is pending so the user
-  // focuses on completing payment rather than picking a different plan
-  // (they can still hit "Choose a different plan" to abandon and re-pick).
-  if (isCheckoutPending) {
-    const upgradeSection = document.getElementById("billingUpgradeSection");
-    if (upgradeSection) upgradeSection.hidden = true;
-  } else {
-    renderBillingUpgrades({ currentPlan: plan, hasActiveSub });
-  }
-
+  state.billingPortalUrl = portalUrl || "";
   persistBillingOverview(status, plan, lastPaymentDate, nextBillingDate);
   return status;
 }
