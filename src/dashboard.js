@@ -5919,6 +5919,9 @@ function initEmailVerificationOverlay() {
   const overlay = document.getElementById("emailVerifyOverlay");
   if (!overlay) return;
 
+  const card = document.getElementById("deletionStatusCard");
+  if (card && !card.hidden) return;
+
   const user = readAuthUser() || {};
   const email = String(user.email || "").trim();
   const verified = user.emailVerified === true || user.emailVerified === "true";
@@ -6010,7 +6013,17 @@ async function checkDeletionStatus() {
     const sidebar = document.querySelector(".dashboard-sidebar");
     if (sidebar) sidebar.hidden = true;
 
+    const mainLayout = document.querySelector(".dashboard-layout");
+    if (mainLayout) {
+      mainLayout.style.display = "flex";
+      mainLayout.style.alignItems = "center";
+      mainLayout.style.justifyContent = "center";
+      mainLayout.style.minHeight = "80vh";
+      mainLayout.style.padding = "0";
+    }
+
     document.querySelectorAll("[data-tab-panel]").forEach(el => el.hidden = true);
+    document.querySelector(".dashboard-sidebar")?.setAttribute("hidden", "");
 
     const countdown = document.getElementById("deletionCountdown");
     const expiry = document.getElementById("deletionExpiry");
