@@ -465,21 +465,21 @@ function renderProfile(data) {
   renderHeatmapChart(els.userMergedHeatmap, days, "merged");
   if (els.mergedHeatmapCard) els.mergedHeatmapCard.hidden = false;
 
-  if (visibility.workouts !== false) {
+  if (visibility.workouts === true) {
     renderHeatmapChart(els.userWorkoutHeatmap, days, "workouts");
     if (els.workoutHeatmapCard) els.workoutHeatmapCard.hidden = false;
   } else if (els.workoutHeatmapCard) {
     els.workoutHeatmapCard.hidden = true;
   }
 
-  if (visibility.nutrition !== false) {
+  if (visibility.nutrition === true) {
     renderHeatmapChart(els.userNutritionHeatmap, days, "nutrition");
     if (els.nutritionHeatmapCard) els.nutritionHeatmapCard.hidden = false;
   } else if (els.nutritionHeatmapCard) {
     els.nutritionHeatmapCard.hidden = true;
   }
 
-  if (visibility.water !== false) {
+  if (visibility.water === true) {
     renderHeatmapChart(els.userWaterHeatmap, days, "water");
     if (els.waterHeatmapCard) els.waterHeatmapCard.hidden = false;
   } else if (els.waterHeatmapCard) {
@@ -488,7 +488,7 @@ function renderProfile(data) {
 
   var leaderboard = data.leaderboard || {};
 
-  if (visibility.leaderboard !== false) {
+  if (visibility.leaderboard === true) {
     renderLeaderboardRows(els.userStrengthRows, leaderboard.strength);
     renderLeaderboardRows(els.userCalisthenicsRows, leaderboard.calisthenics);
     renderStreaksRow(els.userStreaksRows, leaderboard.streaks);
@@ -500,7 +500,7 @@ function renderProfile(data) {
     els.userLeaderboard.hidden = true;
   }
 
-  if (visibility.recentWorkouts !== false) {
+  if (visibility.recentWorkouts === true) {
     renderRecentWorkouts(els.userRecentWorkoutList, data.recentWorkouts);
     if (els.userRecentWorkouts) {
       els.userRecentWorkouts.hidden = !Array.isArray(data.recentWorkouts) || !data.recentWorkouts.length;

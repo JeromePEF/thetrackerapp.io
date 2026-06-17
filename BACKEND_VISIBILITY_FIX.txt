@@ -1,0 +1,41 @@
+BACKEND — Public Profile Visibility API Fix
+=============================================
+
+Endpoint: POST /api/user/visibility
+
+The frontend sends:
+{
+  "visibility": {
+    "workouts": true/false,
+    "nutrition": true/false,
+    "water": true/false,
+    "leaderboard": true/false,
+    "recentWorkouts": true/false
+  }
+}
+
+The backend MUST:
+1. Store these booleans per user.
+2. Return them in the user profile / portal response under one of these keys:
+   - publicProfileVisibility
+   - publicVisibility   (currently checked by user.js)
+   - profile.publicVisibility
+
+Example response from /api/portal, /api/user/profile, /api/user/public, etc.:
+{
+  "publicVisibility": {
+    "workouts": true,
+    "nutrition": false,
+    "water": false,
+    "leaderboard": true,
+    "recentWorkouts": false
+  }
+}
+
+CRITICAL: The frontend now checks `visibility.xxx === true` (not `!== false`).
+If a key is missing or undefined, the section will be HIDDEN (max privacy default).
+
+Also: the dashboard Account tab loads these values on page load via
+`state.backendSnapshot.publicProfileVisibility` or `state.backendSnapshot.profile.publicVisibility`.
+If the backend doesn't return them, the checkboxes show unchecked and the user
+can't see their current saved state.
