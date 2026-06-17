@@ -1713,15 +1713,6 @@ function wirePublicProfileVisibility() {
   });
 }
 
-function readLocalVisibility() {
-  try {
-    const raw = localStorage.getItem("tracker.publicVisibility");
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
 function hydratePublicProfileVisibility() {
   const user = readAuthUser();
   if (!user) return;
@@ -1742,7 +1733,6 @@ function hydratePublicProfileVisibility() {
 
   const visibility = state.backendSnapshot?.publicProfileVisibility
     || state.backendSnapshot?.profile?.publicVisibility
-    || readLocalVisibility()
     || {};
   if (els.toggleWorkoutVisibility) {
     els.toggleWorkoutVisibility.checked = visibility.workouts === true;
@@ -1844,9 +1834,6 @@ async function savePublicProfileVisibility() {
     if (state.backendSnapshot) {
       state.backendSnapshot.publicProfileVisibility = visibility;
     }
-    try {
-      localStorage.setItem("tracker.publicVisibility", JSON.stringify(visibility));
-    } catch {}
 
     if (els.publicProfileSaved) els.publicProfileSaved.hidden = false;
     if (els.publicProfileStatus) {
