@@ -113,15 +113,15 @@ if (serviceSelect) {
 
   // Event listeners to progress the state
   identityInput.addEventListener("focus", () => {
-    if (currentState === 'identity') {
-      currentState = 'consent';
-      updateGuide();
-    }
+    // Don't advance — wait for 8 digits
   });
   identityInput.addEventListener("input", () => {
     if (currentState === 'identity') {
-      currentState = 'consent';
-      updateGuide();
+      const digits = identityInput.value.replace(/\D+/g, "");
+      if (digits.length >= 8) {
+        currentState = 'consent';
+        updateGuide();
+      }
     }
   });
 
