@@ -117,8 +117,7 @@ if (serviceSelect) {
   });
   identityInput.addEventListener("input", () => {
     if (currentState === 'identity') {
-      const digits = identityInput.value.replace(/\D+/g, "");
-      if (digits.length >= 8) {
+      if (identityInput.value.trim().length >= 4) {
         currentState = 'consent';
         updateGuide();
       }
