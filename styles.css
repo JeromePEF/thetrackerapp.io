@@ -1411,7 +1411,6 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
   margin-right: 0.25em;
 }
 
-.signup-form input,
 .signup-form select.is-placeholder {
   color: #ef4444;
 }
