@@ -2172,14 +2172,6 @@ function setAffiliateApplySuccess(visible) {
 }
 
 function affiliateEmailVerificationMessage() {
-  const user = readAuthUser() || {};
-  const email = String(user.email || "").trim();
-  if (!email) {
-    return "Add and verify an account email before applying as an affiliate.";
-  }
-  if (!readAccountEmailVerified(user)) {
-    return "Verify your account email before applying as an affiliate.";
-  }
   return "";
 }
 
