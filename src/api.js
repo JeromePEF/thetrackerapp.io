@@ -2733,14 +2733,7 @@ function buildAuthedProxyUrl(endpoint, params) {
     });
   }
 
-  const target = `${upstreamUrl.pathname}${upstreamUrl.search}`;
-  if (typeof window === "undefined") {
-    return `${API_BASE}${target}`;
-  }
-
-  const proxyUrl = new URL(LOCAL_BACKEND_PROXY_ENDPOINT, window.location.origin);
-  proxyUrl.searchParams.set("target", target);
-  return proxyUrl.toString();
+  return upstreamUrl.toString();
 }
 
 async function getJsonAuthed(endpoint, params) {
