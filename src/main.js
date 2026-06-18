@@ -2107,6 +2107,9 @@ async function refreshPebbleStepTape() {
 }
 
 function validateForm() {
+  if (!state.serviceId) {
+    return { ok: false, message: "Choose a provider above." };
+  }
   const service = currentService();
   if (service.identityKind === "bot-link") {
     return { ok: true, payload: null, isBotLink: true };
