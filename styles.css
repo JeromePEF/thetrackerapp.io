@@ -1415,6 +1415,7 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
   color: #ef4444;
 }
 
+.signup-form input,
 .signup-form select {
   width: 100%;
   min-height: 50px;
@@ -1431,6 +1432,7 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
 
 .signup-form input::placeholder {
   color: #5f6e82;
+  font-weight: 600;
 }
 
 /* Validation highlight — added by main.js when the user submits with a
