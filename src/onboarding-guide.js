@@ -49,7 +49,19 @@ export function initOnboardingGuide() {
     arrow.style.display = "none";
   }
 
+  function shake(el) {
+    if (!el) return;
+    el.style.animation = "none";
+    el.offsetHeight; // reflow
+    el.style.animation = "input-shake 0.4s ease";
+    el.addEventListener("animationend", () => { el.style.animation = ""; }, { once: true });
+  }
+
   let currentState = 'service'; // 'service', 'identity', 'consent', 'submit', 'done'
+
+  function serviceSelected() {
+    return serviceSelect && serviceSelect.value && serviceSelect.value !== "";
+  }
 
   const serviceSelect = document.getElementById("serviceSelect");
 
@@ -112,15 +124,33 @@ if (serviceSelect) {
   }
 
   // Event listeners to progress the state
-  identityInput.addEventListener("focus", () => {
-    // Don't advance — wait for 8 digits
+  identityInput.addEventListener("focus", (e) => {
+    if (!serviceSelected()) {
+      shake(serviceSelect);
+      identityInput.blur();
+    }
+  });
+  identityInput.addEventListener("click", (e) => {
+    if (!serviceSelected()) {
+      shake(serviceSelect);
+      e.preventDefault();
+      identityInput.blur();
+    }
   });
   identityInput.addEventListener("input", () => {
+    if (!serviceSelected()) return;
     if (currentState === 'identity') {
       if (identityInput.value.trim().length >= 4) {
         currentState = 'consent';
         updateGuide();
       }
+    }
+  });
+
+  consentCheckbox.addEventListener("click", (e) => {
+    if (currentState === 'identity' && identityInput.value.trim().length < 4) {
+      shake(identityInput);
+      e.preventDefault();
     }
   });
 
