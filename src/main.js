@@ -1742,9 +1742,9 @@ function renderServiceOptions() {
     return;
   }
 
-  els.serviceSelect.innerHTML = `<option value="" ${!state.serviceId ? "selected" : ""} style="color:#ef4444;">Choose Provider</option>` + SERVICES.map((service) => {
+  els.serviceSelect.innerHTML = `<option value="" ${!state.serviceId ? "selected" : ""}>Choose Provider</option>` + SERVICES.map((service) => {
     const selected = service.id === state.serviceId ? "selected" : "";
-    return `<option value="${service.id}" ${selected} style="color:#fff;">${service.label}</option>`;
+    return `<option value="${service.id}" ${selected}>${service.label}</option>`;
   }).join("");
 }
 
