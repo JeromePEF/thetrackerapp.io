@@ -158,7 +158,7 @@ function refreshServicesFromFlags(flags) {
   }
   SERVICES = next;
   if (!SERVICES.find((s) => s.id === state.serviceId)) {
-    state.serviceId = SERVICES[0].id;
+    state.serviceId = "";
   }
   try {
     renderServiceOptions();
@@ -1739,7 +1739,7 @@ function renderServiceOptions() {
     return;
   }
 
-  els.serviceSelect.innerHTML = SERVICES.map((service) => {
+  els.serviceSelect.innerHTML = `<option value="" ${!state.serviceId ? "selected" : ""}>Choose Provider</option>` + SERVICES.map((service) => {
     const selected = service.id === state.serviceId ? "selected" : "";
     return `<option value="${service.id}" ${selected}>${service.label}</option>`;
   }).join("");
