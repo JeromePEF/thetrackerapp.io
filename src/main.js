@@ -1722,7 +1722,7 @@ function syncServiceInputRequirements() {
 
 function updateServiceVisual() {
   const service = currentService();
-  if (els.serviceSelect) {
+  if (els.serviceSelect && state.serviceId) {
     els.serviceSelect.value = service.id;
   }
   syncServiceCarousel();

@@ -1193,6 +1193,7 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
   width: 100%;
   height: 420px;
   user-select: none;
+  overflow: hidden;
 }
 
 .service-carousel::before {
