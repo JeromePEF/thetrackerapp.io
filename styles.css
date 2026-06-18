@@ -405,6 +405,31 @@ body {
   color: var(--accent);
 }
 
+/* Skeleton loading placeholders */
+.skeleton-li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0;
+  opacity: 0.6;
+}
+
+.skeleton {
+  background: rgba(166, 193, 225, 0.12);
+  border-radius: 4px;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  height: 14px;
+}
+
+.skeleton-rank { width: 20px; height: 12px; }
+.skeleton-text { flex: 1; max-width: 90px; }
+.skeleton-short { width: 50px; }
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
 #leaderboardList .leaderboard-cell-value,
 #groupLeaderboardList .leaderboard-cell-value {
   justify-content: flex-end;
@@ -542,28 +567,28 @@ body.is-authenticated .hero-fullscreen-layout {
   justify-content: center;
   align-items: stretch;
   gap: 1.5rem !important;
-  max-width: 1200px;
+  max-width: 1440px;
   margin: 0 auto;
 }
 
 body.is-authenticated .leaderboard-panel {
   width: 100%;
-  max-width: 720px;
+  max-width: 860px;
   flex: 1;
 }
 
-/* When brackets are visible, switch to 2-column layout */
+/* When brackets are visible, spread out across the full canvas */
 body.is-authenticated:has(.auth-brackets-panel:not([hidden])) .hero-fullscreen-layout {
-  max-width: 1280px;
+  max-width: 1600px;
 }
 
 body.is-authenticated:has(.auth-brackets-panel:not([hidden])) .leaderboard-panel {
-  max-width: 600px;
+  max-width: 500px;
 }
 
 body.is-authenticated .auth-brackets-panel:not([hidden]) {
   flex: 1;
-  max-width: 600px;
+  max-width: 950px;
 }
 
 .auth-brackets-panel {
@@ -1158,7 +1183,7 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
   width: 100%;
   display: grid;
   place-items: center;
-  overflow: hidden;
+  overflow: visible;
   position: relative;
   touch-action: pan-y;
 }

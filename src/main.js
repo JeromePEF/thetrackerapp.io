@@ -170,7 +170,7 @@ function refreshServicesFromFlags(flags) {
 }
 
 const state = {
-  serviceId: "imessage",
+  serviceId: "",
 };
 const AUTH_FLAG_KEY = "tracker.authenticated";
 const DASHBOARD_HOME_URL = "https://dashboard.thetrackerapp.io/dashboard";
@@ -1902,9 +1902,11 @@ function fitAppToViewport() {
     shell.style.transform = "none";
     shell.style.left = "0px";
     shell.style.top = "0px";
+    if (els.mainContent) els.mainContent.style.paddingBottom = "";
     return;
   }
 
+  if (els.mainContent) els.mainContent.style.paddingBottom = "";
   shell.style.transform = "scale(1)";
   shell.style.left = "0px";
   shell.style.top = "0px";
@@ -1918,13 +1920,20 @@ function fitAppToViewport() {
     return;
   }
 
-  const scale = Math.min(viewportWidth / contentWidth, viewportHeight / contentHeight, 1);
-  const offsetX = Math.max((viewportWidth - contentWidth * scale) / 2, 0);
-  const offsetY = Math.max((viewportHeight - contentHeight * scale) / 2, 0);
+  const aspectRatio = viewportWidth / viewportHeight;
+  const scaleCap = aspectRatio > 2 ? 2 : 1.25;
+  const scale = Math.min(viewportWidth / contentWidth, viewportHeight / contentHeight, scaleCap);
 
+  const offsetX = Math.max((viewportWidth - contentWidth * scale) / 2, 0);
   shell.style.left = `${offsetX}px`;
-  shell.style.top = `${offsetY}px`;
+  shell.style.top = "0px";
   shell.style.transform = `scale(${scale})`;
+
+  const scaledContentHeight = contentHeight * scale;
+  const heightDeficit = viewportHeight - scaledContentHeight;
+  if (heightDeficit > 0 && els.mainContent) {
+    els.mainContent.style.paddingBottom = `${heightDeficit / scale}px`;
+  }
 }
 
 function requestViewportFit() {
@@ -1988,10 +1997,9 @@ async function loadLeaderboard() {
   leaderboardRequestInFlight = true;
 
   if (!hasLoadedLeaderboard) {
-    setStatus(els.leaderboardState, "Loading leaderboard...", "");
-    setStatus(els.groupLeaderboardState, "Loading calisthenics leaderboard...", "");
-    setStatus(els.pebbleLeaderboardState, "Loading Pebble leaderboard...", "");
-    setStatus(els.streakLeaderboardState, "Loading streak leaderboard...", "");
+    els.leaderboardList.innerHTML = '<li class="skeleton-li"><span class="skeleton skeleton-rank"></span><span class="skeleton skeleton-text"></span><span class="skeleton skeleton-text"></span><span class="skeleton skeleton-short"></span></li>'.repeat(3);
+    els.groupLeaderboardList.innerHTML = '<li class="skeleton-li"><span class="skeleton skeleton-rank"></span><span class="skeleton skeleton-text"></span><span class="skeleton skeleton-text"></span><span class="skeleton skeleton-short"></span></li>'.repeat(4);
+    els.streakLeaderboardList.innerHTML = '<li class="skeleton-li"><span class="skeleton skeleton-rank"></span><span class="skeleton skeleton-text"></span><span class="skeleton skeleton-short"></span></li>'.repeat(2);
   }
 
   try {

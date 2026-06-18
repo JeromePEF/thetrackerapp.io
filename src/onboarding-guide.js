@@ -49,16 +49,24 @@ export function initOnboardingGuide() {
     arrow.style.display = "none";
   }
 
-  let currentState = 'identity'; // 'identity', 'consent', 'submit', 'done'
+  let currentState = 'service'; // 'service', 'identity', 'consent', 'submit', 'done'
+
+  const serviceSelect = document.getElementById("serviceSelect");
 
   function updateGuide() {
-    const serviceSelect = document.getElementById("serviceSelect");
     const serviceVal = serviceSelect ? serviceSelect.value : "";
+    if (!serviceVal) {
+      if (serviceSelect) positionGuide(serviceSelect);
+      else hideGuide();
+      return;
+    }
     if (serviceVal === "telegram" || serviceVal === "discord" || serviceVal === "slack" || serviceVal === "google-chat") {
       hideGuide();
       return;
     }
-    if (currentState === 'identity') {
+    if (currentState === 'service') {
+      if (serviceSelect) positionGuide(serviceSelect);
+    } else if (currentState === 'identity') {
       positionGuide(identityInput);
     } else if (currentState === 'consent') {
       positionGuide(consentCheckbox);
@@ -72,14 +80,15 @@ export function initOnboardingGuide() {
   // Update position via requestAnimationFrame loop
   let trackingFrame;
   function trackPosition() {
-    const serviceSelect = document.getElementById("serviceSelect");
-    const serviceVal = serviceSelect ? serviceSelect.value : "";
-    if (serviceVal === "telegram" || serviceVal === "discord" || serviceVal === "slack" || serviceVal === "google-chat") {
+    const svcVal = serviceSelect ? serviceSelect.value : "";
+    if (svcVal === "telegram" || svcVal === "discord" || svcVal === "slack" || svcVal === "google-chat") {
       hideGuide();
     } else if (identityInput && identityInput.disabled) {
       hideGuide();
     } else {
-      if (currentState === 'identity' && identityInput) {
+      if (currentState === 'service' && serviceSelect) {
+        positionGuide(serviceSelect);
+      } else if (currentState === 'identity' && identityInput) {
         positionGuide(identityInput);
       } else if (currentState === 'consent' && consentCheckbox) {
         positionGuide(consentCheckbox);
@@ -93,9 +102,13 @@ export function initOnboardingGuide() {
   }
   trackPosition();
 
-  const serviceSelect = document.getElementById("serviceSelect");
-  if (serviceSelect) {
-    serviceSelect.addEventListener("change", updateGuide);
+if (serviceSelect) {
+    serviceSelect.addEventListener("change", () => {
+      updateGuide();
+      if (currentState === 'service' && serviceSelect.value) {
+        currentState = 'identity';
+      }
+    });
   }
 
   // Event listeners to progress the state
