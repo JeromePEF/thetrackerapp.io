@@ -1726,7 +1726,7 @@ function updateServiceVisual() {
     els.serviceSelect.value = service.id;
   }
   if (els.serviceSelect) {
-    els.serviceSelect.style.color = state.serviceId ? "#ecf4ff" : "#ef4444";
+    els.serviceSelect.classList.toggle("is-placeholder", !state.serviceId);
   }
   syncServiceCarousel();
 

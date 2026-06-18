@@ -1412,6 +1412,10 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
 }
 
 .signup-form input,
+.signup-form select.is-placeholder {
+  color: #ef4444;
+}
+
 .signup-form select {
   width: 100%;
   min-height: 50px;
@@ -1421,7 +1425,6 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
   background: #f3f7ff;
   color: #08111c;
   font: inherit;
-  /* Bumped from 0.94 → 1.1rem for readability at scaled viewports. */
   font-size: 1.1rem;
   font-weight: 600;
   scroll-margin-bottom: calc(8.5rem + env(safe-area-inset-bottom, 0px));
