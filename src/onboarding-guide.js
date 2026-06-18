@@ -57,7 +57,7 @@ export function initOnboardingGuide() {
     el.addEventListener("animationend", () => { el.style.animation = ""; }, { once: true });
   }
 
-  let currentState = 'service'; // 'service', 'identity', 'consent', 'submit', 'done'
+  let currentState = 'identity'; // 'identity', 'consent', 'submit', 'done'
 
   function serviceSelected() {
     return serviceSelect && serviceSelect.value && serviceSelect.value !== "";
@@ -76,9 +76,7 @@ export function initOnboardingGuide() {
       hideGuide();
       return;
     }
-    if (currentState === 'service') {
-      if (serviceSelect) positionGuide(serviceSelect);
-    } else if (currentState === 'identity') {
+    if (currentState === 'identity') {
       positionGuide(identityInput);
     } else if (currentState === 'consent') {
       positionGuide(consentCheckbox);
@@ -98,9 +96,7 @@ export function initOnboardingGuide() {
     } else if (identityInput && identityInput.disabled) {
       hideGuide();
     } else {
-      if (currentState === 'service' && serviceSelect) {
-        positionGuide(serviceSelect);
-      } else if (currentState === 'identity' && identityInput) {
+      if (currentState === 'identity' && identityInput) {
         positionGuide(identityInput);
       } else if (currentState === 'consent' && consentCheckbox) {
         positionGuide(consentCheckbox);
@@ -117,28 +113,14 @@ export function initOnboardingGuide() {
 if (serviceSelect) {
     serviceSelect.addEventListener("change", () => {
       updateGuide();
-      if (currentState === 'service' && serviceSelect.value) {
-        currentState = 'identity';
-      }
     });
   }
 
   // Event listeners to progress the state
-  identityInput.addEventListener("focus", (e) => {
-    if (!serviceSelected()) {
-      shake(serviceSelect);
-      identityInput.blur();
-    }
-  });
-  identityInput.addEventListener("click", (e) => {
-    if (!serviceSelected()) {
-      shake(serviceSelect);
-      e.preventDefault();
-      identityInput.blur();
-    }
+  identityInput.addEventListener("focus", () => {
+    // Arrow stays on input until 4+ chars typed
   });
   identityInput.addEventListener("input", () => {
-    if (!serviceSelected()) return;
     if (currentState === 'identity') {
       if (identityInput.value.trim().length >= 4) {
         currentState = 'consent';
