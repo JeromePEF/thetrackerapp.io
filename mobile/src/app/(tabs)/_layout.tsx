@@ -25,11 +25,11 @@ export default function TabsLayout() {
         tabBarStyle: { backgroundColor: "#021416", borderTopColor: "#0a2026" },
       }}
     >
+      <Tabs.Screen name="input" options={{ title: "Input" }} />
       <Tabs.Screen name="stats" options={{ title: "Stats" }} />
+      <Tabs.Screen name="goals" options={{ title: "Goals" }} />
+      <Tabs.Screen name="leaderboard" options={{ title: "Board" }} />
       <Tabs.Screen name="account" options={{ title: "Account" }} />
-      <Tabs.Screen name="billing" options={{ title: "Billing" }} />
-      <Tabs.Screen name="sheet" options={{ title: "Sheet" }} />
-      <Tabs.Screen name="export" options={{ title: "Export" }} />
     </Tabs>
   );
 }

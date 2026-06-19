@@ -1,0 +1,23 @@
+BACKEND — Visibility Persistence — Definitive Test
+=====================================================
+Date: 2026-06-17
+
+TEST (run these in order from Vercel's servers or any machine):
+
+1. SAVE visibility:
+   curl -X POST https://api.thetrackerapp.io/api/user/visibility \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer <IronFalcon_token>" \
+     -d '{"visibility":{"merged":true,"workouts":true,"nutrition":true,"water":true,"statsBar":true,"leaderboard":true,"recentWorkouts":true,"publicLeaderboard":true}}'
+   → should return { ok: true, ... }
+
+2. VERIFY persistence immediately:
+   curl https://api.thetrackerapp.io/api/portal?contact=7373686293
+   → publicVisibility.workouts should be TRUE (not false)
+
+3. VERIFY persistence after 60 seconds:
+   curl https://api.thetrackerapp.io/api/portal?contact=7373686293
+   → publicVisibility.workouts should still be TRUE
+
+If step 2 or 3 returns false, the persistence layer is not working.
+The POST returns ok:true but doesn't actually write to the user's record.

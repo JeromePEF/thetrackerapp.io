@@ -14,7 +14,7 @@ export default function Index() {
       </View>
     );
   }
-  return <Redirect href={session ? "/(tabs)/stats" : "/(auth)/login"} />;
+  return <Redirect href={session ? "/(tabs)/input" : "/(auth)/login"} />;
 }
 
 const styles = StyleSheet.create({

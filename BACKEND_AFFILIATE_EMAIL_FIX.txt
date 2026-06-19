@@ -1,0 +1,16 @@
+BACKEND — Affiliate Signup: Remove Email Verification Gate
+============================================================
+Date: 2026-06-17
+
+POST /api/affiliate/signup returns:
+  { ok: false, error: "Email verification required before affiliate signup." }
+
+This check blocks users from becoming affiliates until they verify
+their email. The frontend already allows submission without email
+verification, but the backend rejects it.
+
+FIX:
+  Remove the email verification check from the /api/affiliate/signup
+  handler. Emails are verified through iMessage/SMS login codes
+  inherently — the user already proved they control their phone/device.
+  An extra email verification step is unnecessary friction.

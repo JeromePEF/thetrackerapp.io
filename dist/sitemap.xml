@@ -2,13 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://thetrackerapp.io/</loc>
-    <lastmod>2026-06-12</lastmod>
+    <lastmod>2026-06-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://thetrackerapp.io/pricing</loc>
-    <lastmod>2026-06-12</lastmod>
+    <lastmod>2026-06-14</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -20,25 +20,19 @@
   </url>
   <url>
     <loc>https://thetrackerapp.io/community</loc>
-    <lastmod>2026-06-12</lastmod>
+    <lastmod>2026-06-14</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://thetrackerapp.io/guide</loc>
+    <loc>https://thetrackerapp.io/faq</loc>
     <lastmod>2026-06-14</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://thetrackerapp.io/changelog</loc>
-    <lastmod>2026-06-14</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
+    <priority>0.6</priority>
   </url>
   <url>
     <loc>https://thetrackerapp.io/press</loc>
-    <lastmod>2026-06-12</lastmod>
+    <lastmod>2026-06-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -62,7 +56,7 @@
   </url>
   <url>
     <loc>https://thetrackerapp.io/products</loc>
-    <lastmod>2026-06-12</lastmod>
+    <lastmod>2026-06-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -98,37 +92,37 @@
   </url>
   <url>
     <loc>https://thetrackerapp.io/win</loc>
-    <lastmod>2026-06-12</lastmod>
+    <lastmod>2026-06-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://thetrackerapp.io/leaderboard</loc>
-    <lastmod>2026-06-12</lastmod>
+    <lastmod>2026-06-14</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://thetrackerapp.io/tools/tdee-calculator</loc>
-    <lastmod>2026-06-12</lastmod>
+    <lastmod>2026-06-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://thetrackerapp.io/tools/bmi-calculator</loc>
-    <lastmod>2026-06-12</lastmod>
+    <lastmod>2026-06-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://thetrackerapp.io/tools/ai-meal-planner</loc>
-    <lastmod>2026-06-12</lastmod>
+    <lastmod>2026-06-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://thetrackerapp.io/tools/food-diary</loc>
-    <lastmod>2026-06-12</lastmod>
+    <lastmod>2026-06-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -146,13 +140,13 @@
   </url>
   <url>
     <loc>https://thetrackerapp.io/privacy</loc>
-    <lastmod>2026-06-12</lastmod>
+    <lastmod>2026-06-14</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
     <loc>https://thetrackerapp.io/terms</loc>
-    <lastmod>2026-06-12</lastmod>
+    <lastmod>2026-06-14</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>

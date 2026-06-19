@@ -1,0 +1,41 @@
+BACKEND — Export & Delete Account Endpoints
+=============================================
+Date: 2026-06-17
+
+
+1. DATA EXPORT (existing — ensure it works)
+--------------------------------------------
+
+GET /api/account/export?contact=<canonical>&format=csv|json
+Authorization: Bearer <token>
+
+The dashboard already has CSV and JSON export buttons on the Export tab.
+They call this endpoint. Verify it returns the user's complete data
+(workouts, nutrition, water, body measurements, etc.) in the requested format.
+
+
+2. ACCOUNT DELETION (new endpoint needed)
+------------------------------------------
+
+POST /api/account/delete
+Authorization: Bearer <token>
+Content-Type: application/json
+
+Request body:
+{
+  "confirmation": "PotentPenguin-Delete",
+  "requestedAt": "2026-06-17T12:00:00.000Z"
+}
+
+The frontend requires the user to type "username-Delete" exactly (e.g.
+"PotentPenguin-Delete") before the button enables. The backend should:
+
+1. Validate the confirmation string matches the user's username
+2. Record the deletion request timestamp (requestedAt) for audit trail
+3. Permanently delete ALL user data (workouts, nutrition, water,
+   measurements, profile, account, sessions, Stripe customer if any)
+4. Return { ok: true } on success
+5. Return { ok: false, error: "..." } on failure
+6. Consider a 30-day grace period where the user can cancel the deletion
+
+The dashboard shows the result message from the backend response.

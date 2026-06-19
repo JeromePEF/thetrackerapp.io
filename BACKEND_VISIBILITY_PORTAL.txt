@@ -1,0 +1,35 @@
+BACKEND — Visibility Auto-Load on Refresh
+==========================================
+Date: 2026-06-17
+
+The dashboard checkboxes load from the portal response on every
+page refresh. They read from the snapshot which reads from:
+
+  GET /api/portal?contact=...
+  GET /api/account/portal?contact=...
+
+The frontend checks these paths in order (first non-null wins):
+
+  1. root.publicProfileVisibility
+  2. root.publicVisibility
+
+Both are expected to be an object like:
+
+  {
+    "merged": false,
+    "workouts": true,
+    "nutrition": false,
+    "water": false,
+    "statsBar": false,
+    "leaderboard": true,
+    "recentWorkouts": false,
+    "publicLeaderboard": false
+  }
+
+If the response has the data at ANY of these paths, the dashboard
+will show the saved checkboxes on refresh. If neither path is
+present or both are null, all checkboxes default to unchecked.
+
+The backend already stores these from POST /api/user/visibility.
+You just need to include the object in the portal GET response
+at one of the two paths above.

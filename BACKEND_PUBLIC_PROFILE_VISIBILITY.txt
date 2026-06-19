@@ -1,0 +1,31 @@
+BACKEND — Public Profile Page Visibility
+==========================================
+Date: 2026-06-17
+
+The public profile page at https://thetrackerapp.io/@username
+fetches from:
+
+  GET /api/u/:username
+  GET /api/user/public?contact=...
+  GET /api/user/public-profile?contact=...
+
+It needs the response to include:
+
+  "publicVisibility": {
+    "merged": false,
+    "workouts": false,
+    "nutrition": false,
+    "water": false,
+    "statsBar": false,
+    "leaderboard": false,
+    "recentWorkouts": false,
+    "publicLeaderboard": false
+  }
+
+All booleans default to FALSE (max privacy). The frontend checks
+`visibility.xxx === true` — missing keys or undefined = hidden.
+
+The backend already stores these values from:
+  POST /api/user/visibility  { "visibility": { "workouts": true, ... } }
+
+It just needs to include them in the public profile endpoint response.

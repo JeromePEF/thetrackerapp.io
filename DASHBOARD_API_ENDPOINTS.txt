@@ -1,0 +1,355 @@
+# COMPLETE DASHBOARD API ENDPOINTS
+# Base URL: https://api.thetrackerapp.io
+# Dashboard: https://dashboard.thetrackerapp.io
+# Generated: 2025-06-14
+
+======================================================================
+1. AUTHENTICATION & SIGNUP
+======================================================================
+
+POST /api/auth/login-code/request
+POST /api/auth/code/request
+POST /api/login-code/request
+POST /api/auth/login-code/verify
+POST /api/auth/code/verify
+POST /api/login-code/verify
+POST /api/onboarding
+POST /signup
+POST /api/welcome
+POST /api/onboarding/trigger
+POST /api/onboarding/send-welcome
+
+======================================================================
+2. DASHBOARD PORTAL (Shared Hydration)
+======================================================================
+
+GET /api/portal?contact=<canonical>
+GET /api/account/portal?contact=<canonical>
+GET /api/user/profile?contact=<canonical>
+
+======================================================================
+3. USER PROFILE & ACCOUNT
+======================================================================
+
+GET /api/user/profile
+GET /api/account/profile
+PATCH /api/account/profile
+PATCH /api/user/profile
+POST /api/account/email/verify
+POST /api/account/verify-email
+POST /api/user/email/verify
+POST /api/user/visibility
+GET /api/user/role
+GET /api/u/:username
+GET /api/user/public
+GET /api/user/public-profile
+GET /api/public-profile
+
+======================================================================
+4. DASHBOARD STATS & METRICS
+======================================================================
+
+GET /api/stats/range?contact=&range=&from=&to=
+GET /api/dashboard/stats/range
+GET /api/stats/usage
+GET /api/leaderboard/rank?contact=
+GET /api/stats/rank?contact=
+GET /api/milestones?contact=
+GET /api/account/milestones
+GET /api/body-measures?contact=
+GET /api/account/body-measures
+
+======================================================================
+5. CHARTS & METRICS DATA
+======================================================================
+
+GET /api/chart/data?contact=&range=&metric=
+GET /api/cardio/stats?contact=&range=
+GET /api/user/charts?from=&to=&metrics=
+
+======================================================================
+6. BODY MEASUREMENTS & JOURNALS
+======================================================================
+
+GET /api/user/measurements
+POST /api/user/measurements
+DELETE /api/user/measurements/:id
+GET /api/user/journals
+POST /api/user/journals/:bodyPart
+DELETE /api/user/journals/:bodyPart
+
+======================================================================
+7. GOALS
+======================================================================
+
+GET /api/account/goals
+POST /api/account/goals
+
+======================================================================
+8. BILLING / STRIPE
+======================================================================
+
+GET /api/billing/stripe-prices
+POST /api/stripe/checkout-session
+POST /api/stripe/checkout
+POST /api/billing/checkout-session
+GET /api/stripe/checkout-complete?session_id=
+POST /api/billing/cancel
+POST /api/stripe/subscription/cancel
+POST /api/stripe/cancel
+POST /api/billing/resume
+POST /api/stripe/subscription/resume
+POST /api/stripe/portal-session
+POST /api/billing/portal-session
+
+======================================================================
+9. INTEGRATIONS
+======================================================================
+
+GET /api/integrations
+GET /api/account/integrations
+POST /api/integrations/connect
+POST /api/integrations
+POST /api/integrations/sync
+
+======================================================================
+10. AI / GEMINI
+======================================================================
+
+POST /api/ai/chat
+POST /api/ai/fitness
+POST /api/gemini/fitness
+
+======================================================================
+11. CHATBOT (Live Agent)
+======================================================================
+
+POST /api/chat/message
+POST /api/chat/request-agent
+GET /api/chat/messages?sessionId=&since=
+
+======================================================================
+12. GOOGLE SHEET LINK
+======================================================================
+
+GET /api/account/sheet
+GET /api/sheet
+POST /api/sheet/regenerate
+POST /api/sheet/share
+
+======================================================================
+13. AFFILIATE
+======================================================================
+
+POST /api/affiliate/signup
+GET /api/affiliate/status?email=
+GET /api/affiliate/history
+POST /api/affiliate/connect
+POST /api/affiliate/agreement
+
+======================================================================
+14. SITE LEADERBOARD
+======================================================================
+
+GET /api/site-leaderboard
+GET /api/leaderboard/site
+GET /api/site-leaderboard/strength
+GET /api/leaderboard/strength
+GET /api/site-leaderboard/calisthenics
+GET /api/leaderboard/calisthenics
+GET /api/streaks
+GET /api/streaks/live
+GET /api/pebble/leaderboard
+GET /api/pebble/calories-burned
+GET /api/pebble/calories
+GET /api/pebble/top-workouts
+GET /api/pebble/workouts
+GET /api/pebble/steps
+GET /api/pebble/sleep-scores
+GET /api/pebble/sleep
+GET /api/pebble/miles-traversed
+GET /api/pebble/miles
+GET /api/leaderboard?category=&metric=&range=&limit=&offset=
+GET /api/frontend-dashboard-sheet
+
+======================================================================
+15. PUBLIC LEADERBOARD (Edge Proxy)
+======================================================================
+
+GET /api/public-leaderboard
+
+======================================================================
+16. STEP TAPE / LIVE ACTIVITY
+======================================================================
+
+GET /api/steps/live
+GET /api/steps/live/recent
+GET /api/activity/live
+
+======================================================================
+17. NUTRITION & SUPPLEMENTS
+======================================================================
+
+GET /api/nutrition/supplement/registry
+GET /api/nutrition/supplement?date=
+POST /api/nutrition/supplement
+DELETE /api/nutrition/supplement/:id
+GET /api/user/nutrition/day?contact=&date=
+DELETE /api/user/nutrition/entry/:id
+
+======================================================================
+18. CALENDAR
+======================================================================
+
+GET /api/calendar/schedule
+PATCH /api/calendar/schedule
+GET /api/calendar/month?month=YYYY-MM
+GET /api/calendar/week?weekStart=YYYY-MM-DD
+GET /api/calendar/adherence?range=30d
+POST /api/calendar/recompute
+
+======================================================================
+19. WORKOUT PLAN
+======================================================================
+
+GET /api/workout-plan
+POST /api/workout-plan
+POST /api/workout-plan/suggest
+
+======================================================================
+20. PERSONAL TRAINER & COACH
+======================================================================
+
+POST /api/trainer/application
+POST /api/trainer/application/public
+POST /api/trainer/application/withdraw
+POST /api/account/trainer-code/redeem
+POST /api/account/trainer-code/cancel
+POST /api/trainer/clients/:id/remove
+GET /api/personal-trainers
+GET /api/trainers
+GET /api/coaches
+
+======================================================================
+21. RUN CLUBS
+======================================================================
+
+GET /api/run-clubs
+GET /api/clubs/run
+GET /api/clubs?type=run
+
+======================================================================
+22. COMMUNITIES / GROUPS
+======================================================================
+
+POST /api/communities/:id/leave
+
+======================================================================
+23. BLOG
+======================================================================
+
+GET /api/blog/posts?page=&limit=&tag=&search=
+POST /api/blog/posts
+GET /api/blog/posts/:slug
+POST /api/blog/subscribe
+
+======================================================================
+24. PRESS
+======================================================================
+
+GET /api/press/releases?limit=5
+POST /api/press/inquiry
+
+======================================================================
+25. BRACKETS / COMPETITIONS
+======================================================================
+
+GET /api/brackets/active
+GET /api/brackets/upcoming
+GET /api/brackets/:id
+GET /api/brackets/winners
+
+======================================================================
+26. WIN $$$ CHALLENGES
+======================================================================
+
+GET /api/challenges/current
+GET /api/challenges/:id/leaderboard
+GET /api/challenges/winners?limit=10
+
+======================================================================
+27. TESTIMONIALS
+======================================================================
+
+GET /api/testimonials?limit=10
+
+======================================================================
+28. PRODUCTS
+======================================================================
+
+GET /api/products?category=&brand=
+
+======================================================================
+29. TOOLS
+======================================================================
+
+POST /api/tools/meal-planner
+
+======================================================================
+30. FEATURE FLAGS (CONTROL)
+======================================================================
+
+GET /api/control
+GET https://api.thetrackerapp.io/control
+
+======================================================================
+31. ONBOARDING CHECKLIST
+======================================================================
+
+GET /api/profile/deferred-checklist?contact=
+
+======================================================================
+32. QUICK COMMANDS / SHORTCUTS
+======================================================================
+
+GET /api/user/quick-commands?contact=
+POST /api/user/quick-commands
+DELETE /api/user/quick-commands
+
+======================================================================
+33. STATUS PAGE
+======================================================================
+
+GET /api/status
+GET /api/status/uptime
+
+======================================================================
+34. UNIT SYSTEM
+======================================================================
+
+GET /api/unit-system
+
+======================================================================
+35. MISCELLANEOUS
+======================================================================
+
+GET /api/home
+GET /api/dashboard-endpoints
+GET /r/:code
+GET /api/account/export?contact=&format=csv|json
+
+======================================================================
+36. VERCEL PROXY FUNCTIONS (Internal)
+======================================================================
+
+GET/POST  /api/backend-proxy?target=...
+POST      /api/signup-proxy
+POST      /api/login-code-request
+POST      /api/login-code-verify
+POST      /api/control-invalidate
+GET/POST  /api/control-version
+
+======================================================================
+TOTAL: ~125 distinct endpoint paths
+Methods: GET, POST, PATCH, DELETE
+======================================================================

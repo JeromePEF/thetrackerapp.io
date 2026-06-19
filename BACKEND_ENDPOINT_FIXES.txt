@@ -1,0 +1,76 @@
+BACKEND ENDPOINT ISSUES — Dashboard Fixes Needed
+==================================================
+Date: 2026-06-17
+
+The dashboard frontend fetches from these endpoints. The endpoints are
+either not returning data or not including the expected fields, causing
+the dashboard to show "-" or "No data" for billing/sheet sections.
+
+
+1. BILLING — /api/portal endpoints
+-----------------------------------
+Endpoints called (in order, first to respond wins):
+  GET /api/portal?contact=<canonical>
+  GET /api/account/portal?contact=<canonical>
+  GET /api/user/profile?contact=<canonical>
+  GET /api/portal
+
+Expected fields in the JSON response (any of these paths are checked):
+  membership.status       → billingStatus   (active/trialing/past_due/canceled/etc)
+  profile.stripeSubscriptionStatus
+  profile.stripe_subscription_status
+  profile.subscriptionStatus
+
+  membership.plan          → billingPlan     (monthly/yearly/premium etc)
+  profile.stripePlanKey
+  profile.stripe_plan_key
+  profile.planKey
+  profile.currentPlan
+
+  membership.currentPeriodEnd → billingNextBillingDate (ISO date string)
+  profile.stripeCurrentPeriodEnd
+  profile.current_period_end
+
+  profile.billingPortalUrl → Stripe customer portal URL
+  profile.stripePortalUrl
+  profile.stripe_customer_portal_url
+  membership.portalUrl
+
+If NONE of these fields are present, the dashboard shows:
+  Current Status: -
+  Current Plan: -
+  Last Payment: -
+  Next Billing Date: -
+  Just a moment...
+
+
+2. GOOGLE SHEET LINK — /api/account/sheet & /api/portal
+---------------------------------------------------------
+Endpoints called:
+  GET /api/account/sheet
+  GET /api/sheet
+  (also checked in /api/portal responses)
+
+Expected fields:
+  googleSheet             → the Google Sheet URL
+  googleSheetUrl
+  sheetUrl
+  url
+  profile.googleSheetUrl
+  profile.sheetUrl
+  profile.dashboardSheetUrl
+  profile.googleSheetId   → used to build URL: https://docs.google.com/spreadsheets/d/{id}
+
+If NONE of these fields are present, the dashboard shows:
+  "No sheet link found in account yet."
+
+
+3. SUMMARY — What Needs to Happen
+-----------------------------------
+Both /api/portal and /api/account/sheet need to return the fields above
+in their JSON response bodies. The frontend already has extensive
+fallback logic (checks multiple field names for each value) — the
+backend just needs to include the data under ANY of the listed keys.
+
+The frontend sends an Authorization: Bearer <token> header with every
+request. If authentication fails, the frontend redirects to /login.

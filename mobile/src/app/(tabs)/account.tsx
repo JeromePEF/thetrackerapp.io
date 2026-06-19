@@ -7,17 +7,29 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { deleteAccount } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
+import { deleteAccount, saveVisibility, verifyEmail } from "@/lib/api/auth";
 import { fetchPortal } from "@/lib/api/portal";
-import type { PortalResponse } from "@/lib/api/types";
+import type { PortalResponse, VisibilityPayload } from "@/lib/api/types";
 import { useAuth, useContact } from "@/state/auth";
+
+const VISIBILITY_TOGGLES: { key: keyof VisibilityPayload; label: string }[] = [
+  { key: "merged", label: "Combined workout + nutrition + hydration heatmap" },
+  { key: "workouts", label: "52-week workout heatmap & activity calendar" },
+  { key: "nutrition", label: "52-week nutrition / meal logging heatmap" },
+  { key: "water", label: "52-week hydration / water intake heatmap" },
+  { key: "statsBar", label: "Total workouts, current streak & active days count" },
+  { key: "leaderboard", label: "Strength, calisthenics & streak leaderboard rankings" },
+  { key: "recentWorkouts", label: "Recent logged workouts with exercise details" },
+  { key: "publicLeaderboard", label: "Name & stats may appear on public leaderboards" },
+];
 
 export default function AccountScreen() {
   const { session, signOut } = useAuth();
@@ -30,6 +42,42 @@ export default function AccountScreen() {
   const [confirmText, setConfirmText] = useState("");
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [visibility, setVisibility] = useState<VisibilityPayload>({});
+  const [visibilitySaving, setVisibilitySaving] = useState(false);
+  const [visibilityStatus, setVisibilityStatus] = useState<string | null>(null);
+  const [emailVerifyBusy, setEmailVerifyBusy] = useState(false);
+  const [emailVerifyStatus, setEmailVerifyStatus] = useState<string | null>(null);
+
+  const handleVerifyEmail = useCallback(async () => {
+    setEmailVerifyBusy(true);
+    setEmailVerifyStatus(null);
+    try {
+      await verifyEmail();
+      setEmailVerifyStatus("Verification email sent.");
+    } catch (err) {
+      setEmailVerifyStatus(err instanceof Error ? err.message : "Failed to send verification.");
+    } finally {
+      setEmailVerifyBusy(false);
+    }
+  }, []);
+
+  const handleToggleVisibility = useCallback(
+    async (key: keyof VisibilityPayload, value: boolean) => {
+      const next = { ...visibility, [key]: value };
+      setVisibility(next);
+      setVisibilitySaving(true);
+      setVisibilityStatus(null);
+      try {
+        await saveVisibility(next as Record<string, boolean>);
+        setVisibilityStatus("Visibility updated.");
+      } catch (err) {
+        setVisibilityStatus(err instanceof Error ? err.message : "Save failed.");
+      } finally {
+        setVisibilitySaving(false);
+      }
+    },
+    [visibility],
+  );
 
   const onDelete = useCallback(async () => {
     if (confirmText.trim().toUpperCase() !== "DELETE" || deleteBusy) return;
@@ -37,8 +85,6 @@ export default function AccountScreen() {
     setDeleteError(null);
     try {
       await deleteAccount();
-      // Deliberately do not show a success message — sign-out and route to
-      // the login screen is the visible confirmation.
       await signOut();
     } catch (err) {
       const msg =
@@ -124,6 +170,43 @@ export default function AccountScreen() {
         <Row label="Phone" value={phone} />
         <Row label="Age" value={age != null ? String(age) : undefined} />
         <Row label="Account ID" value={session?.account?.accountId} mono />
+
+        {email ? (
+          <>
+            <Pressable
+              onPress={() => void handleVerifyEmail()}
+              disabled={emailVerifyBusy}
+              style={({ pressed }) => [styles.actionBtn, emailVerifyBusy && { opacity: 0.5 }, pressed && { opacity: 0.85 }]}
+            >
+              {emailVerifyBusy ? (
+                <ActivityIndicator color="#24a7b4" />
+              ) : (
+                <Text style={styles.actionBtnText}>Verify email</Text>
+              )}
+            </Pressable>
+            {emailVerifyStatus ? (
+              <Text style={styles.status}>{emailVerifyStatus}</Text>
+            ) : null}
+          </>
+        ) : null}
+
+        <Text style={styles.sectionTitle}>Public profile visibility</Text>
+        {VISIBILITY_TOGGLES.map((t) => (
+          <View key={t.key} style={styles.toggleRow}>
+            <Text style={styles.toggleLabel}>{t.label}</Text>
+            <Switch
+              value={visibility[t.key] ?? false}
+              onValueChange={(v) => void handleToggleVisibility(t.key, v)}
+              trackColor={{ false: "#1f3b44", true: "#24a7b4" }}
+              thumbColor={visibility[t.key] ? "#ecf4ff" : "#5b6a7a"}
+            />
+          </View>
+        ))}
+        {visibilitySaving ? (
+          <Text style={styles.status}>Saving...</Text>
+        ) : visibilityStatus ? (
+          <Text style={styles.status}>{visibilityStatus}</Text>
+        ) : null}
 
         <Pressable
           onPress={() => void signOut()}
@@ -215,6 +298,28 @@ const styles = StyleSheet.create({
   rowLabel: { color: "#8a96a8", fontSize: 12, textTransform: "uppercase", letterSpacing: 1.2 },
   rowValue: { color: "#ecf4ff", fontSize: 18, fontWeight: "500", marginTop: 4 },
   mono: { fontFamily: "Menlo", fontSize: 14 },
+  sectionTitle: { color: "#ecf4ff", fontSize: 18, fontWeight: "700", marginTop: 16 },
+  toggleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#0a2026",
+    borderRadius: 12,
+    padding: 14,
+    borderColor: "#1f3b44",
+    borderWidth: 1,
+  },
+  toggleLabel: { color: "#ecf4ff", fontSize: 13, flex: 1, marginRight: 12 },
+  status: { color: "#8a96a8", fontSize: 13, textAlign: "center" },
+  actionBtn: {
+    backgroundColor: "#0a2026",
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: "center",
+    borderColor: "#24a7b4",
+    borderWidth: 1,
+  },
+  actionBtnText: { color: "#24a7b4", fontSize: 16, fontWeight: "600" },
   signOut: {
     marginTop: 24,
     backgroundColor: "#0a2026",

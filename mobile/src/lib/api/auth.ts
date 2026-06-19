@@ -69,6 +69,17 @@ export async function requestLoginCode(rawCredential: string): Promise<{
   throw lastErr instanceof Error ? lastErr : new Error("Could not request login code");
 }
 
+export async function verifyEmail(): Promise<{ ok: boolean; message?: string }> {
+  return api<{ ok: boolean; message?: string }>("/api/account/email/verify", { method: "POST" });
+}
+
+export async function saveVisibility(visibility: Record<string, boolean>) {
+  return api<{ ok: boolean }>("/api/user/visibility", {
+    method: "POST",
+    body: { visibility },
+  });
+}
+
 /** DELETE /api/account — irreversible account deletion (both stores require this). */
 export async function deleteAccount(reason?: string): Promise<{ ok: true; deletedAt: string }> {
   return api<{ ok: true; deletedAt: string }>("/api/account", {

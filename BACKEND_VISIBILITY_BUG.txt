@@ -1,0 +1,36 @@
+BACKEND — Visibility Settings Not Persisting
+=============================================
+Date: 2026-06-17
+
+PROOF:
+  POST /api/user/visibility
+  → { ok: true, visibility: { workouts: true, ... 8 fields all true } }
+
+  GET /api/portal?contact=...
+  → { publicVisibility: { workouts: false, ... 8 fields all false } }
+
+  The POST succeeds and returns the correct values.
+  The GET returns all false — like it was never saved.
+
+WHAT NEEDS TO HAPPEN:
+  The POST to /api/user/visibility must PERSIST the visibility
+  object to the user's record (database/disk/memory-store that
+  survives between requests). Currently it's stored in request-scope
+  memory that is discarded after the response.
+
+  The GET /api/portal must return the SAVED visibility object
+  (not defaults) under either of these keys:
+    - publicVisibility
+    - publicProfileVisibility
+
+  The object format:
+  {
+    "merged": true/false,
+    "workouts": true/false,
+    "nutrition": true/false,
+    "water": true/false,
+    "statsBar": true/false,
+    "leaderboard": true/false,
+    "recentWorkouts": true/false,
+    "publicLeaderboard": true/false
+  }

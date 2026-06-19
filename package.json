@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && cp _worker.js dist/_worker.js",
+    "deploy:pages": "npm run build && npx wrangler pages deploy dist/ --project-name=thetrackerapp --branch=main --commit-dirty=true && npx wrangler r2 object put thetrackerapp-assets/dist/index.html --file=dist/index.html --content-type=\"text/html; charset=utf-8\" --remote",
     "preview": "vite preview",
     "metrics:google": "node scripts/google-metrics.mjs",
     "metrics:google:help": "node scripts/google-metrics.mjs --help",
@@ -21,7 +22,10 @@
     "billing:gemini": "node scripts/gcp-gemini-billing.mjs",
     "billing:gemini:help": "node scripts/gcp-gemini-billing.mjs --help",
     "blog:fetch": "node scripts/fetch-blog-posts.mjs",
-    "sitemap:build": "node scripts/generate-sitemap.mjs"
+    "sitemap:build": "node scripts/generate-sitemap.mjs",
+    "index:request": "node scripts/request-indexing.mjs",
+    "index:dry-run": "node scripts/request-indexing.mjs --dry-run",
+    "index:request:alt": "node scripts/request-indexing.mjs --credentials=/Users/rd/automations/24HRS\\ +\\ Todos/credentials.json"
   },
   "devDependencies": {
     "vite": "latest"

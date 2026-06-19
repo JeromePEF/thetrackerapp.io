@@ -1,0 +1,57 @@
+BACKEND — Portal Response: Account Tab Fields
+==============================================
+Date: 2026-06-17
+
+The Account tab reads these fields from /api/portal?contact=... response.
+Currently showing "Unknown" because the portal response doesn't include them.
+
+
+REQUIRED FIELDS IN PORTAL RESPONSE
+------------------------------------
+
+Add these to the profile object in /api/portal:
+
+{
+  "profile": {
+    "accountId": "TRK-571341",           // → Account ID
+    "primaryEmail": "user@email.com",    // → Contact (fallback for maskedCredential)
+    "maskedCredential": "f***@gmail.com", // → Contact (preferred if present)
+    "signupMethod": "email_otp",          // → Sign-in Method (also check: "method", "signInMethod")
+    "lastLoginAt": "2026-06-17T11:57:09Z" // → Last Login
+  }
+}
+
+
+FALLBACK CHAIN (what the dashboard checks, first non-empty wins):
+
+Account ID:
+  localStorage.user.accountId → profile.accountId → root.contact
+
+Sign-in Method:
+  localStorage.user.method → profile.method → profile.signupMethod → profile.signInMethod
+
+Contact:
+  localStorage.user.maskedCredential → profile.maskedCredential → profile.primaryEmail
+
+Last Login:
+  localStorage.user.loginAt → root.loginAt → profile.lastLoginAt
+
+
+EXAMPLE MINIMAL PORTAL RESPONSE:
+{
+  "profile": {
+    "accountId": "TRK-571341",
+    "primaryEmail": "fide.operandi@gmail.com",
+    "signupMethod": "email_otp",
+    "lastLoginAt": "2026-06-17T11:57:09.000Z"
+  }
+}
+
+The dashboard also formats these:
+  signupMethod values are humanized:
+    "email_otp" → "Email OTP"
+    "imessage" → "iMessage"
+    "sms" → "SMS"
+    "telegram" → "Telegram"
+
+  lastLoginAt is formatted as a locale date string via new Date(value).toLocaleString()

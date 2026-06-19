@@ -1,0 +1,20 @@
+BACKEND — Delete Account Endpoint Returns 500
+==============================================
+Date: 2026-06-17
+
+The dashboard sends:
+  POST /api/account/delete
+  Authorization: Bearer <token>
+  Content-Type: application/json
+
+  {
+    "confirmation": "PotentPenguin-Delete",
+    "requestedAt": "2026-06-17T..."
+  }
+
+Response: HTTP 500 Internal Server Error
+
+The endpoint exists but crashes. Check backend logs for the
+exception at the /api/account/delete handler. Expected response
+for success: { ok: true, message: "Account permanently deleted." }
+

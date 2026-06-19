@@ -30,13 +30,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
-    <script type="module" crossorigin src="/assets/stream-DyrAOKLP.js"></script>
+    <script type="module" crossorigin src="/assets/stream-C0Qx-M3s.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-B7MX_D3K.js">
-    <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-D82LRnUp.js">
     <link rel="modulepreload" crossorigin href="/assets/preload-helper-Cal6NHrz.js">
+    <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-D82LRnUp.js">
     <link rel="modulepreload" crossorigin href="/assets/feature-flags-BD13vgcb.js">
-    <link rel="stylesheet" crossorigin href="/assets/stream-Br_1hpvH.css">
-    <link rel="stylesheet" crossorigin href="/assets/styles-DVkyX22n.css">
+    <link rel="stylesheet" crossorigin href="/assets/stream-DizAGQTQ.css">
+    <link rel="stylesheet" crossorigin href="/assets/styles-4nvcEX94.css">
   </head>
   <body class="stream-page">
     <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -52,16 +52,16 @@
             <span class="logo-text-svg" style="font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 20px; color: #fff; fill: #fff; letter-spacing: -0.02em;">thetrackerapp.io</span>
           </a>
           <nav class="app-links" aria-label="Navigation">
-            <a href="/">Home</a>
             <a href="/pricing">Pricing</a>
             <a href="/blog" data-feature="blog">Blog</a>
             <a href="/products" data-feature="products">Products</a>
             <a href="/workout-resources">Resources</a>
           </nav>
           <div class="header-stats" aria-label="Stream status" id="streamStatus">
-            <p><span class="live-dot" aria-hidden="true" style="display:inline-block;vertical-align:middle;width:8px;height:8px;border-radius:50%;background:#38ffd3;margin-right:4px;"></span>LIVE</p>
+            <p><span class="live-dot" aria-hidden="true" style="display:inline-block;vertical-align:middle;width:8px;height:8px;border-radius:50%;background:#38ffd3;margin-right:4px;"></span>LIVE <span id="viewerCount">0</span> watching</p>
           </div>
           <div class="header-auth">
+            <span id="countryFlag" aria-hidden="true" style="margin-right:4px;"></span>
             <span class="header-login-emoji" aria-hidden="true">🏋</span>
             <a id="loginLink" class="login-link" href="/login">Login</a>
             <a id="dashboardLink" class="dashboard-link" href="https://dashboard.thetrackerapp.io/dashboard" hidden aria-hidden="true">Dashboard</a>
@@ -71,6 +71,7 @@
 
       <main class="stream-main" id="main-content">
         <div class="stream-container" id="streamContainer">
+          <p class="stream-loading" id="streamLoading">Loading stream...</p>
           <p class="stream-offline" id="streamOffline" hidden>No live stream is currently scheduled. Check back soon!</p>
           <div class="stream-embed-wrapper" id="streamEmbedWrapper">
             <!-- YouTube iframe inserted by JS -->
@@ -80,17 +81,15 @@
 
       <footer class="site-footer">
         <div class="container footer-row">
-          <a href="mailto:contact@thetrackerapp.io" data-feature="footer.contact" hidden>contact@thetrackerapp.io</a>
+          <a href="mailto:contact@thetrackerapp.io">contact@thetrackerapp.io</a>
           <a href="/pricing">Pricing</a>
-          <a href="/community" data-feature="footer.community" hidden>Community & FAQ</a>
-          <a href="/blog" data-feature="footer.blog" hidden>Blog</a>
-          <a href="/press" data-feature="footer.press" hidden>Press</a>
-          <a href="/guide" data-feature="footer.guide" hidden>Guide</a>
-          <a href="/status" data-feature="footer.status" hidden>Status</a>
-          <a href="/trust" data-feature="footer.trust" hidden>Trust</a>
-          <a href="/llms.txt" data-feature="footer.llmsTxt" hidden>llms.txt</a>
-          <a href="/privacy" data-feature="footer.privacy" hidden>Privacy</a>
-          <a href="/terms" data-feature="footer.terms" hidden>Terms</a>
+          <a href="/blog">Blog</a>
+          <a href="/press">Press</a>
+          <a href="/status">Status</a>
+          <a href="/trust">Trust</a>
+          <a href="/llms.txt">llms.txt</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
         </div>
       </footer>
     </div>

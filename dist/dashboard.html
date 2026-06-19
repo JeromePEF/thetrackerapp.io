@@ -43,23 +43,39 @@
         window.location.replace("https://thetrackerapp.io/login?next=" + next);
       })();
     </script>
-    <script type="module" crossorigin src="/assets/dashboard-CRVPF1h1.js"></script>
+    <script type="module" crossorigin src="/assets/dashboard-COLTnToU.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-B7MX_D3K.js">
     <link rel="modulepreload" crossorigin href="/assets/preload-helper-Cal6NHrz.js">
     <link rel="modulepreload" crossorigin href="/assets/affiliate-shape-Dim5w8m-.js">
     <link rel="modulepreload" crossorigin href="/assets/google-analytics-Dx6Tr4Gp.js">
     <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-D82LRnUp.js">
     <link rel="modulepreload" crossorigin href="/assets/feature-flags-BD13vgcb.js">
-    <link rel="modulepreload" crossorigin href="/assets/api-GzkzykjT.js">
+    <link rel="modulepreload" crossorigin href="/assets/api-4f7OZVRm.js">
     <link rel="modulepreload" crossorigin href="/assets/billing-prices-Cx1pHCx8.js">
     <link rel="stylesheet" crossorigin href="/assets/affiliate-shape-DgSJ5ZLv.css">
     <link rel="stylesheet" crossorigin href="/assets/dashboard-BjUbrqtB.css">
-    <link rel="stylesheet" crossorigin href="/assets/auth-pages-D-qFEVjQ.css">
+    <link rel="stylesheet" crossorigin href="/assets/auth-pages-vvhVdZke.css">
   </head>
   <body class="dashboard-page">
+    <div id="emailVerifyOverlay" class="email-verify-overlay" hidden>
+      <div class="email-verify-card">
+        <div class="email-verify-icon">📧</div>
+        <h2>Verify Your Email</h2>
+        <p id="emailVerifyPrompt">Verify your email to unlock all features including affiliate access, data export, and account recovery.</p>
+        <div id="emailVerifyInputRow" hidden style="margin-bottom: 1rem;">
+          <input id="emailVerifyInput" type="email" class="account-edit-input" placeholder="you@example.com" style="width: 100%; padding: 0.6rem; border-radius: 6px;" />
+        </div>
+        <div class="email-verify-actions">
+          <button id="emailVerifySendBtn" type="button" class="btn-primary">Send Verification Email</button>
+          <button id="emailVerifySkipBtn" type="button" class="btn-secondary">Skip for now</button>
+        </div>
+        <p id="emailVerifyStatus" class="stats-status" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+
     <div class="dashboard-shell">
       <header class="auth-top-nav">
-        <a href="/" class="header-logo auth-brand" aria-label="Home" style="margin:0; display:flex; align-items:center; gap:8px; text-decoration:none;">
+        <a href="https://thetrackerapp.io/" class="header-logo auth-brand" aria-label="Home" style="margin:0; display:flex; align-items:center; gap:8px; text-decoration:none;">
             <svg class="logo-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 28px; height: 28px;">
               <circle cx="32" cy="32" r="30.5" fill="transparent" stroke="#38ffd3" stroke-width="3"/>
               <text x="50%" y="50%" dy="0.35em" text-anchor="middle" font-size="28" fill="#fff">🏋️</text>
@@ -67,12 +83,25 @@
             <span class="logo-text-svg" style="font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 18px; color: #fff; fill: #fff; letter-spacing: -0.02em;">thetrackerapp.io</span>
           </a>
         <nav class="auth-links" aria-label="Primary">
-          <a href="https://thetrackerapp.io/">Home</a>
           <a href="#" id="dashboardLogoutLink" class="auth-links-logout">Logout</a>
         </nav>
       </header>
 
       <main class="dashboard-layout">
+        <section id="deletionStatusCard" class="deletion-status-card" hidden>
+          <div class="deletion-status-content">
+            <div class="deletion-status-icon">⏳</div>
+            <h2>Account Deletion Scheduled</h2>
+            <p id="deletionCountdown"></p>
+            <p id="deletionExpiry"></p>
+            <div class="deletion-actions">
+              <a id="deletionDownloadLink" class="btn-primary" href="#" target="_blank" rel="noopener noreferrer">Download My Data</a>
+              <button id="deletionRestoreBtn" type="button" class="btn-secondary">Restore My Account</button>
+            </div>
+            <p id="deletionStatus" class="stats-status" role="status" aria-live="polite"></p>
+          </div>
+        </section>
+
         <aside class="dashboard-sidebar" aria-label="Dashboard sections">
           <h1>Dashboard</h1>
           <nav id="dashboardNav">
@@ -342,24 +371,44 @@
               </p>
               <div class="public-profile-toggles" id="publicProfileToggles">
                 <label class="toggle-row">
-                  <input type="checkbox" id="toggleWorkoutVisibility" checked />
+                  <input type="checkbox" id="toggleMergedVisibility" />
+                  <span>Merged Activity</span>
+                  <span class="toggle-desc">Shows your combined workout + nutrition + hydration heatmap.</span>
+                </label>
+                <label class="toggle-row">
+                  <input type="checkbox" id="toggleWorkoutVisibility" />
                   <span>Workout Activity</span>
+                  <span class="toggle-desc">Shows your 52-week workout heatmap and activity calendar.</span>
                 </label>
                 <label class="toggle-row">
-                  <input type="checkbox" id="toggleNutritionVisibility" checked />
+                  <input type="checkbox" id="toggleNutritionVisibility" />
                   <span>Nutrition Activity</span>
+                  <span class="toggle-desc">Shows your 52-week nutrition/meal logging heatmap.</span>
                 </label>
                 <label class="toggle-row">
-                  <input type="checkbox" id="toggleWaterVisibility" checked />
+                  <input type="checkbox" id="toggleWaterVisibility" />
                   <span>Hydration Activity</span>
+                  <span class="toggle-desc">Shows your 52-week water intake heatmap.</span>
                 </label>
                 <label class="toggle-row">
-                  <input type="checkbox" id="toggleLeaderboardVisibility" checked />
+                  <input type="checkbox" id="toggleStatsBarVisibility" />
+                  <span>Stats Bar</span>
+                  <span class="toggle-desc">Shows your total workouts, current streak, and active days count.</span>
+                </label>
+                <label class="toggle-row">
+                  <input type="checkbox" id="toggleLeaderboardVisibility" />
                   <span>Leaderboard Standings</span>
+                  <span class="toggle-desc">Shows your ranking on strength, calisthenics, and streak leaderboards.</span>
                 </label>
                 <label class="toggle-row">
-                  <input type="checkbox" id="toggleRecentWorkoutsVisibility" checked />
+                  <input type="checkbox" id="toggleRecentWorkoutsVisibility" />
                   <span>Recent Workouts</span>
+                  <span class="toggle-desc">Shows your most recent logged workouts with exercise details.</span>
+                </label>
+                <label class="toggle-row">
+                  <input type="checkbox" id="togglePublicLeaderboardConsent" />
+                  <span>Show me on public leaderboards</span>
+                  <span class="toggle-desc">Your name and stats may appear on the homepage strength, calisthenics, and streaks leaderboards.</span>
                 </label>
               </div>
               <div class="panel-actions" style="margin-top: 0.75rem;">
@@ -367,6 +416,10 @@
                 <span id="publicProfileSaved" class="account-save-check" hidden>✓ Updated</span>
               </div>
               <p id="publicProfileStatus" class="stats-status" role="status" aria-live="polite"></p>
+              <div class="public-profile-preview" id="publicProfilePreview" hidden>
+                <h4>What will be visible at <a id="publicProfilePreviewUrl" href="/@" target="_blank" rel="noopener noreferrer">/@<span id="publicProfilePreviewUsername">you</span></a></h4>
+                <ul id="publicProfilePreviewList"></ul>
+              </div>
             </section>
 
             <section class="account-readonly-grid" aria-label="Account metadata">
@@ -399,6 +452,25 @@
               <button id="exportJsonButton" type="button" class="btn-secondary">Export to JSON</button>
             </div>
             <p id="exportStatus" class="stats-status" role="status" aria-live="polite"></p>
+
+            <hr style="margin: 2rem 0 1rem; border-color: rgba(166,193,225,0.1);">
+
+            <header class="panel-head" style="padding: 0;">
+              <h2 style="color: #ef4444;">Delete Account & Data</h2>
+              <p>Permanently delete all your data from The Tracker App. This action cannot be undone.</p>
+            </header>
+            <div id="deleteAccountSection">
+              <button id="deleteAccountBtn" type="button" class="btn-secondary" style="border-color: #ef4444; color: #ef4444;">Request Data Deletion</button>
+            </div>
+            <div id="deleteConfirmSection" hidden>
+              <p style="margin: 0.75rem 0; font-size: 0.9rem;">Type <strong id="deleteConfirmText">username-Delete</strong> to confirm:</p>
+              <input id="deleteConfirmInput" type="text" class="account-edit-input" placeholder="Type confirmation here" style="max-width: 300px;">
+              <div class="panel-actions" style="margin-top: 0.75rem;">
+                <button id="deleteConfirmBtn" type="button" class="btn-primary" style="background: #ef4444;" disabled>Yes, Delete All My Data</button>
+                <button id="deleteCancelBtn" type="button" class="btn-secondary">Cancel</button>
+              </div>
+            </div>
+            <p id="deleteStatus" class="stats-status" role="status" aria-live="polite"></p>
           </article>
 
           <article id="tabGoals" class="dashboard-panel" data-tab-panel="goals" hidden>
@@ -454,38 +526,18 @@
             <div class="panel-stack">
               <p><strong>Current Status:</strong> <span id="billingStatusValue">-</span></p>
               <p id="billingPlanRow"><strong>Current Plan:</strong> <span id="billingPlanValue">-</span></p>
-              <p id="billingLastPaymentRow"><strong>Last Payment:</strong> <span id="billingLastPaymentValue">-</span></p>
-              <p id="billingNextBillingRow"><strong>Next Billing Date:</strong> <span id="billingNextBillingValue">-</span></p>
-              <p id="billingCancelNotice" class="stats-status is-error" hidden></p>
+              <p id="billingLastPaymentRow" hidden><strong>Last Payment:</strong> <span id="billingLastPaymentValue">-</span></p>
+              <p id="billingNextBillingRow" hidden><strong>Next Billing Date:</strong> <span id="billingNextBillingValue">-</span></p>
+              <p id="billingNoAccount" hidden>No billing account. <a id="billingSubscribeLink" href="https://thetrackerapp.io/pricing" target="_blank" rel="noopener noreferrer">Subscribe to a plan →</a></p>
             </div>
 
-            <!-- Checkout-in-progress card. Renders when membership.status is
-                 one of: checkout_pending / incomplete / incomplete_expired /
-                 trialing_pending_payment / requires_payment_method / unpaid.
-                 The plan + next-billing rows are hidden in those states so
-                 the user doesn't think they're already subscribed. -->
-            <div id="billingCheckoutPendingCard" class="billing-checkout-pending" hidden>
-              <div class="billing-checkout-pending-icon" aria-hidden="true">⏳</div>
-              <div class="billing-checkout-pending-body">
-                <h3 class="billing-checkout-pending-title">Checkout in progress</h3>
-                <p class="billing-checkout-pending-msg" id="billingCheckoutPendingMsg">
-                  Complete payment to activate your subscription.
-                </p>
-                <div class="billing-checkout-pending-actions">
-                  <button type="button" id="billingResumeCheckoutBtn" class="btn-primary">Resume checkout</button>
-                  <button type="button" id="billingAbandonCheckoutBtn" class="btn-secondary">Choose a different plan</button>
-                </div>
-              </div>
+            <div id="billingPlanButtons" class="billing-plan-buttons" hidden>
+              <button type="button" class="billing-plan-btn" data-plan="weekly">Weekly · $3/week</button>
+              <button type="button" class="billing-plan-btn" data-plan="monthly">Monthly · $10/month</button>
+              <button type="button" class="billing-plan-btn" data-plan="yearly">Yearly · $96/year</button>
+              <button type="button" class="billing-plan-btn" data-plan="premium">Premium Monthly</button>
+              <button type="button" class="billing-plan-btn" data-plan="premiumYearly">Premium Yearly</button>
             </div>
-
-            <!-- Upgrade tier cards. Populated by renderBillingUpgrades() in
-                 dashboard.js using the `billing` block from /api/control.
-                 Hidden when no upgrade paths apply to the user's current plan. -->
-            <section id="billingUpgradeSection" class="billing-upgrade-section" hidden>
-              <h3 class="billing-upgrade-title">Upgrade your plan</h3>
-              <p class="billing-upgrade-sub">Switch billing intervals or unlock Premium features.</p>
-              <div id="billingUpgradeGrid" class="billing-upgrade-grid"></div>
-            </section>
 
             <div class="panel-actions">
               <a
@@ -495,11 +547,8 @@
                 target="_blank"
                 rel="noopener noreferrer"
                 hidden
-                >Open Stripe Billing</a
+                >Manage Billing →</a
               >
-              <button id="billingYearlyButton" type="button" class="btn-primary" hidden>Start Monthly Checkout</button>
-              <button id="billingResumeButton" type="button" class="btn-primary" hidden>Resume Subscription</button>
-              <button id="billingCancelButton" type="button" class="btn-secondary" hidden>Cancel Subscription</button>
             </div>
             <p id="billingActionStatus" class="stats-status" role="status" aria-live="polite"></p>
           </article>

@@ -158,7 +158,7 @@ function refreshServicesFromFlags(flags) {
   }
   SERVICES = next;
   if (!SERVICES.find((s) => s.id === state.serviceId)) {
-    state.serviceId = "";
+    state.serviceId = SERVICES[0].id;
   }
   try {
     renderServiceOptions();
@@ -170,7 +170,7 @@ function refreshServicesFromFlags(flags) {
 }
 
 const state = {
-  serviceId: "",
+  serviceId: "imessage",
 };
 const AUTH_FLAG_KEY = "tracker.authenticated";
 const DASHBOARD_HOME_URL = "https://dashboard.thetrackerapp.io/dashboard";
@@ -1722,11 +1722,8 @@ function syncServiceInputRequirements() {
 
 function updateServiceVisual() {
   const service = currentService();
-  if (els.serviceSelect && state.serviceId) {
-    els.serviceSelect.value = service.id;
-  }
   if (els.serviceSelect) {
-    els.serviceSelect.classList.toggle("is-placeholder", !state.serviceId);
+    els.serviceSelect.value = service.id;
   }
   syncServiceCarousel();
 
@@ -1742,7 +1739,7 @@ function renderServiceOptions() {
     return;
   }
 
-  els.serviceSelect.innerHTML = `<option value="" ${!state.serviceId ? "selected" : ""}>Choose Provider</option>` + SERVICES.map((service) => {
+  els.serviceSelect.innerHTML = SERVICES.map((service) => {
     const selected = service.id === state.serviceId ? "selected" : "";
     return `<option value="${service.id}" ${selected}>${service.label}</option>`;
   }).join("");
@@ -2110,9 +2107,6 @@ async function refreshPebbleStepTape() {
 }
 
 function validateForm() {
-  if (!state.serviceId) {
-    return { ok: false, message: "Choose a provider above." };
-  }
   const service = currentService();
   if (service.identityKind === "bot-link") {
     return { ok: true, payload: null, isBotLink: true };

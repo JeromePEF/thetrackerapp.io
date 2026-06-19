@@ -1,0 +1,20 @@
+name = "thetrackerapp"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-06-18"
+compatibility_flags = ["nodejs_compat"]
+
+[[kv_namespaces]]
+binding = "CONTROL_VERSION"
+id = "08dbe73098ad496b89477e5a12c89f6e"
+
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "thetrackerapp-assets"
+
+[[env.production.kv_namespaces]]
+binding = "CONTROL_VERSION"
+id = "08dbe73098ad496b89477e5a12c89f6e"
+
+[[env.production.r2_buckets]]
+binding = "R2"
+bucket_name = "thetrackerapp-assets"

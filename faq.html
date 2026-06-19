@@ -10,6 +10,67 @@
     <link rel="icon" href="/favicon.svg?v=3" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3" sizes="180x180" />
     <link rel="manifest" href="/site.webmanifest" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="FAQ | The Tracker App" />
+    <meta property="og:description" content="Frequently asked questions about The Tracker App — pricing, plans, tracking, and more." />
+    <meta property="og:url" content="https://thetrackerapp.io/faq" />
+    <meta property="og:site_name" content="The Tracker App" />
+    <meta property="og:image" content="https://thetrackerapp.io/og-image.png?v=2" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="The Tracker App FAQ — frequently asked questions" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="FAQ | The Tracker App" />
+    <meta name="twitter:description" content="Frequently asked questions about The Tracker App — pricing, plans, tracking, and more." />
+    <meta name="twitter:image" content="https://thetrackerapp.io/og-image.png?v=2" />
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Can I cancel anytime?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes. You can cancel your subscription at any time. You'll continue to have access until the end of your billing period." }
+        },
+        {
+          "@type": "Question",
+          "name": "Is there a free trial?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes — every new account gets a 7-day free trial of the full app. No credit card required to start tracking." }
+        },
+        {
+          "@type": "Question",
+          "name": "What payment methods do you accept?",
+          "acceptedAnswer": { "@type": "Answer", "text": "We accept all major credit cards, Apple Pay, and Google Pay through Stripe, our secure payment processor." }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I switch plans?",
+          "acceptedAnswer": { "@type": "Answer", "text": "You can upgrade or downgrade your plan at any time. Changes take effect on your next billing cycle." }
+        },
+        {
+          "@type": "Question",
+          "name": "What does Premium include?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Premium adds AI-powered photo logging: snap a picture of your meal, your scale, or your workout and the AI parses it instantly." }
+        },
+        {
+          "@type": "Question",
+          "name": "How do I log a workout?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Just text it. Send a message like bench 185x5 205x3 225x1 via iMessage, SMS, or Telegram. The AI parses it and logs everything for you." }
+        },
+        {
+          "@type": "Question",
+          "name": "Does it work with wearables?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes. Connect your Apple Watch, Fitbit, Garmin, or Oura ring. Steps, sleep, and heart rate data sync automatically." }
+        }
+      ]
+    }
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
@@ -19,9 +80,8 @@
   <body>
     <div class="info-shell">
       <header class="info-nav">
-        <p class="info-brand">TheTrackerApp</p>
+        <a href="/" class="info-brand">TheTrackerApp</a>
         <nav class="info-links" aria-label="Primary">
-          <a href="/">Home</a>
           <a href="/pricing">Pricing</a>
           <a href="/blog">Blog</a>
           <a href="/login">Dashboard</a>

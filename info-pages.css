@@ -61,6 +61,13 @@ a:focus-visible {
   font-size: 0.95rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.info-brand:hover,
+.info-brand:focus-visible {
+  color: var(--accent);
 }
 
 .info-links {

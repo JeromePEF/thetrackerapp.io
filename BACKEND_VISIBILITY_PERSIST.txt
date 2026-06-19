@@ -1,0 +1,29 @@
+BACKEND — Visibility POST saves but GET returns defaults
+==========================================================
+Date: 2026-06-17
+User: IronFalcon (TRK-920715)
+
+PROOF (from browser console):
+  POST /api/user/visibility
+  → { ok: true, visibility: { workouts: true, ... all 8 fields true } }
+
+  GET /api/portal?contact=7373686293
+  → { publicVisibility: { workouts: false, ... all 8 fields false } }
+
+The POST accepts and confirms the data but the GET returns fresh
+defaults — the visibility is NOT being persisted.
+
+The backend team said they fixed this (writes to appUsers.profiles,
+syncs to SQLite, saves to JSON). But the GET still returns defaults.
+
+NEEDED:
+  Verify the persistence fix actually deployed. The POST handler
+  must store visibility to the user's record in a way that survives
+  between requests. The GET handler must return the stored values
+  (not defaults) under:
+    - publicVisibility
+    - publicProfileVisibility   (alias)
+
+TEST:
+  curl https://api.thetrackerapp.io/api/portal?contact=7373686293
+  → Check that publicVisibility.workouts is true (not false)

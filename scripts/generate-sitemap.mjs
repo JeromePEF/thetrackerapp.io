@@ -50,8 +50,7 @@ const PUBLIC_ROUTES = [
   // Content hubs
   { path: "/blog",                      file: "blog.html",                  priority: "0.8", changefreq: "weekly" },
   { path: "/community",                 file: "community.html",             priority: "0.7", changefreq: "weekly" },
-  { path: "/guide",                     file: "guide.html",                 priority: "0.7", changefreq: "monthly" },
-  { path: "/changelog",                 file: "changelog.html",             priority: "0.5", changefreq: "weekly" },
+  { path: "/faq",                       file: "faq.html",                   priority: "0.6", changefreq: "monthly" },
   { path: "/press",                     file: "press.html",                 priority: "0.5", changefreq: "monthly" },
   { path: "/trust",                     file: "trust.html",                 priority: "0.6", changefreq: "monthly" },
 
