@@ -12,7 +12,7 @@
 
 const CONTROL_API_URL = "https://api.thetrackerapp.io/control";
 const CACHE_KEY = "tracker.featureFlags";
-const CACHE_TTL = 30 * 1000; // 30 seconds for live data freshness
+const CACHE_TTL = 15 * 1000; // 15 seconds for live data freshness
 
 // Default flags (fallback if API unavailable)
 // SAFE-BY-DEFAULT: this is what the frontend uses when fetchFeatureFlags()

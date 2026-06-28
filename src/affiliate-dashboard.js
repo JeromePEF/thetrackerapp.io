@@ -6,6 +6,10 @@ import {
   hasAffiliateProfile,
   pickNumber,
   pickString,
+  readAffiliateAgreementRequired,
+  readAffiliateAgreementSigned,
+  readAffiliateAgreementConnectBlocked,
+  readAffiliateCanConnectStripe,
   readAffiliateChargesEnabled,
   readAffiliateCode,
   readAffiliateDisabledReason,
@@ -14,6 +18,8 @@ import {
   readAffiliateReferralUrl,
   readAffiliateRequirements,
   readAffiliateStripeStatus,
+  readAffiliateAgreementSigningUrl,
+  readAffiliateAgreementMessage,
 } from "./affiliate-shape.js";
 
 const AUTH_FLAG_KEY = "tracker.authenticated";
@@ -23,6 +29,7 @@ const AFFILIATE_EMAIL_STORAGE_KEY = "tracker.affiliate.email";
 const DASHBOARD_ORIGIN = "https://dashboard.thetrackerapp.io";
 const SELF_URL = `${DASHBOARD_ORIGIN}/affiliate/dashboard`;
 const MAIN_SITE_LOGOUT_URL = "https://thetrackerapp.io/logout?next=%2F";
+const AGREEMENT_POLL_MS = 5000;
 
 const els = {
   loading: document.getElementById("affiliateLoading"),
@@ -33,6 +40,19 @@ const els = {
   dashboard: document.getElementById("affiliateDashboard"),
   greeting: document.getElementById("affiliateGreeting"),
   identity: document.getElementById("affiliateIdentity"),
+  // Gated step cards
+  pendingCard: document.getElementById("affiliatePendingCard"),
+  agreementCard: document.getElementById("affiliateAgreementCard"),
+  agreementMessage: document.getElementById("affiliateAgreementMessage"),
+  signingLink: document.getElementById("affiliateSigningLink"),
+  resendAgreementBtn: document.getElementById("affiliateResendAgreementBtn"),
+  agreementStatus: document.getElementById("affiliateAgreementStatus"),
+  connectCard: document.getElementById("affiliateConnectCard"),
+  stripeStatusText: document.getElementById("affiliateStripeStatusText"),
+  connectButton: document.getElementById("affiliateConnectButton"),
+  connectStatus: document.getElementById("affiliateConnectStatus"),
+  activeSection: document.getElementById("affiliateActiveSection"),
+  // Active cards
   referralLink: document.getElementById("affiliateReferralLink"),
   affiliateCode: document.getElementById("affiliateCode"),
   copyButton: document.getElementById("affiliateCopyButton"),
@@ -40,12 +60,6 @@ const els = {
   clicks: document.getElementById("affiliateClicks"),
   signups: document.getElementById("affiliateSignups"),
   conversions: document.getElementById("affiliateConversions"),
-  calculated: document.getElementById("affiliateCalculated"),
-  held: document.getElementById("affiliateHeld"),
-  sent: document.getElementById("affiliateSent"),
-  stripeStatusText: document.getElementById("affiliateStripeStatusText"),
-  connectButton: document.getElementById("affiliateConnectButton"),
-  connectStatus: document.getElementById("affiliateConnectStatus"),
   referralsEmpty: document.getElementById("affiliateReferralsEmpty"),
   referralsList: document.getElementById("affiliateReferralsList"),
   logoutLink: document.getElementById("affiliateLogoutLink"),
@@ -54,225 +68,109 @@ const els = {
 
 let cachedAuth = null;
 let cachedStatus = null;
+let agreementPollTimer = null;
 
-function decodeAuthPayload(rawValue) {
-  const raw = String(rawValue || "").trim();
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    const binary = atob(raw);
-    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
-    const json = new TextDecoder().decode(bytes);
-    return JSON.parse(json);
-  } catch {
-    return null;
-  }
-}
-
-function persistAuthFromQuery() {
-  const params = new URLSearchParams(window.location.search);
-  const payloadUser = decodeAuthPayload(params.get("auth_payload"));
-  const sessionToken = String(params.get("session_token") || "").trim();
-  const sessionExpiresAt = String(params.get("session_expires_at") || "").trim();
-
-  if (!payloadUser && !sessionToken) {
-    return;
-  }
-
-  try {
-    if (payloadUser) {
-      window.localStorage.setItem(AUTH_USER_KEY, JSON.stringify(payloadUser));
-      window.localStorage.setItem(AUTH_FLAG_KEY, "true");
-    }
-    if (sessionToken) {
-      window.localStorage.setItem(
-        AUTH_SESSION_KEY,
-        JSON.stringify({ token: sessionToken, expiresAt: sessionExpiresAt || null }),
-      );
-    }
-  } catch {
-    // Ignore storage failures.
-  }
-
-  params.delete("auth_payload");
-  params.delete("session_token");
-  params.delete("session_expires_at");
-  const clean = params.toString();
-  window.history.replaceState({}, "", `${window.location.pathname}${clean ? `?${clean}` : ""}${window.location.hash || ""}`);
-}
-
-function readStoredAuth() {
-  try {
-    const raw = window.localStorage.getItem(AUTH_USER_KEY);
-    if (!raw) {
-      return null;
-    }
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-
-function readStoredAffiliateEmail() {
-  try {
-    return window.localStorage.getItem(AFFILIATE_EMAIL_STORAGE_KEY) || "";
-  } catch {
-    return "";
-  }
-}
-
-function resolveAffiliateIdentity() {
-  const auth = readStoredAuth();
-  const fallbackEmail = String(auth?.email || readStoredAffiliateEmail() || "").trim().toLowerCase();
-  const identity = {
-    ...readStoredAffiliateIdentity(),
-    ...(fallbackEmail ? { email: fallbackEmail } : {}),
-  };
-
-  if (!identity.email && !identity.username && !identity.contact && !identity.phone && !identity.accountId) {
-    return null;
-  }
-  return { ...identity, auth: auth || null };
-}
-
-function redirectToLogin() {
-  const next = encodeURIComponent(SELF_URL);
-  window.location.href = `/login?next=${next}`;
-}
-
-function showOnly(section) {
-  [els.loading, els.empty, els.error, els.dashboard].forEach((node) => {
-    if (!node) return;
-    node.hidden = node !== section;
+function showOnly(target) {
+  [els.loading, els.empty, els.error, els.dashboard].forEach(function (el) {
+    if (el) el.hidden = true;
   });
+  if (target) target.hidden = false;
+}
+
+function showEmpty() {
+  showOnly(els.empty);
 }
 
 function showLoading() {
-  if (els.navApplyLink) {
-    els.navApplyLink.hidden = true;
-  }
   showOnly(els.loading);
 }
-function showEmpty() {
-  if (els.navApplyLink) {
-    els.navApplyLink.hidden = false;
-  }
-  showOnly(els.empty);
-}
+
 function showError(message) {
-  if (els.errorMessage) {
-    els.errorMessage.textContent = message || "Something went wrong.";
-  }
-  if (els.navApplyLink) {
-    els.navApplyLink.hidden = true;
-  }
   showOnly(els.error);
-}
-function showDashboard() {
-  if (els.navApplyLink) {
-    els.navApplyLink.hidden = true;
+  if (els.errorMessage) {
+    els.errorMessage.textContent = String(message || "Couldn't load dashboard.");
   }
-  showOnly(els.dashboard);
 }
 
-function formatCents(cents) {
-  const num = Number(cents);
-  const safe = Number.isFinite(num) ? num : 0;
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(safe / 100);
+function setStatus(el, message, type) {
+  if (!el) return;
+  el.textContent = message;
+  el.classList.remove("is-error", "is-success");
+  if (type) el.classList.add(type);
 }
+
+function setCopyStatus(message, type) {
+  if (!els.copyStatus) return;
+  els.copyStatus.textContent = message;
+  els.copyStatus.classList.remove("is-error", "is-success");
+  if (type) els.copyStatus.classList.add(type);
+}
+
+function readAuthUser() {
+  try {
+    var raw = window.localStorage.getItem(AUTH_USER_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function resolveIdentity() {
+  var user = readAuthUser();
+  if (!user) return null;
+
+  var stored = readStoredAffiliateIdentity();
+  return {
+    email: stored.email || user.email || "",
+    username: stored.username || user.username || "",
+    canonical: stored.canonical || user.canonical || "",
+    accountId: stored.accountId || user.accountId || "",
+    contact: stored.contact || user.email || user.credential || "",
+    phone: stored.phone || "",
+  };
+}
+
+function stringOr(value, fallback) {
+  return String(value || "").trim() || fallback;
+}
+
+// ── Render functions ────────────────────────────────────────────────
 
 function renderHeader(identity, shape) {
-  const name = pickString(shape.affiliate, ["name", "fullName", "displayName"]);
-  const label =
-    pickString(shape.affiliate, ["email", "username", "handle"]) ||
-    String(identity?.email || identity?.username || identity?.contact || identity?.accountId || "").trim();
+  var name = pickString(shape.affiliate, ["name", "fullName", "displayName"]) || stringOr(identity.username, "Affiliate");
+  var label = pickString(shape.affiliate, ["email", "username", "handle"]) || identity.email || identity.username;
 
-  if (els.greeting) {
-    els.greeting.textContent = name ? `Welcome back, ${name}` : "Your affiliate dashboard";
-  }
-  if (els.identity) {
-    els.identity.textContent = label || "your account";
-  }
+  if (els.greeting) els.greeting.textContent = name ? "Welcome back, " + name : "Your dashboard";
+  if (els.identity) els.identity.textContent = label || identity.email || identity.username || "";
 }
 
 function renderReferralLink(shape) {
-  const code = readAffiliateCode(shape);
-  const url = readAffiliateReferralUrl(shape);
-
-  if (els.referralLink) {
-    els.referralLink.value = url || "";
-  }
-  if (els.affiliateCode) {
-    els.affiliateCode.textContent = code || "—";
-  }
+  var url = readAffiliateReferralUrl(shape);
+  var code = readAffiliateCode(shape);
+  if (els.referralLink) els.referralLink.value = url || "";
+  if (els.affiliateCode) els.affiliateCode.textContent = code || "—";
 }
 
 function renderCounts(shape) {
-  const clicks = pickNumber(shape.counts, ["clicks", "clickCount", "totalClicks", "linkClicks"]);
-  const signups = pickNumber(shape.counts, [
-    "totalReferredSubscribers",
-    "signups",
-    "signupCount",
-    "totalSignups",
-    "leads",
-  ]);
-  const conversions = pickNumber(shape.counts, [
-    "totalQualifiedSubscribers",
-    "conversions",
-    "conversionCount",
-    "paidConversions",
-    "subscribers",
-    "subscriberCount",
-  ]);
+  var clicks = pickNumber(shape.counts, ["clicks", "clickCount", "totalClicks", "linkClicks"]);
+  var signups = pickNumber(shape.counts, ["totalReferredSubscribers", "signups", "signupCount", "totalSignups", "leads"]);
+  var conversions = pickNumber(shape.counts, ["totalQualifiedSubscribers", "conversions", "conversionCount", "paidConversions", "subscribers", "subscriberCount"]);
 
   if (els.clicks) els.clicks.textContent = clicks.toLocaleString();
   if (els.signups) els.signups.textContent = signups.toLocaleString();
   if (els.conversions) els.conversions.textContent = conversions.toLocaleString();
 }
 
-function renderTotals(shape) {
-  const calculated = pickNumber(shape.totals, [
-    "totalPayoutsCalculatedCents",
-    "calculatedCents",
-    "calculated_cents",
-    "calculated",
-  ]);
-  const held = pickNumber(shape.totals, [
-    "totalPayoutsHeldCents",
-    "heldCents",
-    "held_cents",
-    "held",
-    "pendingCents",
-  ]);
-  const sent = pickNumber(shape.totals, [
-    "totalPayoutsSentCents",
-    "sentCents",
-    "sent_cents",
-    "sent",
-    "paidCents",
-  ]);
-
-  if (els.calculated) els.calculated.textContent = formatCents(calculated);
-  if (els.held) els.held.textContent = formatCents(held);
-  if (els.sent) els.sent.textContent = formatCents(sent);
-}
-
 function renderStripeConnect(shape) {
-  const status = readAffiliateStripeStatus(shape).toLowerCase();
-  const payoutsEnabled = readAffiliatePayoutsEnabled(shape);
-  const chargesEnabled = readAffiliateChargesEnabled(shape);
-  const currentlyDue = readAffiliateRequirements(shape);
-  const disabledReason = readAffiliateDisabledReason(shape);
+  if (els.connectCard) els.connectCard.hidden = false;
 
-  if (!els.connectButton || !els.stripeStatusText) {
-    return;
-  }
+  var status = readAffiliateStripeStatus(shape).toLowerCase();
+  var payoutsEnabled = readAffiliatePayoutsEnabled(shape);
+  var chargesEnabled = readAffiliateChargesEnabled(shape);
+  var reqs = readAffiliateRequirements(shape);
+  var disabledReason = readAffiliateDisabledReason(shape);
+
+  if (!els.connectButton || !els.stripeStatusText) return;
 
   if (status === "active" || (payoutsEnabled && chargesEnabled)) {
     els.stripeStatusText.textContent = "Stripe connected — charges and payouts are enabled.";
@@ -282,14 +180,14 @@ function renderStripeConnect(shape) {
     return;
   }
 
-  if (currentlyDue.length) {
-    els.stripeStatusText.textContent = `Stripe needs ${currentlyDue.length} more item${currentlyDue.length === 1 ? "" : "s"} before payouts are enabled.`;
+  if (reqs && reqs.length) {
+    els.stripeStatusText.textContent = "Stripe needs more information before payouts are enabled.";
     els.connectButton.textContent = "Continue Stripe onboarding";
     return;
   }
 
   if (disabledReason) {
-    els.stripeStatusText.textContent = `Stripe needs more information before payouts are enabled: ${disabledReason}.`;
+    els.stripeStatusText.textContent = "Stripe needs more information: " + disabledReason + ".";
     els.connectButton.textContent = "Continue Stripe onboarding";
     return;
   }
@@ -305,10 +203,8 @@ function renderStripeConnect(shape) {
 }
 
 function renderReferrals(shape) {
-  const referrals = shape.referrals || [];
-  if (!els.referralsList || !els.referralsEmpty) {
-    return;
-  }
+  var referrals = shape.referrals || [];
+  if (!els.referralsList || !els.referralsEmpty) return;
 
   if (!referrals.length) {
     els.referralsList.hidden = true;
@@ -319,148 +215,123 @@ function renderReferrals(shape) {
 
   els.referralsEmpty.hidden = true;
   els.referralsList.hidden = false;
-  els.referralsList.replaceChildren(
-    ...referrals.map((entry) => {
-      const li = document.createElement("li");
-      li.className = "affiliate-referral-item";
+  els.referralsList.replaceChildren.apply(els.referralsList, referrals.map(function (entry) {
+    var li = document.createElement("li");
+    li.className = "affiliate-referral-item";
 
-      const identityLabel =
-        pickString(entry, ["email", "contact", "username", "name"]) || "Anonymous subscriber";
-      const statusLabel = pickString(entry, ["status", "billingStatus", "subscriptionStatus"]);
-      const signedUpAt = pickString(entry, ["signedUpAt", "createdAt", "joinedAt", "convertedAt"]);
+    var identityLabel = pickString(entry, ["email", "contact", "username", "name"]) || "Anonymous subscriber";
+    var statusLabel = pickString(entry, ["status", "billingStatus", "subscriptionStatus"]);
+    var signedUpAt = pickString(entry, ["signedUpAt", "createdAt", "joinedAt", "convertedAt"]);
 
-      const main = document.createElement("p");
-      main.className = "affiliate-referral-main";
-      main.textContent = identityLabel;
-      li.appendChild(main);
+    var main = document.createElement("p");
+    main.className = "affiliate-referral-main";
+    main.textContent = identityLabel;
+    li.appendChild(main);
 
-      const meta = document.createElement("p");
-      meta.className = "affiliate-referral-meta";
-      const parts = [];
-      if (statusLabel) parts.push(statusLabel);
-      if (signedUpAt) {
-        const parsed = new Date(signedUpAt);
-        parts.push(Number.isNaN(parsed.getTime()) ? signedUpAt : parsed.toLocaleDateString());
+    var meta = document.createElement("p");
+    meta.className = "affiliate-referral-meta";
+    var parts = [];
+    if (statusLabel) parts.push(statusLabel);
+    if (signedUpAt) {
+      var d = new Date(signedUpAt);
+      parts.push(Number.isNaN(d.getTime()) ? signedUpAt : d.toLocaleDateString());
+    }
+    meta.textContent = parts.join(" · ");
+    li.appendChild(meta);
+
+    return li;
+  }));
+}
+
+function renderAgreementCard(shape) {
+  if (!els.agreementCard) return;
+  els.agreementCard.hidden = false;
+
+  var msg = readAffiliateAgreementMessage(shape) || "Please sign the affiliate agreement to continue.";
+  if (els.agreementMessage) els.agreementMessage.textContent = msg;
+
+  var signingUrl = readAffiliateAgreementSigningUrl(shape);
+  if (els.signingLink && signingUrl) {
+    els.signingLink.href = signingUrl;
+    els.signingLink.hidden = false;
+  } else if (els.signingLink) {
+    els.signingLink.hidden = true;
+  }
+}
+
+// ── State machine ────────────────────────────────────────────────────
+
+function isFullyActive(shape) {
+  var stripeStatus = readAffiliateStripeStatus(shape).toLowerCase();
+  var payoutsEnabled = readAffiliatePayoutsEnabled(shape);
+  var chargesEnabled = readAffiliateChargesEnabled(shape);
+  return stripeStatus === "active" || (payoutsEnabled && chargesEnabled);
+}
+
+function reshowDashboard() {
+  loadDashboard(resolveIdentity());
+}
+
+function startAgreementPolling() {
+  stopAgreementPolling();
+  agreementPollTimer = window.setInterval(function () {
+    var identity = resolveIdentity();
+    if (!identity) return;
+    affiliateStatus(identity).then(function (body) {
+      if (!body || body.ok === false) return;
+      var shape = buildAffiliateShape(body);
+      if (!shape) return;
+      cachedStatus = shape;
+
+      // If agreement is now signed, stop polling and re-render
+      if (readAffiliateAgreementSigned(shape)) {
+        stopAgreementPolling();
+        reshowDashboard();
       }
-      meta.textContent = parts.join(" • ");
-      if (parts.length) {
-        li.appendChild(meta);
-      }
-      return li;
-    }),
-  );
+    }).catch(function () {});
+  }, AGREEMENT_POLL_MS);
 }
 
-function setCopyStatus(message, type = "") {
-  if (!els.copyStatus) return;
-  els.copyStatus.textContent = message;
-  els.copyStatus.classList.remove("is-error", "is-success");
-  if (type) {
-    els.copyStatus.classList.add(type === "error" ? "is-error" : "is-success");
+function stopAgreementPolling() {
+  if (agreementPollTimer) {
+    window.clearInterval(agreementPollTimer);
+    agreementPollTimer = null;
   }
 }
 
-async function handleCopy() {
-  const url = els.referralLink?.value || "";
-  if (!url) {
-    setCopyStatus("No referral link yet.", "error");
-    return;
-  }
-
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(url);
-    } else if (els.referralLink) {
-      els.referralLink.select();
-      document.execCommand("copy");
-    }
-    setCopyStatus("Copied to clipboard.", "success");
-  } catch {
-    setCopyStatus("Couldn't copy — try selecting the link manually.", "error");
-  }
+function hasApproval(shape) {
+  var approved = pickString(shape.affiliate, ["approvalStatus", "status", "state"]) || "";
+  return approved === "approved" || approved === "active";
 }
 
-function setConnectStatus(message, type = "") {
-  if (!els.connectStatus) return;
-  els.connectStatus.textContent = message;
-  els.connectStatus.classList.remove("is-error", "is-success");
-  if (type) {
-    els.connectStatus.classList.add(type === "error" ? "is-error" : "is-success");
-  }
+function isPending(shape) {
+  var status = pickString(shape.affiliate, ["approvalStatus", "status", "state"]) || "";
+  return status === "pending" || status === "reviewing" || (!readAffiliateAgreementRequired(shape) && !isFullyActive(shape));
 }
 
-async function handleConnectClick() {
-  const identity = resolveAffiliateIdentity();
-  if (!identity) {
-    redirectToLogin();
-    return;
-  }
+// ── Main dashboard rendering ─────────────────────────────────────────
 
-  if (els.connectButton) {
-    els.connectButton.disabled = true;
-  }
-  setConnectStatus("Requesting a fresh Stripe link...", "");
-
-  const returnUrl = `${DASHBOARD_ORIGIN}/dashboard?view=affiliate`;
-
-  try {
-    const result = await affiliateConnect({
-      email: identity.email,
-      username: identity.username,
-      contact: identity.contact,
-      phone: identity.phone,
-      accountId: identity.accountId,
-      canonical: identity.canonical,
-      returnUrl,
-      refreshUrl: returnUrl,
-    });
-    const resultShape = buildAffiliateShape(result);
-    const onboardingUrl =
-      readAffiliateOnboardingUrl(resultShape) ||
-      pickString(result, ["onboardingUrl", "accountLinkUrl", "redirectUrl", "dashboardUrl", "loginUrl", "manageUrl", "managementUrl"]) ||
-      pickString(result?.account, ["onboardingUrl", "accountLinkUrl", "redirectUrl", "dashboardUrl", "loginUrl", "manageUrl", "managementUrl"]);
-
-    if (!onboardingUrl) {
-      throw new Error("Stripe did not return an onboarding link.");
-    }
-
-    window.location.href = onboardingUrl;
-  } catch (error) {
-    setConnectStatus(String(error?.message || "Couldn't start Stripe onboarding."), "error");
-    if (els.connectButton) {
-      els.connectButton.disabled = false;
-    }
-  }
-}
-
-function handleLogout(event) {
-  event.preventDefault();
-  try {
-    window.localStorage.removeItem(AUTH_FLAG_KEY);
-    window.localStorage.removeItem(AUTH_USER_KEY);
-    window.localStorage.removeItem(AUTH_SESSION_KEY);
-    window.localStorage.removeItem(AFFILIATE_EMAIL_STORAGE_KEY);
-  } catch {
-    // ignore
-  }
-  window.location.replace(MAIN_SITE_LOGOUT_URL);
+function showDashboard() {
+  showOnly(els.dashboard);
 }
 
 async function loadDashboard(identity) {
   showLoading();
 
   try {
-    const body = await affiliateStatus(identity);
+    var body;
+    try {
+      body = identity ? await affiliateStatus(identity) : await affiliateStatus({});
+    } catch (e) {
+      body = null;
+    }
 
     if (body && typeof body === "object" && body.ok === false) {
       throw new Error(body.error || body.message || "Status request failed.");
     }
 
-    const shape = buildAffiliateShape(body);
-    if (!shape) {
-      throw new Error("Empty response from status endpoint.");
-    }
-
+    var shape = buildAffiliateShape(body);
+    if (!shape) throw new Error("Empty response from status endpoint.");
     cachedStatus = shape;
 
     if (!hasAffiliateProfile(shape)) {
@@ -468,59 +339,174 @@ async function loadDashboard(identity) {
       return;
     }
 
+    stopAgreementPolling();
     renderHeader(identity, shape);
-    renderReferralLink(shape);
-    renderCounts(shape);
-    renderTotals(shape);
-    renderStripeConnect(shape);
-    renderReferrals(shape);
+
+    // Determine which step we're on
+    var agreementRequired = readAffiliateAgreementRequired(shape);
+    var agreementSigned = readAffiliateAgreementSigned(shape);
+    var fullyActive = isFullyActive(shape);
+    var approved = hasApproval(shape);
+
+    // Reset all card visibility
+    if (els.pendingCard) els.pendingCard.hidden = true;
+    if (els.agreementCard) els.agreementCard.hidden = true;
+    if (els.connectCard) els.connectCard.hidden = true;
+    if (els.activeSection) els.activeSection.hidden = true;
+
+    if (fullyActive) {
+      // STEP 4: Fully active — show referral + performance + subscribers
+      renderReferralLink(shape);
+      renderCounts(shape);
+      renderReferrals(shape);
+      renderStripeConnect(shape);
+      if (els.activeSection) els.activeSection.hidden = false;
+    } else if (agreementSigned && !fullyActive) {
+      // STEP 3: Agreement signed but Stripe not connected
+      renderStripeConnect(shape);
+    } else if (agreementRequired && !agreementSigned) {
+      // STEP 2: Agreement required, not yet signed
+      renderAgreementCard(shape);
+      startAgreementPolling();
+    } else if (!approved) {
+      // STEP 1: Pending admin approval (or hasn't been approved yet)
+      if (els.pendingCard) els.pendingCard.hidden = false;
+    } else {
+      // Fallback — show agreement/connect if available
+      if (agreementRequired && !agreementSigned) {
+        renderAgreementCard(shape);
+        startAgreementPolling();
+      } else {
+        renderStripeConnect(shape);
+      }
+    }
+
     showDashboard();
   } catch (error) {
     showError(String(error?.message || "Couldn't load dashboard."));
   }
 }
 
-function wireEvents() {
-  if (els.copyButton) {
-    els.copyButton.addEventListener("click", handleCopy);
+// ── Event handlers ───────────────────────────────────────────────────
+
+function handleCopy() {
+  var url = els.referralLink ? els.referralLink.value : "";
+  if (!url) {
+    setCopyStatus("No referral link yet.", "error");
+    return;
   }
-  if (els.connectButton) {
-    els.connectButton.addEventListener("click", handleConnectClick);
-  }
-  if (els.retryButton) {
-    els.retryButton.addEventListener("click", () => {
-      if (cachedAuth) {
-        loadDashboard(cachedAuth);
-      } else {
-        boot();
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(function () {
+      setCopyStatus("Copied!", "is-success");
+    }).catch(function () {
+      if (els.referralLink) {
+        els.referralLink.select();
+        setCopyStatus("Press Ctrl+C to copy.", "is-success");
       }
     });
-  }
-  if (els.logoutLink) {
-    els.logoutLink.hidden = false;
-    els.logoutLink.addEventListener("click", handleLogout);
+  } else if (els.referralLink) {
+    els.referralLink.select();
+    setCopyStatus("Press Ctrl+C to copy.", "is-success");
   }
 }
 
-function boot() {
-  persistAuthFromQuery();
-  const identity = resolveAffiliateIdentity();
-  if (!identity) {
-    redirectToLogin();
-    return;
-  }
-  cachedAuth = identity;
+async function handleConnectClick() {
+  if (!els.connectButton) return;
+  els.connectButton.disabled = true;
+  setStatus(els.connectStatus, "Connecting to Stripe...");
+
   try {
-    if (identity.email) {
-      window.localStorage.setItem(AFFILIATE_EMAIL_STORAGE_KEY, identity.email);
+    var identity = resolveIdentity();
+    var body = await affiliateConnect({
+      email: identity.email,
+      username: identity.username,
+      contact: identity.contact,
+      phone: identity.phone,
+      accountId: identity.accountId,
+      canonical: identity.canonical,
+      returnUrl: SELF_URL + "?complete=1",
+      refreshUrl: SELF_URL + "?complete=1",
+    });
+
+    var result = body && typeof body === "object" ? body : {};
+    var onboardingUrl = readAffiliateOnboardingUrl({ stripe: result, affiliate: result, body: result });
+
+    var topUrl = result.onboardingUrl || result.accountLinkUrl || result.redirectUrl || result.dashboardUrl || result.loginUrl || result.manageUrl || result.managementUrl;
+    if (!onboardingUrl && topUrl) onboardingUrl = topUrl;
+
+    if (onboardingUrl) {
+      window.location.href = onboardingUrl;
+      return;
     }
-  } catch {
-    // ignore
+
+    throw new Error("Stripe did not return an onboarding link.");
+  } catch (error) {
+    setStatus(els.connectStatus, String(error?.message || "Unable to connect Stripe."), "is-error");
+  } finally {
+    if (els.connectButton) els.connectButton.disabled = false;
   }
+}
+
+async function handleResendAgreement() {
+  if (!els.resendAgreementBtn) return;
+  els.resendAgreementBtn.disabled = true;
+  setStatus(els.agreementStatus, "Resending agreement...");
+
+  try {
+    var identity = resolveIdentity();
+    var body = await affiliateStatus(identity);
+    setStatus(els.agreementStatus, "Agreement resent. Check your email.", "is-success");
+    reshowDashboard();
+  } catch (error) {
+    setStatus(els.agreementStatus, String(error?.message || "Could not resend agreement."), "is-error");
+  } finally {
+    if (els.resendAgreementBtn) els.resendAgreementBtn.disabled = false;
+  }
+}
+
+function handleLogout() {
+  try {
+    window.localStorage.removeItem(AUTH_FLAG_KEY);
+    window.localStorage.removeItem(AUTH_USER_KEY);
+    window.localStorage.removeItem(AUTH_SESSION_KEY);
+    window.localStorage.removeItem(AFFILIATE_EMAIL_STORAGE_KEY);
+  } catch (e) {}
+  window.location.replace(MAIN_SITE_LOGOUT_URL);
+}
+
+// ── Init ─────────────────────────────────────────────────────────────
+
+function wireEvents() {
+  if (els.copyButton) els.copyButton.addEventListener("click", handleCopy);
+  if (els.connectButton) els.connectButton.addEventListener("click", handleConnectClick);
+  if (els.resendAgreementBtn) els.resendAgreementBtn.addEventListener("click", handleResendAgreement);
+  if (els.logoutLink) {
+    els.logoutLink.addEventListener("click", function (e) { e.preventDefault(); handleLogout(); });
+  }
+  if (els.retryButton) {
+    els.retryButton.addEventListener("click", function () { loadDashboard(resolveIdentity()); });
+  }
+}
+
+function init() {
+  wireEvents();
+
+  var user = readAuthUser();
+  if (els.navApplyLink) els.navApplyLink.hidden = !user;
+  if (els.logoutLink) els.logoutLink.hidden = !user;
+
+  if ("affiliateSignup" in window) {
+    els.navApplyLink.hidden = true;
+    els.loading.hidden = true;
+    var checkAff = document.getElementById("affiliateSignupExisting");
+    if (checkAff) checkAff.hidden = true;
+  }
+
+  var identity = resolveIdentity();
   loadDashboard(identity);
 }
 
 inject();
 initGoogleAnalytics();
-wireEvents();
-boot();
+init();

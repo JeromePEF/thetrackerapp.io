@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Authorize Device | The Tracker App</title>
+    <title>Check Your Messages | The Tracker App</title>
     <meta
       name="description"
-      content="Enter your one-time code to authorize this device and continue to your Tracker dashboard."
+      content="Enter the code sent via iMessage to verify your identity and access your Tracker dashboard."
     />
     <meta name="robots" content="noindex" />
     <link rel="canonical" href="https://thetrackerapp.io/authorize" />
@@ -19,14 +19,14 @@
       href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
-    <script type="module" crossorigin src="/assets/authorize-DYVji9a1.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-B7MX_D3K.js">
-    <link rel="modulepreload" crossorigin href="/assets/google-analytics-Dx6Tr4Gp.js">
-    <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-D82LRnUp.js">
-    <link rel="modulepreload" crossorigin href="/assets/preload-helper-Cal6NHrz.js">
-    <link rel="modulepreload" crossorigin href="/assets/feature-flags-BD13vgcb.js">
-    <link rel="modulepreload" crossorigin href="/assets/api-4f7OZVRm.js">
-    <link rel="stylesheet" crossorigin href="/assets/auth-pages-vvhVdZke.css">
+    <script type="module" crossorigin src="/assets/authorize-DgIyoINU.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-Dg3W3odj.js">
+    <link rel="modulepreload" crossorigin href="/assets/google-analytics-Cc5Ngtfw.js">
+    <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-CMvwqAyv.js">
+    <link rel="modulepreload" crossorigin href="/assets/preload-helper-C7LL5JGA.js">
+    <link rel="modulepreload" crossorigin href="/assets/feature-flags-D8bHZJuK.js">
+    <link rel="modulepreload" crossorigin href="/assets/api-GGmA8eZq.js">
+    <link rel="stylesheet" crossorigin href="/assets/auth-pages-tHewEiqh.css">
   </head>
   <body>
     <div class="auth-shell">
@@ -39,28 +39,19 @@
             <span class="logo-text-svg" style="font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 20px; color: #111; fill: #111; letter-spacing: -0.02em; text-transform: none;">thetrackerapp.io</span>
           </a>
         <nav class="auth-links" aria-label="Primary">
-          <a href="/workout-resources">Workout Resources</a>
+          <a href="/pricing">Pricing</a>
           <a href="/login">Login</a>
         </nav>
       </header>
 
       <main class="auth-main">
         <section class="auth-card device-card" aria-labelledby="authorizeHeading">
-          <h1 id="authorizeHeading">Authorize Device</h1>
-          <p class="auth-subtle">Enter the generated code to authenticate this device to your account.</p>
-          <p class="requested-target">Code requested for <strong id="requestedTargetValue">-</strong></p>
+          <h1 id="authorizeHeading">Check your messages</h1>
+          <p id="channelMessage" class="auth-subtle">We sent a code to your device.</p>
+          <p class="requested-target">Code sent to <strong id="requestedTargetValue">-</strong></p>
 
           <form id="verifyCodeForm" class="auth-form" novalidate>
-            <div id="otpContainer" class="otp-container" aria-label="Device code input">
-              <span class="otp-slot" data-otp-index="0"></span>
-              <span class="otp-slot" data-otp-index="1"></span>
-              <span class="otp-slot" data-otp-index="2"></span>
-              <span class="otp-slot" data-otp-index="3"></span>
-              <span class="otp-divider" aria-hidden="true">-</span>
-              <span class="otp-slot" data-otp-index="4"></span>
-              <span class="otp-slot" data-otp-index="5"></span>
-              <span class="otp-slot" data-otp-index="6"></span>
-              <span class="otp-slot" data-otp-index="7"></span>
+            <div id="otpContainer" class="otp-container" aria-label="Verification code input">
               <input
                 id="deviceCodeInput"
                 name="deviceCode"
@@ -70,19 +61,19 @@
                 autocapitalize="characters"
                 spellcheck="false"
                 maxlength="8"
-                aria-label="Device Code"
+                aria-label="Verification code"
                 required
               />
             </div>
 
             <div class="device-context">
-              <p><strong>Requested account:</strong> <span id="requestedDeviceValue">-</span></p>
               <p><strong>Session:</strong> <span id="deviceSessionValue">-</span></p>
-              <p><strong>Requested at:</strong> <span id="requestedAtValue">-</span></p>
+              <p><strong>Requested:</strong> <span id="requestedAtValue">-</span></p>
             </div>
 
             <div class="auth-actions is-stack">
-              <button id="verifyCodeButton" type="submit" class="btn-primary">Allow</button>
+              <button id="verifyCodeButton" type="submit" class="btn-primary">Verify code</button>
+              <button type="button" id="emailFallbackButton" class="auth-inline-button" hidden>Didn't get it? Send via email instead →</button>
               <button type="button" id="resendCodeButton" class="btn-secondary">Resend code</button>
               <button type="button" id="editIdentifierButton" class="btn-tertiary">Use different login</button>
             </div>

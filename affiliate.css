@@ -155,6 +155,13 @@
   color: #111;
 }
 
+.affiliate-stat-sub {
+  margin: 0;
+  font-size: 0.72rem;
+  color: #6b7280;
+  font-family: "Space Grotesk", system-ui, sans-serif;
+}
+
 .affiliate-connect-card .auth-actions {
   justify-content: flex-start;
 }

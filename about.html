@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>About | The Tracker App</title>
+    <meta name="description" content="The Tracker App is a text-based fitness and health tracking platform. Log workouts, nutrition, water, and body measurements via iMessage, SMS, or Telegram — no app download required." />
+    <link rel="canonical" href="https://thetrackerapp.io/about" />
+    <link rel="icon" href="/favicon.svg?v=5" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3" sizes="180x180" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      html, body { overflow:hidden; height:100dvh; }
+      #appShell { display:flex; flex-direction:column; min-height:100dvh; }
+      .about-main {
+        flex:1; display:flex; flex-direction:column; justify-content:center;
+        max-width:860px; margin:0 auto; padding:2rem 1.5rem; width:100%;
+      }
+      .about-main h1 {
+        font-family: "Orbitron", sans-serif; font-size: clamp(1.4rem, 2.5vw, 2rem);
+        letter-spacing: 0.04em; text-transform: uppercase; color: #fff; margin: 0 0 0.5rem;
+      }
+      .about-main .tagline {
+        color: #8a96a8; font-size: clamp(0.85rem, 1.2vw, 1rem);
+        max-width: 600px; line-height: 1.55; margin: 0 0 1.2rem;
+      }
+      .about-grid {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 0.75rem; margin-bottom: 1rem;
+      }
+      .about-card {
+        background: rgba(255,255,255,0.025); border: 1px solid rgba(166,193,225,0.12);
+        border-radius: 10px; padding: 0.75rem;
+      }
+      .about-card h3 {
+        font-family: "Orbitron", sans-serif; font-size: 0.72rem; letter-spacing: 0.03em;
+        text-transform: uppercase; color: #38ffd3; margin: 0 0 0.3rem;
+      }
+      .about-card p { color: #8a96a8; font-size: 0.78rem; margin: 0; line-height: 1.45; }
+    </style>
+  </head>
+  <body>
+    <div id="appShell">
+      <header class="site-header">
+        <div class="container header-row">
+          <a href="/" class="header-logo" aria-label="Home" style="display:flex; align-items:center; gap:8px; text-decoration:none;">
+            <svg class="logo-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:32px;height:32px;">
+              <circle cx="32" cy="32" r="30.5" fill="transparent" stroke="#38ffd3" stroke-width="3"/>
+              <text x="50%" y="50%" dy="0.35em" text-anchor="middle" font-size="32" fill="#fff">🏋️</text>
+            </svg>
+            <span style="font-family:'Orbitron',sans-serif;font-weight:700;font-size:20px;color:#fff;">thetrackerapp.io</span>
+          </a>
+          <nav class="app-links" aria-label="Navigation">
+            <a href="/pricing">Pricing</a>
+            <a href="/testimonials">Testimonials</a>
+          </nav>
+        </div>
+      </header>
+
+      <main class="about-main">
+        <h1>About The Tracker App</h1>
+        <p class="tagline">A text-based fitness and health tracking platform. Log workouts, nutrition, water, and body measurements via iMessage, SMS, or Telegram — no app download required. Just text what you did and we handle the rest.</p>
+
+        <div class="about-grid">
+          <div class="about-card">
+            <h3>Frictionless Logging</h3>
+            <p>Text "bench press 3x10 at 185" and we parse, log, and analyze it automatically. No menus, no friction.</p>
+          </div>
+          <div class="about-card">
+            <h3>Works Everywhere</h3>
+            <p>Use the messaging app you already have — iMessage, SMS, or Telegram.</p>
+          </div>
+          <div class="about-card">
+            <h3>Live Leaderboards</h3>
+            <p>Compete on strength lifts, calisthenics, daily streaks, steps, and miles — updating in real time.</p>
+          </div>
+          <div class="about-card">
+            <h3>Dashboard & Charts</h3>
+            <p>Visualize your progress with charts for weight trends, nutrition breakdowns, and workout volume over time.</p>
+          </div>
+        </div>
+      </main>
+
+      <footer class="site-footer">
+        <div style="max-width:1600px; margin:0 auto; padding:0.5rem clamp(1rem,2vw,2rem); text-align:center; position:relative;">
+          <small style="color:#5a6a7e; font-size:0.62rem; white-space:nowrap; position:absolute; left:clamp(1rem,2vw,2rem); top:50%; transform:translateY(-50%);">iMessage is a trademark of Apple Inc. The Tracker App is not affiliated with Apple.</small>
+          <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:0.5rem 1.25rem; font-size:0.8rem;">
+            <a href="mailto:contact@thetrackerapp.io" style="color:var(--ink);text-decoration:none;">contact@thetrackerapp.io</a>
+            <a href="/pricing" style="color:var(--ink);text-decoration:none;">Pricing</a>
+            <a href="/testimonials" style="color:var(--ink);text-decoration:none;">Testimonials</a>
+            <a href="/blog" style="color:var(--ink);text-decoration:none;">Blog</a>
+            <a href="/status" style="color:var(--ink);text-decoration:none;">Status</a>
+            <a href="/trust" style="color:var(--ink);text-decoration:none;">Trust</a>
+            <a href="/llms.txt" style="color:var(--ink);text-decoration:none;">llms.txt</a>
+            <a href="/privacy" style="color:var(--ink);text-decoration:none;">Privacy</a>
+            <a href="/terms" style="color:var(--ink);text-decoration:none;">Terms</a>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>

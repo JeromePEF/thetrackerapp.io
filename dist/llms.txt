@@ -84,15 +84,6 @@ Visualize your progress with Grafana-style charts:
 - Workout volume
 - Body measurements over time
 
-### Wearable Integration
-Connect your fitness devices:
-- Apple Watch
-- Oura Ring
-- Garmin
-- Fitbit
-- Whoop
-- Pebble
-
 ## Supported Platforms
 
 ### iMessage
@@ -112,5 +103,8 @@ Use our bot @TheTrackerAppBot. Great for Android users or those who prefer Teleg
 ## Feedback
 - Email: support@thetrackerapp.io
 - Community: https://thetrackerapp.io/community
+
+## Legal
+iMessage is a trademark of Apple Inc. The Tracker App is not affiliated with Apple.
 
 (Updated May 2026)

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Workout Commands | Shortcut Reference | The Tracker App</title>
+    <meta name="description" content="Complete reference for slash commands. Use /pushups, /pullups, /log, and custom aliases to log workouts instantly via iMessage or Telegram." />
+    <link rel="canonical" href="https://thetrackerapp.io/tools/workout-commands" />
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../info-pages.css" />
+    <style>
+      .cmd-table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.85rem; }
+      .cmd-table th { text-align: left; padding: 0.5rem 0.6rem; border-bottom: 2px solid rgba(255,255,255,0.1); font-family: Orbitron,sans-serif; font-size: 0.7rem; letter-spacing: 0.05em; color: var(--accent, #38ffd3); }
+      .cmd-table td { padding: 0.45rem 0.6rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
+      .cmd-table tr:hover { background: rgba(255,255,255,0.02); }
+      .cmd { font-family: monospace; font-size: 0.85rem; color: var(--accent, #38ffd3); background: rgba(56,255,211,0.06); padding: 0.15rem 0.4rem; border-radius: 4px; white-space: nowrap; }
+      .cmd-section { margin: 1.5rem 0; }
+      .cmd-section h3 { font-family: Orbitron,sans-serif; font-size: 0.95rem; margin: 0 0 0.5rem; }
+      .cmd-section p { color: var(--ink-muted, #8a96a8); font-size: 0.82rem; line-height: 1.5; margin: 0 0 0.8rem; }
+      .cmd-note { background: rgba(56,255,211,0.04); border: 1px solid rgba(56,255,211,0.12); border-radius: 8px; padding: 0.8rem 1rem; margin: 1rem 0; font-size: 0.8rem; color: var(--ink-muted, #8a96a8); line-height: 1.5; }
+    </style>
+  </head>
+  <body>
+    <div class="info-shell">
+      <header class="info-nav">
+        <a href="/" class="header-logo info-brand" aria-label="Home" style="display:flex; align-items:center; gap:8px; text-decoration:none;">
+          <svg class="logo-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 26px; height: 26px;"><circle cx="32" cy="32" r="30" fill="none" stroke="#3fe0c5" stroke-width="3"/><text x="32" y="42" text-anchor="middle" font-size="36">🏋</text></svg>
+          <span class="logo-text-svg" style="font-family:'Orbitron',sans-serif;font-weight:700;font-size:15px;color:#edf5ff;letter-spacing:-0.02em;">thetrackerapp.io</span>
+        </a>
+        <nav class="info-links"><a href="/pricing">Pricing</a><a href="/about">About</a></nav>
+      </header>
+      <main>
+        <section class="info-hero">
+          <p class="info-kicker">Reference</p>
+          <h1>Slash Commands</h1>
+          <p>Type a <code class="cmd">/command</code> via iMessage or Telegram to instantly log a workout. The AI expands the shortcut and processes it automatically.</p>
+        </section>
+
+        <div class="cmd-section">
+          <h3>Default Commands</h3>
+          <p>These come pre-loaded. Text any command and the AI logs the full workout expansion.</p>
+          <table class="cmd-table">
+            <tr><th>Command</th><th>Expands to</th></tr>
+            <tr><td><code class="cmd">/pushups</code></td><td>50 pushups</td></tr>
+            <tr><td><code class="cmd">/pullups</code></td><td>10 pullups</td></tr>
+            <tr><td><code class="cmd">/dips</code></td><td>15 dips</td></tr>
+            <tr><td><code class="cmd">/squats</code></td><td>30 squats</td></tr>
+            <tr><td><code class="cmd">/apushups</code></td><td>20 archer pushups</td></tr>
+            <tr><td><code class="cmd">/ipushups</code></td><td>20 incline pushups</td></tr>
+            <tr><td><code class="cmd">/dpushups</code></td><td>20 decline pushups</td></tr>
+            <tr><td><code class="cmd">/cpushups</code></td><td>20 close grip pushups</td></tr>
+            <tr><td><code class="cmd">/hpushups</code></td><td>10 handstand pushups</td></tr>
+            <tr><td><code class="cmd">/spushups</code></td><td>30 scapula pushups</td></tr>
+            <tr><td><code class="cmd">/dipushups</code></td><td>20 diamond pushups</td></tr>
+            <tr><td><code class="cmd">/opushupsr</code></td><td>5 one arm pushups right</td></tr>
+            <tr><td><code class="cmd">/opushupsl</code></td><td>5 one arm pushups left</td></tr>
+            <tr><td><code class="cmd">/rpushups</code></td><td>10 ring pushups</td></tr>
+            <tr><td><code class="cmd">/log</code></td><td>Triggers the AI to review and log your last message as a workout</td></tr>
+          </table>
+        </div>
+
+        <div class="cmd-section">
+          <h3>Creating Custom Commands</h3>
+          <p>Go to your <strong>Dashboard → Shortcuts</strong> tab. Add a slash name and the full exercise text it should expand to.</p>
+          <table class="cmd-table">
+            <tr><th>Your Command</th><th>Your Expansion</th></tr>
+            <tr><td><code class="cmd">/legday</code></td><td>squat 225x5x4, deadlift 315x5, leg press 400x10x3</td></tr>
+            <tr><td><code class="cmd">/pushday</code></td><td>bench 185x8x3, incline dumbbell press 60x10x3, dips 15x3</td></tr>
+            <tr><td><code class="cmd">/abs</code></td><td>50 crunches, 30 leg raises, plank 2 min</td></tr>
+            <tr><td><code class="cmd">/preworkout</code></td><td>stretch 5 min, foam roll 5 min, warmup run 0.5 miles</td></tr>
+          </table>
+        </div>
+
+        <div class="cmd-note">
+          <strong>How commands work:</strong> when you text <code class="cmd">/pushups</code>, the AI immediately replaces it with "50 pushups" and logs it as a completed workout. Commands are expanded server-side before processing, so the expansion text is what gets logged to your sheet. Commands are case-insensitive — <code class="cmd">/PUSHUPS</code> works the same as <code class="cmd">/pushups</code>.
+        </div>
+
+        <div class="cmd-note">
+          <strong>Usage tracking:</strong> each command has a usage counter. The AI can show you which commands you use most and when you last used them. Ask <code class="cmd">"what are my top commands?"</code> in chat to see your stats.
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

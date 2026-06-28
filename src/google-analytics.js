@@ -28,10 +28,7 @@ export function initGoogleAnalytics() {
   };
 
   window.gtag("js", new Date());
-  window.gtag("config", measurementId, {
-    anonymize_ip: true,
-    transport_type: "beacon",
-  });
+  window.gtag("config", measurementId);
 
   const script = document.createElement("script");
   script.async = true;

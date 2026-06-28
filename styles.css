@@ -22,7 +22,8 @@ body {
   margin: 0;
   min-height: 100dvh;
   width: 100%;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 body {
@@ -30,25 +31,32 @@ body {
   color: var(--ink);
   background: var(--bg);
   line-height: 1.5;
-  height: 100dvh;
+  min-height: 100dvh;
+}
+
+/* Global anchor reset — never allow browser-default blue link color,
+   at any aspect ratio or breakpoint. Every link inherits the page ink
+   color unless explicitly overridden. */
+a {
+  color: var(--ink);
+}
+a:hover,
+a:focus-visible {
+  color: var(--accent);
 }
 
 #appShell {
-  /* Fixed "design canvas" approach.
-     The hero is laid out at a natural 1600×~900 design size and then the
-     JS scaler in src/main.js (fitAppToViewport) applies a uniform
-     transform: scale() to make it fit any viewport while preserving
-     aspect ratio. Pinning the inner layout to 100vh defeats the scaler
-     because scrollHeight ≈ viewportHeight → scale=1 always → no
-     scaling → content silently overflows. Giving the canvas an
-     intrinsic size + natural content heights lets the scaler shrink
-     everything together when needed (and leaves wide screens at 1:1). */
-  position: fixed;
-  left: 0;
-  top: 0;
-  width: 1600px;
+  /* Fluid native-resolution layout. The previous fixed 1600px canvas +
+     JS transform: scale() approach caused sub-pixel blur on text, SVGs
+     and the iPhone mockup on any viewport whose aspect ratio didn't
+     match the design canvas. We now lay out at real device pixels and
+     adapt with fluid CSS (clamp/minmax/container queries). */
+  position: relative;
+  left: auto;
+  top: auto;
+  width: 100%;
+  transform: none !important;
   transform-origin: top left;
-  will-change: transform;
 }
 
 .container {
@@ -528,19 +536,6 @@ body {
   color: #c6d6ea;
 }
 
-.pebble-leaderboard-list li {
-  font-size: 0.62rem;
-}
-
-/* Cap each pebble sub-list to ~3 entries so the Pebble Live section
-   doesn't dominate the natural canvas height. Without a cap the section
-   stacks 5 sub-lists × up to 10 entries each (~700px), forcing the JS
-   scaler to shrink everything heavily on shorter viewports. */
-.pebble-leaderboard-list {
-  max-height: calc(1.58rem * 3 + 0.6rem);
-  overflow: hidden;
-}
-
 .hero-panel {
   display: grid;
   gap: 0.82rem;
@@ -683,13 +678,14 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
    ============================================ */
 .hero-fullscreen-layout {
   display: grid;
-  grid-template-columns: 340px minmax(0, 1fr) auto;
-  gap: 2rem;
-  /* Natural content height. The JS viewport scaler measures the appShell
-     and uniformly scales it down on smaller viewports. Pinning to 100vh
-     here defeats the scaler — it makes scrollHeight ≈ viewportHeight so
-     scale always equals 1, and content silently overflows internally. */
-  padding: 1rem 2rem;
+  grid-template-columns: clamp(260px, 22vw, 340px) minmax(0, 1fr) auto;
+  gap: clamp(0.75rem, 1.4vw, 2rem);
+  /* Fill the viewport so content stays proportional and dead whitespace
+     never grows on scrunched / unconventional windows. The iPhone column
+     (decorative) absorbs the shortfall first via flex-shrink. */
+  align-items: stretch;
+  min-height: calc(100dvh - 146px);
+  padding: clamp(0.5rem, 1.2vw, 1rem) clamp(1rem, 2vw, 2rem);
   width: 100%;
   max-width: 1600px;
   margin: 0 auto;
@@ -740,8 +736,7 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
 }
 
 .iphone-frame-compact {
-  /* iPhone 14/15 aspect ratio (393:852).
-     Natural design size — JS scaler handles fit-to-viewport. */
+  /* iPhone 14/15 aspect ratio (393:852). */
   width: 360px;
   height: 780px;
   aspect-ratio: 393 / 852;
@@ -1005,163 +1000,6 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
   color: #7a8a9a;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-}
-
-.steps-tape-panel {
-  padding-top: 0.5rem;
-  order: 3;
-}
-
-.steps-tape-card {
-  border: 1px solid rgba(166, 193, 225, 0.32);
-  border-radius: 10px;
-  padding: 0.52rem 0.55rem;
-  background: rgba(255, 255, 255, 0.015);
-  min-height: 100%;
-}
-
-.steps-tape-card h3 {
-  margin: 0;
-  font-family: "Orbitron", sans-serif;
-  font-size: 0.86rem;
-  text-transform: uppercase;
-  letter-spacing: 0.045em;
-}
-
-.steps-tape-sources {
-  margin: 0.2rem 0 0.42rem;
-  color: #9eb0c5;
-  font-size: 0.66rem;
-  line-height: 1.35;
-}
-
-.steps-tape-live {
-  margin: 0 0 0.42rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  color: #ff5e5e;
-  font-family: "Orbitron", sans-serif;
-  letter-spacing: 0.08em;
-  font-size: 0.59rem;
-}
-
-.steps-tape-totals {
-  display: grid;
-  gap: 0.28rem;
-  margin-bottom: 0.48rem;
-}
-
-.steps-tape-totals p {
-  margin: 0;
-  display: grid;
-  gap: 0.08rem;
-  font-family: "Orbitron", sans-serif;
-  font-size: 0.58rem;
-  letter-spacing: 0.045em;
-  text-transform: uppercase;
-  color: #9eb2c9;
-}
-
-.steps-tape-totals strong {
-  color: var(--accent);
-  font-size: 0.92rem;
-}
-
-.steps-tape-orderbook-wrap {
-  position: relative;
-  border-radius: 10px;
-  border: 1px solid rgba(56, 255, 211, 0.16);
-  background: linear-gradient(160deg, rgba(5, 12, 18, 0.94), rgba(3, 8, 13, 0.98));
-  min-height: 330px;
-  max-height: 430px;
-  overflow: hidden;
-}
-
-.steps-tape-list {
-  margin: 0;
-  padding: 0.42rem;
-  list-style: none;
-  display: grid;
-  gap: 0.36rem;
-  max-height: 430px;
-  overflow-y: auto;
-  position: relative;
-  z-index: 2;
-}
-
-.steps-tape-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.26rem 0.44rem;
-  align-items: baseline;
-  border-radius: 7px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  background: rgba(255, 255, 255, 0.03);
-  padding: 0.34rem 0.38rem;
-  font-family: "Orbitron", sans-serif;
-}
-
-.steps-tape-row-user {
-  min-width: 0;
-  color: #ecf4ff;
-  font-size: 0.69rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.steps-tape-row-delta {
-  color: #7ef8d8;
-  font-size: 0.74rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-}
-
-.steps-tape-row-meta {
-  grid-column: 1 / -1;
-  color: #9eb0c5;
-  font-size: 0.58rem;
-  letter-spacing: 0.03em;
-}
-
-.steps-footprints {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.steps-footprints span {
-  position: absolute;
-  font-size: 1.35rem;
-  opacity: 0.08;
-  filter: blur(0.15px);
-  animation: step-fade 5.6s ease-in-out infinite;
-}
-
-.steps-footprints span:nth-child(1) {
-  left: 12%;
-  top: 16%;
-  animation-delay: 0s;
-}
-
-.steps-footprints span:nth-child(2) {
-  right: 18%;
-  top: 37%;
-  animation-delay: 1.2s;
-}
-
-.steps-footprints span:nth-child(3) {
-  left: 20%;
-  bottom: 24%;
-  animation-delay: 2.1s;
-}
-
-.steps-footprints span:nth-child(4) {
-  right: 12%;
-  bottom: 10%;
-  animation-delay: 3.1s;
 }
 
 .service-zone {
@@ -1608,6 +1446,14 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
   gap: 0.5rem;
   flex-wrap: wrap;
   clear: both;
+  /* Keep the submit button visible on short / scrunched windows by
+     sticking it to the bottom of the viewport. The form scrolls behind
+     it but the CTA never gets cut off. */
+  position: sticky;
+  bottom: 0;
+  background: linear-gradient(to top, var(--bg) 60%, transparent);
+  padding-bottom: 0.5rem;
+  z-index: 5;
 }
 
 .signup-form button {
@@ -1668,8 +1514,52 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
 }
 
 .site-footer {
-  padding: 0.35rem 0;
+  padding: 0.2rem 0 0.35rem;
   border-top: 1px solid rgba(166, 193, 225, 0.1);
+  text-align: center;
+}
+
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem 1rem;
+  font-size: 0.78rem;
+  padding: 0.2rem clamp(1rem, 2vw, 2rem);
+}
+
+.footer-links a {
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.footer-links a {
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.footer-trademark {
+  color: #5a6a7e;
+  font-size: 0.6rem;
+  display: block;
+  width: 100%;
+  text-align: center;
+  margin-top: 0.25rem;
+}
+
+@media (min-width: 901px) {
+  .footer-trademark {
+    position: absolute;
+    left: 0.6rem;
+    bottom: 0;
+    width: auto;
+    margin-top: 0;
+    white-space: nowrap;
+    font-size: 0.58rem;
+    color: #4a5a6e;
+  }
 }
 
 .footer-row {
@@ -1776,10 +1666,6 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
   .hero-layout {
     grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
   }
-
-  .steps-tape-panel {
-    display: none;
-  }
 }
 
 @media (max-width: 1040px) {
@@ -1831,10 +1717,6 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
   .leaderboard-panel {
     order: 2;
     padding-top: 0;
-  }
-
-  .steps-tape-panel {
-    order: 3;
   }
 
   .service-shell {
@@ -2137,48 +2019,6 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
 
 
 
-/* ============================================
-   MAINTENANCE MODE OVERLAY
-   ============================================ */
-
-.maintenance-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 99999;
-  background: linear-gradient(135deg, #0a0a0c 0%, #1a1a2e 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  text-align: center;
-  padding: 2rem;
-}
-
-.maintenance-overlay .maintenance-icon {
-  font-size: 5rem;
-  margin-bottom: 1.5rem;
-  animation: maintenance-float 3s ease-in-out infinite;
-}
-
-@keyframes maintenance-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-
-.maintenance-overlay h1 {
-  font-family: "Orbitron", sans-serif;
-  font-size: 2.5rem;
-  color: #fff;
-  margin: 0 0 1rem;
-}
-
-.maintenance-overlay p {
-  color: #9eb0c5;
-  font-size: 1.1rem;
-  max-width: 400px;
-  line-height: 1.6;
-}
-
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .pulse-visualization {
@@ -2220,7 +2060,7 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
 /* ============================================
    MOBILE: Show leaderboards + form, hide iPhone
    ============================================ */
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .hero-fullscreen-layout {
     display: flex;
     flex-direction: column;
@@ -2293,10 +2133,6 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
   
   /* Live activity toast lives in Top Streaks panel, visible on mobile */
   
-  .steps-tape-panel {
-    display: none;
-  }
-  
   /* Ensure login button visible */
   .header-auth {
     display: flex !important;
@@ -2361,15 +2197,6 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
    height OR a 1500px viewport width so the priority sections
    (Strength + Calisthenics + Top Streaks) and the onboarding form
    render at a readable scale.
-   Media queries reflect ACTUAL viewport size, not the scaled canvas,
-   so they fire correctly regardless of the transform: scale() applied
-   to #appShell. The pebble section is preserved on bigger displays
-   where there's headroom for it. ============================================ */
-@media (max-width: 1500px), (max-height: 1000px) {
-  .leaderboard-section-pebble {
-    display: none;
-  }
-}
 
 /* When live feed is hidden, iPhone expands */
 .hero-right-column-expanded .hero-live-feed {
@@ -2570,19 +2397,22 @@ footer { position: relative; }
 .footer-socials {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.55rem;
   flex-wrap: wrap;
-  margin-top: 0.65rem;
+  margin-top: 0.35rem;
+  padding-bottom: 0.4rem;
 }
 
-/* Desktop: anchor to bottom-right of footer per the spec */
-@media (min-width: 720px) {
+/* Desktop: align right without overlapping the centered links */
+@media (min-width: 1024px) {
   .footer-socials {
     position: absolute;
-    right: 1.25rem;
+    right: max(1.25rem, calc((100vw - 1600px) / 2 + 1.25rem));
     bottom: 0.65rem;
     margin-top: 0;
-    max-width: 60%;
+    padding-bottom: 0;
+    max-width: 40%;
     justify-content: flex-end;
   }
 }
@@ -2630,7 +2460,7 @@ footer { position: relative; }
 .composer-cursor {
   display: inline-block;
   width: 1px;
-  color: #007aff;
+  color: #38ffd3;
   font-weight: 400;
   animation: composer-cursor-blink 1s steps(2) infinite;
 }
@@ -2904,7 +2734,7 @@ footer { position: relative; }
   align-items: center;
   gap: 0.35rem;
   font-size: 0.78rem;
-  color: #007aff;
+  color: #38ffd3;
   font-weight: 600;
 }
 
@@ -3491,7 +3321,7 @@ footer { position: relative; }
 }
 
 /* MOBILE FIXES */
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .site-header {
     padding: 0.5rem 0 0.3rem !important;
   }

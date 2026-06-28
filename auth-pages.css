@@ -1892,9 +1892,14 @@ body.dashboard-page .account-public-desc a {
 }
 
 body.dashboard-page .public-profile-toggles {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.25rem 0.75rem;
+}
+@media (min-width: 1020px) {
+  body.dashboard-page .public-profile-toggles {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
 }
 
 body.dashboard-page .public-profile-toggles.is-loading {
@@ -1916,22 +1921,15 @@ body.dashboard-page .public-profile-toggles.is-loading::after {
 
 body.dashboard-page .toggle-row {
   display: flex;
-  align-items: flex-start;
-  flex-wrap: wrap;
-  gap: 0.4rem 0.6rem;
+  align-items: center;
+  gap: 0.4rem;
   cursor: pointer;
-  font-size: 0.9rem;
-  padding: 0.4rem 0;
+  font-size: 0.85rem;
+  padding: 0.3rem 0;
+  white-space: nowrap;
 }
 
-body.dashboard-page .toggle-desc {
-  width: 100%;
-  margin-left: 1.7rem;
-  font-size: 0.78rem;
-  color: rgba(230, 238, 245, 0.55);
-}
-
-body.dashboard-page .public-profile-preview {
+body.dashboard-page .toggle-row input[type="checkbox"] {
   margin-top: 1rem;
   padding: 0.75rem 1rem;
   background: rgba(56, 255, 211, 0.06);
@@ -1967,6 +1965,8 @@ body.dashboard-page .toggle-row input[type="checkbox"] {
   accent-color: var(--accent);
   cursor: pointer;
 }
+
+body.dashboard-page .public-profile-preview {
 
 body.dashboard-page .affiliate-empty-billing {
   margin-top: 0.7rem;

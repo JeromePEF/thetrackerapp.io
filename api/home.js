@@ -7,6 +7,11 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const UPSTREAM_URL = "https://api.thetrackerapp.io/control";
+const UPSTREAM_FALLBACKS = [
+  "https://api.thetrackerapp.io/control",
+  "https://thetrackerapp.vercel.app/api/control",
+  "https://thetrackerapp.io/api/control",
+];
 const DASHBOARD_SHEET_ID = "1Fd0wKgx7qB6UVoxdk1hkZdjT-ymsScmwzLjeflaW-3c";
 const STRENGTH_EXERCISES = ["BENCH", "SQUAT", "DEADLIFT"];
 const CALISTHENICS_EXERCISES = ["PUSHUPS", "PULLUPS", "SQUATS", "DIPS"];
@@ -52,7 +57,7 @@ function readBuiltIndexHtml() {
 
 const DEFAULT_MESSAGING_SERVICES = {
   iMessage: true,
-  sms: true,
+  sms: false,
   whatsapp: false,
   telegram: false,
   discord: false,
@@ -64,7 +69,6 @@ const DEFAULT_MESSAGING_SERVICES = {
 
 const PRELOAD_SVGS = [
   "IMessage_logo.svg",
-  "SMS.svg",
   "WhatsApp.svg",
   "Telegram_logo.svg",
   "discord-icon-svgrepo-com.svg",
@@ -79,56 +83,70 @@ async function fetchUpstreamFlags() {
   if (cachedFlags && now - cachedFlagsAt < INSTANCE_CACHE_MS) {
     return cachedFlags;
   }
-  const controller = new AbortController();
-  // 8-second timeout to allow for cold start + TLS + CF routing
-  const timeout = setTimeout(() => controller.abort(), 8000);
-  try {
-    const res = await fetch(UPSTREAM_URL, {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-        "Accept-Language": "en-US,en;q=0.9",
-        "User-Agent":
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15 TheTrackerApp/HomeRenderer",
-      },
-      signal: controller.signal,
-    });
-    if (!res.ok) throw new Error(`Upstream HTTP ${res.status}`);
-    const data = await res.json();
-    if (!data || typeof data !== "object") throw new Error("Upstream returned non-object");
-    cachedFlags = data;
-    cachedFlagsAt = now;
-    return data;
-  } catch (err) {
-    console.warn("home renderer: upstream fetch failed:", err.message);
-    // Retry via Vercel edge proxy as fallback
+
+  for (const url of UPSTREAM_FALLBACKS) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
     try {
-      clearTimeout(timeout);
-      const retryCtrl = new AbortController();
-      const retryTimer = setTimeout(() => retryCtrl.abort(), 8000);
-      const proxyUrl = process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}/api/control`
-        : "https://thetrackerapp.io/api/control";
-      const res = await fetch(proxyUrl, {
-        headers: { Accept: "application/json" },
-        signal: retryCtrl.signal,
+      const res = await fetch(url, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          "Accept-Language": "en-US,en;q=0.9",
+          "User-Agent":
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15 TheTrackerApp/HomeRenderer",
+        },
+        signal: controller.signal,
       });
-      clearTimeout(retryTimer);
-      if (res.ok) {
-        const data = await res.json();
-        if (data && typeof data === "object") {
-          cachedFlags = data;
-          cachedFlagsAt = now;
-          return data;
-        }
-      }
-    } catch {
-      /* fallback failed too — return null */
+      clearTimeout(timer);
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (!data || typeof data !== "object") continue;
+      cachedFlags = data;
+      cachedFlagsAt = now;
+      return data;
+    } catch (err) {
+      console.warn("home renderer: fetch failed for", url, err.message);
+      clearTimeout(timer);
     }
-    return null;
-  } finally {
-    clearTimeout(timeout);
   }
+
+  console.warn("home renderer: all upstream URLs failed");
+  return null;
+}
+
+function MAINTENANCE_HTML(message) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Tracker App — Maintenance</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0a0a0c 0%, #1a1a2e 100%);
+      color: #ecf4ff;
+      display: flex; align-items: center; justify-content: center; flex-direction: column;
+      text-align: center; padding: 2rem;
+    }
+    .icon { font-size: 5rem; margin-bottom: 1.5rem; animation: float 3s ease-in-out infinite; }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    h1 { font-family: 'Orbitron', -apple-system, sans-serif; font-size: 2.5rem; color: #fff; margin: 0 0 1rem; }
+    p { color: #9eb0c5; font-size: 1.1rem; max-width: 420px; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <div class="icon">🔧</div>
+  <h1>We'll Be Right Back</h1>
+  <p>${message}</p>
+</body>
+</html>`;
 }
 
 function resolveMessagingServices(flags) {
@@ -405,6 +423,15 @@ export default async function handler(req, res) {
     return res.status(405).send("Method Not Allowed");
   }
 
+  const flags = await fetchUpstreamFlags();
+
+  if (flags && flags.maintenanceMode) {
+    const message = flags.maintenanceMessage || "We're upgrading our servers. Back soon!";
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.setHeader("Cache-Control", "public, s-maxage=30, stale-while-revalidate=10");
+    return res.status(503).send(MAINTENANCE_HTML(message));
+  }
+
   const html = readBuiltIndexHtml();
   if (!html) {
     res.setHeader("Cache-Control", "public, s-maxage=10, stale-while-revalidate=30");
@@ -412,8 +439,6 @@ export default async function handler(req, res) {
     res.setHeader("X-Home-Source", "missing-template");
     return res.status(502).send("Homepage template missing.");
   }
-
-  const flags = await fetchUpstreamFlags();
 
   const liveStats = flags?.liveStats;
   const metrics = metricsFromLiveStats(liveStats) || await fetchDashboardMetrics();

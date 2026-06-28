@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calorie &amp; Macro Estimator | The Tracker App</title>
+    <meta name="description" content="Estimate your daily calorie and macro targets. Calculate BMR, TDEE, and get protein, carb, and fat goals based on your body stats and fitness goals." />
+    <link rel="canonical" href="https://thetrackerapp.io/tools/calorie-macro-estimator" />
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../info-pages.css" />
+    <style>
+      .calculator-shell { max-width: 480px; margin: 0 auto; }
+      .calc-card {
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 12px;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+      }
+      .calc-card h3 { margin: 0 0 0.6rem; font-size: 0.95rem; }
+      .calc-row { display: flex; gap: 0.6rem; margin-bottom: 0.6rem; }
+      .calc-row label { flex: 1; display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.78rem; color: var(--ink-muted, #8a96a8); }
+      .calc-row input, .calc-row select {
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 8px;
+        color: #ecf4ff;
+        padding: 0.55rem 0.65rem;
+        font: inherit;
+        font-size: 0.9rem;
+      }
+      .calc-row select { appearance: none; }
+      .calc-activity { margin: 0.5rem 0 1rem; }
+      .calc-activity label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; color: var(--ink-muted, #8a96a8); margin-bottom: 0.35rem; cursor: pointer; }
+      .calc-activity input[type="radio"] { accent-color: var(--accent, #38ffd3); }
+      .calc-results { margin-top: 1rem; }
+      .calc-result-row {
+        display: flex; justify-content: space-between; align-items: baseline;
+        padding: 0.45rem 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+      }
+      .calc-result-row:last-child { border-bottom: none; }
+      .calc-result-label { font-size: 0.82rem; color: var(--ink-muted, #8a96a8); }
+      .calc-result-val { font-family: Orbitron, sans-serif; font-size: 0.95rem; color: var(--accent, #38ffd3); }
+      .calc-note { font-size: 0.7rem; color: #5a6a7e; margin-top: 0.8rem; text-align: center; }
+      .calc-error { color: #ff7f7f; font-size: 0.8rem; text-align: center; }
+    </style>
+  </head>
+  <body>
+    <div class="info-shell">
+      <header class="info-nav">
+        <a href="/" class="header-logo info-brand" aria-label="Home" style="display:flex; align-items:center; gap:8px; text-decoration:none;">
+          <svg class="logo-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 26px; height: 26px;"><circle cx="32" cy="32" r="30" fill="none" stroke="#3fe0c5" stroke-width="3"/><text x="32" y="42" text-anchor="middle" font-size="36">🏋</text></svg>
+          <span class="logo-text-svg" style="font-family:'Orbitron',sans-serif;font-weight:700;font-size:15px;color:#edf5ff;letter-spacing:-0.02em;">thetrackerapp.io</span>
+        </a>
+        <nav class="info-links"><a href="/pricing">Pricing</a><a href="/about">About</a></nav>
+      </header>
+      <main>
+        <section class="info-hero">
+          <p class="info-kicker">Free Tool</p>
+          <h1>Calorie &amp; Macro Estimator</h1>
+          <p>Enter your stats to estimate daily calories, protein, carbs, and fats.</p>
+        </section>
+        <div class="calculator-shell">
+          <div class="calc-card">
+            <h3>Body Stats</h3>
+            <div class="calc-row">
+              <label>Age <input id="age" type="number" min="15" max="120" value="30" /></label>
+              <label>Sex <select id="sex"><option value="male">Male</option><option value="female">Female</option></select></label>
+            </div>
+            <div class="calc-row">
+              <label>Weight <input id="weight" type="number" min="80" max="500" value="180" placeholder="lb" /></label>
+              <label>Height <input id="height" type="number" min="48" max="96" value="70" placeholder="in" /></label>
+            </div>
+            <div class="calc-activity">
+              <p style="font-size:0.78rem;color:var(--ink-muted, #8a96a8);margin:0 0 0.3rem;">Activity Level</p>
+              <label><input type="radio" name="activity" value="1.2" checked /> Sedentary (little or no exercise)</label>
+              <label><input type="radio" name="activity" value="1.375" /> Light (1-3 days/week)</label>
+              <label><input type="radio" name="activity" value="1.55" /> Moderate (3-5 days/week)</label>
+              <label><input type="radio" name="activity" value="1.725" /> Active (6-7 days/week)</label>
+              <label><input type="radio" name="activity" value="1.9" /> Very Active (athlete, 2x/day)</label>
+            </div>
+            <div class="calc-row">
+              <label>Goal <select id="goal"><option value="maintain">Maintain weight</option><option value="cut">Lose weight (cut)</option><option value="bulk">Gain weight (bulk)</option></select></label>
+            </div>
+            <div class="info-actions" style="margin-top:0.8rem;">
+              <button id="calcBtn" class="info-button is-primary" style="width:100%;">Calculate</button>
+            </div>
+            <p id="calcError" class="calc-error" hidden></p>
+          </div>
+          <div class="calc-card" id="resultsCard" hidden>
+            <h3>Your Estimates</h3>
+            <div class="calc-results">
+              <div class="calc-result-row"><span class="calc-result-label">BMR</span><span class="calc-result-val" id="rBmr">-</span></div>
+              <div class="calc-result-row"><span class="calc-result-label">TDEE</span><span class="calc-result-val" id="rTdee">-</span></div>
+              <div class="calc-result-row"><span class="calc-result-label">Daily Target</span><span class="calc-result-val" id="rTarget">-</span></div>
+              <div class="calc-result-row"><span class="calc-result-label">Protein</span><span class="calc-result-val" id="rProtein">-</span></div>
+              <div class="calc-result-row"><span class="calc-result-label">Carbs</span><span class="calc-result-val" id="rCarbs">-</span></div>
+              <div class="calc-result-row"><span class="calc-result-label">Fats</span><span class="calc-result-val" id="rFats">-</span></div>
+            </div>
+            <p class="calc-note">Estimates use Mifflin-St Jeor formula. Protein at 0.8-1g per lb of bodyweight. Adjust based on real results.</p>
+          </div>
+        </div>
+      </main>
+    </div>
+    <script>
+      document.getElementById("calcBtn").addEventListener("click", () => {
+        const err = document.getElementById("calcError");
+        const res = document.getElementById("resultsCard");
+        err.hidden = true;
+        const age = parseInt(document.getElementById("age").value);
+        const sex = document.getElementById("sex").value;
+        const w = parseFloat(document.getElementById("weight").value);
+        const h = parseFloat(document.getElementById("height").value);
+        const act = parseFloat(document.querySelector("input[name='activity']:checked")?.value || 1.2);
+        const goal = document.getElementById("goal").value;
+        if (!age || !w || !h) { err.textContent = "Fill in all fields."; err.hidden = false; return; }
+        const kg = w * 0.453592;
+        const cm = h * 2.54;
+        let bmr = sex === "male"
+          ? 10 * kg + 6.25 * cm - 5 * age + 5
+          : 10 * kg + 6.25 * cm - 5 * age - 161;
+        const tdee = Math.round(bmr * act);
+        bmr = Math.round(bmr);
+        let target = tdee;
+        if (goal === "cut") target = Math.round(tdee * 0.8);
+        if (goal === "bulk") target = Math.round(tdee * 1.15);
+        const protein = Math.round(goal === "bulk" ? w * 1.0 : w * 0.8);
+        const fatCals = Math.round(target * 0.25);
+        const fat = Math.round(fatCals / 9);
+        const remaining = target - (protein * 4 + fat * 9);
+        const carbs = Math.max(0, Math.round(remaining / 4));
+        document.getElementById("rBmr").textContent = bmr + " cal";
+        document.getElementById("rTdee").textContent = tdee + " cal";
+        document.getElementById("rTarget").textContent = target + " cal";
+        document.getElementById("rProtein").textContent = protein + "g";
+        document.getElementById("rCarbs").textContent = carbs + "g";
+        document.getElementById("rFats").textContent = fat + "g";
+        res.hidden = false;
+      });
+    </script>
+  </body>
+</html>

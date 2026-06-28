@@ -3,85 +3,106 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mac Apps | Desktop Fitness & Workout Tracking | The Tracker App</title>
+    <title>Mac Menu Bar App | The Tracker App</title>
     <meta
       name="description"
-      content="Download The Tracker App for Mac. Desktop tools for fitness tracking, workout logging, and nutrition monitoring on macOS."
+      content="Download The Tracker App for Mac — a menu bar companion for calorie tracking, water logging, workout entry, and macros. 777 KB universal binary for macOS 13+."
     />
-    <meta name="keywords" content="Mac fitness app, desktop workout tracker, macOS fitness, nutrition tracking Mac, exercise log Mac" />
     <link rel="canonical" href="https://thetrackerapp.io/mac-apps" />
-
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="Mac Apps | Desktop Fitness & Workout Tracking" />
-    <meta property="og:description" content="Download The Tracker App for Mac. Desktop tools for fitness tracking, workout logging, and nutrition monitoring on macOS." />
+    <meta property="og:title" content="Mac Menu Bar App | The Tracker App" />
+    <meta property="og:description" content="Download The Tracker App for Mac — a menu bar companion for calorie tracking, water logging, workout entry, and macros. 777 KB." />
     <meta property="og:url" content="https://thetrackerapp.io/mac-apps" />
-    <meta property="og:site_name" content="The Tracker App" />
     <meta property="og:image" content="https://thetrackerapp.io/og-image.png?v=2" />
-    <meta property="og:image:type" content="image/png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="The Tracker App — Mac desktop fitness tracking" />
-
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Mac Apps | Desktop Fitness & Workout Tracking" />
-    <meta name="twitter:description" content="Download The Tracker App for Mac. Desktop tools for fitness tracking, workout logging, and nutrition monitoring." />
-    <meta name="twitter:image" content="https://thetrackerapp.io/og-image.png?v=2" />
+    <meta name="twitter:title" content="Mac Menu Bar App | The Tracker App" />
+    <meta name="twitter:description" content="Download The Tracker App for Mac — a menu bar companion for tracking." />
     <link rel="icon" href="/favicon.svg?v=3" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3" sizes="180x180" />
-    <link rel="manifest" href="/site.webmanifest" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="info-pages.css" />
+    <style>
+      :root {
+        --bg: #000;
+        --ink: #ecf4ff;
+        --muted: #8a96a8;
+        --accent: #38ffd3;
+        --accent-ink: #021416;
+        --panel: rgba(255,255,255,0.03);
+        --border: rgba(255,255,255,0.10);
+        --shadow: 0 4px 24px rgba(0,0,0,0.4);
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        background: var(--bg);
+        color: var(--ink);
+        font-family: 'Space Grotesk', sans-serif;
+        min-height: 100dvh;
+        display: flex; flex-direction: column; align-items: center;
+        justify-content: center;
+        padding: 2rem 1.5rem;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 32px 24px;
+        box-shadow: var(--shadow);
+        display: flex; flex-direction: column; align-items: center; gap: 16px;
+        max-width: 460px; width: 100%;
+        text-align: center;
+      }
+      .card h1 { font-family: Orbitron, sans-serif; font-size: 1.3rem; margin: 0; }
+      .card h3 { font-family: Orbitron, sans-serif; font-size: 1rem; margin: 0; color: var(--accent); }
+      .card p { color: var(--muted); font-size: 0.95rem; margin: 0; line-height: 1.5; }
+      .features { color: var(--muted); font-size: 0.82rem; margin: 0; line-height: 1.6; }
+      .btn {
+        display: inline-block; background: var(--accent); color: var(--accent-ink);
+        padding: 14px 40px; border-radius: 10px; text-decoration: none;
+        font-size: 1.1rem; font-weight: 600; font-family: Orbitron, sans-serif;
+        transition: opacity 0.15s;
+      }
+      .btn:hover { opacity: 0.88; }
+      .meta { color: var(--muted); font-size: 0.72rem; }
+      .install-hint { margin-top: 2rem; color: var(--muted); font-size: 0.75rem; text-align: center; max-width: 460px; line-height: 1.5; }
+      .install-hint code { background: rgba(255,255,255,0.06); padding: 0.15rem 0.4rem; border-radius: 4px; font-family: monospace; font-size: 0.72rem; }
+      .back { margin-top: 1.2rem; }
+      .back a { color: var(--muted); font-size: 0.8rem; text-decoration: none; }
+      .back a:hover { color: var(--accent); }
+    </style>
   </head>
   <body>
-    <div class="info-shell">
-      <header class="info-nav">
-        <a href="/" class="header-logo info-brand" aria-label="Home" style="display:flex; align-items:center; gap:8px; text-decoration:none;">
-          <svg class="logo-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 26px; height: 26px;">
-            <circle cx="32" cy="32" r="30.5" fill="transparent" stroke="#3fe0c5" stroke-width="3"/>
-            <text x="50%" y="50%" dy="0.35em" text-anchor="middle" font-size="28" fill="#edf5ff">🏋️</text>
-          </svg>
-          <span class="logo-text-svg" style="font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 15px; color: #edf5ff; fill: #edf5ff; letter-spacing: -0.02em; text-transform: none;">thetrackerapp.io</span>
+    <div class="card">
+      <h1>The Tracker App</h1>
+      <h3>Mac Menu Bar</h3>
+      <p>Track calories, water, workouts, and macros right from your menu bar. No dock icon, no window clutter — just a lightweight companion that keeps logging fast.</p>
+      <p class="features">AI Food Logging &middot; Water Tracking &middot; Workout Entry &middot; 2,700+ Food Catalog &middot; Macro View &middot; Menu-Bar Badge</p>
+
+      <div style="background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:24px;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;margin-top:8px;">
+        <h3>Download</h3>
+        <p style="color:var(--muted);font-size:0.82rem;margin:0;text-align:center">
+          Version 1.0.0 · macOS 13+
+        </p>
+        <a href="https://api.thetrackerapp.io/downloads/TheTrackerApp-arm64.zip" style="display:inline-block;background:#007aff;color:#fff;padding:12px 36px;border-radius:10px;text-decoration:none;font-size:1rem;font-weight:600;font-family:Orbitron,sans-serif;transition:opacity 0.15s;width:100%;text-align:center" onmouseover="this.style.opacity='0.88'" onmouseout="this.style.opacity='1'">
+          ⬇ Download for Apple Silicon
         </a>
-        <nav class="info-links" aria-label="Primary">
-          <a href="/pebble-app">Pebble App</a>
-          <a href="/login">Dashboard</a>
-        </nav>
-      </header>
+        <p style="color:var(--muted);font-size:0.72rem;margin:-8px 0 0">M1 · M2 · M3 · M4 &middot; ~400 KB</p>
+        <a href="https://api.thetrackerapp.io/downloads/TheTrackerApp-x86_64.zip" style="display:inline-block;background:#5856d6;color:#fff;padding:12px 36px;border-radius:10px;text-decoration:none;font-size:1rem;font-weight:600;font-family:Orbitron,sans-serif;transition:opacity 0.15s;width:100%;text-align:center" onmouseover="this.style.opacity='0.88'" onmouseout="this.style.opacity='1'">
+          ⬇ Download for Intel
+        </a>
+        <p style="color:var(--muted);font-size:0.72rem;margin:-8px 0 0">~400 KB</p>
+      </div>
 
-      <main>
-        <section class="info-hero">
-          <p class="info-kicker">Mac Apps</p>
-          <h1>The Tracker App for Mac — Desktop tools for workouts, nutrition, and tracking workflows.</h1>
-          <p>
-            This landing page gives the Mac download a proper destination, keeps navigation consistent, and always lets
-            the user jump back to the homepage.
-          </p>
-          <div class="info-actions">
-            <a class="info-button is-primary" href="https://api.thetrackerapp.io/downloads/mac">Download Mac Apps</a>
-            <a class="info-button" href="/">Back to Home</a>
-          </div>
-        </section>
-
-        <section class="info-grid" aria-label="Mac app details">
-          <article class="info-card">
-            <h2>Desktop Access</h2>
-            <p>Open Tracker workflows from Mac without routing users through raw API download URLs.</p>
-          </article>
-          <article class="info-card">
-            <h2>Consistent Navigation</h2>
-            <p>The page keeps Home, Pebble, and Dashboard access visible while still pointing at the real download.</p>
-          </article>
-          <article class="info-card">
-            <h2>Clear Entry Point</h2>
-            <p>This is the clean destination your homepage nav can use going forward.</p>
-          </article>
-        </section>
-      </main>
+      <p class="meta">Not sure? Apple menu → About This Mac → look for Chip or Processor.</p>
     </div>
+
+    <div class="install-hint">
+      <p>After downloading, extract the ZIP. Right-click <strong>TheTrackerApp.app</strong> and select <strong>Open</strong>.<br>Or use Terminal: <code>xattr -d com.apple.quarantine ~/Downloads/TheTrackerApp.app</code></p>
+    </div>
+
+    <div class="back"><a href="/">← Back to The Tracker App</a></div>
   </body>
 </html>

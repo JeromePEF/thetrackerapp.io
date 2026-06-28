@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Affiliate Dashboard | The Tracker App</title>
-    <meta name="description" content="View your referral link, signups, and earnings." />
+    <meta name="description" content="View your referral link, performance, and Stripe payouts." />
     <meta name="robots" content="noindex" />
     <link rel="canonical" href="https://thetrackerapp.io/affiliate/dashboard" />
     <link rel="icon" href="/favicon.svg?v=3" type="image/svg+xml" />
@@ -40,6 +40,7 @@
           <p>Loading your affiliate dashboard...</p>
         </section>
 
+        <!-- Not an affiliate yet -->
         <section class="affiliate-empty" id="affiliateEmpty" hidden>
           <h1>You're not an affiliate yet</h1>
           <p class="auth-subtle">We couldn't find an affiliate profile for this email.</p>
@@ -56,72 +57,35 @@
           </div>
         </section>
 
+        <!-- Gated affiliate dashboard -->
         <section class="affiliate-dashboard" id="affiliateDashboard" hidden>
           <header class="affiliate-header">
             <p class="auth-kicker">Affiliate</p>
-            <h1>
-              <span id="affiliateGreeting">Your dashboard</span>
-            </h1>
+            <h1><span id="affiliateGreeting">Your dashboard</span></h1>
             <p class="auth-subtle" id="affiliateIdentity"></p>
           </header>
 
-          <article class="affiliate-card">
-            <h2>Your referral link</h2>
-            <p class="auth-subtle">Share this link. Anyone who signs up and subscribes earns you commission.</p>
-            <div class="affiliate-link-row">
-              <input
-                id="affiliateReferralLink"
-                type="text"
-                readonly
-                aria-label="Referral link"
-              />
-              <button id="affiliateCopyButton" type="button" class="btn-primary">Copy</button>
-            </div>
-            <p id="affiliateCopyStatus" class="auth-status" role="status" aria-live="polite"></p>
-            <p class="affiliate-code-hint">
-              Your code:
-              <code id="affiliateCode">—</code>
-            </p>
+          <!-- STEP 1: Pending admin approval -->
+          <article class="affiliate-card" id="affiliatePendingCard" hidden>
+            <h2>⏳ Pending Approval</h2>
+            <p class="auth-subtle">Your affiliate application has been submitted and is awaiting admin review. You'll be able to sign the agreement and connect Stripe once approved.</p>
           </article>
 
-          <article class="affiliate-card">
-            <h2>Performance</h2>
-            <div class="affiliate-stat-grid">
-              <div class="affiliate-stat">
-                <p class="affiliate-stat-label">Clicks</p>
-                <p class="affiliate-stat-value" id="affiliateClicks">0</p>
-              </div>
-              <div class="affiliate-stat">
-                <p class="affiliate-stat-label">Signups</p>
-                <p class="affiliate-stat-value" id="affiliateSignups">0</p>
-              </div>
-              <div class="affiliate-stat">
-                <p class="affiliate-stat-label">Conversions</p>
-                <p class="affiliate-stat-value" id="affiliateConversions">0</p>
-              </div>
+          <!-- STEP 2: Agreement required -->
+          <article class="affiliate-card" id="affiliateAgreementCard" hidden>
+            <h2>📄 Sign the Agreement</h2>
+            <p class="auth-subtle" id="affiliateAgreementMessage">Please sign the affiliate agreement to continue.</p>
+            <div class="auth-actions is-stack">
+              <a id="affiliateSigningLink" href="#" target="_blank" rel="noopener noreferrer" class="btn-primary">Open Agreement</a>
+              <button id="affiliateResendAgreementBtn" type="button" class="btn-secondary">Resend Agreement</button>
             </div>
+            <p id="affiliateAgreementStatus" class="auth-status" role="status" aria-live="polite"></p>
+            <p class="affiliate-footnote">After signing, this page will update automatically.</p>
           </article>
 
-          <article class="affiliate-card">
-            <h2>Earnings</h2>
-            <div class="affiliate-stat-grid">
-              <div class="affiliate-stat">
-                <p class="affiliate-stat-label">Calculated</p>
-                <p class="affiliate-stat-value" id="affiliateCalculated">$0.00</p>
-              </div>
-              <div class="affiliate-stat">
-                <p class="affiliate-stat-label">Held</p>
-                <p class="affiliate-stat-value" id="affiliateHeld">$0.00</p>
-              </div>
-              <div class="affiliate-stat">
-                <p class="affiliate-stat-label">Sent</p>
-                <p class="affiliate-stat-value" id="affiliateSent">$0.00</p>
-              </div>
-            </div>
-          </article>
-
-          <article class="affiliate-card affiliate-connect-card" id="affiliateConnectCard">
-            <h2>Payouts</h2>
+          <!-- STEP 3: Connect Stripe -->
+          <article class="affiliate-card affiliate-connect-card" id="affiliateConnectCard" hidden>
+            <h2>💳 Connect Stripe</h2>
             <p id="affiliateStripeStatusText" class="auth-subtle">Connect Stripe to receive your earnings.</p>
             <div class="auth-actions is-stack">
               <button id="affiliateConnectButton" type="button" class="btn-primary">Connect Stripe</button>
@@ -129,13 +93,45 @@
             <p id="affiliateConnectStatus" class="auth-status" role="status" aria-live="polite"></p>
           </article>
 
-          <article class="affiliate-card">
-            <h2>Referred subscribers</h2>
-            <div id="affiliateReferralsContainer">
-              <p class="auth-subtle" id="affiliateReferralsEmpty">No referrals yet — share your link to get started.</p>
-              <ul class="affiliate-referrals" id="affiliateReferralsList" hidden></ul>
-            </div>
-          </article>
+          <!-- STEP 4: Active — referral link + performance + subscribers -->
+          <div id="affiliateActiveSection" hidden>
+            <article class="affiliate-card">
+              <h2>Your referral link</h2>
+              <p class="auth-subtle">Share this link. Anyone who signs up and subscribes earns you commission.</p>
+              <div class="affiliate-link-row">
+                <input id="affiliateReferralLink" type="text" readonly aria-label="Referral link" />
+                <button id="affiliateCopyButton" type="button" class="btn-primary">Copy</button>
+              </div>
+              <p id="affiliateCopyStatus" class="auth-status" role="status" aria-live="polite"></p>
+              <p class="affiliate-code-hint">Your code: <code id="affiliateCode">—</code></p>
+            </article>
+
+            <article class="affiliate-card">
+              <h2>Performance</h2>
+              <div class="affiliate-stat-grid">
+                <div class="affiliate-stat">
+                  <p class="affiliate-stat-label">Clicks</p>
+                  <p class="affiliate-stat-value" id="affiliateClicks">0</p>
+                </div>
+                <div class="affiliate-stat">
+                  <p class="affiliate-stat-label">Signups</p>
+                  <p class="affiliate-stat-value" id="affiliateSignups">0</p>
+                </div>
+                <div class="affiliate-stat">
+                  <p class="affiliate-stat-label">Conversions</p>
+                  <p class="affiliate-stat-value" id="affiliateConversions">0</p>
+                </div>
+              </div>
+            </article>
+
+            <article class="affiliate-card">
+              <h2>Referred subscribers</h2>
+              <div id="affiliateReferralsContainer">
+                <p class="auth-subtle" id="affiliateReferralsEmpty">No referrals yet — share your link to get started.</p>
+                <ul class="affiliate-referrals" id="affiliateReferralsList" hidden></ul>
+              </div>
+            </article>
+          </div>
         </section>
       </main>
     </div>

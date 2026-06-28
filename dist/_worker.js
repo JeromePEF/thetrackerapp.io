@@ -1,10 +1,19 @@
 const UPSTREAM_URL = "https://api.thetrackerapp.io/control";
 const CHANNEL_LIVE_URL = "https://www.youtube.com/@thetrackerappio/live";
-const CONTROL_CACHE_SECONDS = Math.max(10, 300);
-const STALE_WHILE_REVALIDATE = Math.max(30, Math.floor(CONTROL_CACHE_SECONDS / 2));
+const CONTROL_CACHE_SECONDS = 300;
+const STALE_WHILE_REVALIDATE = 150;
 
 const viewerTimestamps = new Map();
 const VIEWER_TTL_MS = 30000;
+
+function htmlEscape(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
 function cleanViewers() {
   const now = Date.now();
@@ -15,7 +24,7 @@ function cleanViewers() {
 
 function resolveMessagingServices(flags) {
   const defaults = {
-    iMessage: true, sms: true, whatsapp: false, telegram: false,
+    iMessage: true, whatsapp: false, telegram: false,
     discord: false, slack: false, signal: false, googleChat: false, email: false,
   };
   const upstream = flags?.messagingServices && typeof flags.messagingServices === "object"
@@ -62,7 +71,7 @@ function leaderboardFromLiveStats(ls) {
 
 function buildInjection(messagingServices, flags, metricsJson, leaderboardJson) {
   const PRELOAD_SVGS = [
-    "IMessage_logo.svg", "SMS.svg", "WhatsApp.svg", "Telegram_logo.svg",
+    "IMessage_logo.svg", "WhatsApp.svg", "Telegram_logo.svg",
     "discord-icon-svgrepo-com.svg", "Slack_icon_2019.svg", "Signal-Logo-Ultramarine.svg",
     "googlechat.svg", "email.svg",
   ];
@@ -98,6 +107,40 @@ async function fetchUpstreamFlags() {
   } finally {
     clearTimeout(timer);
   }
+}
+
+function MAINTENANCE_HTML(message) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Tracker App — Maintenance</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0a0a0c 0%, #1a1a2e 100%);
+      color: #ecf4ff;
+      display: flex; align-items: center; justify-content: center; flex-direction: column;
+      text-align: center; padding: 2rem;
+    }
+    .icon { font-size: 5rem; margin-bottom: 1.5rem; animation: float 3s ease-in-out infinite; }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    h1 { font-family: 'Orbitron', -apple-system, sans-serif; font-size: 2.5rem; color: #fff; margin: 0 0 1rem; }
+    p { color: #9eb0c5; font-size: 1.1rem; max-width: 420px; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <div class="icon">🔧</div>
+  <h1>We'll Be Right Back</h1>
+  <p>${htmlEscape(message)}</p>
+</body>
+</html>`;
 }
 
 async function fetchLiveVideoId() {
@@ -143,12 +186,24 @@ async function getHtmlTemplate(env) {
 }
 
 async function handleHomepage(req, env) {
+  const flags = await fetchUpstreamFlags();
+
+  if (flags && flags.maintenanceMode) {
+    const message = flags.maintenanceMessage || "We're upgrading our servers. Back soon!";
+    return new Response(MAINTENANCE_HTML(message), {
+      status: 503,
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "public, s-maxage=30, stale-while-revalidate=10",
+      },
+    });
+  }
+
   const html = await getHtmlTemplate(env);
   if (!html) {
     return new Response("Homepage template missing.", { status: 502, headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, s-maxage=10, stale-while-revalidate=30" } });
   }
 
-  const flags = await fetchUpstreamFlags();
   const liveStats = flags?.liveStats;
   const metrics = metricsFromLiveStats(liveStats);
   const leaderboard = leaderboardFromLiveStats(liveStats);
@@ -216,11 +271,18 @@ async function handleControl(req, env) {
 }
 
 async function handleVersion(req, env) {
-  const v = await env.CONTROL_VERSION.get("latest");
-  return new Response(JSON.stringify({ version: v || null }), {
-    status: 200,
-    headers: { "Content-Type": "application/json", "Cache-Control": "public, s-maxage=3", "Access-Control-Allow-Origin": "*" },
-  });
+  try {
+    const v = await env.CONTROL_VERSION.get("latest");
+    return new Response(JSON.stringify({ version: v || null }), {
+      status: 200,
+      headers: { "Content-Type": "application/json", "Cache-Control": "public, s-maxage=3", "Access-Control-Allow-Origin": "*" },
+    });
+  } catch (e) {
+    return new Response(JSON.stringify({ version: null }), {
+      status: 200,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+    });
+  }
 }
 
 async function handleVersionUpdate(req, env) {
@@ -242,7 +304,6 @@ async function handleVersionUpdate(req, env) {
   const version = body?.version || String(Date.now());
 
   await env.CONTROL_VERSION.put("latest", version);
-  // Also upload template to R2 for SSR
   if (body?.html) {
     await env.R2.put("dist/index.html", body.html, {
       httpMetadata: { contentType: "text/html; charset=utf-8" },
@@ -256,6 +317,19 @@ async function handleVersionUpdate(req, env) {
   });
 }
 
+async function addCors(responsePromise) {
+  const response = await responsePromise;
+  const headers = new Headers(response.headers);
+  headers.set("Access-Control-Allow-Origin", "*");
+  headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -266,6 +340,31 @@ export default {
     if (path === "/api/control-update") return handleVersionUpdate(request, env);
 
     if (path === "/" || path === "/index.html") return handleHomepage(request, env);
+
+    if (path.startsWith("/@")) return env.ASSETS.fetch(new URL("/user.html", request.url));
+
+    // Feature-gated routes — block when flag is false in /api/control
+    const GATED_ROUTES = {
+      "/workout-resources": "workoutResources",
+      "/pebble-app":        "pebbleApp",
+      "/products":          "products",
+      "/brackets":          "brackets",
+      "/win":               "win",
+      "/run-clubs":         "runClubs",
+      "/personal-trainers": "personalTrainers",
+      "/mac-apps":          "macApps",
+      "/pricing":           "pricing",
+      "/testimonials":      "testimonials",
+      "/faq":               "faq",
+    };
+
+    const flagKey = GATED_ROUTES[path] || GATED_ROUTES[`/${path.split("/")[1]}`];
+    if (flagKey) {
+      const flags = await fetchUpstreamFlags();
+      if (flags && flags[flagKey] === false) {
+        return new Response("Not Found", { status: 404, headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, s-maxage=30" } });
+      }
+    }
 
     return env.ASSETS.fetch(request);
   },

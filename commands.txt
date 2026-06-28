@@ -1,0 +1,4 @@
+Individual steps if needed:
+npm run build                        # vite build + copy _worker.js
+npx wrangler pages deploy dist/ --project-name=thetrackerapp --branch=main --commit-dirty=true
+npx wrangler r2 object put thetrackerapp-assets/dist/index.html --file=dist/index.html --content-type="text/html; charset=utf-8" --remote

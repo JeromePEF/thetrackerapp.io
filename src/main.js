@@ -1,6 +1,4 @@
-import { API_BASE, fetchLiveMetrics, fetchPublicLeaderboardSnapshot, submitSignup } from "./api.js";
-import { inject } from "@vercel/analytics";
-import { initGoogleAnalytics } from "./google-analytics.js";
+import { API_BASE, submitSignup } from "./api.js";
 import { attachRefToPayload, captureRefFromUrl } from "./affiliate-ref.js";
 import { fetchFeatureFlags, applyFeatureFlags } from "./feature-flags.js";
 import { initOnboardingGuide } from "./onboarding-guide.js";
@@ -22,22 +20,6 @@ const ALL_SERVICES = [
     flagKey: "iMessage",
   },
   {
-    id: "sms",
-    label: "SMS",
-    logo: "/SVGS/SMS.svg",
-    provider: "SMS",
-    identityKind: "phone",
-    flagKey: "sms",
-  },
-  {
-    id: "whatsapp",
-    label: "WhatsApp",
-    logo: "/SVGS/WhatsApp.svg",
-    provider: "WhatsApp",
-    identityKind: "phone",
-    flagKey: "whatsapp",
-  },
-  {
     id: "telegram",
     label: "Telegram",
     logo: "/SVGS/Telegram_logo.svg",
@@ -46,44 +28,12 @@ const ALL_SERVICES = [
     flagKey: "telegram",
   },
   {
-    id: "discord",
-    label: "Discord",
-    logo: "/SVGS/discord-icon-svgrepo-com.svg",
-    provider: "Discord",
-    identityKind: "username",
-    flagKey: "discord",
-  },
-  {
-    id: "slack",
-    label: "Slack",
-    logo: "/SVGS/Slack_icon_2019.svg",
-    provider: "Slack",
-    identityKind: "username",
-    flagKey: "slack",
-  },
-  {
     id: "signal",
     label: "Signal",
     logo: "/SVGS/Signal-Logo-Ultramarine.svg",
     provider: "Signal",
     identityKind: "phone",
     flagKey: "signal",
-  },
-  {
-    id: "google-chat",
-    label: "Google Chat",
-    logo: "/SVGS/googlechat.svg",
-    provider: "GoogleChat",
-    identityKind: "username",
-    flagKey: "googleChat",
-  },
-  {
-    id: "email",
-    label: "Email",
-    logo: "/SVGS/email.svg",
-    provider: "Email",
-    identityKind: "username",
-    flagKey: "email",
   },
 ];
 
@@ -112,7 +62,6 @@ function resolveMessagingServicesMap(featureFlags) {
   // by re-rendering once real flags arrive.
   const merged = {
     iMessage: true,
-    sms: false,
     whatsapp: false,
     telegram: false,
     discord: false,
@@ -176,28 +125,15 @@ const AUTH_FLAG_KEY = "tracker.authenticated";
 const DASHBOARD_HOME_URL = "https://dashboard.thetrackerapp.io/dashboard";
 const DASHBOARD_HOST = "dashboard.thetrackerapp.io";
 
-const RUN_CLUB_ENDPOINTS = ["/api/run-clubs", "/api/clubs/run", "/api/clubs?type=run", "/run-clubs"];
-const PERSONAL_TRAINER_ENDPOINTS = ["/api/personal-trainers", "/api/trainers", "/api/coaches", "/personal-trainers"];
-const RUN_CLUB_KEYS = ["runClubs", "clubs", "items", "results", "rows", "data"];
-const PERSONAL_TRAINER_KEYS = ["personalTrainers", "trainers", "coaches", "items", "results", "rows", "data"];
-const LIVE_LEADERBOARD_REFRESH_MS = 30000;
-const LIVE_PEBBLE_STEPS_REFRESH_MS = 5000;
 const LIVE_WORKOUT_TOAST_HIDE_MS = 4300;
 const LIVE_WORKOUT_TOAST_INTERVAL_MS = 5000;
 const LIVE_WORKOUT_TOAST_SNOOZE_MS = 5 * 60 * 1000;
-const STEPS_TAPE_MAX_ROWS = 20;
-const STEPS_PER_MILE = 2000;
 const UNIT_SYSTEM_STORAGE_KEY = "tracker.unitSystem";
 const DEV_SAMPLE_LIVE_EVENTS = [
   { name: "UN", exercise: "Bench Press", value: "1,315lb", streak: 100 },
   { name: "RB", exercise: "Run", value: "62 min", streak: 42 },
   { name: "KM", exercise: "Deadlift", value: "515lb", streak: 30 },
   { name: "TS", exercise: "Squat", value: "405lb", streak: 21 },
-];
-const DEV_SAMPLE_STEPS_TAPE_EVENTS = [
-  { name: "UN", delta: 6, total: 12450, occurredAt: "2026-01-01T00:00:00.000Z" },
-  { name: "RB", delta: 11, total: 20122, occurredAt: "2026-01-01T00:00:01.000Z" },
-  { name: "KM", delta: 8, total: 18902, occurredAt: "2026-01-01T00:00:02.000Z" },
 ];
 const els = {
   appShell: document.getElementById("appShell"),
@@ -212,7 +148,6 @@ const els = {
   authBracketsList: document.getElementById("authBracketsList"),
   runClubsNavLink: document.getElementById("runClubsNavLink"),
   personalTrainersNavLink: document.getElementById("personalTrainersNavLink"),
-  stepsCounterPanel: document.getElementById("stepsCounterPanel"),
 
   usersTodayCount: document.getElementById("usersTodayCount"),
   usersWeekCount: document.getElementById("usersWeekCount"),
@@ -230,20 +165,10 @@ const els = {
   leaderboardState: document.getElementById("leaderboardState"),
   groupLeaderboardList: document.getElementById("groupLeaderboardList"),
   groupLeaderboardState: document.getElementById("groupLeaderboardState"),
-  pebbleCaloriesList: document.getElementById("pebbleCaloriesList"),
-  pebbleWorkoutsList: document.getElementById("pebbleWorkoutsList"),
-  pebbleStepsList: document.getElementById("pebbleStepsList"),
-  pebbleSleepList: document.getElementById("pebbleSleepList"),
-  pebbleMilesList: document.getElementById("pebbleMilesList"),
-  pebbleLeaderboardState: document.getElementById("pebbleLeaderboardState"),
   streakLeaderboardList: document.getElementById("streakLeaderboardList"),
   streakLeaderboardState: document.getElementById("streakLeaderboardState"),
   streakLiveCallout: document.getElementById("streakLiveCallout"),
   unitToggleButton: document.getElementById("unitToggleButton"),
-  stepsTapeTotalSteps: document.getElementById("stepsTapeTotalSteps"),
-  stepsTapeTotalMiles: document.getElementById("stepsTapeTotalMiles"),
-  stepsTapeList: document.getElementById("stepsTapeList"),
-  stepsTapeState: document.getElementById("stepsTapeState"),
 
   signupForm: document.getElementById("signupForm"),
   formIntro: document.querySelector(".signup-form .form-intro"),
@@ -261,7 +186,7 @@ const els = {
   consentWrap: document.getElementById("consentWrap"),
   consentCheckbox: document.getElementById("consentCheckbox"),
   // Terms / Privacy / AI checkboxes were removed from the hero form — the
-  // single consent checkbox now covers SMS opt-in + implicit ToS/Privacy
+  // single consent checkbox covers consent opt-in + implicit ToS/Privacy
   // acceptance (those disclosures live on the respective pages).
   termsConsentCheckbox: null,
   aiConsentCheckbox: null,
@@ -276,25 +201,16 @@ let liveWorkoutTicker = 0;
 let liveWorkoutHideTimer = 0;
 let liveWorkoutSnoozeUntil = 0;
 let liveWorkoutVisibilityFrame = 0;
-let leaderboardRefreshTicker = 0;
-let pebbleStepsRefreshTicker = 0;
 let ignoreCarouselClickUntil = 0;
 let lastWheelChangeAt = 0;
-let leaderboardRequestInFlight = false;
-let pebbleStepsRequestInFlight = false;
 let hasLoadedLeaderboard = false;
 let hasLoadedUserMetrics = false;
 let hasLoadedActivityMetrics = false;
-let liveMetricsRequestToken = 0;
 
-/* anchor – prevents tree-shaking of the guards above */
-window.__metricGuards = { get hasLoadedUser() { return hasLoadedUserMetrics; }, get hasLoadedActivity() { return hasLoadedActivityMetrics; } };
 let latestStrengthEntries = [];
 let latestCalisthenicsEntries = [];
-let latestPebblePayload = null;
 let latestStreakEntries = [];
 let latestStreakCallout = "";
-let activeUnitSystem = "imperial";
 
 const carouselGesture = {
   active: false,
@@ -302,36 +218,7 @@ const carouselGesture = {
   startY: 0,
 };
 
-const liveWorkoutState = {
-  events: [],
-  index: 0,
-};
-
-const stepsTapeState = {
-  events: [],
-  previousTotals: new Map(),
-  initialized: false,
-};
-
-const ACTIVITY_WINDOWS = ["week"];
-const ACTIVITY_WINDOW_LABELS = {
-  week: "Week",
-};
-
-let activeMetricsWindow = "week";
-
-function normalizeActivityWindow(windowValue) {
-  const normalized = String(windowValue || "week")
-    .trim()
-    .toLowerCase();
-
-  return ACTIVITY_WINDOWS.includes(normalized) ? normalized : "week";
-}
-
-function activityWindowLabel(windowValue) {
-  const normalized = normalizeActivityWindow(windowValue);
-  return ACTIVITY_WINDOW_LABELS[normalized] || ACTIVITY_WINDOW_LABELS.week;
-}
+let activeUnitSystem = "imperial";
 
 function isAuthenticated() {
   try {
@@ -409,129 +296,6 @@ function redirectDashboardHostHomeToDashboardPage() {
 
   window.location.replace(DASHBOARD_HOME_URL);
   return true;
-}
-
-function syncHeaderStatsHint() {
-  if (!els.headerStats) {
-    return;
-  }
-
-  const label = activityWindowLabel(activeMetricsWindow).toUpperCase();
-  els.headerStats.setAttribute(
-    "data-window-hint",
-    `Current ${label}`,
-  );
-}
-
-function extractDiscoveryItems(payload, keys) {
-  if (Array.isArray(payload)) {
-    return payload;
-  }
-
-  if (!payload || typeof payload !== "object") {
-    return [];
-  }
-
-  for (const key of keys) {
-    if (Array.isArray(payload[key])) {
-      return payload[key];
-    }
-  }
-
-  const nestedContainers = [payload.data, payload.payload, payload.result, payload.results].filter(Boolean);
-  for (const container of nestedContainers) {
-    if (Array.isArray(container)) {
-      return container;
-    }
-
-    if (container && typeof container === "object") {
-      for (const value of Object.values(container)) {
-        if (Array.isArray(value)) {
-          return value;
-        }
-      }
-    }
-  }
-
-  for (const value of Object.values(payload)) {
-    if (Array.isArray(value)) {
-      return value;
-    }
-  }
-
-  return [];
-}
-
-function payloadHasDiscoveryRows(payload, keys) {
-  const rows = extractDiscoveryItems(payload, keys);
-  if (rows.length > 0) {
-    return true;
-  }
-
-  if (!payload || typeof payload !== "object") {
-    return false;
-  }
-
-  const singleName =
-    payload.name ||
-    payload.title ||
-    payload.clubName ||
-    payload.trainerName ||
-    payload.fullName;
-
-  return typeof singleName === "string" && singleName.trim().length > 0;
-}
-
-async function hasDiscoveryRows(endpoints, keys) {
-  for (const endpoint of endpoints) {
-    try {
-      const response = await fetch(`${API_BASE}${endpoint}`);
-      if (!response.ok) {
-        continue;
-      }
-
-      let payload = null;
-      try {
-        payload = await response.json();
-      } catch {
-        payload = null;
-      }
-
-      if (payloadHasDiscoveryRows(payload, keys)) {
-        return true;
-      }
-    } catch {
-      // Continue trying fallback discovery endpoints.
-    }
-  }
-
-  return false;
-}
-
-async function updateDiscoveryNavVisibility() {
-  if (!els.runClubsNavLink || !els.personalTrainersNavLink) {
-    return;
-  }
-
-  let hasRunClubs = false;
-  let hasPersonalTrainers = false;
-
-  try {
-    const snapshot = await fetchPublicLeaderboardSnapshot();
-    hasRunClubs = toNumber(snapshot.directories?.runClubsCount) > 0;
-    hasPersonalTrainers = toNumber(snapshot.directories?.personalTrainersCount) > 0;
-  } catch {
-    const results = await Promise.all([
-      hasDiscoveryRows(RUN_CLUB_ENDPOINTS, RUN_CLUB_KEYS),
-      hasDiscoveryRows(PERSONAL_TRAINER_ENDPOINTS, PERSONAL_TRAINER_KEYS),
-    ]);
-    hasRunClubs = results[0];
-    hasPersonalTrainers = results[1];
-  }
-
-  els.runClubsNavLink.hidden = !hasRunClubs;
-  els.personalTrainersNavLink.hidden = !hasPersonalTrainers;
-  requestViewportFit();
 }
 
 function currentService() {
@@ -967,47 +731,6 @@ function handleCarouselWheel(event) {
   selectRelativeService(travel > 0 ? 1 : -1);
 }
 
-function setActiveMetricsWindow(windowValue) {
-  activeMetricsWindow = normalizeActivityWindow(windowValue);
-  syncHeaderStatsHint();
-}
-
-function nextActivityWindow(step) {
-  const currentIndex = ACTIVITY_WINDOWS.indexOf(normalizeActivityWindow(activeMetricsWindow));
-  const baseIndex = currentIndex >= 0 ? currentIndex : 0;
-  const nextIndex = (baseIndex + step + ACTIVITY_WINDOWS.length) % ACTIVITY_WINDOWS.length;
-  return ACTIVITY_WINDOWS[nextIndex];
-}
-
-function shouldIgnoreMetricsWindowHotkey(event) {
-  const target = event.target;
-  if (!(target instanceof HTMLElement)) {
-    return false;
-  }
-
-  const tag = target.tagName.toLowerCase();
-  if (tag === "input" || tag === "textarea" || tag === "select" || target.isContentEditable) {
-    return true;
-  }
-
-  return Boolean(target.closest("#signupForm"));
-}
-
-function handleMetricsWindowKeydown(event) {
-  if (shouldIgnoreMetricsWindowHotkey(event)) {
-    return;
-  }
-
-  if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") {
-    return;
-  }
-
-  event.preventDefault();
-  const nextWindow = event.key === "ArrowRight" ? nextActivityWindow(1) : nextActivityWindow(-1);
-  setActiveMetricsWindow(nextWindow);
-  void refreshLiveMetricsCounters(nextWindow);
-}
-
 function setStatus(target, message, type = "") {
   if (!target) {
     return;
@@ -1079,17 +802,6 @@ function normalizeLeaderboardEntry(entry) {
   };
 }
 
-function setStatsLink(linkEl, metricSheetUrl, masterSheetUrl) {
-  if (!linkEl) {
-    return;
-  }
-
-  const url = typeof metricSheetUrl === "string" && metricSheetUrl.trim() ? metricSheetUrl.trim() : masterSheetUrl;
-  if (typeof url === "string" && url.trim()) {
-    linkEl.href = url.trim();
-  }
-}
-
 function spawnFloatingDelta(target, formattedDelta) {
   const floater = document.createElement("span");
   floater.className = "floating-delta";
@@ -1154,20 +866,6 @@ function setGallonsDrank(value) {
   }
 }
 
-function applyUserLiveMetrics(liveMetrics) {
-  if (!liveMetrics || hasLoadedUserMetrics) {
-    return;
-  }
-
-  const master = liveMetrics.masterLogSheetUrl || "";
-
-  setCounterValue(els.usersTodayCount, liveMetrics.usersUsingToday?.value);
-  setCounterValue(els.usersWeekCount, liveMetrics.totalUsersThisWeek?.value);
-  setStatsLink(els.usersTodayLink, liveMetrics.usersUsingToday?.sheetUrl, master);
-  setStatsLink(els.usersWeekLink, liveMetrics.totalUsersThisWeek?.sheetUrl, master);
-  setStatsLink(els.usersOnlineLink, liveMetrics.usersOnline?.sheetUrl, master);
-}
-
 function applyLiveStats(ls) {
   if (!ls || typeof ls !== "object") return;
 
@@ -1219,22 +917,6 @@ function applyLiveStats(ls) {
     renderStreakLiveCallout(streaks[0]?.message || "");
   }
   hasLoadedLeaderboard = true;
-}
-
-function applyActivityLiveMetrics(liveMetrics) {
-  if (!liveMetrics || hasLoadedActivityMetrics) {
-    return;
-  }
-
-  const master = liveMetrics.masterLogSheetUrl || "";
-
-  setCounterValue(els.workoutsLoggedCount, liveMetrics.workoutsLogged?.value);
-  setCounterValue(els.caloriesTrackedCount, liveMetrics.caloriesTracked?.value);
-  setGallonsDrank(liveMetrics.gallonsDrank?.value);
-
-  setStatsLink(els.workoutsLoggedLink, liveMetrics.workoutsLogged?.sheetUrl, master);
-  setStatsLink(els.caloriesTrackedLink, liveMetrics.caloriesTracked?.sheetUrl, master);
-  setStatsLink(els.waterDrankLink, liveMetrics.gallonsDrank?.sheetUrl, master);
 }
 
 function formatNumber(value) {
@@ -1359,11 +1041,6 @@ function applyUnitSystem(unitSystem, persist = true) {
   renderGroupLeaderboard(latestCalisthenicsEntries);
   renderStreakLeaderboard(latestStreakEntries);
   renderStreakLiveCallout(latestStreakCallout);
-
-  if (latestPebblePayload) {
-    renderPebbleLeaderboard(latestPebblePayload);
-    applyPebbleStepsTapePayload(latestPebblePayload);
-  }
 }
 
 async function hydrateUnitSystemFromIp() {
@@ -1420,163 +1097,13 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
-function normalizeStepTapeEvent(event) {
-  const name = String(event?.name || event?.username || event?.contact || "User").trim() || "User";
-  const delta = Math.max(Math.round(toNumber(event?.delta)), 0);
-  const total = Math.max(Math.round(toNumber(event?.total)), 0);
-  const occurredAt = String(event?.occurredAt || event?.timestamp || event?.date || new Date().toISOString()).trim();
-
-  return { name, delta, total, occurredAt };
-}
-
-function deriveStepTapeDeltasFromTopRows(stepRows) {
-  const nowIso = new Date().toISOString();
-  const currentTotals = new Map();
-  const deltas = [];
-
-  (Array.isArray(stepRows) ? stepRows : []).forEach((entry) => {
-    const name = String(entry?.name || "User").trim() || "User";
-    const total = Math.max(Math.round(toNumber(entry?.score)), 0);
-    currentTotals.set(name, total);
-
-    if (!stepsTapeState.initialized) {
-      return;
-    }
-
-    if (!stepsTapeState.previousTotals.has(name)) {
-      return;
-    }
-
-    const previousTotal = stepsTapeState.previousTotals.get(name) || 0;
-    const delta = total - previousTotal;
-
-    if (delta > 0) {
-      deltas.push({
-        name,
-        delta,
-        total,
-        occurredAt: nowIso,
-      });
-    }
-  });
-
-  stepsTapeState.previousTotals = currentTotals;
-  stepsTapeState.initialized = true;
-  return deltas;
-}
-
-function pushStepTapeEvents(events) {
-  const incoming = (Array.isArray(events) ? events : [])
-    .map(normalizeStepTapeEvent)
-    .filter((event) => event.delta > 0);
-
-  if (!incoming.length) {
-    return;
-  }
-
-  const dedupe = new Set(stepsTapeState.events.map((event) => `${event.name}|${event.delta}|${event.total}|${event.occurredAt}`));
-
-  incoming.forEach((event) => {
-    const key = `${event.name}|${event.delta}|${event.total}|${event.occurredAt}`;
-    if (!dedupe.has(key)) {
-      stepsTapeState.events.unshift(event);
-      dedupe.add(key);
-    }
-  });
-
-  stepsTapeState.events = stepsTapeState.events.slice(0, STEPS_TAPE_MAX_ROWS);
-}
-
-// Cached step-tape flag — populated by main.js's flag-fetch sequence. Defaults
-// to `false` so the panel stays hidden until /api/control explicitly says
-// otherwise. Prevents the step-tape from flashing visible on page load.
-let stepTapeFeatureEnabled = false;
-
-function setStepsTapeVisibility(visible) {
-  // Honor the stepTape control flag — if the admin has turned it off, we
-  // NEVER show the panel, regardless of whether live data is available.
-  const effective = visible && stepTapeFeatureEnabled;
-  if (els.stepsCounterPanel) {
-    els.stepsCounterPanel.hidden = !effective;
-  }
-
-  if (els.mainContent) {
-    els.mainContent.classList.toggle("steps-panel-hidden", !effective);
-  }
-
-  requestViewportFit();
-}
-
-function renderStepsTape() {
-  if (!els.stepsTapeList || !els.stepsTapeTotalSteps || !els.stepsTapeTotalMiles || !els.stepsTapeState) {
-    return;
-  }
-
-  const events = stepsTapeState.events;
-
-  if (!events.length) {
-    els.stepsTapeList.innerHTML = `<li class="steps-tape-row"><span class="steps-tape-row-user">Waiting for step activity...</span><span class="steps-tape-row-delta">+0</span><span class="steps-tape-row-meta">Recent Pebble step deltas will appear here.</span></li>`;
-    return;
-  }
-
-  els.stepsTapeList.innerHTML = events
-    .map((event) => {
-      const milesForUser = event.total / STEPS_PER_MILE;
-      return `<li class="steps-tape-row">
-        <span class="steps-tape-row-user">${escapeHtml(event.name)}</span>
-        <span class="steps-tape-row-delta">+${formatNumber(event.delta)} steps</span>
-        <span class="steps-tape-row-meta">${formatNumber(event.total)} total steps • ${formatDistance(milesForUser)}</span>
-      </li>`;
-    })
-    .join("");
-}
-
-function applyPebbleStepsTapePayload(pebblePayload) {
-  if (!els.stepsTapeList || !els.stepsTapeTotalSteps || !els.stepsTapeTotalMiles || !els.stepsTapeState) {
-    return;
-  }
-
-  const stepsTop = Array.isArray(pebblePayload?.stepsTop) ? pebblePayload.stepsTop : [];
-  const fallbackTotalSteps = stepsTop.reduce((sum, row) => sum + Math.max(Math.round(toNumber(row?.score)), 0), 0);
-  const payloadTotalSteps = Math.max(Math.round(toNumber(pebblePayload?.totalStepsAllTime)), 0);
-  const payloadTotalMiles = Math.max(toNumber(pebblePayload?.totalMilesAllTime), 0);
-
-  const totalSteps = payloadTotalSteps > 0 ? payloadTotalSteps : fallbackTotalSteps;
-  const totalMiles = payloadTotalMiles > 0 ? payloadTotalMiles : totalSteps / STEPS_PER_MILE;
-
-  els.stepsTapeTotalSteps.textContent = formatNumber(totalSteps);
-  els.stepsTapeTotalMiles.textContent = formatDistance(totalMiles);
-
-  const apiEvents = Array.isArray(pebblePayload?.stepEvents) ? pebblePayload.stepEvents : [];
-  const derivedEvents = deriveStepTapeDeltasFromTopRows(stepsTop);
-  const mergedEvents = apiEvents.length ? apiEvents : derivedEvents;
-
-  const hasNonZeroTopRows = stepsTop.some((row) => Math.max(Math.round(toNumber(row?.score)), 0) > 0);
-  const hasNonZeroIncomingEvents = mergedEvents.some(
-    (event) => Math.max(Math.round(toNumber(event?.delta)), 0) > 0 || Math.max(Math.round(toNumber(event?.total)), 0) > 0,
-  );
-  const hasNonZeroLiveData = totalSteps > 0 || totalMiles > 0 || hasNonZeroTopRows || hasNonZeroIncomingEvents;
-  setStepsTapeVisibility(hasNonZeroLiveData);
-
-  if (!hasNonZeroLiveData) {
-    stepsTapeState.events = [];
-    renderStepsTape();
-    return;
-  }
-
-  if (import.meta.env.DEV && !mergedEvents.length && !stepsTapeState.events.length) {
-    pushStepTapeEvents(DEV_SAMPLE_STEPS_TAPE_EVENTS);
-  } else {
-    pushStepTapeEvents(mergedEvents);
-  }
-
-  if (!stepsTapeState.events.length) {
-    els.stepsTapeState.textContent = "Waiting for live step deltas...";
-  } else {
-    els.stepsTapeState.textContent = "Latest step deltas (orderbook style).";
-  }
-
-  renderStepsTape();
+// Strip characters commonly used in script / HTML injection attempts.
+// These characters have no legitimate place in phone numbers, emails,
+// or usernames but are dangerous if echoed into markup or JSON without
+// proper escaping. Applied to every keystroke so the raw value is safe
+// BEFORE any validation or submission.
+function sanitizeIdentityInput(raw) {
+  return String(raw || "").replace(/[<>&"'`\\\/\x00-\x1f\x7f]/g, "");
 }
 
 function normalizePhone(value) {
@@ -1648,44 +1175,72 @@ function syncServiceInputRequirements() {
   const isTelegram = service.identityKind === "bot-link";
   const needsSmsConsent = service.identityKind === "phone";
 
+  // Telegram link box: absolutely positioned so it overlays the consent
+  // area instead of pushing content. Zero layout shift for any service.
   if (els.telegramLinkBox) {
     els.telegramLinkBox.hidden = !isTelegram;
-  }
-  if (els.serviceIdentityLabel) {
-    els.serviceIdentityLabel.hidden = isTelegram;
-  }
-  // Email field removed — nothing to toggle here.
-  if (els.signupForm) {
-    const submitBtn = els.signupForm.querySelector('button[type="submit"]');
-    if (submitBtn) {
-      submitBtn.hidden = isTelegram;
+    if (isTelegram) {
+      els.telegramLinkBox.style.position = "absolute";
+      els.telegramLinkBox.style.left = "0";
+      els.telegramLinkBox.style.right = "0";
+      els.telegramLinkBox.style.top = "100%";
+      els.telegramLinkBox.style.zIndex = "1";
+      // Ensure the input grid is the anchor
+      if (els.telegramLinkBox.parentElement) {
+        els.telegramLinkBox.parentElement.style.position = "relative";
+      }
+    } else {
+      els.telegramLinkBox.style.position = "";
+      els.telegramLinkBox.style.left = "";
+      els.telegramLinkBox.style.right = "";
+      els.telegramLinkBox.style.top = "";
+      els.telegramLinkBox.style.zIndex = "";
+      if (els.telegramLinkBox.parentElement) {
+        els.telegramLinkBox.parentElement.style.position = "";
+      }
     }
   }
 
+  // Identity label + input: hidden for Telegram (the bot link replaces
+  // them).  visibility: hidden preserves layout space → zero shift.
+  if (els.serviceIdentityLabel) {
+    els.serviceIdentityLabel.hidden = false;
+    els.serviceIdentityLabel.style.visibility = isTelegram ? "hidden" : "";
+  }
+
   if (els.formIntro) {
-    els.formIntro.textContent = isTelegram
-      ? "To get started with Telegram, use the link below to message our bot."
-      : "Select an app, enter your info, then submit onboarding.";
+    els.formIntro.textContent = "Select an app, enter your info, then submit onboarding.";
   }
 
   if (els.formFlow) {
-    els.formFlow.hidden = isTelegram;
+    els.formFlow.hidden = false;
+    els.formFlow.style.visibility = isTelegram ? "hidden" : "";
   }
 
-  // Consent checkbox now covers BOTH SMS opt-in AND ToS/Privacy acceptance,
-  // so it must remain visible + required for EVERY channel — including
-  // iMessage and Telegram users (the ToS/Privacy half applies regardless).
-  // We hide it only when the form itself is hidden (e.g. Telegram bot-link
-  // flow takes over).
-  els.consentWrap.classList.toggle("is-inactive", isTelegram);
-  els.consentWrap.setAttribute("aria-hidden", isTelegram ? "true" : "false");
+  // Consent + submit button: hidden for Telegram (the user interacts
+  // via the bot link).  visibility: hidden preserves layout space.
   els.consentCheckbox.required = !isTelegram;
-  els.consentCheckbox.disabled = isTelegram;
   if (isTelegram) {
-    els.consentCheckbox.checked = false;
+    els.consentWrap.style.visibility = "hidden";
+    els.consentWrap.setAttribute("aria-hidden", "true");
+  } else {
+    if (els.consentCheckbox.disabled) els.consentCheckbox.disabled = false;
+    els.consentWrap.classList.remove("is-inactive");
+    els.consentWrap.setAttribute("aria-hidden", "false");
+    els.consentWrap.style.visibility = "";
+  }
+
+  if (els.signupForm) {
+    const submitBtn = els.signupForm.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.hidden = false;
+      submitBtn.style.visibility = isTelegram ? "hidden" : "";
+    }
   }
 
   if (isTelegram) {
+    els.serviceIdentityText.textContent = "Username";
+    els.serviceIdentityHelp.textContent = "Or use the Telegram bot link below. Your Telegram @username.";
     return;
   }
 
@@ -1745,17 +1300,30 @@ function renderServiceOptions() {
   }).join("");
 }
 
+function limitTopTwoPerExercise(entries) {
+  const seen = new Map();
+  return entries.filter((entry) => {
+    const ex = (entry.exercise || "").toUpperCase();
+    const count = seen.get(ex) || 0;
+    if (count >= 2) return false;
+    seen.set(ex, count + 1);
+    return true;
+  });
+}
+
 function renderLeaderboard(entries) {
   latestStrengthEntries = Array.isArray(entries) ? entries : [];
 
-  if (!entries.length) {
+  const limited = limitTopTwoPerExercise(latestStrengthEntries);
+
+  if (!limited.length) {
     els.leaderboardList.innerHTML = "";
     els.leaderboardState.textContent = "No strength rows yet.";
     return;
   }
 
-  els.leaderboardList.innerHTML = entries
-    .map((entry, index) => {
+  els.leaderboardList.innerHTML = limited
+    .map((entry) => {
       const normalized = normalizeLeaderboardEntry(entry);
       const displayName = normalized.name || "No data";
       const displayValue = convertUnitValueLabel(normalized.value || "-") || "-";
@@ -1777,14 +1345,16 @@ function renderLeaderboard(entries) {
 function renderGroupLeaderboard(entries) {
   latestCalisthenicsEntries = Array.isArray(entries) ? entries : [];
 
-  if (!entries.length) {
+  const limited = limitTopTwoPerExercise(latestCalisthenicsEntries);
+
+  if (!limited.length) {
     els.groupLeaderboardList.innerHTML = "";
     els.groupLeaderboardState.textContent = "No calisthenics rows yet.";
     return;
   }
 
-  els.groupLeaderboardList.innerHTML = entries
-    .map((entry, index) => {
+  els.groupLeaderboardList.innerHTML = limited
+    .map((entry) => {
       const normalized = normalizeLeaderboardEntry(entry);
       const displayName = normalized.name || "No data";
       const displayValue = convertUnitValueLabel(normalized.value || "-") || "-";
@@ -1844,266 +1414,22 @@ function renderStreakLiveCallout(message) {
   els.streakLiveCallout.textContent = latestStreakCallout || "Waiting for live streak activity...";
 }
 
-function renderPebbleMetricList(target, entries, unitLabel, options = {}) {
-  if (!target) {
-    return;
-  }
-
-  const zeroFallback = Boolean(options.zeroFallback);
-
-  if (!entries.length) {
-    if (zeroFallback) {
-      target.innerHTML = `<li><span class="leaderboard-rank">#1</span><span class="leaderboard-user">User</span><span class="leaderboard-score">0 ${escapeHtml(
-        unitLabel,
-      )}</span></li>`;
-      return;
-    }
-
-    target.innerHTML = `<li><span class="leaderboard-user">No data</span><span class="leaderboard-score">-</span></li>`;
-    return;
-  }
-
-  target.innerHTML = entries
-    .map((entry, index) => {
-      const unit = entry.unit || unitLabel;
-      const valueLabel = String(entry.valueLabel || "").trim();
-      const scoreLabelRaw = valueLabel || `${formatNumber(entry.score)} ${unit}`.trim();
-      const scoreLabel = convertUnitValueLabel(scoreLabelRaw) || scoreLabelRaw;
-      return `<li>
-        <span class="leaderboard-rank">#${index + 1}</span>
-        <span class="leaderboard-user">${escapeHtml(entry.name)}</span>
-        <span class="leaderboard-score">${escapeHtml(scoreLabel)}</span>
-      </li>`;
-    })
-    .join("");
-}
-
-function renderPebbleLeaderboard(pebble) {
-  latestPebblePayload = pebble || null;
-
-  renderPebbleMetricList(els.pebbleCaloriesList, pebble?.caloriesTop || [], "cal", { zeroFallback: true });
-  renderPebbleMetricList(els.pebbleWorkoutsList, pebble?.workoutsTop || [], "sessions", { zeroFallback: true });
-  renderPebbleMetricList(els.pebbleStepsList, pebble?.stepsTop || [], "steps", { zeroFallback: true });
-  renderPebbleMetricList(els.pebbleSleepList, pebble?.sleepTop || [], "score");
-  renderPebbleMetricList(els.pebbleMilesList, pebble?.milesTop || [], "mi");
-  els.pebbleLeaderboardState.textContent = "";
-  requestViewportFit();
-}
-
 function fitAppToViewport() {
   const shell = els.appShell;
   if (!shell) {
     return;
   }
 
+  // The previous uniform transform: scale() scaler caused sub-pixel blur
+  // on text, SVGs, and the iPhone mockup. Layout is now fluid at native
+  // resolution via CSS (clamp/minmax/container queries), so all we do
+  // here is keep the service carousel synced. No transform/left/top.
   syncServiceCarousel();
-
-  if (window.matchMedia("(max-width: 900px)").matches) {
-    shell.style.transform = "none";
-    shell.style.left = "0px";
-    shell.style.top = "0px";
-    if (els.mainContent) els.mainContent.style.paddingBottom = "";
-    return;
-  }
-
-  if (els.mainContent) els.mainContent.style.paddingBottom = "";
-  shell.style.transform = "scale(1)";
-  shell.style.left = "0px";
-  shell.style.top = "0px";
-
-  const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight;
-  const contentWidth = shell.scrollWidth;
-  const contentHeight = shell.scrollHeight;
-
-  if (!contentWidth || !contentHeight || !viewportWidth || !viewportHeight) {
-    return;
-  }
-
-  const aspectRatio = viewportWidth / viewportHeight;
-  const scaleCap = aspectRatio > 2 ? 2 : 1.25;
-  const scale = Math.min(viewportWidth / contentWidth, viewportHeight / contentHeight, scaleCap);
-
-  const offsetX = Math.max((viewportWidth - contentWidth * scale) / 2, 0);
-  shell.style.left = `${offsetX}px`;
-  shell.style.top = "0px";
-  shell.style.transform = `scale(${scale})`;
-
-  const scaledContentHeight = contentHeight * scale;
-  const heightDeficit = viewportHeight - scaledContentHeight;
-  if (heightDeficit > 0 && els.mainContent) {
-    els.mainContent.style.paddingBottom = `${heightDeficit / scale}px`;
-  }
 }
 
 function requestViewportFit() {
   window.cancelAnimationFrame(fitFrame);
   fitFrame = window.requestAnimationFrame(fitAppToViewport);
-}
-
-async function refreshLiveMetricsCounters(windowValue = activeMetricsWindow) {
-  const requestedWindow = normalizeActivityWindow(windowValue);
-  const requestToken = ++liveMetricsRequestToken;
-
-  const todayPromise = fetchLiveMetrics("today");
-  const activityPromise = requestedWindow === "today" ? todayPromise : fetchLiveMetrics(requestedWindow);
-  const [todayResult, activityResult] = await Promise.allSettled([todayPromise, activityPromise]);
-
-  if (requestToken !== liveMetricsRequestToken) {
-    return {
-      stale: true,
-      hasUsers: false,
-      hasActivity: false,
-      error: null,
-    };
-  }
-
-  let hasUsers = false;
-  let hasActivity = false;
-  let firstError = null;
-
-  if (todayResult.status === "fulfilled") {
-    applyUserLiveMetrics(todayResult.value);
-    hasUsers = true;
-    hasLoadedUserMetrics = true;
-  } else {
-    firstError = todayResult.reason;
-  }
-
-  if (activityResult.status === "fulfilled") {
-    applyActivityLiveMetrics(activityResult.value);
-    hasActivity = true;
-    hasLoadedActivityMetrics = true;
-  } else if (requestedWindow !== "today" && todayResult.status === "fulfilled") {
-    applyActivityLiveMetrics(todayResult.value);
-    hasActivity = true;
-    hasLoadedActivityMetrics = true;
-  } else if (!firstError) {
-    firstError = activityResult.reason;
-  }
-
-  return {
-    stale: false,
-    hasUsers,
-    hasActivity,
-    error: firstError,
-  };
-}
-
-async function loadLeaderboard() {
-  if (leaderboardRequestInFlight) {
-    return;
-  }
-  leaderboardRequestInFlight = true;
-
-  if (!hasLoadedLeaderboard) {
-    els.leaderboardList.innerHTML = '<li class="skeleton-li"><span class="skeleton skeleton-rank"></span><span class="skeleton skeleton-text"></span><span class="skeleton skeleton-text"></span><span class="skeleton skeleton-short"></span></li>'.repeat(3);
-    els.groupLeaderboardList.innerHTML = '<li class="skeleton-li"><span class="skeleton skeleton-rank"></span><span class="skeleton skeleton-text"></span><span class="skeleton skeleton-text"></span><span class="skeleton skeleton-short"></span></li>'.repeat(4);
-    els.streakLeaderboardList.innerHTML = '<li class="skeleton-li"><span class="skeleton skeleton-rank"></span><span class="skeleton skeleton-text"></span><span class="skeleton skeleton-short"></span></li>'.repeat(2);
-  }
-
-  try {
-    const payload = await fetchPublicLeaderboardSnapshot();
-    if (!hasLoadedLeaderboard) {
-      renderLeaderboard(payload.entries);
-      renderGroupLeaderboard(payload.groupEntries || []);
-      renderStreakLeaderboard(payload.streakEntries || []);
-      renderStreakLiveCallout(payload.streakLiveMessage || payload.streakEntries?.[0]?.message || "");
-    }
-    setLiveWorkoutEvents(payload.liveEvents || []);
-
-    if (!hasLoadedUserMetrics) {
-      setCounterValue(els.usersTodayCount, payload.usersToday);
-      setCounterValue(els.usersWeekCount, payload.usersThisWeek);
-    }
-    setCounterValue(els.usersOnlineCount, payload.usersOnline);
-
-    if (!hasLoadedActivityMetrics) {
-      setCounterValue(els.workoutsLoggedCount, payload.workoutsLogged);
-      setCounterValue(els.caloriesTrackedCount, payload.caloriesTracked);
-      setGallonsDrank(payload.gallonsDrank);
-    }
-
-    renderPebbleLeaderboard(payload.pebble || {});
-    applyPebbleStepsTapePayload(payload.pebble || {});
-    hasLoadedLeaderboard = true;
-  } catch (error) {
-    latestStrengthEntries = [];
-    latestCalisthenicsEntries = [];
-    latestPebblePayload = null;
-    latestStreakEntries = [];
-    latestStreakCallout = "";
-
-    if (!hasLoadedLeaderboard) {
-      els.leaderboardList.innerHTML = "";
-      els.groupLeaderboardList.innerHTML = "";
-      els.pebbleCaloriesList.innerHTML = "";
-      els.pebbleWorkoutsList.innerHTML = "";
-      els.pebbleStepsList.innerHTML = "";
-      if (els.streakLeaderboardList) {
-        els.streakLeaderboardList.innerHTML = "";
-      }
-      if (els.streakLiveCallout) {
-        els.streakLiveCallout.textContent = "";
-      }
-      if (els.pebbleSleepList) {
-        els.pebbleSleepList.innerHTML = "";
-      }
-      if (els.pebbleMilesList) {
-        els.pebbleMilesList.innerHTML = "";
-      }
-    }
-
-    setLiveWorkoutEvents([]);
-    setCounterValue(els.usersOnlineCount, 0);
-    if (!hasLoadedActivityMetrics) {
-      setCounterValue(els.workoutsLoggedCount, 0);
-      setCounterValue(els.caloriesTrackedCount, 0);
-      setGallonsDrank(0);
-    }
-    setStepsTapeVisibility(false);
-    if (els.stepsTapeState) {
-      els.stepsTapeState.textContent = `Step counter unavailable: ${error.message}`;
-    }
-    setStatus(els.leaderboardState, `Leaderboard unavailable: ${error.message}`, "error");
-    setStatus(els.groupLeaderboardState, `Calisthenics unavailable: ${error.message}`, "error");
-    setStatus(els.pebbleLeaderboardState, `Pebble leaderboard unavailable: ${error.message}`, "error");
-    setStatus(els.streakLeaderboardState, `Streak leaderboard unavailable: ${error.message}`, "error");
-  } finally {
-    leaderboardRequestInFlight = false;
-  }
-}
-
-function canUseDesktopStepTape() {
-  if (!els.stepsTapeList) {
-    return false;
-  }
-
-  return !window.matchMedia("(max-width: 1180px)").matches;
-}
-
-async function refreshPebbleStepTape() {
-  if (!canUseDesktopStepTape()) {
-    return;
-  }
-
-  if (pebbleStepsRequestInFlight) {
-    return;
-  }
-
-  pebbleStepsRequestInFlight = true;
-
-  try {
-    const snapshot = await fetchPublicLeaderboardSnapshot();
-    renderPebbleLeaderboard(snapshot.pebble || {});
-    applyPebbleStepsTapePayload(snapshot.pebble || {});
-  } catch (error) {
-    if (els.stepsTapeState && !stepsTapeState.events.length) {
-      els.stepsTapeState.textContent = `Step counter unavailable: ${error.message}`;
-    }
-  } finally {
-    pebbleStepsRequestInFlight = false;
-  }
 }
 
 function validateForm() {
@@ -2112,12 +1438,12 @@ function validateForm() {
     return { ok: true, payload: null, isBotLink: true };
   }
 
-  const identityRaw = els.serviceIdentityInput.value.trim();
+  const identityRaw = sanitizeIdentityInput(els.serviceIdentityInput.value).trim();
   const needsSmsConsent = service.identityKind === "phone";
 
   if (!identityRaw) {
     // Channel-specific empty-field message. The contact field changes its
-    // meaning based on which service the user picked (phone for SMS,
+    // meaning based on which service the user picked (phone for Signal,
     // phone-or-email for iMessage, username for legacy Telegram), so the
     // error needs to match what we're actually asking them for.
     const emptyMessages = {
@@ -2169,7 +1495,7 @@ function validateForm() {
     return {
       ok: false,
       message: needsSmsConsent
-        ? "Please confirm SMS consent and agree to the Terms + Privacy Policy."
+        ? "Please confirm consent and agree to the Terms + Privacy Policy."
         : "Please agree to the Terms of Service and Privacy Policy before signing up.",
     };
   }
@@ -2353,6 +1679,8 @@ function wireEvents() {
 
   if (els.serviceIdentityInput) {
     els.serviceIdentityInput.addEventListener("input", () => {
+      // Strip injection characters before formatting or validation.
+      els.serviceIdentityInput.value = sanitizeIdentityInput(els.serviceIdentityInput.value);
       applyPhoneFormat(els.serviceIdentityInput);
     });
   }
@@ -2438,25 +1766,15 @@ function init() {
   renderServiceCarousel();
   updateServiceVisual();
   syncAuthNavigation();
-  syncHeaderStatsHint();
   wireEvents();
 
-  if (els.stepsTapeState) {
-    els.stepsTapeState.textContent = "Loading live step counter...";
-  }
   renderStreakLiveCallout("");
-  setStepsTapeVisibility(false);
-  renderStepsTape();
 
-  void updateDiscoveryNavVisibility();
-  void refreshLiveMetricsCounters();
-  loadLeaderboard();
-  window.clearInterval(leaderboardRefreshTicker);
-  leaderboardRefreshTicker = window.setInterval(loadLeaderboard, LIVE_LEADERBOARD_REFRESH_MS);
-  window.clearInterval(pebbleStepsRefreshTicker);
-  pebbleStepsRefreshTicker = window.setInterval(() => {
-    void refreshPebbleStepTape();
-  }, LIVE_PEBBLE_STEPS_REFRESH_MS);
+  // Poll /api/control every 15s to keep metrics + leaderboards fresh.
+  window.setInterval(() => {
+    fetchFeatureFlags(true).then((flags) => applyLiveStats(flags?.liveStats));
+  }, 15000);
+
   window.addEventListener("resize", requestViewportFit);
   window.addEventListener("orientationchange", requestViewportFit);
   if (document.fonts?.ready) {
@@ -2479,14 +1797,6 @@ const DEFAULT_TESTIMONIALS = [
     stats: "Lost 23 lbs in 4 months",
   },
   {
-    name: "Sarah K.",
-    location: "NYC",
-    platform: "SMS",
-    rating: 5,
-    content: "The simplicity is genius. I text my meals and workouts throughout the day, then check my dashboard weekly. Finally hit my protein goals consistently.",
-    stats: "180 day streak",
-  },
-  {
     name: "James L.",
     location: "Chicago",
     platform: "Telegram",
@@ -2501,14 +1811,6 @@ const DEFAULT_TESTIMONIALS = [
     rating: 5,
     content: "Finally a tracker that doesn't make me feel like I need a PhD to log a sandwich. Just text it and done.",
     stats: "Gained 8 lbs muscle",
-  },
-  {
-    name: "David M.",
-    location: "Seattle",
-    platform: "SMS",
-    rating: 5,
-    content: "The body measurement tracking is incredible. I can see my biceps and chest growing week over week.",
-    stats: "+2 inches on arms",
   },
   {
     name: "Lisa P.",
@@ -2535,7 +1837,7 @@ const DEFAULT_FAQS = [
   },
   {
     question: "What messaging apps work?",
-    answer: "We support iMessage, SMS, and Telegram - pick whichever you prefer. Wearable integrations include Pebble, Fitbit, Garmin, Whoop, Oura, and Apple Watch for automatic syncing.",
+    answer: "We support iMessage and Telegram - pick whichever you prefer. Wearable integrations include Fitbit, Garmin, Whoop, Oura, and Apple Watch for automatic syncing.",
   },
   {
     question: "Can I track body measurements?",
@@ -3162,172 +2464,12 @@ async function initFeatureSections() {
 }
 
 // ============================================
-// HERO LIVE ACTIVITY FEED
-// ============================================
 
-async function initHeroLiveFeed() {
-  const feed = document.getElementById("heroFeedItems");
-  const activeUsers = document.getElementById("heroActiveUsers");
-  const totalSteps = document.getElementById("heroTotalSteps");
-  const totalMiles = document.getElementById("heroTotalMiles");
-  const totalWorkouts = document.getElementById("heroTotalWorkouts");
-  
-  if (!feed) return;
-
-  // Try to fetch from API
-  async function fetchLiveData() {
-    try {
-      const res = await fetch("https://api.thetrackerapp.io/api/activity/live");
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch (e) {
-      console.warn("Could not fetch live activity:", e);
-    }
-    return null;
-  }
-
-  function renderEvents(events) {
-    feed.innerHTML = "";
-    events.slice(0, 6).forEach(event => {
-      const item = document.createElement("div");
-      item.className = "live-feed-item";
-      item.innerHTML = `
-        <span class="feed-icon">${event.icon || "👟"}</span>
-        <div class="feed-info">
-          <span class="feed-name">${escapeHtml(event.name)}</span>
-          <span class="feed-location">${escapeHtml(event.location || "")}</span>
-        </div>
-        <span class="feed-value">+${event.delta || event.steps || 0}</span>
-      `;
-      feed.appendChild(item);
-    });
-  }
-
-  function updateStats(stats) {
-    if (activeUsers && stats.activeUsers) {
-      activeUsers.textContent = `${stats.activeUsers} active`;
-    }
-    if (totalSteps && stats.totalStepsToday) {
-      totalSteps.textContent = stats.totalStepsToday.toLocaleString();
-    }
-    if (totalMiles && stats.totalMilesToday) {
-      totalMiles.textContent = stats.totalMilesToday.toFixed(1);
-    }
-    if (totalWorkouts && stats.totalWorkoutsToday) {
-      totalWorkouts.textContent = stats.totalWorkoutsToday;
-    }
-  }
-
-  function escapeHtml(str) {
-    if (!str) return "";
-    return str.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-  }
-
-  // Initial fetch
-  const data = await fetchLiveData();
-  if (data) {
-    if (data.events) renderEvents(data.events);
-    if (data.stats) updateStats(data.stats);
-  } else {
-    // Fallback to simulated data
-    useFallbackData();
-  }
-
-  // Poll for updates
-  setInterval(async () => {
-    const data = await fetchLiveData();
-    if (data) {
-      if (data.events) renderEvents(data.events);
-      if (data.stats) updateStats(data.stats);
-    }
-  }, 5000);
-
-  function useFallbackData() {
-    const names = ["John D.", "Sarah M.", "Alex K.", "Emily R.", "Mike T.", "Lisa W."];
-    const locations = ["Austin", "NYC", "LA", "Chicago", "Seattle", "Miami"];
-    const icons = ["👟", "🏃", "🚶", "💪", "🏋️", "🚴"];
-    let stepTotal = Math.floor(Math.random() * 5000) + 2000;
-    let workoutTotal = Math.floor(Math.random() * 5) + 1;
-
-    if (totalSteps) totalSteps.textContent = stepTotal.toLocaleString();
-    if (totalMiles) totalMiles.textContent = (stepTotal / 2000).toFixed(1);
-    if (totalWorkouts) totalWorkouts.textContent = workoutTotal;
-    if (activeUsers) activeUsers.textContent = `${Math.floor(Math.random() * 30) + 15} active`;
-
-    for (let i = 0; i < 4; i++) addFallbackItem();
-
-    function addFallbackItem() {
-      const steps = Math.floor(Math.random() * 400) + 50;
-      const item = document.createElement("div");
-      item.className = "live-feed-item";
-      item.innerHTML = `
-        <span class="feed-icon">${icons[Math.floor(Math.random() * icons.length)]}</span>
-        <div class="feed-info">
-          <span class="feed-name">${names[Math.floor(Math.random() * names.length)]}</span>
-          <span class="feed-location">${locations[Math.floor(Math.random() * locations.length)]}</span>
-        </div>
-        <span class="feed-value">+${steps}</span>
-      `;
-      feed.insertBefore(item, feed.firstChild);
-      while (feed.children.length > 6) feed.removeChild(feed.lastChild);
-      stepTotal += steps;
-      if (totalSteps) totalSteps.textContent = stepTotal.toLocaleString();
-      if (totalMiles) totalMiles.textContent = (stepTotal / 2000).toFixed(1);
-    }
-
-    setInterval(() => {
-      addFallbackItem();
-      if (activeUsers) activeUsers.textContent = `${Math.floor(Math.random() * 30) + 15} active`;
-    }, 3000 + Math.random() * 2000);
-  }
-}
-
-// ============================================
-// MAINTENANCE MODE CHECK
-// ============================================
-
-async function checkMaintenanceMode() {
-  try {
-    // Use our edge-cached proxy (/api/control) instead of hitting the
-    // upstream backend on every page load. Vercel caches this response
-    // for 30 minutes at the edge.
-    const res = await fetch("/api/control");
-    if (!res.ok) return false;
-    const flags = await res.json();
-    
-    if (flags.maintenanceMode) {
-      // Hide ALL page content
-      document.body.innerHTML = "";
-      document.body.style.margin = "0";
-      document.body.style.padding = "0";
-      document.body.style.overflow = "hidden";
-      
-      // Create maintenance page
-      const overlay = document.createElement("div");
-      overlay.className = "maintenance-overlay";
-      overlay.innerHTML = `
-        <div class="maintenance-icon">🔧</div>
-        <h1>We'll Be Right Back</h1>
-        <p>${flags.maintenanceMessage || "We're making some improvements. Check back soon!"}</p>
-      `;
-      document.body.appendChild(overlay);
-      return true;
-    }
-  } catch (e) {
-    console.warn("Could not check maintenance mode:", e);
-  }
-  return false;
-}
-
-// Handle live feed visibility based on feature flag
 async function handleLiveFeedVisibility() {
   try {
-    // Use the edge-cached /api/control proxy (30 min cache) instead of
-    // hammering the upstream backend on every page load.
-    const res = await fetch("/api/control");
-    if (!res.ok) throw new Error("Failed to fetch flags");
-    const flags = await res.json();
+    // Use server-injected flags to avoid an extra /api/control fetch
+    const flags = window.__CONTROL_FLAGS__;
+    if (!flags) return;
     
     const liveFeed = document.getElementById("heroLiveFeed");
     const iphoneFrame = document.getElementById("iphoneFrame");
@@ -3353,25 +2495,33 @@ async function handleLiveFeedVisibility() {
       }
       initHeroLiveFeed();
     }
-
-    // Same rule for the step-tape panel. Cache the value so the data-driven
-    // setStepsTapeVisibility() can honor it later when step events arrive.
-    stepTapeFeatureEnabled = flags.stepTape === true;
-    if (els.stepsCounterPanel && !stepTapeFeatureEnabled) {
-      els.stepsCounterPanel.hidden = true;
-    }
   } catch (e) {
     // Default: show live feed
     initHeroLiveFeed();
   }
 }
 
-inject();
-initGoogleAnalytics();
-initOnboardingGuide();
-init();
-initFeatureSections();
-handleLiveFeedVisibility();
+async function boot() {
+  // Safety net: if the Worker didn't catch maintenance mode, the client
+  // checks server-injected flags synchronously before any JS runs.
+  try {
+    const flags = window.__CONTROL_FLAGS__;
+    if (flags && flags.maintenanceMode) {
+      document.body.innerHTML = '<div style="position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#0a0a0c,#1a1a2e);display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:2rem;font-family:-apple-system,BlinkMacSystemFont,sans-serif;color:#ecf4ff"><div style="font-size:5rem;margin-bottom:1.5rem">🔧</div><h1 style="font-family:Orbitron,sans-serif;font-size:2.5rem;color:#fff;margin:0 0 1rem">We\'ll Be Right Back</h1><p style="color:#9eb0c5;font-size:1.1rem;max-width:420px;line-height:1.5">' + (flags.maintenanceMessage || "We're upgrading our servers. Back soon!") + '</p></div>';
+      document.body.style.margin = "0";
+      document.body.style.padding = "0";
+      document.body.style.overflow = "hidden";
+      return;
+    }
+  } catch {}
+
+  initOnboardingGuide();
+
+  init();
+  initFeatureSections();
+}
+
+boot();
 
 
 window.simulateStatsIncrease = function() {

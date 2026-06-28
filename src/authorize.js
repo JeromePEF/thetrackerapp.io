@@ -16,12 +16,16 @@ const els = {
   requestedDeviceValue: document.getElementById("requestedDeviceValue"),
   deviceSessionValue: document.getElementById("deviceSessionValue"),
   requestedAtValue: document.getElementById("requestedAtValue"),
+  otpContainer: document.getElementById("otpContainer"),
+  authorizeHeading: document.getElementById("authorizeHeading"),
+  channelMessage: document.getElementById("channelMessage"),
   verifyStatus: document.getElementById("verifyStatus"),
   verifyCodeForm: document.getElementById("verifyCodeForm"),
   deviceCodeInput: document.getElementById("deviceCodeInput"),
   otpSlots: Array.from(document.querySelectorAll(".otp-slot")),
   resendCodeButton: document.getElementById("resendCodeButton"),
   editIdentifierButton: document.getElementById("editIdentifierButton"),
+  emailFallbackButton: document.getElementById("emailFallbackButton"),
 };
 
 let pendingAuth = null;
@@ -43,6 +47,30 @@ function sanitizeDeviceCode(rawValue) {
   const clean = source.replace(/[^A-Z0-9]/g, "");
   const maxLength = Number(pendingAuth?.codeLength || DEFAULT_CODE_LENGTH);
   return clean.slice(0, maxLength);
+}
+
+function buildOtpSlots(codeLength) {
+  if (!els.otpContainer) return;
+  const count = Math.max(codeLength || DEFAULT_CODE_LENGTH, 4);
+  const mid = Math.ceil(count / 2);
+
+  els.otpContainer.querySelectorAll(".otp-slot, .otp-divider").forEach(el => el.remove());
+
+  for (let i = 0; i < count; i++) {
+    if (i === mid) {
+      const div = document.createElement("span");
+      div.className = "otp-divider";
+      div.setAttribute("aria-hidden", "true");
+      div.textContent = "-";
+      els.otpContainer.insertBefore(div, els.deviceCodeInput || els.otpContainer.lastChild);
+    }
+    const slot = document.createElement("span");
+    slot.className = "otp-slot";
+    slot.dataset.otpIndex = String(i);
+    els.otpContainer.insertBefore(slot, els.deviceCodeInput || els.otpContainer.lastChild);
+  }
+
+  els.otpSlots = Array.from(els.otpContainer.querySelectorAll(".otp-slot"));
 }
 
 function updateCodeSlots(code) {
@@ -69,20 +97,26 @@ function loadPendingAuth() {
       return null;
     }
 
+    const channel = String(parsed.channel || "").trim() || null;
+    const isTelegram = channel === "Telegram" || channel === "telegram";
+
     return {
       method: String(parsed.method || "").trim(),
       provider: String(parsed.provider || "").trim(),
-      deliveryChannel: String(parsed.deliveryChannel || "").trim(),
+      deliveryChannel: String(parsed.deliveryChannel || parsed.channel || "").trim(),
       recovery: Boolean(parsed.recovery),
       identifier: String(parsed.identifier || "").trim(),
       displayValue: String(parsed.displayValue || "").trim(),
-      requestedTarget: String(parsed.requestedTarget || parsed.displayValue || "").trim(),
+      requestedTarget: isTelegram
+        ? (parsed.displayValue || parsed.requestedTarget || "").trim()
+        : String(parsed.requestedTarget || parsed.displayValue || "").trim(),
       requestId: String(parsed.requestId || "").trim() || null,
       codeLength: Math.max(Number(parsed.codeLength) || DEFAULT_CODE_LENGTH, 4),
       expiresAt: parsed.expiresAt ? String(parsed.expiresAt) : null,
       requestedAt: parsed.requestedAt ? String(parsed.requestedAt) : new Date().toISOString(),
       sessionLabel: String(parsed.sessionLabel || "Current device").trim(),
       next: String(parsed.next || "").trim() || null,
+      channel,
     };
   } catch {
     return null;
@@ -119,7 +153,29 @@ function renderPendingAuth() {
     return;
   }
 
-  const requested = pendingAuth.requestedTarget || pendingAuth.displayValue || "-";
+  const channel = pendingAuth.channel || pendingAuth.deliveryChannel || "";
+  const isImessage = channel === "iMessage" || channel === "imessage";
+  const isEmail = channel === "Email" || channel === "email";
+  const isSms = channel === "SMS" || channel === "sms";
+  const isTelegram = channel === "Telegram" || channel === "telegram";
+
+  const requested = isTelegram
+    ? (pendingAuth.displayValue || pendingAuth.requestedTarget || "-")
+    : (pendingAuth.requestedTarget || pendingAuth.displayValue || "-");
+  const codeLength = pendingAuth.codeLength || DEFAULT_CODE_LENGTH;
+
+  if (els.authorizeHeading) {
+    if (isEmail) {
+      els.authorizeHeading.textContent = "Check your email";
+    } else {
+      els.authorizeHeading.textContent = "Check your messages";
+    }
+  }
+
+  if (els.channelMessage) {
+    const viaLabel = isEmail ? "via email" : isSms ? "via text message" : isTelegram ? "via Telegram" : "via iMessage";
+    els.channelMessage.textContent = `We sent a ${codeLength}-digit code ${viaLabel} to ${requested}.`;
+  }
 
   if (els.requestedTargetValue) {
     els.requestedTargetValue.textContent = requested;
@@ -137,9 +193,14 @@ function renderPendingAuth() {
     els.requestedAtValue.textContent = formatTimestamp(pendingAuth.requestedAt);
   }
 
+  if (els.emailFallbackButton) {
+    els.emailFallbackButton.hidden = isEmail || pendingAuth.recovery || !(isImessage || isSms || isTelegram);
+  }
+
   if (els.deviceCodeInput) {
     els.deviceCodeInput.value = "";
-    els.deviceCodeInput.maxLength = pendingAuth.codeLength;
+    els.deviceCodeInput.maxLength = codeLength;
+    buildOtpSlots(codeLength);
     updateCodeSlots("");
     els.deviceCodeInput.focus();
   }
@@ -322,51 +383,44 @@ function normalizeRequestMetadata(responsePayload) {
   const codeLengthRaw = Number(body?.codeLength || body?.code_length || body?.otpLength || pendingAuth?.codeLength || DEFAULT_CODE_LENGTH);
   const codeLength = Number.isFinite(codeLengthRaw) && codeLengthRaw > 0 ? Math.round(codeLengthRaw) : DEFAULT_CODE_LENGTH;
 
+  const channel = String(body?.channel || "").trim() || null;
+
   return {
     requestId,
     requestedTarget,
     codeLength,
+    channel,
   };
 }
 
-function buildResendPayload(auth) {
+function buildResendPayload(auth, opts = {}) {
   const payload = {
-    method: auth.method,
     identifier: auth.identifier,
     requestId: auth.requestId,
-    request_id: auth.requestId,
     resend: true,
-    provider: auth.provider || undefined,
-    deliveryChannel: auth.deliveryChannel || undefined,
-    recovery: Boolean(auth.recovery),
   };
 
-  if (auth.method === "phone") {
-    const digits = String(auth.identifier || "").replace(/\D+/g, "");
-    const normalizedPhone =
-      digits.length === 10 ? `+1${digits}` : digits.length === 11 && digits.startsWith("1") ? `+${digits}` : auth.identifier;
-    payload.contact = normalizedPhone || undefined;
-    payload.phone = normalizedPhone || undefined;
-    payload.phoneDigits = digits || undefined;
-  } else if (auth.method === "email") {
-    payload.email = auth.identifier || undefined;
-  } else if (auth.method === "username") {
-    payload.username = auth.identifier || undefined;
+  if (opts.method) {
+    payload.method = opts.method;
+  }
+
+  if (opts.recovery) {
+    payload.recovery = true;
   }
 
   return payload;
 }
 
-async function handleResendCode() {
+async function handleResendCode(opts = {}) {
   if (!pendingAuth) {
     setStatus("Missing login request. Start again from login.", "is-error");
     return;
   }
 
   setLoading(true);
-  setStatus("Requesting new code...", "");
+  setStatus(opts.recovery ? "Requesting email code..." : "Requesting new code...", "");
 
-  const payload = buildResendPayload(pendingAuth);
+  const payload = buildResendPayload(pendingAuth, opts);
 
   try {
     const response = await requestLoginCode(payload);
@@ -376,8 +430,11 @@ async function handleResendCode() {
       ...pendingAuth,
       requestId: meta.requestId,
       requestedTarget: meta.requestedTarget,
+      channel: meta.channel || (opts.recovery ? "Email" : pendingAuth.channel),
       codeLength: meta.codeLength,
       requestedAt: new Date().toISOString(),
+      method: opts.method || pendingAuth.method,
+      recovery: opts.recovery === true ? true : pendingAuth.recovery,
     };
 
     savePendingAuth(pendingAuth);
@@ -388,6 +445,10 @@ async function handleResendCode() {
   } finally {
     setLoading(false);
   }
+}
+
+async function handleEmailFallback() {
+  await handleResendCode({ method: "email", recovery: true });
 }
 
 function handleUseDifferentLogin() {
@@ -401,7 +462,11 @@ function wireEvents() {
   }
 
   if (els.resendCodeButton) {
-    els.resendCodeButton.addEventListener("click", handleResendCode);
+    els.resendCodeButton.addEventListener("click", () => handleResendCode());
+  }
+
+  if (els.emailFallbackButton) {
+    els.emailFallbackButton.addEventListener("click", handleEmailFallback);
   }
 
   if (els.editIdentifierButton) {
@@ -413,6 +478,9 @@ function wireEvents() {
       const normalized = sanitizeDeviceCode(event.target.value);
       event.target.value = normalized;
       updateCodeSlots(normalized);
+      if (normalized.length === pendingAuth?.codeLength) {
+        handleVerifyCode(new Event("submit", { cancelable: true }));
+      }
     });
 
     els.deviceCodeInput.addEventListener("focus", () => {

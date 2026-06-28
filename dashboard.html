@@ -48,22 +48,6 @@
     </script>
   </head>
   <body class="dashboard-page">
-    <div id="emailVerifyOverlay" class="email-verify-overlay" hidden>
-      <div class="email-verify-card">
-        <div class="email-verify-icon">📧</div>
-        <h2>Verify Your Email</h2>
-        <p id="emailVerifyPrompt">Verify your email to unlock all features including affiliate access, data export, and account recovery.</p>
-        <div id="emailVerifyInputRow" hidden style="margin-bottom: 1rem;">
-          <input id="emailVerifyInput" type="email" class="account-edit-input" placeholder="you@example.com" style="width: 100%; padding: 0.6rem; border-radius: 6px;" />
-        </div>
-        <div class="email-verify-actions">
-          <button id="emailVerifySendBtn" type="button" class="btn-primary">Send Verification Email</button>
-          <button id="emailVerifySkipBtn" type="button" class="btn-secondary">Skip for now</button>
-        </div>
-        <p id="emailVerifyStatus" class="stats-status" role="status" aria-live="polite"></p>
-      </div>
-    </div>
-
     <div class="dashboard-shell">
       <header class="auth-top-nav">
         <a href="https://thetrackerapp.io/" class="header-logo auth-brand" aria-label="Home" style="margin:0; display:flex; align-items:center; gap:8px; text-decoration:none;">
@@ -101,15 +85,13 @@
             <button id="navCalendar" type="button" class="dashboard-tab" data-tab="calendar" data-feature="dashboardTabs.calendar" hidden>CALENDAR</button>
             <button id="navShortcuts" type="button" class="dashboard-tab" data-tab="shortcuts" data-feature="dashboardTabs.shortcuts" hidden>SHORTCUTS</button>
             <button id="navPersonalTrainer" type="button" class="dashboard-tab" data-tab="personal-trainer" data-feature="dashboardTabs.personalTrainer" hidden>PERSONAL TRAINER</button>
+            <button id="navAffiliate" type="button" class="dashboard-tab" data-tab="affiliate">AFFILIATE</button>
+            <button id="navBilling" type="button" class="dashboard-tab" data-tab="billing">BILLING</button>
+            <button id="navExport" type="button" class="dashboard-tab" data-tab="export">EXPORT</button>
+            <button id="navIntegrate" type="button" class="dashboard-tab" data-tab="integrate">INTEGRATE</button>
+            <button id="navSheet" type="button" class="dashboard-tab" data-tab="sheet">SHEET</button>
             <button id="navGroups" type="button" class="dashboard-tab" data-tab="groups" data-feature="dashboardTabs.groups" hidden>GROUPS</button>
             <button id="navRunClubs" type="button" class="dashboard-tab" data-tab="run-clubs" data-feature="dashboardTabs.runClubs" hidden>RUN CLUBS</button>
-            <button id="navExport" type="button" class="dashboard-tab" data-tab="export">EXPORT</button>
-            <button id="navGoals" type="button" class="dashboard-tab" data-tab="goals" hidden>GOALS/PLAN</button>
-            <button id="navBilling" type="button" class="dashboard-tab" data-tab="billing">BILLING</button>
-            <button id="navIntegrate" type="button" class="dashboard-tab" data-tab="integrate" hidden>INTEGRATE</button>
-            <button id="navAi" type="button" class="dashboard-tab" data-tab="ai">AI</button>
-            <button id="navSheet" type="button" class="dashboard-tab" data-tab="sheet">SHEET</button>
-            <button id="navAffiliate" type="button" class="dashboard-tab" data-tab="affiliate">AFFILIATE</button>
           </nav>
         </aside>
 
@@ -364,42 +346,34 @@
                 <label class="toggle-row">
                   <input type="checkbox" id="toggleMergedVisibility" />
                   <span>Merged Activity</span>
-                  <span class="toggle-desc">Shows your combined workout + nutrition + hydration heatmap.</span>
                 </label>
                 <label class="toggle-row">
                   <input type="checkbox" id="toggleWorkoutVisibility" />
                   <span>Workout Activity</span>
-                  <span class="toggle-desc">Shows your 52-week workout heatmap and activity calendar.</span>
                 </label>
                 <label class="toggle-row">
                   <input type="checkbox" id="toggleNutritionVisibility" />
                   <span>Nutrition Activity</span>
-                  <span class="toggle-desc">Shows your 52-week nutrition/meal logging heatmap.</span>
                 </label>
                 <label class="toggle-row">
                   <input type="checkbox" id="toggleWaterVisibility" />
                   <span>Hydration Activity</span>
-                  <span class="toggle-desc">Shows your 52-week water intake heatmap.</span>
                 </label>
                 <label class="toggle-row">
                   <input type="checkbox" id="toggleStatsBarVisibility" />
                   <span>Stats Bar</span>
-                  <span class="toggle-desc">Shows your total workouts, current streak, and active days count.</span>
                 </label>
                 <label class="toggle-row">
                   <input type="checkbox" id="toggleLeaderboardVisibility" />
                   <span>Leaderboard Standings</span>
-                  <span class="toggle-desc">Shows your ranking on strength, calisthenics, and streak leaderboards.</span>
                 </label>
                 <label class="toggle-row">
                   <input type="checkbox" id="toggleRecentWorkoutsVisibility" />
                   <span>Recent Workouts</span>
-                  <span class="toggle-desc">Shows your most recent logged workouts with exercise details.</span>
                 </label>
                 <label class="toggle-row">
                   <input type="checkbox" id="togglePublicLeaderboardConsent" />
                   <span>Show me on public leaderboards</span>
-                  <span class="toggle-desc">Your name and stats may appear on the homepage strength, calisthenics, and streaks leaderboards.</span>
                 </label>
               </div>
               <div class="panel-actions" style="margin-top: 0.75rem;">
@@ -464,51 +438,6 @@
             <p id="deleteStatus" class="stats-status" role="status" aria-live="polite"></p>
           </article>
 
-          <article id="tabGoals" class="dashboard-panel" data-tab-panel="goals" hidden>
-            <header class="panel-head">
-              <h2>Goals</h2>
-              <p>Set body goals and workout plan.</p>
-            </header>
-            <div class="form-grid">
-              <label>
-                Body Weight Goal
-                <input id="goalWeightInput" type="text" placeholder="e.g. 165 lb" />
-              </label>
-              <label>
-                Body Fat Goal
-                <input id="goalBodyFatInput" type="text" placeholder="e.g. 18%" />
-              </label>
-            </div>
-
-            <section class="plans-section">
-              <div class="stats-trend-head">
-                <h3>Popular Workout Splits</h3>
-                <p>Choose from 7-day to 1-day plans or build your own.</p>
-              </div>
-              <div id="planDaysToggle" class="plan-days-toggle" role="group" aria-label="Workout day splits">
-                <button type="button" class="plan-day-btn is-active" data-days="7">7 Day</button>
-                <button type="button" class="plan-day-btn" data-days="6">6 Day</button>
-                <button type="button" class="plan-day-btn" data-days="5">5 Day</button>
-                <button type="button" class="plan-day-btn" data-days="4">4 Day</button>
-                <button type="button" class="plan-day-btn" data-days="3">3 Day</button>
-                <button type="button" class="plan-day-btn" data-days="2">2 Day</button>
-                <button type="button" class="plan-day-btn" data-days="1">1 Day</button>
-              </div>
-              <div id="popularPlansList" class="popular-plans-list"></div>
-              <p id="plansStatus" class="stats-status" role="status" aria-live="polite"></p>
-            </section>
-
-            <label>
-              Workout Plan
-              <textarea id="goalWorkoutPlanInput" rows="4" placeholder="Describe your weekly workout plan"></textarea>
-            </label>
-            <div class="panel-actions">
-              <button id="saveGoalsButton" type="button" class="btn-primary">Save Goals</button>
-            </div>
-            <p id="goalsStatus" class="stats-status" role="status" aria-live="polite"></p>
-
-          </article>
-
           <article id="tabBilling" class="dashboard-panel" data-tab-panel="billing" hidden>
             <header class="panel-head">
               <h2>Billing</h2>
@@ -551,59 +480,6 @@
             </header>
             <div id="integrationCards" class="integration-grid"></div>
             <p id="integrateStatus" class="stats-status" role="status" aria-live="polite"></p>
-          </article>
-
-          <article id="tabAi" class="dashboard-panel" data-tab-panel="ai" hidden>
-            <div class="ai-chat-shell ai-gemini-shell">
-              <section class="ai-session-rail" aria-label="AI chat sessions">
-                <div class="ai-session-rail-head">
-                  <div class="ai-brand-row">
-                    <span class="ai-menu-button" aria-hidden="true">☰</span>
-                    <div>
-                      <p class="ai-kicker">AI Coach</p>
-                      <h3>Conversation</h3>
-                    </div>
-                  </div>
-                  <div class="ai-meta-row">
-                    <button id="aiNewSessionButton" type="button" class="btn-secondary">New Chat</button>
-                    <span class="ai-plan-badge">PRO</span>
-                    <span id="aiUserAvatar" class="ai-user-avatar" aria-hidden="true">A</span>
-                  </div>
-                </div>
-                <div id="aiSessionsList" class="ai-sessions-list ai-sessions-strip"></div>
-              </section>
-              <section class="ai-chat-main" aria-label="AI chat thread">
-                <section id="aiEmptyState" class="ai-empty-state" hidden>
-                  <p class="ai-empty-kicker">Hi <span id="aiGreetingName">there</span></p>
-                  <h3>Where should we start?</h3>
-                  <div class="ai-quick-prompts ai-quick-prompts-stack">
-                    <button type="button" class="btn-secondary ai-prompt" data-prompt="Build me a workout plan for my current goal and available training days.">Build me a workout plan</button>
-                    <button type="button" class="btn-secondary ai-prompt" data-prompt="Review my current nutrition and tell me what to change this week.">Review my nutrition</button>
-                    <button type="button" class="btn-secondary ai-prompt" data-prompt="Use my stats to explain my current training trend and what I should focus on next.">Explain my current trend</button>
-                    <button type="button" class="btn-secondary ai-prompt" data-prompt="Help me plan my hydration and recovery for the rest of this week.">Boost my week</button>
-                    <button type="button" class="btn-secondary ai-prompt" data-prompt="Teach me how to improve my workout programming and body-composition results.">Help me learn</button>
-                  </div>
-                </section>
-                <div id="aiMessages" class="ai-messages" aria-live="polite"></div>
-                <form id="aiChatForm" class="ai-compose ai-gemini-compose">
-                  <div class="ai-compose-shell">
-                    <textarea id="aiQuestionInput" rows="3" placeholder="Enter a prompt for AI Coach"></textarea>
-                    <div class="ai-compose-actions">
-                      <div class="ai-compose-side">
-                        <span class="ai-compose-icon" aria-hidden="true">+</span>
-                        <span class="ai-compose-icon" aria-hidden="true">⋮</span>
-                      </div>
-                      <div class="ai-compose-side ai-compose-side-right">
-                        <span class="ai-compose-mode">Fast</span>
-                        <button id="askAiButton" type="submit" class="btn-primary">Send</button>
-                      </div>
-                    </div>
-                  </div>
-                </form>
-              </section>
-            </div>
-            <p id="aiStatus" class="stats-status" role="status" aria-live="polite"></p>
-            <div id="aiResponseBox" class="ai-response" hidden></div>
           </article>
 
           <article id="tabSheet" class="dashboard-panel" data-tab-panel="sheet" hidden>
@@ -789,6 +665,29 @@
             </section>
 
             <section class="affiliate-box">
+              <h3>Payment Summary</h3>
+              <div class="affiliate-stat-grid">
+                <div class="affiliate-stat">
+                  <p class="affiliate-stat-label">Total Paid</p>
+                  <p class="affiliate-stat-value" id="affiliateTabTotalPaid">$0.00</p>
+                </div>
+                <div class="affiliate-stat">
+                  <p class="affiliate-stat-label">Last Payment</p>
+                  <p class="affiliate-stat-value" id="affiliateTabLastPayment">—</p>
+                  <p class="affiliate-stat-sub" id="affiliateTabLastPaymentDate"></p>
+                </div>
+                <div class="affiliate-stat">
+                  <p class="affiliate-stat-label">Upcoming Payout</p>
+                  <p class="affiliate-stat-value" id="affiliateTabUpcomingPayout">$0.00</p>
+                </div>
+                <div class="affiliate-stat">
+                  <p class="affiliate-stat-label">Est. Payout Date</p>
+                  <p class="affiliate-stat-value" id="affiliateTabEstPayoutDate">—</p>
+                </div>
+              </div>
+            </section>
+
+            <section class="affiliate-box">
               <h3>Payouts</h3>
               <p id="affiliateTabStripeStatus" class="stats-status">Connect Stripe to receive your earnings.</p>
               <div class="panel-actions">
@@ -825,6 +724,24 @@
         </section>
       </main>
     </div>
+
+    <div id="emailVerifyOverlay" class="email-verify-overlay" hidden style="position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;">
+      <div class="email-verify-card">
+        <div class="email-verify-icon">📧</div>
+        <h2>Verify Your Email</h2>
+        <p id="emailVerifyPrompt">Verify your email to unlock all features including affiliate access, data export, and account recovery.</p>
+        <div id="emailVerifyInputRow" style="margin-bottom: 1rem;">
+          <input id="emailVerifyInput" type="email" class="account-edit-input" placeholder="you@example.com" style="width: 100%; padding: 0.6rem; border-radius: 6px;" />
+        </div>
+        <p id="emailVerifyTimestamp" style="color:#9eb0c5; font-size:0.75rem; margin-bottom:1rem;" hidden></p>
+        <div class="email-verify-actions">
+          <button id="emailVerifySendBtn" type="button" class="btn-primary">Send Verification Email</button>
+          <button id="emailVerifySkipBtn" type="button" class="btn-secondary">Skip for now</button>
+        </div>
+        <p id="emailVerifyStatus" class="stats-status" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+
     <script type="module" src="/src/dashboard.js"></script>
   </body>
 </html>

@@ -1762,43 +1762,6 @@ export async function fetchLiveStreakAlert() {
   }
 }
 
-export async function fetchPublicLeaderboardSnapshot() {
-  const response = await fetch("/api/public-leaderboard", {
-    method: "GET",
-    headers: { Accept: "application/json" },
-  });
-
-  let body = null;
-  try {
-    body = await response.json();
-  } catch {
-    body = null;
-  }
-
-  if (!response.ok || body?.ok === false) {
-    throw new Error(body?.error || `Public leaderboard failed (${response.status})`);
-  }
-
-  return {
-    entries: Array.isArray(body?.entries) ? body.entries : [],
-    groupEntries: Array.isArray(body?.groupEntries) ? body.groupEntries : [],
-    streakEntries: Array.isArray(body?.streakEntries) ? body.streakEntries : [],
-    streakLiveMessage: typeof body?.streakLiveMessage === "string" ? body.streakLiveMessage : "",
-    liveEvents: Array.isArray(body?.liveEvents) ? body.liveEvents : [],
-    pebble: body?.pebble && typeof body.pebble === "object" ? body.pebble : {},
-    usersToday: coerceFiniteNumber(body?.usersToday) ?? 0,
-    usersThisWeek: coerceFiniteNumber(body?.usersThisWeek) ?? 0,
-    usersOnline: coerceFiniteNumber(body?.usersOnline) ?? 0,
-    workoutsLogged: coerceFiniteNumber(body?.workoutsLogged) ?? 0,
-    caloriesTracked: coerceFiniteNumber(body?.caloriesTracked) ?? 0,
-    gallonsDrank: coerceFiniteNumber(body?.gallonsDrank) ?? 0,
-    directories: body?.directories && typeof body.directories === "object" ? body.directories : {},
-    generatedAt: typeof body?.generatedAt === "string" ? body.generatedAt : "",
-    source: typeof body?.source === "string" ? body.source : "",
-    sourceVersion: typeof body?.sourceVersion === "string" ? body.sourceVersion : "",
-  };
-}
-
 function normalizePebbleEntry(entry) {
   const username = normalizeName(entry?.username, "");
   const contact = normalizeName(entry?.contact, "") || normalizeName(entry?.name, "");
@@ -2207,7 +2170,10 @@ function toWelcomePayload(payload) {
 
 function buildWelcomePayloadVariants(payload) {
   const base = toWelcomePayload(payload) || {};
-  const provider = normalizeName(payload?.provider, "iMessage");
+  // Honor the provider the user actually selected. Previously this
+  // defaulted to "iMessage", which forced every welcome message down
+  // the iMessage path regardless of the chosen service.
+  const provider = normalizeName(payload?.provider, "SMS");
   const email = normalizeName(payload?.email, "") || null;
   const phoneOrContact = normalizeName(payload?.phone, "") || normalizeName(payload?.contact, "");
   const username = normalizeName(payload?.username, "");
@@ -2216,26 +2182,14 @@ function buildWelcomePayloadVariants(payload) {
 
   if (phoneOrContact) {
     variants.push({
-      provider: "iMessage",
+      provider,
       phone: phoneOrContact,
-      email,
-    });
-
-    variants.push({
-      provider: "iMessage",
-      contact: phoneOrContact,
       email,
     });
 
     variants.push({
       provider,
       contact: phoneOrContact,
-      email,
-    });
-
-    variants.push({
-      provider,
-      phone: phoneOrContact,
       email,
     });
   }
@@ -2338,20 +2292,6 @@ export async function fetchUsageStats() {
   };
 }
 
-const LIVE_METRICS_WINDOWS = new Set(["today", "week", "month", "year", "all"]);
-
-function normalizeLiveMetricsWindow(windowValue) {
-  const normalized = String(windowValue || "today")
-    .trim()
-    .toLowerCase();
-
-  if (LIVE_METRICS_WINDOWS.has(normalized)) {
-    return normalized;
-  }
-
-  return "today";
-}
-
 function parseCsvLine(line) {
   const cells = [];
   let current = "";
@@ -2405,83 +2345,6 @@ function csvHeaderIndexMap(headerRow) {
   return map;
 }
 
-function csvCell(row, headerMap, headerName) {
-  const index = headerMap.get(normalizeCsvHeader(headerName));
-  if (index === undefined) {
-    return "";
-  }
-  return String(row[index] || "").trim();
-}
-
-function parseDashboardMetricsCsv(csvText) {
-  const rows = parseCsvTable(csvText);
-  if (rows.length < 2) {
-    throw new Error("Dashboard metrics sheet returned no data rows.");
-  }
-
-  const headers = csvHeaderIndexMap(rows[0]);
-  const byWindow = new Map();
-
-  rows.slice(1).forEach((row) => {
-    const windowName = normalizeLiveMetricsWindow(csvCell(row, headers, "Window"));
-    if (!windowName) {
-      return;
-    }
-
-    byWindow.set(windowName, {
-      window: windowName,
-      usersActive: coerceFiniteNumber(csvCell(row, headers, "Users Active")) ?? 0,
-      workoutsLogged: coerceFiniteNumber(csvCell(row, headers, "Workouts Logged")) ?? 0,
-      caloriesTracked: coerceFiniteNumber(csvCell(row, headers, "Calories Tracked")) ?? 0,
-      gallonsDrank: coerceFiniteNumber(csvCell(row, headers, "Gallons Drank")) ?? 0,
-      generatedAt: csvCell(row, headers, "Generated At UTC") || null,
-    });
-  });
-
-  return byWindow;
-}
-
-function metricRecord(value, sheetUrl) {
-  return {
-    value: value ?? 0,
-    sheetUrl: sheetUrl || DASHBOARD_METRICS_SHEET_URL,
-  };
-}
-
-export async function fetchLiveMetrics(windowValue = "today") {
-  const normalizedWindow = normalizeLiveMetricsWindow(windowValue);
-  const dashboardMeta = await fetchDashboardSheetMetadata();
-  const dashboardCsvUrl = dashboardMeta?.dashboardDataCsvUrl || DASHBOARD_METRICS_CSV_URL;
-  const dashboardSheetUrl = dashboardMeta?.dashboardDataTabUrl || dashboardMeta?.sheetUrl || DASHBOARD_METRICS_SHEET_URL;
-  const response = await fetch(dashboardCsvUrl, { cache: "no-store" });
-  if (!response.ok) {
-    throw new Error(`Live metrics sheet failed (${response.status})`);
-  }
-
-  const csvText = await response.text();
-  const byWindow = parseDashboardMetricsCsv(csvText);
-
-  const todayRow = byWindow.get("today") || null;
-  const weekRow = byWindow.get("week") || null;
-  const activeRow = byWindow.get(normalizedWindow) || todayRow || weekRow || null;
-  const generatedAt = activeRow?.generatedAt || todayRow?.generatedAt || weekRow?.generatedAt || null;
-
-  const usersUsingTodayValue = todayRow?.usersActive ?? activeRow?.usersActive ?? 0;
-  const totalUsersThisWeekValue = weekRow?.usersActive ?? usersUsingTodayValue ?? 0;
-
-  return {
-    requestedWindow: normalizedWindow,
-    generatedAt,
-    masterLogSheetUrl: dashboardMeta?.sheetUrl || DASHBOARD_METRICS_SHEET_URL,
-    usersUsingToday: metricRecord(usersUsingTodayValue, dashboardSheetUrl),
-    totalUsersThisWeek: metricRecord(totalUsersThisWeekValue, dashboardSheetUrl),
-    usersOnline: metricRecord(0, dashboardSheetUrl),
-    workoutsLogged: metricRecord(activeRow?.workoutsLogged ?? 0, dashboardSheetUrl),
-    caloriesTracked: metricRecord(activeRow?.caloriesTracked ?? 0, dashboardSheetUrl),
-    gallonsDrank: metricRecord(activeRow?.gallonsDrank ?? 0, dashboardSheetUrl),
-  };
-}
-
 export async function submitSignup(payload) {
   try {
     return await postJsonSameOrigin(LOCAL_SIGNUP_PROXY_ENDPOINT, payload);
@@ -2517,7 +2380,7 @@ export async function submitSignup(payload) {
   const onboardingContact = normalizeName(onboardingResult?.body?.contact, "");
   if (onboardingContact) {
     followUpWelcomePayloads.unshift({
-      provider: "iMessage",
+      provider: normalizeName(payload?.provider, "SMS"),
       phone: onboardingContact,
       email: normalizeName(payload?.email, "") || null,
     });

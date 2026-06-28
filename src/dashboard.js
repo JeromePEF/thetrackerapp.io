@@ -46,21 +46,10 @@ import {
 const AUTH_FLAG_KEY = "tracker.authenticated";
 const AUTH_USER_KEY = "tracker.auth.user";
 const AUTH_SESSION_KEY = "tracker.auth.session";
+const MAIN_SITE_LOGOUT_URL = "https://thetrackerapp.io/logout?next=%2F";
 const AFFILIATE_PENDING_KEY = "tracker.affiliate.pending";
 const GOALS_STORAGE_KEY = "tracker.dashboard.goals";
-const AI_SESSIONS_STORAGE_KEY = "tracker.dashboard.ai.sessions";
-const BACKEND_PROXY_ENDPOINT = "/api/backend-proxy";
-
-const LOGIN_PAGE_URL = "https://thetrackerapp.io/login";
-const MAIN_SITE_LOGOUT_URL = "https://thetrackerapp.io/logout?next=%2F";
-const DASHBOARD_HOME_URL = "https://dashboard.thetrackerapp.io/dashboard";
-const LEADERBOARD_URL = "https://thetrackerapp.io/#leaderboard";
-const STRIPE_CHECKOUT_SUCCESS_URL =
-  "https://thetrackerapp.io/dashboard?billing=success&session_id={CHECKOUT_SESSION_ID}&contact={CONTACT}";
-const STRIPE_CHECKOUT_CANCEL_URL = "https://thetrackerapp.io/dashboard?billing=cancelled&contact={CONTACT}";
-const AFFILIATE_AGREEMENT_POLL_MS = 4000;
-
-const TAB_IDS = ["account", "stats", "calendar", "shortcuts", "export", "goals", "billing", "integrate", "ai", "sheet", "personal-trainer", "groups", "run-clubs", "affiliate"];
+const TAB_IDS = ["account", "stats", "calendar", "shortcuts", "export", "billing", "integrate", "sheet", "personal-trainer", "groups", "run-clubs", "affiliate"];
 const RANGE_IDS = ["today", "week", "month", "year", "all"];
 const RANGE_LABELS = {
   today: "D",
@@ -172,6 +161,9 @@ const POPULAR_WORKOUT_PLANS = {
 const els = {
   navButtons: Array.from(document.querySelectorAll(".dashboard-tab[data-tab]")),
   panels: Array.from(document.querySelectorAll("[data-tab-panel]")),
+  statsRangeButtons: Array.from(document.querySelectorAll(".stats-range-btn")),
+  planDayButtons: Array.from(document.querySelectorAll(".plan-day-btn")),
+  affiliateCopyButtons: Array.from(document.querySelectorAll(".affiliate-copy")),
 
   navGoals: document.getElementById("navGoals"),
   navIntegrate: document.getElementById("navIntegrate"),
@@ -239,92 +231,7 @@ const els = {
   affiliateAgreementMessage: document.getElementById("affiliateAgreementMessage"),
   affiliateAgreementEmailInput: document.getElementById("affiliateAgreementEmailInput"),
   affiliateAgreementConfirmEmailInput: document.getElementById("affiliateAgreementConfirmEmailInput"),
-  affiliateAgreementLink: document.getElementById("affiliateAgreementLink"),
-  affiliateAgreementResendButton: document.getElementById("affiliateAgreementResendButton"),
-  affiliateAgreementStatus: document.getElementById("affiliateAgreementStatus"),
-  affiliateTabLinkInput: document.getElementById("affiliateTabLinkInput"),
-  affiliateTabCode: document.getElementById("affiliateTabCode"),
-  affiliateTabClicks: document.getElementById("affiliateTabClicks"),
-  affiliateTabSignups: document.getElementById("affiliateTabSignups"),
-  affiliateTabConversions: document.getElementById("affiliateTabConversions"),
-  affiliateTabCalculated: document.getElementById("affiliateTabCalculated"),
-  affiliateTabHeld: document.getElementById("affiliateTabHeld"),
-  affiliateTabSent: document.getElementById("affiliateTabSent"),
-  affiliateTabStripeStatus: document.getElementById("affiliateTabStripeStatus"),
-  affiliateTabConnectButton: document.getElementById("affiliateTabConnectButton"),
-  affiliateTabConnectStatus: document.getElementById("affiliateTabConnectStatus"),
-  affiliateReferralsRows: document.getElementById("affiliateReferralsRows"),
-  affiliateReferralsStatus: document.getElementById("affiliateReferralsStatus"),
-
-  statsRangeButtons: Array.from(document.querySelectorAll(".stats-range-btn[data-range]")),
-  statsFromDate: document.getElementById("statsFromDate"),
-  statsToDate: document.getElementById("statsToDate"),
-  applyCustomRangeButton: document.getElementById("applyCustomRangeButton"),
-  statsRangeStatus: document.getElementById("statsRangeStatus"),
-  statsWorkoutsValue: document.getElementById("statsWorkoutsValue"),
-  statsCaloriesValue: document.getElementById("statsCaloriesValue"),
-  statsGallonsValue: document.getElementById("statsGallonsValue"),
-  statsWindowLabel: document.getElementById("statsWindowLabel"),
-  statsGeneratedAtValue: document.getElementById("statsGeneratedAtValue"),
-  statsSheetLink: document.getElementById("statsSheetLink"),
-  toggleMilestonesButton: document.getElementById("toggleMilestonesButton"),
-  milestonesSection: document.getElementById("milestonesSection"),
-
-  chartWorkoutsRows: document.getElementById("chartWorkoutsRows"),
-  chartNutritionRows: document.getElementById("chartNutritionRows"),
-  chartWaterRows: document.getElementById("chartWaterRows"),
-  chartCombinedRows: document.getElementById("chartCombinedRows"),
-  bodyMeasureRows: document.getElementById("bodyMeasureRows"),
-  workoutHeatmap: document.getElementById("workoutHeatmap"),
-  nutritionHeatmap: document.getElementById("nutritionHeatmap"),
-  waterHeatmap: document.getElementById("waterHeatmap"),
-
-  leaderboardRankValue: document.getElementById("leaderboardRankValue"),
-  leaderboardLink: document.getElementById("leaderboardLink"),
-
-  exportCsvButton: document.getElementById("exportCsvButton"),
-  exportJsonButton: document.getElementById("exportJsonButton"),
-  exportStatus: document.getElementById("exportStatus"),
-
-  goalWeightInput: document.getElementById("goalWeightInput"),
-  goalBodyFatInput: document.getElementById("goalBodyFatInput"),
-  goalWorkoutPlanInput: document.getElementById("goalWorkoutPlanInput"),
-  planDayButtons: Array.from(document.querySelectorAll(".plan-day-btn[data-days]")),
-  popularPlansList: document.getElementById("popularPlansList"),
-  plansStatus: document.getElementById("plansStatus"),
-  saveGoalsButton: document.getElementById("saveGoalsButton"),
-  goalsStatus: document.getElementById("goalsStatus"),
-
-  affiliateCopyButtons: Array.from(document.querySelectorAll(".affiliate-copy[data-copy-target]")),
-
-  billingStatusValue: document.getElementById("billingStatusValue"),
-  billingPlanValue: document.getElementById("billingPlanValue"),
-  billingLastPaymentValue: document.getElementById("billingLastPaymentValue"),
-  billingNextBillingValue: document.getElementById("billingNextBillingValue"),
-  billingManageLink: document.getElementById("billingManageLink"),
-  billingNoAccount: document.getElementById("billingNoAccount"),
-  billingActionStatus: document.getElementById("billingActionStatus"),
-  billingNextBillingRow: document.getElementById("billingNextBillingRow"),
-  billingCheckoutPendingCard: document.getElementById("billingCheckoutPendingCard"),
-  billingCheckoutPendingMsg: document.getElementById("billingCheckoutPendingMsg"),
-  billingResumeCheckoutBtn: document.getElementById("billingResumeCheckoutBtn"),
-  billingAbandonCheckoutBtn: document.getElementById("billingAbandonCheckoutBtn"),
-
-  integrationCards: document.getElementById("integrationCards"),
-  integrateStatus: document.getElementById("integrateStatus"),
-
-  aiPromptButtons: Array.from(document.querySelectorAll(".ai-prompt[data-prompt]")),
-  aiChatForm: document.getElementById("aiChatForm"),
-  aiQuestionInput: document.getElementById("aiQuestionInput"),
-  askAiButton: document.getElementById("askAiButton"),
-  aiNewSessionButton: document.getElementById("aiNewSessionButton"),
-  aiSessionsList: document.getElementById("aiSessionsList"),
-  aiMessages: document.getElementById("aiMessages"),
-  aiEmptyState: document.getElementById("aiEmptyState"),
-  aiGreetingName: document.getElementById("aiGreetingName"),
-  aiUserAvatar: document.getElementById("aiUserAvatar"),
-  aiStatus: document.getElementById("aiStatus"),
-  aiResponseBox: document.getElementById("aiResponseBox"),
+  affiliateTabTotalPaid: document.getElementById("affiliateTabTotalPaid"),
 
   sheetDatabaseLink: document.getElementById("sheetDatabaseLink"),
   sheetStatus: document.getElementById("sheetStatus"),
@@ -350,8 +257,6 @@ const state = {
   userSheetUrl: "",
   backendSnapshot: null,
   availableIntegrations: [],
-  aiSessions: [],
-  activeAiSessionId: "",
   affiliateProfile: null,
   billingPortalUrl: "",
   affiliateHistoryLoadedKey: "",
@@ -511,6 +416,7 @@ function normalizeAuthUser(rawUser) {
     billingPlan: String(rawUser.billingPlan || rawUser.plan || rawUser.priceNickname || "").trim(),
     billingLastPaymentDate: String(rawUser.billingLastPaymentDate || rawUser.lastPaymentDate || "").trim(),
     billingNextBillingDate: String(rawUser.billingNextBillingDate || rawUser.nextBillingDate || "").trim(),
+    emailVerifiedAt: String(rawUser.emailVerifiedAt || rawUser.email_verified_at || "").trim() || null,
     sheetUrl: String(rawUser.sheetUrl || rawUser.googleSheetUrl || "").trim(),
     affiliateCode: String(rawUser.affiliateCode || "").trim(),
     hasPersonalTrainer: normalizeBoolean(
@@ -1061,52 +967,8 @@ function formatMethodLabel(method) {
   return "Unknown";
 }
 
-function formatAiName(value) {
-  const base = String(value || "")
-    .trim()
-    .split("@")[0]
-    .replace(/[._-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  if (!base) {
-    return "there";
-  }
-
-  return base
-    .split(" ")
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
-
-function resolveAiIdentity() {
-  const profile = state.backendSnapshot?.profile || {};
-  const user = readAuthUser() || {};
-  const source =
-    profile.firstName ||
-    profile.name ||
-    profile.username ||
-    profile.canonical ||
-    user.username ||
-    user.canonical ||
-    profile.email ||
-    user.email ||
-    "";
-  const displayName = formatAiName(source);
-  const initial = displayName === "there" ? "A" : displayName.charAt(0).toUpperCase();
-  return { displayName, initial };
-}
-
 function renderAiIdentity() {
-  const { displayName, initial } = resolveAiIdentity();
-
-  if (els.aiGreetingName) {
-    els.aiGreetingName.textContent = displayName;
-  }
-  if (els.aiUserAvatar) {
-    els.aiUserAvatar.textContent = initial;
-  }
+  // AI tab removed.
 }
 
 function formatTimestamp(value) {
@@ -1292,6 +1154,7 @@ function readAccountEmailVerified(user = readAuthUser()) {
 function renderEmailVerificationState(user = readAuthUser()) {
   const email = String(user?.email || "").trim();
   const verified = readAccountEmailVerified(user);
+  const verifiedAt = readAccountEmailVerifiedAt(user);
 
   if (els.verifyAccountEmailButton) {
     els.verifyAccountEmailButton.hidden = !email || verified;
@@ -1303,11 +1166,23 @@ function renderEmailVerificationState(user = readAuthUser()) {
     if (!current || /email verified|email not verified|verify email/i.test(current)) {
       setStatus(
         els.accountEmailStatus,
-        verified ? "Email verified." : "Email not verified. Verify before applying as an affiliate.",
+        verified ? (verifiedAt ? `Email verified on ${new Date(verifiedAt).toLocaleDateString()}.` : "Email verified.") : "Email not verified. Verify before applying as an affiliate.",
         verified ? "is-success" : "is-error",
       );
     }
   }
+}
+
+function readAccountEmailVerifiedAt(user = readAuthUser()) {
+  if (user?.emailVerifiedAt) return String(user.emailVerifiedAt).trim() || null;
+  const profile = state.backendSnapshot?.profile || {};
+  return String(
+    profile.emailVerifiedAt ||
+    profile.email_verified_at ||
+    state.backendSnapshot?.emailVerifiedAt ||
+    state.backendSnapshot?.email_verified_at ||
+    ""
+  ).trim() || null;
 }
 
 function renderAccountInfo() {
@@ -1436,6 +1311,13 @@ function normalizeProfileUpdate(body, fallbackPayload) {
           payload.verifiedEmail ??
           payload.isEmailVerified,
       ) ?? (fallbackPayload.email ? false : readAuthUser()?.emailVerified),
+    emailVerifiedAt: String(
+      payload.emailVerifiedAt ??
+        payload.email_verified_at ??
+        payload.profile?.emailVerifiedAt ??
+        payload.profile?.email_verified_at ??
+        "",
+    ).trim() || null,
     username: String(
       payload.username ??
         payload.handle ??
@@ -1530,7 +1412,13 @@ function validateAccountField(field, value) {
 
 async function requestAccountEmailVerification() {
   const user = readAuthUser() || {};
-  const email = String(els.accountEmailInput?.value || user.email || "")
+  const overlayInput = document.getElementById("emailVerifyInput");
+  const email = (
+    els.accountEmailInput?.value ||
+    overlayInput?.value ||
+    user.email ||
+    ""
+  )
     .trim()
     .toLowerCase();
 
@@ -1552,6 +1440,18 @@ async function requestAccountEmailVerification() {
     canonical: user.canonical,
     returnUrl: dashboardTabUrl("account"),
   });
+
+  if (window.__billingDebug) {
+    console.log("[email-verify] payload:", JSON.stringify(payload, null, 2));
+  }
+  console.log("[email-verify] endpoints:", [
+    "/api/account/email/verify",
+    "/api/account/verify-email",
+    "/api/user/email/verify",
+    `${API_BASE}/api/account/email/verify`,
+    `${API_BASE}/api/account/verify-email`,
+    `${API_BASE}/api/user/email/verify`,
+  ]);
 
   if (els.verifyAccountEmailButton) {
     els.verifyAccountEmailButton.disabled = true;
@@ -1579,7 +1479,10 @@ async function requestAccountEmailVerification() {
         body?.profile?.primaryEmailVerified,
     );
     if (verified === true) {
-      persistAccountUpdate({ email, emailVerified: true });
+      const verifiedAt = String(
+        body?.emailVerifiedAt || body?.email_verified_at || "",
+      ).trim() || null;
+      persistAccountUpdate({ email, emailVerified: true, ...(verifiedAt ? { emailVerifiedAt: verifiedAt } : {}) });
       renderAccountInfo();
       setAccountFieldStatus("email", "Email verified.", "is-success");
       return;
@@ -1859,6 +1762,8 @@ async function savePublicProfileVisibility() {
 }
 
 let affiliateProfileLoaded = false;
+const AFFILIATE_AGREEMENT_POLL_MS = 5000;
+
 let affiliateAgreementPollTimer = 0;
 let affiliateAgreementPollInFlight = false;
 
@@ -2754,6 +2659,35 @@ function showAffiliatePanel(profile) {
     els.affiliateTabSent.textContent = formatAffiliateCents(
       pickAffiliateNumber(totals, ["totalPayoutsSentCents", "sentCents", "sent_cents", "sent"]),
     );
+  }
+
+  // Payment Summary
+  const totalPaid = pickAffiliateNumber(totals, ["totalPayoutsSentCents", "totalPaidCents", "paidCents", "sentCents", "sent_cents", "sent"]);
+  const upcomingCents = pickAffiliateNumber(totals, ["upcomingPayoutCents", "upcomingCents", "nextPayoutCents", "heldCents", "held_cents", "held"]);
+  const lastPaymentCents = pickAffiliateNumber(totals, ["lastPayoutAmountCents", "lastPaymentCents", "lastPayoutCents"]);
+  const lastPaymentAt = pickAffiliateText(totals, ["lastPayoutAt", "lastPaymentDate", "lastPayoutDate", "lastPaidAt"])
+    || pickAffiliateText(affiliate, ["lastPayoutAt", "lastPaymentDate"]);
+  const estPayoutAt = pickAffiliateText(totals, ["nextPayoutDate", "estPayoutDate", "upcomingPayoutDate", "nextPayoutAt"])
+    || pickAffiliateText(affiliate, ["nextPayoutDate", "estPayoutDate"]);
+
+  if (els.affiliateTabTotalPaid) els.affiliateTabTotalPaid.textContent = formatAffiliateCents(totalPaid);
+  if (els.affiliateTabLastPayment) els.affiliateTabLastPayment.textContent = lastPaymentCents > 0 ? formatAffiliateCents(lastPaymentCents) : "\u2014";
+  if (els.affiliateTabLastPaymentDate) {
+    if (lastPaymentAt) {
+      const d = new Date(lastPaymentAt);
+      els.affiliateTabLastPaymentDate.textContent = Number.isNaN(d.getTime()) ? lastPaymentAt : d.toLocaleDateString();
+    } else {
+      els.affiliateTabLastPaymentDate.textContent = "";
+    }
+  }
+  if (els.affiliateTabUpcomingPayout) els.affiliateTabUpcomingPayout.textContent = formatAffiliateCents(upcomingCents);
+  if (els.affiliateTabEstPayoutDate) {
+    if (estPayoutAt) {
+      const d = new Date(estPayoutAt);
+      els.affiliateTabEstPayoutDate.textContent = Number.isNaN(d.getTime()) ? estPayoutAt : d.toLocaleDateString();
+    } else {
+      els.affiliateTabEstPayoutDate.textContent = "\u2014";
+    }
   }
 
   const stripeStatus = String(readAffiliateStripeStatus(shape)).toLowerCase();
@@ -4339,6 +4273,9 @@ function wireBillingPlanButtons() {
 }
 
 function applyBillingPayload(payload) {
+  if (window.__billingDebug) {
+    console.log("[billing] applyBillingPayload", JSON.stringify(payload, null, 2));
+  }
   const status = deriveBillingStatus(payload);
   const plan = deriveBillingPlan(payload);
   const portalUrl = deriveBillingPortalUrl(payload);
@@ -4360,27 +4297,35 @@ function applyBillingPayload(payload) {
     els.billingNextBillingValue.textContent = formatBillingDate(nextBillingDate) || "-";
   }
 
+  const hasPortalUrl = Boolean(portalUrl);
+  const isActive = status === "active" || status === "trialing";
+  const hasActivePlan = isActive || Boolean(plan);
+
   if (els.billingManageLink) {
-    const hasPortalUrl = Boolean(portalUrl);
     els.billingManageLink.hidden = !hasPortalUrl;
     els.billingManageLink.href = hasPortalUrl ? portalUrl : "#";
   }
 
   if (els.billingNoAccount) {
-    els.billingNoAccount.hidden = Boolean(portalUrl);
+    els.billingNoAccount.hidden = hasActivePlan;
   }
 
   const subscribeLink = document.getElementById("billingSubscribeLink");
   if (subscribeLink) {
-    subscribeLink.hidden = Boolean(portalUrl);
+    subscribeLink.hidden = hasActivePlan;
   }
 
   const planButtons = document.getElementById("billingPlanButtons");
   if (planButtons) {
-    planButtons.hidden = Boolean(portalUrl);
+    planButtons.hidden = hasActivePlan;
   }
 
-  if (!portalUrl) {
+  const upgradeGrid = document.getElementById("billingUpgradeGrid");
+  if (upgradeGrid && hasActivePlan && !hasPortalUrl) {
+    upgradeGrid.hidden = true;
+  }
+
+  if (!hasActivePlan) {
     wireBillingPlanButtons();
   }
 
@@ -4548,6 +4493,10 @@ async function renderBillingUpgrades({ currentPlan, hasActiveSub }) {
   // values so admin toggles in /control show up here within seconds, not
   // 15-min cache cycles.
   const prices = getBillingPricesSync();
+  if (window.__billingDebug) {
+    console.log("[billing] upgradeGrid prices:", JSON.stringify(prices, null, 2));
+    console.log("[billing] upgradeGrid currentPlan:", currentPlan, "hasActiveSub:", hasActiveSub, "paths:", paths);
+  }
   getBillingPrices({ force: true }).then((fresh) => {
     if (fresh && fresh !== prices) {
       // Re-render only if the panel is still in the DOM (user might've
@@ -4629,6 +4578,9 @@ async function startStripeCheckoutForPlan(plan, originBtn) {
   }
   if (originBtn) originBtn.disabled = true;
   try {
+    if (window.__billingDebug) {
+      console.log("[billing] startStripeCheckoutForPlan plan:", plan, "contact:", contact);
+    }
     const body = await postAuthedJson(
       [
         `${API_BASE}/api/stripe/checkout-session`,
@@ -4802,6 +4754,9 @@ async function finalizeBillingFromRedirect() {
 
 async function loadBillingOverview() {
   const contact = resolveBillingContact();
+  if (window.__billingDebug) {
+    console.log("[billing] loadBillingOverview contact:", contact);
+  }
   if (!contact) {
     return;
   }
@@ -5284,275 +5239,6 @@ function wireIntegrations() {
   });
 }
 
-function createAiSession(seedTitle = "New Chat") {
-  return {
-    id: `chat_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-    title: seedTitle,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    messages: [],
-  };
-}
-
-function loadAiSessionsFromStorage() {
-  try {
-    const raw = window.localStorage.getItem(AI_SESSIONS_STORAGE_KEY);
-    if (!raw) {
-      return [];
-    }
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveAiSessionsToStorage() {
-  try {
-    window.localStorage.setItem(AI_SESSIONS_STORAGE_KEY, JSON.stringify(state.aiSessions));
-  } catch {
-    // Ignore storage failures.
-  }
-}
-
-function getActiveAiSession() {
-  return state.aiSessions.find((session) => session.id === state.activeAiSessionId) || null;
-}
-
-function ensureAiSessions() {
-  if (!state.aiSessions.length) {
-    state.aiSessions = loadAiSessionsFromStorage();
-  }
-
-  if (!state.aiSessions.length) {
-    const first = createAiSession("Welcome");
-    first.messages.push({
-      role: "assistant",
-      content: "I can help with workouts, nutrition, hydration, and body metrics. Ask me anything.",
-      createdAt: new Date().toISOString(),
-    });
-    state.aiSessions = [first];
-  }
-
-  if (!state.activeAiSessionId || !getActiveAiSession()) {
-    state.activeAiSessionId = state.aiSessions[0].id;
-  }
-}
-
-function aiSessionTitle(session) {
-  const firstUserMessage = (session?.messages || []).find((message) => message.role === "user");
-  if (firstUserMessage?.content) {
-    return String(firstUserMessage.content).slice(0, 42);
-  }
-  return String(session?.title || "New Chat");
-}
-
-function formatAiMessageTime(isoValue) {
-  const date = new Date(isoValue);
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-  return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-}
-
-function renderAiSessions() {
-  if (!els.aiSessionsList) {
-    return;
-  }
-
-  clearElement(els.aiSessionsList);
-  state.aiSessions.forEach((session) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "ai-session-btn";
-    if (session.id === state.activeAiSessionId) {
-      button.classList.add("is-active");
-    }
-    button.dataset.sessionId = session.id;
-    button.textContent = aiSessionTitle(session);
-    els.aiSessionsList.appendChild(button);
-  });
-}
-
-function renderAiMessages() {
-  if (!els.aiMessages) {
-    return;
-  }
-
-  clearElement(els.aiMessages);
-  const active = getActiveAiSession();
-  if (!active || !Array.isArray(active.messages) || !active.messages.length) {
-    if (els.aiEmptyState) {
-      els.aiEmptyState.hidden = false;
-    }
-    return;
-  }
-
-  if (els.aiEmptyState) {
-    els.aiEmptyState.hidden = true;
-  }
-
-  active.messages.forEach((message) => {
-    const bubble = document.createElement("article");
-    bubble.className = `ai-message ${message.role === "user" ? "user" : "assistant"}`;
-
-    const content = document.createElement("div");
-    content.textContent = String(message.content || "");
-
-    const meta = document.createElement("div");
-    meta.className = "ai-message-meta";
-    const who = message.role === "user" ? "You" : "Coach";
-    meta.textContent = `${who} • ${formatAiMessageTime(message.createdAt)}`;
-
-    bubble.appendChild(content);
-    bubble.appendChild(meta);
-    els.aiMessages.appendChild(bubble);
-  });
-
-  els.aiMessages.scrollTop = els.aiMessages.scrollHeight;
-}
-
-function appendAiMessage(role, content) {
-  const active = getActiveAiSession();
-  if (!active) {
-    return;
-  }
-
-  active.messages.push({
-    role,
-    content: String(content || "").trim(),
-    createdAt: new Date().toISOString(),
-  });
-  active.updatedAt = new Date().toISOString();
-
-  saveAiSessionsToStorage();
-  renderAiSessions();
-  renderAiMessages();
-}
-
-function createNewAiSession(seedPrompt = "") {
-  const session = createAiSession(seedPrompt ? String(seedPrompt).slice(0, 24) : "New Chat");
-  state.aiSessions.unshift(session);
-  state.activeAiSessionId = session.id;
-  saveAiSessionsToStorage();
-  renderAiSessions();
-  renderAiMessages();
-}
-
-async function askAiQuestion(question) {
-  const prompt = String(question || "").trim();
-  if (!prompt) {
-    setStatus(els.aiStatus, "Enter a message first.", "is-error");
-    return;
-  }
-
-  ensureAiSessions();
-  if (!getActiveAiSession()) {
-    createNewAiSession(prompt);
-  }
-
-  appendAiMessage("user", prompt);
-  if (els.aiQuestionInput) {
-    els.aiQuestionInput.value = "";
-  }
-
-  setStatus(els.aiStatus, "Thinking...");
-  if (els.aiResponseBox) {
-    els.aiResponseBox.hidden = true;
-    els.aiResponseBox.textContent = "";
-  }
-
-  try {
-    const active = getActiveAiSession();
-    const body = await postAuthedJson(
-      [
-        `${API_BASE}/api/ai/chat`,
-        `${API_BASE}/api/ai/fitness`,
-        `${API_BASE}/api/gemini/fitness`,
-        "/api/ai/chat",
-        "/api/ai/fitness",
-        "/api/gemini/fitness",
-      ],
-      {
-        sessionId: active?.id || "",
-        message: prompt,
-        question: prompt,
-        messages: (active?.messages || []).map((message) => ({
-          role: message.role,
-          content: message.content,
-          createdAt: message.createdAt,
-        })),
-        context: {
-          profile: state.backendSnapshot?.profile || readAuthUser(),
-          goals: state.goals,
-          activeRange: state.activeRange,
-          history: state.backendSnapshot?.history || null,
-        },
-      },
-    );
-
-    const answer = String(
-      body?.answer || body?.response || body?.content || body?.message || body?.data?.answer || "No answer returned.",
-    ).trim();
-    appendAiMessage("assistant", answer);
-    setStatus(els.aiStatus, "AI response ready.", "is-success");
-  } catch (error) {
-    appendAiMessage("assistant", "I could not reach the AI backend for this request.");
-    setStatus(els.aiStatus, String(error?.message || "AI endpoint unavailable."), "is-error");
-  }
-}
-
-function wireAi() {
-  ensureAiSessions();
-  renderAiSessions();
-  renderAiMessages();
-
-  if (els.aiNewSessionButton) {
-    els.aiNewSessionButton.addEventListener("click", () => {
-      createNewAiSession();
-      setStatus(els.aiStatus, "Started a new chat.");
-    });
-  }
-
-  if (els.aiSessionsList) {
-    els.aiSessionsList.addEventListener("click", (event) => {
-      const target = event.target;
-      if (!(target instanceof HTMLElement)) {
-        return;
-      }
-
-      const button = target.closest("button[data-session-id]");
-      if (!button) {
-        return;
-      }
-
-      state.activeAiSessionId = String(button.dataset.sessionId || "").trim();
-      renderAiSessions();
-      renderAiMessages();
-    });
-  }
-
-  els.aiPromptButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-      if (els.aiQuestionInput) {
-        els.aiQuestionInput.value = String(button.dataset.prompt || "").trim();
-        els.aiQuestionInput.focus();
-      }
-    });
-  });
-
-  if (els.aiChatForm) {
-    els.aiChatForm.addEventListener("submit", (event) => {
-      event.preventDefault();
-      void askAiQuestion(els.aiQuestionInput?.value || "");
-    });
-  } else if (els.askAiButton) {
-    els.askAiButton.addEventListener("click", () => {
-      void askAiQuestion(els.aiQuestionInput?.value || "");
-    });
-  }
-}
-
 async function hydrateSheetLinkFromBackend() {
   if (state.userSheetUrl) {
     return state.userSheetUrl;
@@ -5867,7 +5553,6 @@ function wireInitialActions() {
   wirePublicProfileVisibility();
   wireBilling();
   wireIntegrations();
-  wireAi();
   wireAffiliate();
 }
 
@@ -5932,12 +5617,20 @@ function initEmailVerificationOverlay() {
 
   if (!email) {
     if (prompt) prompt.textContent = "Add your email address to unlock all features including affiliate access, data export, and account recovery.";
-    if (inputRow) inputRow.hidden = false;
     if (sendBtn) sendBtn.textContent = "Save & Verify";
   } else {
     if (prompt) prompt.textContent = `Verify ${email} to unlock all features including affiliate access, data export, and account recovery.`;
-    if (inputRow) inputRow.hidden = true;
     if (sendBtn) sendBtn.textContent = "Send Verification Email";
+  }
+
+  if (inputRow) inputRow.hidden = false;
+  if (input) input.value = email;
+
+  const timestampsEl = document.getElementById("emailVerifyTimestamp");
+  const verifiedAt = readAccountEmailVerifiedAt(user);
+  if (timestampsEl && verifiedAt) {
+    timestampsEl.textContent = `Verified on ${new Date(verifiedAt).toLocaleDateString()}.`;
+    timestampsEl.hidden = false;
   }
 
   overlay.hidden = false;
@@ -5964,8 +5657,11 @@ function initEmailVerificationOverlay() {
 
       try {
         if (!email && newEmail) {
+          if (els.accountEmailInput) els.accountEmailInput.value = newEmail;
+          console.log("[email-verify] saving new email:", newEmail);
           await saveAccountField("email");
         }
+        console.log("[email-verify] calling requestAccountEmailVerification");
         await requestAccountEmailVerification();
         if (status) {
           status.textContent = "Verification email sent! Check your inbox.";
@@ -6326,6 +6022,15 @@ function initEnhancedDashboard() {
       });
   }
 }
+
+// Debug helper: run `__billingDebugOn()` in console to show billing payloads
+window.__billingDebugOn = function () { window.__billingDebug = true; console.log("[billing] debug ON — billing payloads will now log"); };
+window.__billingDebugOff = function () { window.__billingDebug = false; console.log("[billing] debug OFF"); };
+window.__fetchBillingPayload = async function () {
+  window.__billingDebug = true;
+  console.log("[billing] Re-fetching billing payload...");
+  await loadBillingOverview();
+};
 
 // Hook into existing body measures load after init
 function enhanceBodyMeasuresAfterLoad() {

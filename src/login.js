@@ -43,6 +43,15 @@ const METHOD_CONFIG = {
 
 let selectedMethod = "phone";
 
+// Strip characters commonly used in script / HTML injection attempts.
+// These have no legitimate place in phone numbers, emails, or usernames
+// but are dangerous if echoed into markup or JSON without escaping.
+// Applied on every keystroke so the raw value is safe BEFORE any
+// validation or submission.
+function sanitizeCredentialInput(raw) {
+  return String(raw || "").replace(/[<>&"'`\\\/\x00-\x1f\x7f]/g, "");
+}
+
 function setStatus(message, type = "") {
   if (!els.requestStatus) {
     return;
@@ -286,7 +295,9 @@ function setSelectedMethod(method, { preserveValue = false } = {}) {
 }
 
 function normalizeIdentifier(method, rawValue) {
-  const value = String(rawValue || "").trim();
+  // Defense in depth: strip injection chars even though the input handler
+  // already does this, in case the value sneaks in via another path.
+  const value = sanitizeCredentialInput(rawValue).trim();
 
   if (!value) {
     return {
@@ -408,11 +419,14 @@ function extractRequestMetadata(responsePayload, fallbackDisplayValue) {
   const codeLengthRaw = Number(body?.codeLength || body?.code_length || body?.otpLength || DEFAULT_CODE_LENGTH);
   const codeLength = Number.isFinite(codeLengthRaw) && codeLengthRaw > 0 ? Math.round(codeLengthRaw) : DEFAULT_CODE_LENGTH;
 
+  const channel = String(body?.channel || "").trim() || null;
+
   return {
     requestId,
     requestedTarget,
     expiresAt: expiresAtRaw ? String(expiresAtRaw) : null,
     codeLength,
+    channel,
     rawResponse: body,
   };
 }
@@ -500,21 +514,18 @@ async function handleRequestCode(event) {
     deliveryChannel: normalized.deliveryChannel,
     recovery: normalized.recovery,
     requestedAt: new Date().toISOString(),
-    client: {
-      userAgent: navigator.userAgent || null,
-      language: navigator.language || null,
-      platform: navigator.userAgentData?.platform || navigator.platform || null,
-    },
   };
 
   try {
     const response = await requestLoginCode(payload);
     const meta = extractRequestMetadata(response, normalized.displayValue);
+    const body = response?.body && typeof response.body === "object" ? response.body : response;
+    const channel = String(body?.channel || "").trim() || null;
 
     const pending = {
       method: normalized.method,
       provider: normalized.provider || "",
-      deliveryChannel: normalized.deliveryChannel || "",
+      deliveryChannel: channel || normalized.deliveryChannel || "",
       recovery: Boolean(normalized.recovery),
       identifier: normalized.identifier,
       displayValue: normalized.displayValue,
@@ -526,6 +537,7 @@ async function handleRequestCode(event) {
       sessionLabel: `${navigator.userAgentData?.platform || navigator.platform || "Unknown platform"} • ${navigator.language || "en-US"}`,
       backendResponse: meta.rawResponse,
       next: getNextDestination(),
+      channel: channel,
     };
 
     savePendingAuth(pending);
@@ -614,6 +626,8 @@ function wireEvents() {
 
   if (els.credentialInput) {
     els.credentialInput.addEventListener("input", () => {
+      // Prevent script/HTML injection in the raw value.
+      els.credentialInput.value = sanitizeCredentialInput(els.credentialInput.value);
       if (selectedMethod === "phone") {
         applyPhoneFormatting(els.credentialInput);
       }
@@ -637,9 +651,9 @@ function prefillFromQuery() {
   }
 
   const params = new URLSearchParams(window.location.search);
-  const email = String(params.get("email") || "").trim();
-  const phone = String(params.get("phone") || "").trim();
-  const identifier = String(params.get("identifier") || "").trim();
+  const email = sanitizeCredentialInput(params.get("email")).trim();
+  const phone = sanitizeCredentialInput(params.get("phone")).trim();
+  const identifier = sanitizeCredentialInput(params.get("identifier")).trim();
 
   if (email) {
     setSelectedMethod("phone", { preserveValue: false });
