@@ -1514,7 +1514,7 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
 }
 
 .site-footer {
-  padding: 0.2rem 0 0.35rem;
+  padding: 0.15rem 0 0.2rem;
   border-top: 1px solid rgba(166, 193, 225, 0.1);
   text-align: center;
 }
@@ -1525,7 +1525,7 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
   justify-content: center;
   gap: 0.5rem 1rem;
   font-size: 0.78rem;
-  padding: 0.2rem clamp(1rem, 2vw, 2rem);
+  padding: 0.1rem clamp(1rem, 2vw, 2rem);
 }
 
 .footer-links a {
@@ -2400,8 +2400,8 @@ footer { position: relative; }
   justify-content: center;
   gap: 0.55rem;
   flex-wrap: wrap;
-  margin-top: 0.35rem;
-  padding-bottom: 0.4rem;
+  margin-top: 0.2rem;
+  padding-bottom: 0.2rem;
 }
 
 /* Desktop: align right without overlapping the centered links */
