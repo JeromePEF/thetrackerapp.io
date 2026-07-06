@@ -48,7 +48,7 @@ const AUTH_SESSION_KEY = "tracker.auth.session";
 const MAIN_SITE_LOGOUT_URL = "https://thetrackerapp.io/logout?next=%2F";
 const AFFILIATE_PENDING_KEY = "tracker.affiliate.pending";
 const GOALS_STORAGE_KEY = "tracker.dashboard.goals";
-const TAB_IDS = ["account", "stats", "calendar", "shortcuts", "export", "billing", "integrate", "sheet", "personal-trainer", "groups", "run-clubs", "affiliate"];
+const TAB_IDS = ["account", "setup", "stats", "calendar", "shortcuts", "export", "billing", "integrate", "sheet", "personal-trainer", "groups", "run-clubs", "affiliate"];
 const RANGE_IDS = ["today", "week", "month", "year", "all"];
 const RANGE_LABELS = {
   today: "D",
@@ -1196,6 +1196,8 @@ function setActiveTab(tabId, updateUrl = true) {
     if (body) {
       initGroupsTab(body).catch((e) => console.warn("groups tab failed:", e));
     }
+  } else if (targetTab === "setup") {
+    renderSetupChecklist();
   } else if (targetTab === "run-clubs") {
     const body = document.getElementById("runClubsPanelBody");
     if (body) {
