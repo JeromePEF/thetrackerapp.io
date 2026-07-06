@@ -2033,6 +2033,12 @@ body.dashboard-page .setup-item.is-done {
 body.dashboard-page .setup-item.is-done .setup-check {
   color: #38ffd3;
 }
+body.dashboard-page .setup-item[data-focus]:not(.is-done) {
+  cursor: pointer;
+}
+body.dashboard-page .setup-item[data-focus]:not(.is-done):hover {
+  background: rgba(56,255,211,0.06);
+}
 body.dashboard-page .setup-check {
   font-size: 0.8rem;
   width: 1rem;

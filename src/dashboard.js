@@ -1370,16 +1370,16 @@ function wireTrackingPreferences() {
 // ---- Setup Checklist ----
 
 const SETUP_CHECKLIST_ITEMS = [
-  { id: "age", label: "Pick your age group (for tailored guidance)", category: "Profile", priority: "high", check: () => !!(readAuthUser()?.age) },
-  { id: "weight", label: "Add your current weight", category: "Profile", priority: "high", check: () => !!(readAuthUser()?.currentWeight) },
-  { id: "height", label: "Add your height", category: "Profile", priority: "medium", check: () => !!(readAuthUser()?.currentHeight) },
-  { id: "goalWeight", label: "Set a body goal (lose / maintain / gain)", category: "Profile", priority: "high", check: () => !!(readAuthUser()?.goalWeight) },
-  { id: "fitnessGoal", label: "Tell us your fitness goal", category: "Profile", priority: "high", check: () => !!(readAuthUser()?.fitnessGoal) },
-  { id: "bodyMeasures", label: "Track body measurements (chest, waist, arms, thighs, hips, neck)", category: "Profile", priority: "medium", check: () => !!(readAuthUser()?.trackBodyMeasures) },
-  { id: "workoutSplit", label: "Tell us your workout split (PPL, upper/lower, etc.)", category: "Goals", priority: "low", check: () => !!(readAuthUser()?.workoutSplit) },
-  { id: "digestOptOut", label: "Weekly report image (default: Saturdays)", category: "Notifications", priority: "low", check: () => !(readAuthUser()?.weeklyDigestOptOut) },
-  { id: "leaderboardOptIn", label: "Opt in to the public leaderboard", category: "Community", priority: "low", check: () => !!(readAuthUser()?.leaderboardOptIn) },
-  { id: "timezone", label: "Set your timezone", category: "Preferences", priority: "medium", check: () => !!(readAuthUser()?.timezone) },
+  { id: "age", label: "Pick your age group (for tailored guidance)", category: "Profile", priority: "high", check: () => !!(readAuthUser()?.age), focus: "accountAgeInput" },
+  { id: "weight", label: "Add your current weight", category: "Profile", priority: "high", check: () => !!(readAuthUser()?.currentWeight), focus: "accountWeightInput" },
+  { id: "height", label: "Add your height", category: "Profile", priority: "medium", check: () => !!(readAuthUser()?.currentHeight), focus: "accountHeightInput" },
+  { id: "goalWeight", label: "Set a body goal (lose / maintain / gain)", category: "Profile", priority: "high", check: () => !!(readAuthUser()?.goalWeight), focus: "accountGoalWeightInput" },
+  { id: "fitnessGoal", label: "Tell us your fitness goal", category: "Profile", priority: "high", check: () => !!(readAuthUser()?.fitnessGoal), focus: "accountFitnessGoalInput" },
+  { id: "bodyMeasures", label: "Track body measurements (chest, waist, arms, thighs, hips, neck)", category: "Profile", priority: "medium", check: () => !!(readAuthUser()?.trackBodyMeasures), focus: "toggleTrackBodyMeasures" },
+  { id: "workoutSplit", label: "Tell us your workout split (PPL, upper/lower, etc.)", category: "Goals", priority: "low", check: () => !!(readAuthUser()?.workoutSplit), focus: "accountWorkoutSplitInput" },
+  { id: "digestOptOut", label: "Weekly report image (default: Saturdays)", category: "Notifications", priority: "low", check: () => !(readAuthUser()?.weeklyDigestOptOut), focus: "toggleWeeklyDigestOptOut" },
+  { id: "leaderboardOptIn", label: "Opt in to the public leaderboard", category: "Community", priority: "low", check: () => !!(readAuthUser()?.leaderboardOptIn), focus: "toggleLeaderboardOptIn" },
+  { id: "timezone", label: "Set your timezone", category: "Preferences", priority: "medium", check: () => !!(readAuthUser()?.timezone), focus: "accountTimezoneInput" },
 ];
 
 function renderSetupChecklist() {
@@ -1407,11 +1407,28 @@ function renderSetupChecklist() {
         : item.priority === "medium"
           ? `<span class="setup-priority setup-priority-medium">medium</span>`
           : `<span class="setup-priority setup-priority-low">low</span>`;
-      html += `<div class="setup-item ${cls}"><span class="setup-check">${item.isDone ? "✓" : "○"}</span><span class="setup-label">${item.label}</span>${prio}</div>`;
+      const focusAttr = item.focus ? ` data-focus="${item.focus}"` : "";
+      html += `<div class="setup-item ${cls}"${focusAttr}><span class="setup-check">${item.isDone ? "✓" : "○"}</span><span class="setup-label">${item.label}</span>${prio}</div>`;
     }
     html += "</div>";
   }
   els.setupChecklist.innerHTML = html;
+
+  // Wire click handlers — scroll to the corresponding field
+  els.setupChecklist.querySelectorAll(".setup-item[data-focus]").forEach(el => {
+    el.style.cursor = "pointer";
+    el.addEventListener("click", () => {
+      const targetId = el.dataset.focus;
+      const target = document.getElementById(targetId);
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+        target.focus();
+        target.style.transition = "box-shadow 0.15s";
+        target.style.boxShadow = "0 0 0 3px rgba(56,255,211,0.4)";
+        setTimeout(() => { target.style.boxShadow = ""; }, 1500);
+      }
+    });
+  });
 }
 
 function renderAccountInfo() {
