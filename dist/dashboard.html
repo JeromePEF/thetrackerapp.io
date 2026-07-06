@@ -43,7 +43,7 @@
         window.location.replace("https://thetrackerapp.io/login?next=" + next);
       })();
     </script>
-    <script type="module" crossorigin src="/assets/dashboard-BlnDU79s.js"></script>
+    <script type="module" crossorigin src="/assets/dashboard-6vMghxI6.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-CC_37BaN.js">
     <link rel="modulepreload" crossorigin href="/assets/preload-helper-ByxlgBmf.js">
     <link rel="modulepreload" crossorigin href="/assets/affiliate-shape-D6V_B5hJ.js">
@@ -54,7 +54,7 @@
     <link rel="modulepreload" crossorigin href="/assets/google-analytics-Di-5cuMN.js">
     <link rel="stylesheet" crossorigin href="/assets/affiliate-shape-C1JFWeLX.css">
     <link rel="stylesheet" crossorigin href="/assets/dashboard-BjUbrqtB.css">
-    <link rel="stylesheet" crossorigin href="/assets/auth-pages-BDr57VBN.css">
+    <link rel="stylesheet" crossorigin href="/assets/auth-pages-CVJR7sSD.css">
   </head>
   <body class="dashboard-page">
     <div class="dashboard-shell">
@@ -89,7 +89,8 @@
         <aside class="dashboard-sidebar" aria-label="Dashboard sections">
           <h1>Dashboard</h1>
           <nav id="dashboardNav">
-            <button id="navAccount" type="button" class="dashboard-tab" data-tab="account">ACCOUNT</button>
+            <button id="navAccount" type="button" class="dashboard-tab" data-tab="account">SETTINGS</button>
+            <button id="navSetup" type="button" class="dashboard-tab" data-tab="setup">SETUP</button>
             <button id="navStats" type="button" class="dashboard-tab is-active" data-tab="stats">STATS</button>
             <button id="navCalendar" type="button" class="dashboard-tab" data-tab="calendar" data-feature="dashboardTabs.calendar" hidden>CALENDAR</button>
             <button id="navShortcuts" type="button" class="dashboard-tab" data-tab="shortcuts" data-feature="dashboardTabs.shortcuts" hidden>SHORTCUTS</button>
@@ -348,6 +349,88 @@
               </div>
             </section>
 
+            <!-- ===== PRIVACY ===== -->
+            <section class="settings-section" aria-label="Public profile settings">
+              <h3 class="settings-section-title">🔒 Public Profile</h3>
+              <p class="account-public-desc">
+                Control what appears on your public profile page at
+                <a id="publicProfileUrl" href="/@" target="_blank" rel="noopener noreferrer">/@<span id="publicProfileUsername">you</span></a>.
+              </p>
+              <div class="public-profile-toggles" id="publicProfileToggles">
+                <label class="toggle-row">
+                  <input type="checkbox" id="toggleMergedVisibility" />
+                  <span>Merged Activity</span>
+                </label>
+                <label class="toggle-row">
+                  <input type="checkbox" id="toggleWorkoutVisibility" />
+                  <span>Workout Activity</span>
+                </label>
+                <label class="toggle-row">
+                  <input type="checkbox" id="toggleNutritionVisibility" />
+                  <span>Nutrition Activity</span>
+                </label>
+                <label class="toggle-row">
+                  <input type="checkbox" id="toggleWaterVisibility" />
+                  <span>Hydration Activity</span>
+                </label>
+                <label class="toggle-row">
+                  <input type="checkbox" id="toggleStatsBarVisibility" />
+                  <span>Stats Bar</span>
+                </label>
+                <label class="toggle-row">
+                  <input type="checkbox" id="toggleLeaderboardVisibility" />
+                  <span>Leaderboard Standings</span>
+                </label>
+                <label class="toggle-row">
+                  <input type="checkbox" id="toggleRecentWorkoutsVisibility" />
+                  <span>Recent Workouts</span>
+                </label>
+              </div>
+              <div class="panel-actions" style="margin-top: 0.75rem;">
+                <button id="savePublicProfileButton" type="button" class="btn-primary">Save Visibility</button>
+                <span id="publicProfileSaved" class="account-save-check" hidden>✓ Updated</span>
+              </div>
+              <p id="publicProfileStatus" class="stats-status" role="status" aria-live="polite"></p>
+              <div class="public-profile-preview" id="publicProfilePreview" hidden>
+                <h4>What will be visible at <a id="publicProfilePreviewUrl" href="/@" target="_blank" rel="noopener noreferrer">/@<span id="publicProfilePreviewUsername">you</span></a></h4>
+                <ul id="publicProfilePreviewList"></ul>
+              </div>
+            </section>
+
+            <section class="account-readonly-grid" aria-label="Account metadata">
+              <article class="account-readonly-item">
+                <p class="account-readonly-label">Account ID</p>
+                <p id="accountIdValue" class="account-readonly-value">-</p>
+              </article>
+              <article class="account-readonly-item">
+                <p class="account-readonly-label">Sign-in Method</p>
+                <p id="accountMethodValue" class="account-readonly-value">-</p>
+              </article>
+              <article class="account-readonly-item">
+                <p class="account-readonly-label">Contact</p>
+                <p id="accountContactValue" class="account-readonly-value">-</p>
+              </article>
+              <article class="account-readonly-item">
+                <p class="account-readonly-label">Last Login</p>
+                <p id="accountLoginAtValue" class="account-readonly-value">-</p>
+              </article>
+            </section>
+          </article>
+
+          <article id="tabSetup" class="dashboard-panel" data-tab-panel="setup" hidden>
+            <header class="panel-head">
+              <h2>Finish setting up your profile</h2>
+              <p id="setupProgressText">0 of 0 done · 0%</p>
+            </header>
+
+            <!-- Progress bar -->
+            <div class="setup-progress-bar" aria-label="Profile setup progress">
+              <div id="setupProgressFill" class="setup-progress-fill" style="width:0%"></div>
+            </div>
+
+            <!-- Checklist -->
+            <div id="setupChecklist" class="setup-checklist"></div>
+
             <!-- ===== BODY & GOALS ===== -->
             <section class="settings-section" aria-label="Body & Goals">
               <h3 class="settings-section-title">🏋️ Body & Goals</h3>
@@ -417,23 +500,6 @@
                   <label for="accountTimezoneInput">Timezone</label>
                   <div class="account-edit-row">
                     <input id="accountTimezoneInput" type="text" placeholder="America/Chicago" list="timezone-list" />
-                    <datalist id="timezone-list">
-                      <option value="America/New_York" />
-                      <option value="America/Chicago" />
-                      <option value="America/Denver" />
-                      <option value="America/Los_Angeles" />
-                      <option value="America/Phoenix" />
-                      <option value="America/Anchorage" />
-                      <option value="Pacific/Honolulu" />
-                      <option value="Europe/London" />
-                      <option value="Europe/Paris" />
-                      <option value="Europe/Berlin" />
-                      <option value="Asia/Tokyo" />
-                      <option value="Asia/Shanghai" />
-                      <option value="Asia/Kolkata" />
-                      <option value="Australia/Sydney" />
-                      <option value="Pacific/Auckland" />
-                    </datalist>
                     <button id="saveAccountTimezoneButton" type="button" class="btn-primary">Save</button>
                     <span id="accountTimezoneSaved" class="account-save-check" hidden>✓</span>
                   </div>
@@ -477,73 +543,6 @@
                 <span id="trackingPrefsSaved" class="account-save-check" hidden>✓ Updated</span>
               </div>
               <p id="trackingPrefsStatus" class="stats-status" role="status" aria-live="polite"></p>
-            </section>
-
-            <!-- ===== PRIVACY ===== -->
-            <section class="settings-section" aria-label="Public profile settings">
-              <h3 class="settings-section-title">🔒 Public Profile</h3>
-              <p class="account-public-desc">
-                Control what appears on your public profile page at
-                <a id="publicProfileUrl" href="/@" target="_blank" rel="noopener noreferrer">/@<span id="publicProfileUsername">you</span></a>.
-              </p>
-              <div class="public-profile-toggles" id="publicProfileToggles">
-                <label class="toggle-row">
-                  <input type="checkbox" id="toggleMergedVisibility" />
-                  <span>Merged Activity</span>
-                </label>
-                <label class="toggle-row">
-                  <input type="checkbox" id="toggleWorkoutVisibility" />
-                  <span>Workout Activity</span>
-                </label>
-                <label class="toggle-row">
-                  <input type="checkbox" id="toggleNutritionVisibility" />
-                  <span>Nutrition Activity</span>
-                </label>
-                <label class="toggle-row">
-                  <input type="checkbox" id="toggleWaterVisibility" />
-                  <span>Hydration Activity</span>
-                </label>
-                <label class="toggle-row">
-                  <input type="checkbox" id="toggleStatsBarVisibility" />
-                  <span>Stats Bar</span>
-                </label>
-                <label class="toggle-row">
-                  <input type="checkbox" id="toggleLeaderboardVisibility" />
-                  <span>Leaderboard Standings</span>
-                </label>
-                <label class="toggle-row">
-                  <input type="checkbox" id="toggleRecentWorkoutsVisibility" />
-                  <span>Recent Workouts</span>
-                </label>
-              </div>
-              <div class="panel-actions" style="margin-top: 0.75rem;">
-                <button id="savePublicProfileButton" type="button" class="btn-primary">Save Visibility</button>
-                <span id="publicProfileSaved" class="account-save-check" hidden>✓ Updated</span>
-              </div>
-              <p id="publicProfileStatus" class="stats-status" role="status" aria-live="polite"></p>
-              <div class="public-profile-preview" id="publicProfilePreview" hidden>
-                <h4>What will be visible at <a id="publicProfilePreviewUrl" href="/@" target="_blank" rel="noopener noreferrer">/@<span id="publicProfilePreviewUsername">you</span></a></h4>
-                <ul id="publicProfilePreviewList"></ul>
-              </div>
-            </section>
-
-            <section class="account-readonly-grid" aria-label="Account metadata">
-              <article class="account-readonly-item">
-                <p class="account-readonly-label">Account ID</p>
-                <p id="accountIdValue" class="account-readonly-value">-</p>
-              </article>
-              <article class="account-readonly-item">
-                <p class="account-readonly-label">Sign-in Method</p>
-                <p id="accountMethodValue" class="account-readonly-value">-</p>
-              </article>
-              <article class="account-readonly-item">
-                <p class="account-readonly-label">Contact</p>
-                <p id="accountContactValue" class="account-readonly-value">-</p>
-              </article>
-              <article class="account-readonly-item">
-                <p class="account-readonly-label">Last Login</p>
-                <p id="accountLoginAtValue" class="account-readonly-value">-</p>
-              </article>
             </section>
           </article>
 

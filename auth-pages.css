@@ -1987,6 +1987,82 @@ body.dashboard-page .settings-section .account-edit-grid {
   margin-top: 0;
 }
 
+/* ---- Setup Checklist & Progress ---- */
+
+body.dashboard-page .setup-progress-bar {
+  margin: 0.5rem 0 1rem;
+  height: 6px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+body.dashboard-page .setup-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #39d9c0, #38ffd3);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+body.dashboard-page .setup-checklist {
+  margin-bottom: 0.5rem;
+}
+body.dashboard-page .setup-category {
+  margin-bottom: 0.65rem;
+}
+body.dashboard-page .setup-category-title {
+  margin: 0 0 0.3rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+body.dashboard-page .setup-item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.32rem 0.4rem;
+  border-radius: 6px;
+  font-size: 0.83rem;
+  color: rgba(230,238,245,0.7);
+}
+body.dashboard-page .setup-item.is-done {
+  color: rgba(230,238,245,0.35);
+  text-decoration: line-through;
+}
+body.dashboard-page .setup-item.is-done .setup-check {
+  color: #38ffd3;
+}
+body.dashboard-page .setup-check {
+  font-size: 0.8rem;
+  width: 1rem;
+  text-align: center;
+  color: rgba(230,238,245,0.25);
+}
+body.dashboard-page .setup-label {
+  flex: 1;
+}
+body.dashboard-page .setup-priority {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+body.dashboard-page .setup-priority-high {
+  background: rgba(239,68,68,0.15);
+  color: #f87171;
+}
+body.dashboard-page .setup-priority-medium {
+  background: rgba(251,191,36,0.15);
+  color: #fbbf24;
+}
+body.dashboard-page .setup-priority-low {
+  background: rgba(230,238,245,0.08);
+  color: rgba(230,238,245,0.45);
+}
+
 /* ---- Incomplete Profile Banner ---- */
 
 body.dashboard-page .settings-incomplete-banner {

@@ -1394,7 +1394,7 @@ function renderMaintenanceRow(maintenance, todayCals) {
     return `
       <div class="spotlight-maint spotlight-maint-empty">
         <span class="spotlight-maint-label">Maintenance</span>
-        <a class="spotlight-maint-link" href="/dashboard?view=stats#nutrition">Complete your profile to see this →</a>
+        <a class="spotlight-maint-link" href="/dashboard?view=setup">Complete your profile to see this →</a>
       </div>
     `;
   }

@@ -166,6 +166,7 @@ const els = {
 
   navGoals: document.getElementById("navGoals"),
   navIntegrate: document.getElementById("navIntegrate"),
+  navSetup: document.getElementById("navSetup"),
   accountEmailValue: document.getElementById("accountEmailValue"),
   accountUsernameValue: document.getElementById("accountUsernameValue"),
   accountAgeValue: document.getElementById("accountAgeValue"),
@@ -277,6 +278,10 @@ const els = {
 
   milestonesList: document.getElementById("milestonesList"),
   milestonesStatus: document.getElementById("milestonesStatus"),
+  // Setup tab
+  setupProgressText: document.getElementById("setupProgressText"),
+  setupProgressFill: document.getElementById("setupProgressFill"),
+  setupChecklist: document.getElementById("setupChecklist"),
 };
 
 const state = {
@@ -1360,6 +1365,53 @@ function wireTrackingPreferences() {
   });
 }
 
+// ---- Setup Checklist ----
+
+const SETUP_CHECKLIST_ITEMS = [
+  { id: "age", label: "Pick your age group (for tailored guidance)", category: "Profile", priority: "high", check: () => !!(readAuthUser()?.age) },
+  { id: "weight", label: "Add your current weight", category: "Profile", priority: "high", check: () => !!(readAuthUser()?.currentWeight) },
+  { id: "height", label: "Add your height", category: "Profile", priority: "medium", check: () => !!(readAuthUser()?.currentHeight) },
+  { id: "goalWeight", label: "Set a body goal (lose / maintain / gain)", category: "Profile", priority: "high", check: () => !!(readAuthUser()?.goalWeight) },
+  { id: "fitnessGoal", label: "Tell us your fitness goal", category: "Profile", priority: "high", check: () => !!(readAuthUser()?.fitnessGoal) },
+  { id: "bodyMeasures", label: "Track body measurements (chest, waist, arms, thighs, hips, neck)", category: "Profile", priority: "medium", check: () => !!(readAuthUser()?.trackBodyMeasures) },
+  { id: "workoutSplit", label: "Tell us your workout split (PPL, upper/lower, etc.)", category: "Goals", priority: "low", check: () => !!(readAuthUser()?.workoutSplit) },
+  { id: "digestOptOut", label: "Weekly report image (default: Saturdays)", category: "Notifications", priority: "low", check: () => !(readAuthUser()?.weeklyDigestOptOut) },
+  { id: "leaderboardOptIn", label: "Opt in to the public leaderboard", category: "Community", priority: "low", check: () => !!(readAuthUser()?.leaderboardOptIn) },
+  { id: "timezone", label: "Set your timezone", category: "Preferences", priority: "medium", check: () => !!(readAuthUser()?.timezone) },
+];
+
+function renderSetupChecklist() {
+  if (!els.setupChecklist) return;
+  const items = SETUP_CHECKLIST_ITEMS;
+  let done = 0;
+  const total = items.length;
+  const categorized = {};
+  for (const item of items) {
+    const isDone = item.check();
+    if (isDone) done++;
+    if (!categorized[item.category]) categorized[item.category] = [];
+    categorized[item.category].push({ ...item, isDone });
+  }
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  if (els.setupProgressText) els.setupProgressText.textContent = `${done} of ${total} done · ${pct}%`;
+  if (els.setupProgressFill) els.setupProgressFill.style.width = `${pct}%`;
+  let html = "";
+  for (const [category, catItems] of Object.entries(categorized)) {
+    html += `<div class="setup-category"><h4 class="setup-category-title">${category}</h4>`;
+    for (const item of catItems) {
+      const cls = item.isDone ? "is-done" : "";
+      const prio = item.priority === "high"
+        ? `<span class="setup-priority setup-priority-high">high</span>`
+        : item.priority === "medium"
+          ? `<span class="setup-priority setup-priority-medium">medium</span>`
+          : `<span class="setup-priority setup-priority-low">low</span>`;
+      html += `<div class="setup-item ${cls}"><span class="setup-check">${item.isDone ? "✓" : "○"}</span><span class="setup-label">${item.label}</span>${prio}</div>`;
+    }
+    html += "</div>";
+  }
+  els.setupChecklist.innerHTML = html;
+}
+
 function renderAccountInfo() {
   const user = readAuthUser();
 
@@ -1429,6 +1481,7 @@ function renderAccountInfo() {
   renderAiIdentity();
   renderPersonalTrainer(user);
   renderIncompleteProfileBanner(user);
+  renderSetupChecklist();
   void loadAffiliateProfile();
 }
 
