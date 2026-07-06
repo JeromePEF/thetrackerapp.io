@@ -1,0 +1,316 @@
+============================================================
+AFFILIATE FLOW — FULL BACKEND REFERENCE
+============================================================
+
+This document describes what the frontend sends and expects at every
+step of the affiliate journey. No business logic exists in the frontend
+— all decisions (agreement required, Stripe status, counts, payouts)
+come from the API response.
+
+============================================================
+API ENDPOINTS (all at https://api.thetrackerapp.io)
+============================================================
+
+All require Bearer auth (token from localStorage "tracker.auth.session").
+
+  POST /api/affiliate/signup    — Register a new affiliate
+  GET  /api/affiliate/status    — Get full affiliate profile & state
+  GET  /api/affiliate/history   — Get payout/referral history
+  POST /api/affiliate/connect   — Initiate or resume Stripe Connect
+  POST /api/affiliate/agreement — Request/resend the signing agreement
+
+
+============================================================
+1. SIGNUP — POST /api/affiliate/signup
+============================================================
+
+Request body (JSON):
+{
+  "name":        "John Doe",
+  "email":       "john@example.com",
+  "username":    "johndoe",
+  "accountId":   "usr_abc123",
+  "canonical":   "johndoe",
+  "contact":     "+15551234567",
+  "phone":       "+15551234567",
+  "source":      "affiliate_signup_form",
+  "requestedAt": "2026-06-20T12:00:00.000Z"
+}
+
+The frontend collects only the "name" field from a single form input.
+All other fields are extracted from localStorage "tracker.auth.user".
+
+Response: any JSON. The frontend does not parse it — on success it
+redirects to https://dashboard.thetrackerapp.io/dashboard
+
+
+============================================================
+2. STATUS — GET /api/affiliate/status
+============================================================
+
+Query parameters:
+  ?email=john@example.com&username=johndoe&accountId=usr_abc123
+   &contact=+15551234567&phone=+15551234567&canonical=johndoe
+
+This is THE central endpoint. The dashboard polls it to detect state
+changes (agreement signed, Stripe activated, etc.).
+
+=== TOP-LEVEL RESPONSE SHAPE ===
+
+{
+  // === Affiliate profile ===
+  "affiliate": {
+    "id": "aff_...",
+    "name": "John Doe",
+    "fullName": "John Doe",
+    "displayName": "John Doe",
+    "email": "john@example.com",
+    "username": "johndoe",
+    "accountId": "usr_abc123",
+    "canonical": "johndoe",
+    "handle": "johndoe",
+
+    // Referral identity
+    "code": "JOHN123",          // <-- any of: code, affiliateCode, referralCode,
+    "referralCode": "JOHN123",  //     publicCode, publicId, slug, handle,
+    "referralUrl": "https://thetrackerapp.io/?ref=JOHN123",
+    "shareUrl": "https://thetrackerapp.io/?ref=JOHN123",
+
+    // Stripe summary (also nested under top-level "stripe")
+    "stripeAccountStatus": "active",
+    "stripeStatus": "active",
+    "connectStatus": "active",
+    "chargesEnabled": true,
+    "payoutsEnabled": true,
+    "detailsSubmitted": true,
+    "currentlyDue": [],
+    "disabledReason": null,
+
+    // Agreement summary (also nested under top-level "agreement")
+    "agreementRequired": false,
+    "agreementSigned": true,
+    "connectBlocked": false,
+    "canConnectStripe": true,
+    "agreementSigningUrl": null,
+    "agreementStatus": "completed",
+    "agreementMessage": null
+  },
+
+  // === Agreement (separate top-level key, used when present) ===
+  "agreement": {
+    "required": true,          // boolean — must be true to show agreement box
+    "signed": false,           // boolean
+    "completed": false,        // boolean (alias for signed)
+    "isSigned": false,         // boolean (alias for signed)
+    "connectBlocked": false,   // boolean — if true, blocks Stripe even if signed
+    "canConnectStripe": false, // boolean — explicit override for connect permission
+    "signingUrl": "https://app.hellosign.com/...",  // external URL for user to sign
+    "signing_url": "...",      // alias
+    "signUrl": "...",          // alias
+    "status": "sent",          // string — "sent", "completed", "declined", etc.
+    "message": "Please sign the affiliate agreement to continue.",
+    "description": "..."       // alias for message
+  },
+
+  // === Stripe Connect (separate top-level key) ===
+  "stripe": {
+    "status": "active",               // "active" | "onboarding" | "pending" | "restricted" | "disabled"
+    "stripeStatus": "active",         // alias for status
+    "stripeAccountStatus": "active",  // alias for status
+    "connectStatus": "active",        // alias for status
+
+    "chargesEnabled": true,     // boolean (or snake_case: charges_enabled)
+    "payoutsEnabled": true,     // boolean (or snake_case: payouts_enabled)
+    "detailsSubmitted": true,   // boolean (or snake_case: details_submitted)
+
+    "requirements": {
+      "currentlyDue": ["individual.verification"],
+      "currently_due": ["individual.verification"],
+      "disabledReason": "Identity verification required",
+      "disabled_reason": "..."
+    },
+
+    // Onboarding URL — returned when user needs to start/continue Stripe setup
+    "onboardingUrl": "https://connect.stripe.com/setup/c/...",
+    "onboarding_url": "...",
+    "accountLinkUrl": "...",
+    "account_link_url": "...",
+    "manageUrl": "https://dashboard.stripe.com/...",
+    "loginUrl": "..."
+  },
+
+  // === Performance counts ===
+  "stats": {
+    "clicks": 245,
+    "clickCount": 245,
+    "totalClicks": 245,
+    "linkClicks": 245,
+
+    "conversions": 8,
+    "conversionCount": 8,
+    "paidConversions": 8,
+    "subscribers": 8,
+    "subscriberCount": 8,
+    "totalQualifiedSubscribers": 8,
+
+    "totalReferredSubscribers": 15,
+    "signups": 15,
+    "signupCount": 15,
+    "totalSignups": 15,
+    "leads": 15
+  },
+
+  // === Referred subscribers list ===
+  "referrals": [
+    {
+      "email": "sub@example.com",
+      "contact": "sub@example.com",
+      "username": "subscriber1",
+      "name": "Sub One",
+      "status": "active",
+      "billingStatus": "active",
+      "subscriptionStatus": "active",
+      "signedUpAt": "2026-06-15T00:00:00Z",
+      "createdAt": "2026-06-15T00:00:00Z",
+      "joinedAt": "2026-06-15T00:00:00Z",
+      "convertedAt": "2026-06-15T00:00:00Z"
+    }
+  ],
+
+  // === Audit flag ===
+  "found": true
+}
+
+
+============================================================
+3. STIPE CONNECT — POST /api/affiliate/connect
+============================================================
+
+Request body (JSON):
+{
+  "email":      "john@example.com",
+  "username":   "johndoe",
+  "accountId":  "usr_abc123",
+  "canonical":  "johndoe",
+  "contact":    "+15551234567",
+  "phone":      "+15551234567",
+  "returnUrl":  "https://dashboard.thetrackerapp.io/affiliate/connect?complete=1",
+  "refreshUrl": "https://dashboard.thetrackerapp.io/affiliate/connect?complete=1"
+}
+
+Response must include an onboarding URL at one of these paths:
+
+  stripe.onboardingUrl       stripe.onboarding_url
+  stripe.accountLinkUrl      stripe.account_link_url
+  stripe.dashboardUrl        stripe.dashboard_url
+  stripe.loginUrl            stripe.login_url
+  stripe.manageUrl           stripe.manage_url
+  stripe.managementUrl       stripe.management_url
+  stripe.redirectUrl         stripe.redirect_url
+  — or any of the above nested under "affiliate" or "body"
+  — or at the top level: result.onboardingUrl, result.accountLinkUrl, etc.
+
+If none found, the frontend throws "Stripe did not return an onboarding link."
+The frontend then redirects the user's browser to that URL (stripe.com).
+
+
+============================================================
+4. AGREEMENT — POST /api/affiliate/agreement
+============================================================
+
+Request body (JSON):
+{
+  "email":     "john@example.com",
+  "username":  "johndoe",
+  "accountId": "usr_abc123",
+  "canonical": "johndoe",
+  "contact":   "+15551234567",
+  "phone":     "+15551234567",
+  "source":    "dashboard_affiliate_agreement",
+  "requestedAt": "2026-06-20T12:00:00.000Z"
+}
+
+The backend should send (or resend) the signing agreement. The frontend
+does not inspect the response — it just shows a "Resent!" confirmation.
+The agreement signing URL is read from the next GET /api/affiliate/status
+response at: agreement.signingUrl
+
+============================================================
+5. AFFILIATE HISTORY — GET /api/affiliate/history
+============================================================
+
+Same query params as /api/affiliate/status.
+Used for payout history views (not currently rendered in the simple
+dashboard, but available).
+
+============================================================
+HOW THE DASHBOARD RENDERS EACH SECTION
+============================================================
+
+Performance card
+  Clicks     ← stats.clicks || stats.clickCount || stats.totalClicks
+  Signups    ← stats.totalReferredSubscribers || stats.signups || stats.signupCount
+  Conversions ← stats.totalQualifiedSubscribers || stats.conversions || stats.paidConversions
+
+Agreement box (shown when agreement.required && !signed)
+  "Please sign the affiliate agreement to continue."
+  [Open agreement] → link to agreement.signingUrl
+  [Resend Agreement] → POST /api/affiliate/agreement
+  Polls GET /api/affiliate/status every few seconds to detect when signed.
+
+Stripe Connect card
+  Status: "active" && chargesEnabled && payoutsEnabled → "Stripe connected"
+  Status: anything else → show Connect/Resume Stripe button
+  Button calls POST /api/affiliate/connect → redirect to stripe.com
+
+Referral link
+  Input shows: affiliate.referralUrl (or built from ref param + code)
+  Copy button copies to clipboard
+  Code shown below: affiliate.code
+
+Referred subscribers list
+  Each row shows: email/contact/username, status, and signup date
+  "No referrals yet" when empty
+
+============================================================
+STATE MACHINE SUMMARY
+============================================================
+
+  [Not an affiliate]
+      │ POST /api/affiliate/signup
+      ▼
+  [Affiliate — agreement required]
+      │ User signs externally via signingUrl
+      │ Frontend polls /api/affiliate/status
+      ▼
+  [Affiliate — agreement signed, connect Stripe]
+      │ POST /api/affiliate/connect → redirect to stripe.com
+      │ User completes Stripe onboarding
+      │ Frontend polls /api/affiliate/status
+      ▼
+  [Active affiliate]
+      Shows: referral link, performance counts, Stripe payout status,
+             referred subscribers list
+
+============================================================
+CRITICAL: fields the frontend uses to decide "is this user an affiliate?"
+============================================================
+
+The function hasAffiliateProfile() returns true if ANY of:
+  - body.found === true
+  - A non-empty affiliate ID exists (affiliate.id, stripe.accountId, etc.)
+  - A non-empty affiliate code exists
+  - A non-empty referral URL exists
+  - referrals array length > 0
+  - clicks > 0
+  - signups > 0
+  - conversions > 0
+  - calculated, held, or sent totals > 0
+  - agreement.required is true
+  - chargesEnabled is true
+  - payoutsEnabled is true
+  - stripe status is "active", "onboarding", "pending", or "restricted"
+    (not "", "unknown", "none", "missing", "not_started")
+
+The server MUST return at least "found": true for a valid affiliate,
+or populate one of the above fields.

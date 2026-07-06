@@ -1747,6 +1747,39 @@ async function loadCountryFlag() {
   } catch {}
 }
 
+function initIMessageContact() {
+  const contact = import.meta.env.VITE_IMESSAGE_CONTACT || "";
+  if (!contact || typeof contact !== "string" || !contact.trim()) return;
+
+  const number = contact.trim();
+  const link = document.getElementById("imessageContactLink");
+  const display = document.getElementById("imessageContactNumber");
+  if (!link || !display) return;
+
+  display.textContent = formatIMessageNumber(number);
+  link.href = `imessage:${number}&body=${encodeURIComponent("hi, I wanna track my workouts.")}`;
+  link.hidden = false;
+}
+
+function formatIMessageNumber(raw) {
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length === 10) return `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
+  if (digits.length === 11 && digits.startsWith("1")) return `(${digits.slice(1,4)}) ${digits.slice(4,7)}-${digits.slice(7)}`;
+  return raw;
+}
+
+// Console test function: __testIMessage("999-999-9999")
+window.__testIMessage = function(phone) {
+  const link = document.getElementById("imessageContactLink");
+  const display = document.getElementById("imessageContactNumber");
+  if (!link || !display) { console.log("iMessage contact elements not found on this page"); return; }
+  const number = String(phone || "999-999-9999").trim();
+  display.textContent = formatIMessageNumber(number);
+  link.href = `imessage:${number}&body=${encodeURIComponent("hi, I wanna track my workouts.")}`;
+  link.hidden = false;
+  console.log(`[iMessage] Contact set to ${number}. Click the number or icon to open iMessage.`);
+};
+
 function init() {
   if (redirectDashboardHostHomeToDashboardPage()) {
     return;
@@ -1764,6 +1797,7 @@ function init() {
 
   renderServiceOptions();
   renderServiceCarousel();
+  initIMessageContact();
   updateServiceVisual();
   syncAuthNavigation();
   wireEvents();

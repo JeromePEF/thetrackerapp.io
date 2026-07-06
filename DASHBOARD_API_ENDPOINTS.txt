@@ -3,353 +3,279 @@
 # Dashboard: https://dashboard.thetrackerapp.io
 # Generated: 2025-06-14
 
-======================================================================
-1. AUTHENTICATION & SIGNUP
-======================================================================
-
-POST /api/auth/login-code/request
-POST /api/auth/code/request
-POST /api/login-code/request
-POST /api/auth/login-code/verify
-POST /api/auth/code/verify
-POST /api/login-code/verify
-POST /api/onboarding
-POST /signup
-POST /api/welcome
-POST /api/onboarding/trigger
-POST /api/onboarding/send-welcome
-
-======================================================================
-2. DASHBOARD PORTAL (Shared Hydration)
-======================================================================
-
-GET /api/portal?contact=<canonical>
-GET /api/account/portal?contact=<canonical>
-GET /api/user/profile?contact=<canonical>
-
-======================================================================
-3. USER PROFILE & ACCOUNT
-======================================================================
-
-GET /api/user/profile
-GET /api/account/profile
-PATCH /api/account/profile
-PATCH /api/user/profile
-POST /api/account/email/verify
-POST /api/account/verify-email
-POST /api/user/email/verify
-POST /api/user/visibility
-GET /api/user/role
-GET /api/u/:username
-GET /api/user/public
-GET /api/user/public-profile
-GET /api/public-profile
-
-======================================================================
-4. DASHBOARD STATS & METRICS
-======================================================================
-
-GET /api/stats/range?contact=&range=&from=&to=
-GET /api/dashboard/stats/range
-GET /api/stats/usage
-GET /api/leaderboard/rank?contact=
-GET /api/stats/rank?contact=
-GET /api/milestones?contact=
-GET /api/account/milestones
-GET /api/body-measures?contact=
-GET /api/account/body-measures
-
-======================================================================
-5. CHARTS & METRICS DATA
-======================================================================
-
-GET /api/chart/data?contact=&range=&metric=
-GET /api/cardio/stats?contact=&range=
-GET /api/user/charts?from=&to=&metrics=
-
-======================================================================
-6. BODY MEASUREMENTS & JOURNALS
-======================================================================
-
-GET /api/user/measurements
-POST /api/user/measurements
-DELETE /api/user/measurements/:id
-GET /api/user/journals
-POST /api/user/journals/:bodyPart
-DELETE /api/user/journals/:bodyPart
-
-======================================================================
-7. GOALS
-======================================================================
-
-GET /api/account/goals
-POST /api/account/goals
-
-======================================================================
-8. BILLING / STRIPE
-======================================================================
-
-GET /api/billing/stripe-prices
-POST /api/stripe/checkout-session
-POST /api/stripe/checkout
-POST /api/billing/checkout-session
-GET /api/stripe/checkout-complete?session_id=
-POST /api/billing/cancel
-POST /api/stripe/subscription/cancel
-POST /api/stripe/cancel
-POST /api/billing/resume
-POST /api/stripe/subscription/resume
-POST /api/stripe/portal-session
-POST /api/billing/portal-session
-
-======================================================================
-9. INTEGRATIONS
-======================================================================
-
-GET /api/integrations
-GET /api/account/integrations
-POST /api/integrations/connect
-POST /api/integrations
-POST /api/integrations/sync
-
-======================================================================
-10. AI / GEMINI
-======================================================================
-
-POST /api/ai/chat
-POST /api/ai/fitness
-POST /api/gemini/fitness
-
-======================================================================
-11. CHATBOT (Live Agent)
-======================================================================
-
-POST /api/chat/message
-POST /api/chat/request-agent
-GET /api/chat/messages?sessionId=&since=
-
-======================================================================
-12. GOOGLE SHEET LINK
-======================================================================
-
-GET /api/account/sheet
-GET /api/sheet
-POST /api/sheet/regenerate
-POST /api/sheet/share
+# ==============================================================================
+# NOTE: Endpoints marked with (fallback) are tried sequentially by the client
+# when the primary endpoint fails. Multiple fallbacks exist per call.
+# ==============================================================================
 
 ======================================================================
-13. AFFILIATE
+1. AUTH & LOGIN
 ======================================================================
 
-POST /api/affiliate/signup
-GET /api/affiliate/status?email=
-GET /api/affiliate/history
-POST /api/affiliate/connect
-POST /api/affiliate/agreement
+POST /api/signup-proxy                                    Vercel proxy
+POST /api/onboarding                                       Onboarding signup
+POST /signup                                               Signup (fallback)
+POST /api/welcome                                          Welcome message trigger
+POST /api/onboarding/trigger                               Onboarding trigger
+POST /api/onboarding/send-welcome                          Send welcome message
+POST /api/login-code-request                               Request code (Vercel proxy)
+POST /api/auth/login-code/request                          Request code
+POST /api/auth/code/request                                Request code (fallback)
+POST /api/login-code/request                               Request code (fallback)
+POST /api/login-code-verify                                Verify code (Vercel proxy)
+POST /api/auth/login-code/verify                           Verify code
+POST /api/auth/code/verify                                 Verify code (fallback)
+POST /api/login-code/verify                                Verify code (fallback)
+POST /api/backend-proxy                                    Generic backend proxy
 
 ======================================================================
-14. SITE LEADERBOARD
+2. DASHBOARD PORTAL (Full snapshot hydration)
 ======================================================================
 
-GET /api/site-leaderboard
-GET /api/leaderboard/site
-GET /api/site-leaderboard/strength
-GET /api/leaderboard/strength
-GET /api/site-leaderboard/calisthenics
-GET /api/leaderboard/calisthenics
-GET /api/streaks
-GET /api/streaks/live
-GET /api/pebble/leaderboard
-GET /api/pebble/calories-burned
-GET /api/pebble/calories
-GET /api/pebble/top-workouts
-GET /api/pebble/workouts
-GET /api/pebble/steps
-GET /api/pebble/sleep-scores
-GET /api/pebble/sleep
-GET /api/pebble/miles-traversed
-GET /api/pebble/miles
-GET /api/leaderboard?category=&metric=&range=&limit=&offset=
-GET /api/frontend-dashboard-sheet
+GET  /api/portal?contact=<canonical>                       Primary portal snapshot
+GET  /api/account/portal?contact=<canonical>               Portal snapshot (fallback)
+GET  /api/profile/deferred-checklist?contact=              Onboarding checklist items
 
 ======================================================================
-15. PUBLIC LEADERBOARD (Edge Proxy)
+3. ACCOUNT & USER PROFILE
 ======================================================================
 
-GET /api/public-leaderboard
+GET  /api/account/profile                                  Get account profile
+PATCH /api/account/profile                                 Update account profile
+POST /api/account/update-profile                           Update profile (fallback)
+GET  /api/user/profile                                     Get user profile
+PATCH /api/user/profile                                    Update user profile
+POST /api/account/email/verify                             Send email verification
+POST /api/account/verify-email                             Send email verify (fallback)
+POST /api/user/email/verify                                Send email verify (fallback)
+POST /api/user/visibility                                  Toggle public profile visibility
+GET  /api/user/role                                        Check user role (admin)
+GET  /api/user/quick-commands                              Load text shortcuts
+POST /api/user/quick-commands                              Save text shortcut
+DELETE /api/user/quick-commands                            Delete text shortcut
+POST /api/account/goals                                    Save user goals
+GET  /api/account/sheet                                    Get user's Google Sheet URL
+GET  /api/sheet                                            Get sheet URL (fallback)
+GET  /api/account/deletion-status                          Check account deletion status
+POST /api/account/restore                                  Restore deleted account
+POST /api/account/delete                                   Initiate account deletion
 
 ======================================================================
-16. STEP TAPE / LIVE ACTIVITY
+4. BODY MEASUREMENTS & JOURNALS
 ======================================================================
 
-GET /api/steps/live
-GET /api/steps/live/recent
-GET /api/activity/live
+GET  /api/user/measurements                                Get all measurements
+POST /api/user/measurements                                Log new body measurement
+DELETE /api/user/measurements/:id                          Delete a measurement entry
+GET  /api/user/charts?from=&to=&metrics=                   Chart data for measurements
+POST /api/user/journals/:bodyPart                          Save journal entry
+DELETE /api/user/journals/:bodyPart                        Delete journal entry
 
 ======================================================================
-17. NUTRITION & SUPPLEMENTS
+5. DASHBOARD STATS & METRICS
 ======================================================================
 
-GET /api/nutrition/supplement/registry
-GET /api/nutrition/supplement?date=
-POST /api/nutrition/supplement
-DELETE /api/nutrition/supplement/:id
-GET /api/user/nutrition/day?contact=&date=
-DELETE /api/user/nutrition/entry/:id
+GET  /api/stats/range?contact=&range=&from=&to=            Stats by time range
+GET  /api/dashboard/stats/range                            Stats by range (fallback)
+GET  /api/chart/data?contact=&range=&metric=               Unified chart/spotlight data
+GET  /api/cardio/stats?contact=&range=                     Cardio activity stats
+GET  /api/body-measures?contact=                           Body measurement history
+GET  /api/account/body-measures                            Body measures (fallback)
+GET  /api/stats/usage                                      Global site usage stats
+GET  /api/leaderboard/rank?contact=                        User's leaderboard ranking
+GET  /api/stats/rank?contact=                              User ranking (fallback)
+GET  /api/milestones?contact=                              User milestones
+GET  /api/account/milestones                               Milestones (fallback)
 
 ======================================================================
-18. CALENDAR
+6. BILLING & STRIPE
 ======================================================================
 
-GET /api/calendar/schedule
-PATCH /api/calendar/schedule
-GET /api/calendar/month?month=YYYY-MM
-GET /api/calendar/week?weekStart=YYYY-MM-DD
-GET /api/calendar/adherence?range=30d
-POST /api/calendar/recompute
+GET  /api/billing/stripe-prices                            Get Stripe price list
+POST /api/stripe/checkout-session                          Create Stripe checkout
+POST /api/stripe/checkout                                  Create checkout (fallback)
+POST /api/billing/checkout-session                         Create checkout (fallback)
+GET  /api/stripe/checkout-complete?session_id=             Confirm checkout completion
+POST /api/billing/cancel                                   Cancel subscription
+POST /api/stripe/subscription/cancel                       Cancel via Stripe
+POST /api/stripe/cancel                                    Cancel (fallback)
+POST /api/billing/resume                                   Resume subscription
+POST /api/stripe/subscription/resume                       Resume via Stripe
 
 ======================================================================
-19. WORKOUT PLAN
+7. INTEGRATIONS
 ======================================================================
 
-GET /api/workout-plan
-POST /api/workout-plan
-POST /api/workout-plan/suggest
+GET  /api/integrations                                     List available integrations
+GET  /api/account/integrations                             List integrations (fallback)
+POST /api/integrations/connect                             Connect an integration
 
 ======================================================================
-20. PERSONAL TRAINER & COACH
+8. CALENDAR & SCHEDULING
 ======================================================================
 
-POST /api/trainer/application
-POST /api/trainer/application/public
-POST /api/trainer/application/withdraw
-POST /api/account/trainer-code/redeem
-POST /api/account/trainer-code/cancel
-POST /api/trainer/clients/:id/remove
-GET /api/personal-trainers
-GET /api/trainers
-GET /api/coaches
+GET     /api/calendar/schedule                             Get workout schedule
+PATCH   /api/calendar/schedule                             Update committed weekdays
+GET     /api/calendar/month?month=YYYY-MM                  Month grid data
+GET     /api/calendar/week?weekStart=YYYY-MM-DD            Week summary data
+GET     /api/calendar/adherence?range=30d                  Adherence trend data
 
 ======================================================================
-21. RUN CLUBS
+9. NUTRITION & SUPPLEMENTS
 ======================================================================
 
-GET /api/run-clubs
-GET /api/clubs/run
-GET /api/clubs?type=run
+GET  /api/nutrition/supplement/registry                    Full supplement registry
+GET  /api/nutrition/supplement?date=                       Today's logged supplements
+POST /api/nutrition/supplement                             Log supplement entry
+GET  /api/user/nutrition/day?contact=&date=                Daily food entries
+DELETE /api/user/nutrition/entry/:id                       Delete a food entry
 
 ======================================================================
-22. COMMUNITIES / GROUPS
+10. CHATBOT & LIVE AGENT
 ======================================================================
 
-POST /api/communities/:id/leave
+POST /api/chat/message                                     Send AI chat message
+POST /api/chat/request-agent                               Request live agent handoff
+GET  /api/chat/messages?sessionId=&since=                  Poll for agent replies
 
 ======================================================================
-23. BLOG
+11. AFFILIATE
 ======================================================================
 
-GET /api/blog/posts?page=&limit=&tag=&search=
-POST /api/blog/posts
-GET /api/blog/posts/:slug
-POST /api/blog/subscribe
+POST /api/affiliate/signup                                 Affiliate signup
+GET  /api/affiliate/status?email=                          Get affiliate profile
+GET  /api/affiliate/history                                Get referral history
+POST /api/affiliate/connect                                Start Stripe Connect onboarding
+POST /api/affiliate/agreement                              Request affiliate agreement
 
 ======================================================================
-24. PRESS
+12. COACH & TRAINER
 ======================================================================
 
-GET /api/press/releases?limit=5
-POST /api/press/inquiry
+POST /api/account/trainer-code/redeem                      Redeem coach code
+POST /api/account/trainer-code/cancel                      Cancel pending trainer request
+POST /api/trainer/clients/:id/remove                       Unlink athlete from coach
+POST /api/trainer/application                              Apply to become PT (auth)
+POST /api/trainer/application/public                       Apply to become PT (public)
+POST /api/trainer/application/withdraw                     Withdraw PT application
+POST /api/communities/:id/leave                            Leave a workout group/run club
 
 ======================================================================
-25. BRACKETS / COMPETITIONS
+13. SITE LEADERBOARDS (public)
 ======================================================================
 
-GET /api/brackets/active
-GET /api/brackets/upcoming
-GET /api/brackets/:id
-GET /api/brackets/winners
+GET  /api/site-leaderboard                                 Site-wide workout leaderboard
+GET  /api/leaderboard/site                                 Site leaderboard (fallback)
+GET  /api/site-leaderboard/strength                        Strength leaderboard
+GET  /api/leaderboard/strength                             Strength (fallback)
+GET  /api/site-leaderboard/calisthenics                    Calisthenics leaderboard
+GET  /api/leaderboard/calisthenics                         Calisthenics (fallback)
+GET  /api/streaks                                          Top streaks
+GET  /api/streaks/live                                     Live streak events
+GET  /api/public-leaderboard                               Edge-cached leaderboard snapshot
+GET  /api/leaderboard?category=&metric=&range=&limit=      Paginated leaderboard
+GET  /api/frontend-dashboard-sheet                         Sheet metadata (tab URLs)
+GET  /api/steps/live                                       Live step tape totals
+GET  /api/steps/live/recent                                Recent step events (polled)
 
 ======================================================================
-26. WIN $$$ CHALLENGES
+14. PEBBLE WEARABLE LEADERBOARDS
 ======================================================================
 
-GET /api/challenges/current
-GET /api/challenges/:id/leaderboard
-GET /api/challenges/winners?limit=10
+GET  /api/pebble/leaderboard                               Pebble combined
+GET  /api/pebble/calories-burned                           Pebble calories
+GET  /api/pebble/calories                                  Pebble calories (fallback)
+GET  /api/pebble/top-workouts                              Pebble top workouts
+GET  /api/pebble/workouts                                  Pebble workouts (fallback)
+GET  /api/pebble/steps                                     Pebble steps
+GET  /api/pebble/sleep-scores                              Pebble sleep
+GET  /api/pebble/sleep                                     Pebble sleep (fallback)
+GET  /api/pebble/miles-traversed                           Pebble miles
+GET  /api/pebble/miles                                     Pebble miles (fallback)
 
 ======================================================================
-27. TESTIMONIALS
+15. FEATURE FLAGS & CONTROL
 ======================================================================
 
-GET /api/testimonials?limit=10
+GET  /api/control                                          Feature flags + site config
+GET  /api/control?action=viewer-ping                       Stream viewer heartbeat
+GET  /api/control-version                                  Control version polling
+GET  /api/unit-system                                      Detect unit system from IP
 
 ======================================================================
-28. PRODUCTS
+16. STATUS PAGE
 ======================================================================
 
-GET /api/products?category=&brand=
+GET  /api/status                                           Public system status
+GET  /api/status/uptime                                    Uptime history
 
 ======================================================================
-29. TOOLS
+17. BLOG
 ======================================================================
 
-POST /api/tools/meal-planner
+GET  /api/blog/posts?page=&limit=&tag=&search=             List blog posts
+POST /api/blog/posts                                       Create blog post (admin)
+GET  /api/blog/posts/:slug                                 Get single blog post
+POST /api/blog/subscribe                                   Email subscription
 
 ======================================================================
-30. FEATURE FLAGS (CONTROL)
+18. PRESS
 ======================================================================
 
-GET /api/control
-GET https://api.thetrackerapp.io/control
+GET  /api/press/releases?limit=                            Press releases
+POST /api/press/inquiry                                    Submit press inquiry
 
 ======================================================================
-31. ONBOARDING CHECKLIST
+19. CHALLENGES & WIN
 ======================================================================
 
-GET /api/profile/deferred-checklist?contact=
+GET  /api/challenges/current                               Active challenge
+GET  /api/challenges/:id/leaderboard                       Challenge leaderboard
+GET  /api/challenges/winners?limit=                        Past challenge winners
 
 ======================================================================
-32. QUICK COMMANDS / SHORTCUTS
+20. COMMUNITY & GROUPS
 ======================================================================
 
-GET /api/user/quick-commands?contact=
-POST /api/user/quick-commands
-DELETE /api/user/quick-commands
+GET  /api/groups                                           Workout groups listing
+GET  /api/testimonials?limit=                              User testimonials
 
 ======================================================================
-33. STATUS PAGE
+21. PUBLIC USER PROFILES
 ======================================================================
 
-GET /api/status
-GET /api/status/uptime
+GET  /api/u/:username                                      Public user profile
 
 ======================================================================
-34. UNIT SYSTEM
+22. DIRECTORIES (Run Clubs / Personal Trainers)
 ======================================================================
 
-GET /api/unit-system
+GET  /api/run-clubs                                        Run clubs directory
+GET  /api/clubs/run                                        Run clubs (fallback)
+GET  /api/clubs?type=run                                   Run clubs (fallback)
+GET  /api/personal-trainers                                Personal trainers directory
+GET  /api/trainers                                         Trainers (fallback)
+GET  /api/coaches                                          Coaches (fallback)
 
 ======================================================================
-35. MISCELLANEOUS
+23. TOOLS
 ======================================================================
 
-GET /api/home
-GET /api/dashboard-endpoints
-GET /r/:code
-GET /api/account/export?contact=&format=csv|json
+POST /api/tools/meal-planner                               AI meal plan generator
 
 ======================================================================
-36. VERCEL PROXY FUNCTIONS (Internal)
+24. VERCEL PROXY FUNCTIONS (same-origin, relay to backend)
 ======================================================================
 
-GET/POST  /api/backend-proxy?target=...
-POST      /api/signup-proxy
-POST      /api/login-code-request
-POST      /api/login-code-verify
-POST      /api/control-invalidate
-GET/POST  /api/control-version
+POST /api/signup-proxy                                     Signup proxy
+POST /api/login-code-request                               Login code request proxy
+POST /api/login-code-verify                                Login code verify proxy
+POST /api/backend-proxy                                    Generic backend proxy
+GET  /api/control                                          Control proxy
+GET  /api/control-version                                  Control version proxy
+GET  /api/unit-system                                      Unit system proxy
 
 ======================================================================
-TOTAL: ~125 distinct endpoint paths
-Methods: GET, POST, PATCH, DELETE
+TOTAL: ~133 endpoint paths (~105 distinct routes)
+METHODS: GET (79), POST (42), PATCH (7), DELETE (5)
 ======================================================================

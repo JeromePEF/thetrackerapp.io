@@ -1,0 +1,159 @@
+============================================================
+BACKEND — SQLite Email Verification Implementation
+============================================================
+
+Date: 2026-06-20
+
+
+SCHEMA CHANGE
+-------------
+
+ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN email_verified_at TEXT DEFAULT NULL;
+
+-- email_verified:    0 = not verified, 1 = verified
+-- email_verified_at: ISO 8601 timestamp (e.g. "2026-06-20T19:45:00.000Z")
+--                    NULL if never verified
+
+
+ENDPOINT: POST /api/user/email/verify
+--------------------------------------
+
+Request:
+{
+  "email":       "fide.operandi@gmail.com",
+  "contact":     "fide.operandi@gmail.com",
+  "username":    "ExhaustiveTester",
+  "accountId":   "TRK-571341",
+  "canonical":   "ExhaustiveTester",
+  "returnUrl":   "https://dashboard.thetrackerapp.io/dashboard?view=account"
+}
+
+Backend actions:
+1. Look up user by email, accountId, or canonical.
+2. If user not found → return 404 { "ok": false, "error": "Account not found", "code": "ACCOUNT_NOT_FOUND" }
+3. Generate a verification token (e.g. crypto.randomUUID()).
+4. Store token in database with user ID and expiration (e.g. 24 hours):
+
+   CREATE TABLE IF NOT EXISTS email_verification_tokens (
+     id          INTEGER PRIMARY KEY AUTOINCREMENT,
+     user_id     TEXT NOT NULL,
+     token       TEXT NOT NULL UNIQUE,
+     email       TEXT NOT NULL,
+     expires_at  TEXT NOT NULL,          -- ISO 8601
+     created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+   );
+
+   INSERT INTO email_verification_tokens (user_id, token, email, expires_at)
+   VALUES (?, ?, ?, datetime('now', '+24 hours'));
+
+5. Send verification email to the given email address with a link like:
+   https://thetrackerapp.io/api/verify-email?token=<token>
+
+   If iMessage delivery fails, fall back to Gmail.
+
+6. Return to frontend:
+
+   {
+     "ok": true,
+     "email": "fide.operandi@gmail.com",
+     "emailVerified": false
+   }
+
+
+ENDPOINT: GET /api/verify-email?token=<token>
+-----------------------------------------------
+
+Called when user clicks the verification link in their email.
+
+Backend actions:
+1. Look up token in email_verification_tokens table.
+2. If token not found or expired → return HTML page:
+     <h1>Verification Link Expired</h1>
+     <p>This link is invalid or has expired. Please request a new verification email from your dashboard.</p>
+     <a href="https://dashboard.thetrackerapp.io/dashboard?view=account">Go to Dashboard</a>
+
+3. Mark user's email as verified:
+
+   UPDATE users
+   SET email_verified = 1,
+       email_verified_at = datetime('now')
+   WHERE id = (SELECT user_id FROM email_verification_tokens WHERE token = ?);
+
+4. Delete the used token:
+   DELETE FROM email_verification_tokens WHERE token = ?;
+
+5. Clean up any other pending tokens for this user:
+   DELETE FROM email_verification_tokens WHERE user_id = (SELECT user_id FROM email_verification_tokens WHERE token = ?);
+
+6. Redirect user to dashboard:
+   HTTP 302 → https://dashboard.thetrackerapp.io/dashboard?view=account&verified=1
+
+
+ENDPOINT: GET /api/user/profile (existing — ADD email fields to response)
+--------------------------------------------------------------------------
+
+This endpoint is called on every dashboard load and every billing refresh.
+
+CURRENT response for fide.operandi@gmail.com:
+{
+  "contact": "fide.operandi@gmail.com",
+  "profile": {
+    "accountId": "TRK-571341",
+    "username": "ExhaustiveTester",
+    "primaryEmail": "fide.operandi@gmail.com",
+    ...
+  }
+}
+
+AFTER the change, ALSO include:
+
+{
+  "contact": "fide.operandi@gmail.com",
+  "profile": {
+    ...existing fields...
+    "emailVerified": true,                              <-- ADD
+    "emailVerifiedAt": "2026-06-20T19:45:00.000Z"       <-- ADD
+  },
+  "emailVerified": true,                                <-- ADD (top-level)
+  "emailVerifiedAt": "2026-06-20T19:45:00.000Z"         <-- ADD (top-level)
+}
+
+SQL to read these:
+  SELECT email_verified, email_verified_at FROM users WHERE account_id = ?;
+
+Map to JSON:
+  email_verified = 1 → "emailVerified": true
+  email_verified = 0 → "emailVerified": false  (or omit, frontend treats missing as false)
+  email_verified_at  → "emailVerifiedAt": "<value>"
+
+
+ENDPOINT: POST /api/auth/login-code/verify (existing — ADD emailVerified to account object)
+--------------------------------------------------------------------------------------------
+
+When user logs in, the verify response creates the auth user object.
+ADD these to the "account" object in the response:
+
+{
+  "ok": true,
+  "account": {
+    "accountId": "TRK-571341",
+    "username": "ExhaustiveTester",
+    "email": "fide.operandi@gmail.com",
+    "emailVerified": true,                              <-- ADD
+    "emailVerifiedAt": "2026-06-20T19:45:00.000Z",      <-- ADD
+    ...
+  },
+  "sessionToken": "...",
+  "sessionExpiresAt": "..."
+}
+
+
+SUMMARY — WHAT TO DO
+--------------------
+
+1. Run ALTER TABLE to add email_verified and email_verified_at columns.
+2. Update POST /api/user/email/verify to generate token + send email.
+3. Create GET /api/verify-email to handle the click → set email_verified=1.
+4. Update GET /api/user/profile to include emailVerified + emailVerifiedAt.
+5. Update POST /api/auth/login-code/verify to include emailVerified + emailVerifiedAt in the account object.

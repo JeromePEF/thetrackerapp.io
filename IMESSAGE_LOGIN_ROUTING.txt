@@ -1,0 +1,102 @@
+============================================================
+BACKEND — iMessage Login Routing Fix
+============================================================
+
+Date: 2026-06-20
+
+
+PROBLEM
+-------
+A user enters an iMessage email (e.g. fide.operandi@gmail.com) on the
+sign-in form. The frontend sends the correct payload identifying this as
+an iMessage contact, but the backend delivers the login code via Gmail
+instead of iMessage.
+
+
+WHAT THE FRONTEND SENDS
+-----------------------
+POST /api/auth/login-code/request
+
+For an iMessage email like "fide.operandi@gmail.com":
+
+{
+  "method": "email",
+  "identifier": "fide.operandi@gmail.com",
+  "contact": null,
+  "phone": null,
+  "phoneDigits": null,
+  "email": "fide.operandi@gmail.com",
+  "username": null,
+  "provider": "iMessage",              <-- THIS IS KEY
+  "deliveryChannel": "imessage",       <-- THIS IS KEY
+  "recovery": false,
+  "requestedAt": "2026-06-20T..."
+}
+
+The IMPORTANT fields for routing:
+  provider: "iMessage" | "SMS" | "Email" | "Telegram"
+  deliveryChannel: "imessage" | "sms" | "email" | "telegram" | "auto"
+  method: "phone" | "email" | "username"
+  recovery: true/false
+
+
+ROUTING LOGIC THE BACKEND SHOULD FOLLOW
+---------------------------------------
+
+DEFAULT (recovery = false):
+  1. Check "provider" first
+     - "iMessage" → deliver via iMessage (to the email or phone)
+     - "SMS" → deliver via SMS
+     - "Telegram" → deliver via Telegram
+  2. If "deliveryChannel" is "auto", use provider-based routing:
+     - phone identifier → SMS then fallback email
+     - email identifier → iMessage to that email
+     - username identifier → look up user's phone/email, try iMessage first
+
+RECOVERY MODE (recovery = true):
+  - ALWAYS use Gmail to the confirmed account email
+  - Ignore provider/deliveryChannel
+  - This is the "Trouble logging in? Use email instead." path
+
+CURRENT BEHAVIOR (bug):
+  fide.operandi@gmail.com with provider:"iMessage" + deliveryChannel:"imessage"
+  is being delivered via email (Gmail) instead of iMessage.
+
+EXPECTED BEHAVIOR:
+  provider:"iMessage" → deliver via iMessage to fide.operandi@gmail.com.
+
+
+RESPONSE FORMAT
+---------------
+The backend should return a "channel" field indicating which delivery
+method was actually used:
+
+{
+  "ok": true,
+  "requestId": "...",
+  "channel": "iMessage",            // NEW — actual delivery channel used
+  "maskedDestination": "f***@gmail.com",
+  "codeLength": 6,
+  "expiresAt": "2026-06-20T..."
+}
+
+channel values: "iMessage" | "Email" | "SMS"
+
+
+FRONTEND BEHAVIOR BASED ON channel
+-----------------------------------
+channel === "iMessage"
+  → heading: "Check your messages"
+  → body: "We sent a 6-digit code via iMessage to f***@gmail.com"
+  → shows "Didn't get it? Send via email instead →" link
+
+channel === "Email"
+  → heading: "Check your email"
+  → body: "We sent a 6-digit code via email to f***@gmail.com"
+
+channel === "SMS"
+  → heading: "Check your messages"
+  → body: "We sent a 6-digit code via text message to +1 ***-***-1234"
+
+The email fallback link sends a NEW request with method:"email" which
+forces Gmail delivery regardless of provider.

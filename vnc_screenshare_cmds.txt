@@ -1,0 +1,7 @@
+VNC Screen Sharing Fix Commands
+===============================
+
+echo 'U2xnC9UthPrE' | sudo -S launchctl kickstart -k system/com.apple.screensharing
+sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart \
+  -activate -configure -access -on -restart -agent -privs -all
+sudo lsof -nP -iTCP:5900 -sTCP:LISTEN

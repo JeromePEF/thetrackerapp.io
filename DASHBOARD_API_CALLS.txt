@@ -1,0 +1,136 @@
+============================================================
+BACKEND OPTIMIZATION — Dashboard & Public Profile API Calls
+============================================================
+
+Date: 2026-06-22
+
+All API calls go to https://api.thetrackerapp.io with Bearer token
+(localStorage "tracker.auth.session"). Baseline API_BASE = "https://api.thetrackerapp.io".
+
+============================================================
+PAGE LOAD — DASHBOARD (happens immediately)
+============================================================
+
+1. GET /api/portal                       ← fetch via getAuthedJson, falls through:
+   GET /api/account/portal?contact=X      ← 5 endpoints tried in order
+   GET /api/user/profile?contact=X        ← full profile snapshot
+   Returns: profile, billing, integrations, sheetUrl, bodyMeasures, goals,
+            publicProfileVisibility, history (for stats computation)
+
+2. GET /api/account/deletion-status?contact=X   ← direct fetch with Bearer
+   Returns: { deleted: bool, expiresAt, downloadUrl, canRestore, recoveryCode }
+
+3. GET /api/billing/stripe-prices          ← via billing-prices.js module
+   Returns: per-plan { formatted, price, interval, perMonthFormatted, ... }
+
+4. GET /api/control                        ← feature flags, 30s poll
+   Returns: full flag object (blog, press, billing, dashboardTabs, etc.)
+
+5. GET /api/stripe/checkout-complete?session_id=X  ← only if ?billing=success
+   Returns: portal sub-object with billing status/plan
+
+6. POST /api/affiliate/status              ← with identity query params
+   Returns: affiliate profile (code, referralUrl, stripeStatus, agreement, etc.)
+
+7. GET /api/user/measurements              ← delayed ~500ms after init
+   Returns: measurements + journals + goals for inline editing
+
+8. GET /api/leaderboard/rank?user=X        ← via fetchAuthedApi
+   Returns: { rank: int }
+
+9. GET /api/body-measures                  ← via fetchAuthedApi
+   Returns: [ { date, weight, bodyFat, waist, glute, ... } ]
+
+10. GET /api/milestones
+    GET /api/integrations
+    GET /api/account/sheet
+    (all via getAuthedJson, ~1 call each)
+
+
+============================================================
+USER INTERACTION — DASHBOARD (after page load)
+============================================================
+
+ACCOUNT TAB:
+  POST /api/user/profile          ← save email/username/age
+  { email: "x@y.com" } or { username: "foo" } or { age: 28 }
+  Returns: updated profile fields
+
+  POST /api/user/email/verify     ← verify email
+  { email, contact, username, accountId, canonical, returnUrl }
+  Returns: { emailVerified: bool, emailVerifiedAt }
+
+  POST /api/user/visibility       ← save public profile toggles
+  { visibility: { merged:true, workouts:true, nutrition:false, ... } }
+  Returns: { ok: true }
+
+BILLING TAB:
+  POST /api/stripe/checkout-session  ← plan button click
+  { contact, plan: "monthly|yearly|premium|premiumYearly",
+    successUrl, cancelUrl }
+  Returns: { url } — Stripe Checkout URL, redirect user
+
+  POST /api/billing/cancel         ← cancel subscription
+  POST /api/billing/resume         ← resume subscription
+  { action, contact }
+
+STATS TAB:
+  GET /api/stats/range?from=X&to=Y  ← custom range
+  Returns: { workoutsLogged, caloriesTracked, gallonsDrank, usersActive }
+
+AFFILIATE TAB:
+  POST /api/affiliate/signup       ← apply form
+  { name, email, accountId, canonical, ... }
+  
+  GET  /api/affiliate/status?contact=X  ← opens tab + polls every 5s
+  POST /api/affiliate/connect      ← connect Stripe
+  { email, username, returnUrl, ... }
+  POST /api/affiliate/agreement    ← resend agreement
+  { email, contact, ... }
+
+CALENDAR TAB (on first open):
+  GET /api/calendar/schedule
+  GET /api/calendar/month?month=YYYY-MM
+  GET /api/calendar/week?weekStart=YYYY-MM-DD
+  GET /api/calendar/adherence?range=30d
+  POST /api/calendar/schedule (save item)
+
+PERSONAL TRAINER / GROUPS / RUN CLUBS TABS:
+  GET /api/account/profile  (same as #1 but loaded lazily)
+
+
+============================================================
+PUBLIC USER PROFILE — /@username
+============================================================
+
+PAGE LOAD:
+  GET /api/u/<username>           ← NO auth (public)
+  Returns:
+  {
+    ok: true,
+    username: "string",
+    profile: { displayName, username, joinedAt },
+    stats: { totalWorkouts, currentStreak, activeDays },
+    heatmap: { days: [{ date, workouts, nutrition, water }] },
+    publicVisibility: { merged, workouts, nutrition, water,
+                        leaderboard, recentWorkouts, statsBar,
+                        publicLeaderboard },
+    leaderboard: {
+      strength: [{ rank, exercise, value, unit }],
+      calisthenics: [{ rank, exercise, value, unit }],
+      streaks: { rank, days, summary }
+    },
+    recentWorkouts: [{ date, exercise, sets, reps, weight, unit, detail }]
+  }
+
+
+============================================================
+REQUEST COUNT PER PAGE LOAD
+============================================================
+
+Dashboard initial load: ~10-12 parallel requests
+Dashboard after load (interaction): 1 per save/action
+Affiliate tab open: +1 immediately, +1 per 5s polling
+Calendar tab first open: +4 requests
+
+Public profile: 1 request total

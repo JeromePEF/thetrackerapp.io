@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exercise Picker &amp; Nutrition Estimator | The Tracker App</title>
+  <meta name="description" content="Browse 180+ exercises with copyable commands. Estimate calories and macros for any food using AI. Free tools for The Tracker App.">
+  <link rel="canonical" href="https://thetrackerapp.io/tools/exercise-nutrition">
+  <link rel="icon" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg: #000; --ink: #ecf4ff; --muted: #8a96a8; --accent: #38ffd3; --panel: rgba(255,255,255,0.03); --border: rgba(255,255,255,0.10); }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--ink); font-family: 'Space Grotesk', sans-serif; min-height: 100dvh; }
+    .picker-shell { max-width: 800px; margin: 0 auto; padding: 0 1rem 2rem; }
+
+    /* Tab switcher between Exercise Picker and Nutrition Estimator */
+    .section-tabs { display: flex; gap: 0; margin: 1rem 0 1.5rem; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+    .section-tab { flex: 1; padding: 0.7rem 1rem; text-align: center; cursor: pointer; font-family: Orbitron, sans-serif; font-size: 0.78rem; letter-spacing: 0.04em; background: var(--panel); color: var(--muted); border: none; transition: background 0.15s, color 0.15s; }
+    .section-tab.active { background: var(--accent); color: var(--bg); font-weight: 700; }
+    .section-tab:hover:not(.active) { color: var(--ink); }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Exercise Picker */
+    .search-wrap { position: relative; margin-bottom: 1rem; }
+    .search-wrap input { width: 100%; padding: 0.7rem 0.9rem 0.7rem 2.5rem; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 10px; color: var(--ink); font: inherit; font-size: 0.95rem; }
+    .search-wrap input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(56,255,211,0.15); }
+    .search-icon { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 1rem; pointer-events: none; }
+
+    .cat-tabs { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 1.2rem; }
+    .cat-tab { padding: 0.35rem 0.8rem; border-radius: 999px; font-size: 0.72rem; cursor: pointer; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: var(--muted); transition: all 0.15s; white-space: nowrap; }
+    .cat-tab:hover { border-color: var(--accent); color: var(--ink); }
+    .cat-tab.active { background: rgba(56,255,211,0.12); border-color: var(--accent); color: var(--accent); }
+
+    .subcat-group { margin-bottom: 1rem; }
+    .subcat-header { font-family: Orbitron, sans-serif; font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin: 1rem 0 0.4rem; padding-bottom: 0.25rem; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .ex-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0; border-bottom: 1px solid rgba(255,255,255,0.03); flex-wrap: wrap; }
+    .ex-name { flex: 1; min-width: 100px; font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ex-type-toggles { display: flex; gap: 0.2rem; }
+    .ex-type-btn { padding: 0.2rem 0.45rem; font-size: 0.62rem; border-radius: 4px; cursor: pointer; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: var(--muted); font-family: inherit; transition: all 0.15s; }
+    .ex-type-btn.active { background: rgba(56,255,211,0.15); border-color: var(--accent); color: var(--accent); }
+    .ex-input { width: 80px; padding: 0.3rem 0.5rem; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 6px; color: var(--ink); font: inherit; font-size: 0.8rem; text-align: center; }
+    .ex-input:focus { border-color: var(--accent); outline: none; }
+    .copy-btn { padding: 0.3rem 0.7rem; font-size: 0.7rem; border-radius: 6px; cursor: pointer; background: var(--accent); color: var(--bg); border: none; font-family: Orbitron, sans-serif; font-weight: 700; letter-spacing: 0.04em; transition: opacity 0.15s; white-space: nowrap; }
+    .copy-btn:hover { opacity: 0.85; }
+    .copy-btn.copied { background: #5be7a9; }
+    .ex-placeholder { font-size: 0.66rem; color: var(--muted); }
+
+    .no-results { text-align: center; padding: 2rem 1rem; color: var(--muted); font-size: 0.9rem; }
+    .loading-state { text-align: center; padding: 2rem 1rem; color: var(--muted); }
+
+    /* Nutrition Estimator */
+    .nutri-card { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+    .nutri-card h3 { font-family: Orbitron, sans-serif; font-size: 0.95rem; margin: 0 0 0.5rem; }
+    .nutri-card p { color: var(--muted); font-size: 0.82rem; margin: 0 0 1rem; line-height: 1.5; }
+    .nutri-textarea { width: 100%; min-height: 80px; padding: 0.7rem 0.9rem; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 10px; color: var(--ink); font: inherit; font-size: 0.9rem; resize: vertical; }
+    .nutri-textarea:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(56,255,211,0.15); }
+    .estimate-btn-wrap { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.8rem; }
+    .estimate-btn { padding: 0.7rem 1.5rem; font-family: Orbitron, sans-serif; font-size: 0.85rem; font-weight: 700; border-radius: 8px; cursor: pointer; background: var(--accent); color: var(--bg); border: none; letter-spacing: 0.04em; transition: opacity 0.15s; }
+    .estimate-btn:hover:not(:disabled) { opacity: 0.85; }
+    .estimate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .cooldown-text { font-size: 0.72rem; color: var(--muted); }
+    .nutri-error { color: #ff7f7f; font-size: 0.78rem; margin-top: 0.6rem; }
+    .nutri-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(56,255,211,0.3); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 0.5rem; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .result-card { background: rgba(56,255,211,0.04); border: 1px solid rgba(56,255,211,0.15); border-radius: 12px; padding: 1rem 1.2rem; margin-top: 1rem; }
+    .result-command { font-family: monospace; font-size: 0.78rem; color: var(--accent); background: rgba(0,0,0,0.3); border-radius: 6px; padding: 0.6rem 0.8rem; word-break: break-all; margin-bottom: 0.8rem; line-height: 1.4; }
+    .result-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 0.5rem; margin-bottom: 0.8rem; }
+    .result-item { text-align: center; background: rgba(255,255,255,0.03); border-radius: 8px; padding: 0.5rem; }
+    .result-item .val { font-family: Orbitron, sans-serif; font-size: 1rem; color: var(--accent); display: block; }
+    .result-item .lbl { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .disclaimer { font-size: 0.65rem; color: #5a6a7e; text-align: center; margin-top: 0.5rem; }
+
+    @media (max-width: 600px) {
+      .ex-row { flex-direction: column; align-items: flex-start; gap: 0.35rem; }
+      .ex-input { width: 100%; }
+      .copy-btn { width: 100%; text-align: center; }
+      .result-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+  </style>
+  <link rel="stylesheet" crossorigin href="/assets/info-pages-BBtj1Cwx.css">
+</head>
+<body>
+<div class="info-shell">
+  <header class="info-nav">
+    <a href="/" class="header-logo info-brand" aria-label="Home" style="display:flex;align-items:center;gap:8px;text-decoration:none;">
+      <svg class="logo-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:26px;height:26px;"><circle cx="32" cy="32" r="30" fill="none" stroke="#3fe0c5" stroke-width="3"/><text x="32" y="42" text-anchor="middle" font-size="36">🏋</text></svg>
+      <span class="logo-text-svg" style="font-family:'Orbitron',sans-serif;font-weight:700;font-size:15px;color:#edf5ff;letter-spacing:-0.02em;">thetrackerapp.io</span>
+    </a>
+    <nav class="info-links"><a href="/pricing">Pricing</a><a href="/about">About</a></nav>
+  </header>
+  <main>
+    <section class="info-hero">
+      <p class="info-kicker">Free Tools</p>
+      <h1>Exercise Picker &amp; Nutrition Estimator</h1>
+      <p>Browse 180+ exercises and get copyable workout commands. Estimate calories and macros for any food using AI.</p>
+    </section>
+
+    <div class="picker-shell">
+      <div class="section-tabs">
+        <button class="section-tab active" data-tab="exercises">🏋 Exercises</button>
+        <button class="section-tab" data-tab="nutrition">🍽 Nutrition</button>
+      </div>
+
+      <!-- EXERCISE PICKER TAB -->
+      <div class="tab-content active" id="tab-exercises">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="exSearch" placeholder="Search exercises (e.g., pushup, bench, run)..." autocomplete="off">
+        </div>
+        <div class="cat-tabs" id="catTabs"></div>
+        <div id="exList"></div>
+      </div>
+
+      <!-- NUTRITION ESTIMATOR TAB -->
+      <div class="tab-content" id="tab-nutrition">
+        <div class="nutri-card">
+          <h3>🍽 AI Nutrition Estimator</h3>
+          <p>Describe what you ate — the AI estimates calories, protein, carbs, fats, cholesterol, and sugar. Then copy the /nutrition command to send to the bot.</p>
+          <textarea id="nutriInput" class="nutri-textarea" placeholder="e.g., Smoothie King Peanut Power Plus 32oz with vanilla frozen yogurt&#10;e.g., Half of a Chipotle burrito bowl&#10;e.g., Grilled chicken salad with olive oil dressing"></textarea>
+          <div class="estimate-btn-wrap">
+            <button id="estimateBtn" class="estimate-btn">Estimate</button>
+            <span id="cooldownText" class="cooldown-text"></span>
+          </div>
+          <p id="nutriError" class="nutri-error" hidden></p>
+          <div id="nutriSpinner" style="display:none;text-align:center;padding:1rem;"><span class="nutri-spinner"></span> AI is estimating...</div>
+          <div id="nutriResult" class="result-card" hidden>
+            <div class="result-command" id="nutriCommand"></div>
+            <div class="result-grid" id="nutriGrid"></div>
+            <button id="nutriCopyBtn" class="copy-btn" style="width:100%;">📋 Copy /nutrition command</button>
+            <p class="disclaimer">⚠️ AI estimate — verify before logging. LLM may not be exact.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let allExercises = [];
+let categories = {};
+let logTypes = {};
+let activeCat = null;
+let activeSearch = '';
+let exLogTypeSelections = {}; // canonical -> selected logType
+let exInputValues = {};       // canonical -> input value
+
+// ============================================================
+// TAB SWITCHING
+// ============================================================
+document.querySelectorAll('.section-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.section-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ============================================================
+// EXERCISE PICKER
+// ============================================================
+async function loadExercises() {
+  // 1. Server-embedded data (fastest — no fetch needed)
+  if (window.__EXERCISES__ && typeof window.__EXERCISES__ === 'object' && window.__EXERCISES__.exercises) {
+    return window.__EXERCISES__;
+  }
+
+  // 2. localStorage cache (24h)
+  const cacheKey = 'tta.exercises.v2';
+  const cacheAge = 'tta.exercises.ts';
+  try {
+    const cached = localStorage.getItem(cacheKey);
+    const ts = localStorage.getItem(cacheAge);
+    if (cached && ts && Date.now() - Number(ts) < 24 * 60 * 60 * 1000) {
+      return JSON.parse(cached);
+    }
+  } catch (e) {}
+
+  // 3. Fetch from API (client-side fallback)
+  try {
+    const res = await fetch('https://api.thetrackerapp.io/api/exercises/registry');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    try {
+      localStorage.setItem(cacheKey, JSON.stringify(data));
+      localStorage.setItem(cacheAge, String(Date.now()));
+    } catch (e) {}
+    return data;
+  } catch (e) {
+    console.warn('Could not load exercises:', e.message);
+    return null;
+  }
+}
+
+function flattenExercises(data) {
+  if (!data || !data.exercises) return [];
+  return data.exercises.filter(ex => typeof ex === 'object' && ex.canonical);
+}
+
+function filterExercisesClient(exercises, query) {
+  const q = query.toLowerCase();
+  if (!q) return exercises;
+
+  // Score and sort: exact canonical > exact alias > starts-with > contains
+  return exercises
+    .map(ex => {
+      let score = 0;
+      const c = ex.canonical.toLowerCase();
+      if (c === q) score = 100;
+      else if (c.startsWith(q)) score = 50;
+      else if (c.includes(q)) score = 10;
+
+      const aliases = (ex.aliases || []);
+      for (const a of aliases) {
+        const al = a.toLowerCase();
+        if (al === q) score = Math.max(score, 90);
+        else if (al.startsWith(q)) score = Math.max(score, 40);
+        else if (al.includes(q)) score = Math.max(score, 5);
+      }
+      return { ex, score };
+    })
+    .filter(item => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map(item => item.ex);
+}
+
+function renderCategoryTabs() {
+  const container = document.getElementById('catTabs');
+  const entries = Object.entries(categories);
+  if (!entries.length) return;
+
+  const allBtn = document.createElement('button');
+  allBtn.className = 'cat-tab' + (activeCat === null ? ' active' : '');
+  allBtn.textContent = 'All';
+  allBtn.addEventListener('click', () => { activeCat = null; renderExercises(); });
+  container.appendChild(allBtn);
+
+  entries.forEach(([key, cat]) => {
+    const btn = document.createElement('button');
+    btn.className = 'cat-tab' + (activeCat === key ? ' active' : '');
+    btn.textContent = (cat.icon || '') + ' ' + cat.label;
+    btn.style.color = key === activeCat ? '' : (cat.color && activeCat === null ? cat.color : '');
+    btn.addEventListener('click', () => { activeCat = key; renderExercises(); });
+    container.appendChild(btn);
+  });
+
+  // Highlight cat tabs on hover
+  container.addEventListener('click', (e) => {
+    if (!e.target.classList.contains('cat-tab')) return;
+    container.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+  });
+}
+
+function getLogTypeLabel(lt) {
+  if (!lt) return 'Value';
+  const labels = { reps: 'Reps', duration: 'Duration', distance: 'Distance', sets_reps: 'Sets×Reps', sets_reps_weight: 'Sets×Reps@Wt', distance_duration: 'Dist+Time', count: 'Count' };
+  return labels[lt] || lt.replace(/_/g, ' ');
+}
+
+function getCommand(ex, logType, value) {
+  const v = (value || '').trim();
+  if (!v) return '';
+  // Use alias or canonical for command name, with specific overrides
+  const name = COMMAND_NAME_MAP[ex.canonical] || (ex.aliases && ex.aliases[0]) || ex.canonical;
+  if (logType === 'sets_reps' || logType === 'sets_reps_weight') return `/log ${name} ${v}`;
+  return `/${name} ${v}`;
+}
+
+// Preferred command names — maps canonical → slash command name
+const COMMAND_NAME_MAP = {
+  'pushup': 'pushups',
+  'pullup': 'pullups',
+  'muscle up': 'muscleup',
+  'chinup': 'chinups',
+  'situp': 'situps',
+  'bench press': 'bench',
+  'bicep curl': 'curls',
+  'lunge': 'lunges',
+  'crunch': 'crunches',
+  'burpee': 'burpees',
+};
+
+function renderExerciseRowHtml(ex) {
+  const logType = exLogTypeSelections[ex.canonical] || ex.defaultLogType || 'reps';
+  const types = ex.suggestedLogTypes || [logType];
+  const val = exInputValues[ex.canonical] || (ex.defaultLogType === 'reps' ? '50' : ex.defaultLogType === 'duration' ? '60s' : '');
+
+  let row = `<div class="ex-row" data-canonical="${ex.canonical}">
+    <span class="ex-name">${ex.canonical}</span>`;
+
+  if (types.length > 1) {
+    row += '<span class="ex-type-toggles">';
+    types.forEach(lt => {
+      row += `<button class="ex-type-btn${lt === logType ? ' active' : ''}" data-logtype="${lt}">${getLogTypeLabel(lt)}</button>`;
+    });
+    row += '</span>';
+  } else {
+    row += `<span class="ex-placeholder">${getLogTypeLabel(types[0])}</span>`;
+  }
+
+  row += `<input class="ex-input" type="text" value="${escapeHtml(val)}" placeholder="${ex.placeholder || ''}">
+    <button class="copy-btn" data-cmd="${escapeAttr(getCommand(ex, logType, val))}">COPY</button>
+  </div>`;
+  return row;
+}
+
+function renderExercises() {
+  const list = document.getElementById('exList');
+  if (!allExercises.length) {
+    list.innerHTML = '<div class="loading-state">Loading exercises...</div>';
+    return;
+  }
+
+  // Filter by category
+  let filtered = activeCat ? allExercises.filter(ex => ex.category === activeCat) : allExercises;
+
+  // Search (client-side, scored by relevance)
+  if (activeSearch) {
+    filtered = filterExercisesClient(filtered, activeSearch);
+  }
+
+  // Featured exercises (top popular — shown when no search, no category filter)
+  const FEATURED = ['pushup','dips','squats','pullup','muscle up'];
+  let featured = [];
+  let remaining = filtered;
+  if (!activeSearch && !activeCat) {
+    featured = FEATURED
+      .map(name => filtered.find(ex => ex.canonical.toLowerCase() === name))
+      .filter(Boolean);
+    const featuredSet = new Set(featured.map(ex => ex.canonical));
+    remaining = filtered.filter(ex => !featuredSet.has(ex.canonical));
+  }
+
+  if (!filtered.length) {
+    list.innerHTML = '<div class="no-results">No exercises match your search.</div>';
+    return;
+  }
+
+  let html = '';
+
+  // Render featured section
+  if (featured.length) {
+    html += `<div class="subcat-group"><div class="subcat-header" style="color:var(--accent);font-size:0.75rem;">⭐ Popular</div>`;
+    featured.forEach(ex => { html += renderExerciseRowHtml(ex); });
+    html += '</div>';
+  }
+
+  // Group remaining by subcategory
+  const groups = new Map();
+  remaining.forEach(ex => {
+    const sub = ex.subcategory || 'Other';
+    if (!groups.has(sub)) groups.set(sub, []);
+    groups.get(sub).push(ex);
+  });
+
+  groups.forEach((exercises, subcat) => {
+    const label = subcat.charAt(0).toUpperCase() + subcat.slice(1).replace(/_/g, ' ');
+    html += `<div class="subcat-group"><div class="subcat-header">${label}</div>`;
+    exercises.forEach(ex => { html += renderExerciseRowHtml(ex); });
+    html += '</div>';
+  });
+
+  list.innerHTML = html;
+
+  // Wire events
+  list.querySelectorAll('.ex-type-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const row = btn.closest('.ex-row');
+      const canonical = row.dataset.canonical;
+      const lt = btn.dataset.logtype;
+      exLogTypeSelections[canonical] = lt;
+      renderExercises();
+    });
+  });
+
+  list.querySelectorAll('.ex-input').forEach(input => {
+    input.addEventListener('input', () => {
+      const row = input.closest('.ex-row');
+      const canonical = row.dataset.canonical;
+      exInputValues[canonical] = input.value;
+      const ex = allExercises.find(e => e.canonical === canonical);
+      const lt = exLogTypeSelections[canonical] || ex?.defaultLogType || 'reps';
+      const btn = row.querySelector('.copy-btn');
+      if (btn) btn.dataset.cmd = getCommand(ex || {}, lt, input.value);
+    });
+  });
+
+  list.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const cmd = btn.dataset.cmd;
+      if (!cmd) return;
+      copyToClipboard(cmd);
+      btn.textContent = 'COPIED ✓';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 1500);
+    });
+  });
+}
+
+function escapeHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escapeAttr(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// Search with debounce
+let searchTimer;
+document.getElementById('exSearch').addEventListener('input', (e) => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    activeSearch = e.target.value.trim();
+    renderExercises();
+  }, 200);
+});
+
+// ============================================================
+// NUTRITION ESTIMATOR
+// ============================================================
+const NUTRI_COOLDOWN_MS = 10000;        // 10s between individual requests
+const NUTRI_MAX_PER_MINUTE = 6;          // max 6 per 60s window
+const NUTRI_WINDOW_MS = 60000;           // 60s sliding window
+let nutriRequestTimestamps = [];          // timestamps of recent requests
+let nutriCooldownTimer = null;
+
+function updateNutriCooldown() {
+  const now = Date.now();
+  // Prune old timestamps outside the 60s window
+  nutriRequestTimestamps = nutriRequestTimestamps.filter(ts => now - ts < NUTRI_WINDOW_MS);
+
+  const remaining = NUTRI_COOLDOWN_MS - (now - (nutriRequestTimestamps[nutriRequestTimestamps.length - 1] || 0));
+  const slotsLeft = Math.max(0, NUTRI_MAX_PER_MINUTE - nutriRequestTimestamps.length);
+
+  const el = document.getElementById('cooldownText');
+  const btn = document.getElementById('estimateBtn');
+
+  if (slotsLeft <= 0) {
+    // Fully rate-limited — find when the oldest slot expires
+    const oldest = nutriRequestTimestamps[0];
+    const waitSec = Math.ceil((oldest + NUTRI_WINDOW_MS - now) / 1000);
+    btn.disabled = true;
+    el.textContent = `Rate limited. Next slot in ${waitSec}s.`;
+    nutriCooldownTimer = setTimeout(updateNutriCooldown, 500);
+  } else if (remaining > 0) {
+    btn.disabled = true;
+    el.textContent = `${slotsLeft} estimate${slotsLeft !== 1 ? 's' : ''} left · wait ${Math.ceil(remaining / 1000)}s`;
+    nutriCooldownTimer = setTimeout(updateNutriCooldown, 500);
+  } else {
+    btn.disabled = false;
+    el.textContent = slotsLeft > 0 ? `${slotsLeft} estimate${slotsLeft !== 1 ? 's' : ''} remaining this minute` : '';
+  }
+}
+
+document.getElementById('estimateBtn').addEventListener('click', async () => {
+  const input = document.getElementById('nutriInput').value.trim();
+  const errorEl = document.getElementById('nutriError');
+  const resultEl = document.getElementById('nutriResult');
+  const spinner = document.getElementById('nutriSpinner');
+  const btn = document.getElementById('estimateBtn');
+
+  if (!input) { errorEl.textContent = 'Describe what you ate.'; errorEl.hidden = false; return; }
+  if (Date.now() - (nutriRequestTimestamps[nutriRequestTimestamps.length - 1] || 0) < NUTRI_COOLDOWN_MS) return;
+  const now = Date.now();
+  nutriRequestTimestamps = nutriRequestTimestamps.filter(ts => now - ts < NUTRI_WINDOW_MS);
+  if (nutriRequestTimestamps.length >= NUTRI_MAX_PER_MINUTE) return;
+
+  errorEl.hidden = true;
+  resultEl.hidden = true;
+  spinner.style.display = 'block';
+  btn.disabled = true;
+  nutriRequestTimestamps.push(Date.now());
+  updateNutriCooldown();
+
+  try {
+    const res = await fetch('https://api.thetrackerapp.io/api/nutrition/estimate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ foodDescription: input }),
+    });
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok || !data || data.ok === false) {
+      if (data?.retryAfter) {
+        // Push the last timestamp forward to honor server's retry-after
+        if (nutriRequestTimestamps.length) {
+          nutriRequestTimestamps[nutriRequestTimestamps.length - 1] = Date.now() - (NUTRI_COOLDOWN_MS - data.retryAfter * 1000);
+        }
+        updateNutriCooldown();
+      }
+      throw new Error(data?.error || `Request failed (${res.status})`);
+    }
+
+    renderNutriResult(data);
+  } catch (e) {
+    errorEl.textContent = e.message || 'Could not estimate. Try again.';
+    errorEl.hidden = false;
+  } finally {
+    spinner.style.display = 'none';
+  }
+});
+
+function renderNutriResult(data) {
+  const resultEl = document.getElementById('nutriResult');
+  document.getElementById('nutriCommand').textContent = data.line || '';
+
+  const b = data.breakdown || {};
+  const items = [
+    ['Calories', b.calories, ''],
+    ['Protein', b.protein, 'g'],
+    ['Carbs', b.carbs, 'g'],
+    ['Fats', b.fats, 'g'],
+    ['Cholesterol', b.cholesterol, 'mg'],
+    ['Sugar', b.sugar, 'g'],
+  ];
+
+  document.getElementById('nutriGrid').innerHTML = items.map(([lbl, val, unit]) =>
+    `<div class="result-item"><span class="val">${val || 0}${unit}</span><span class="lbl">${lbl}</span></div>`
+  ).join('');
+
+  resultEl.hidden = false;
+}
+
+document.getElementById('nutriCopyBtn').addEventListener('click', () => {
+  const cmd = document.getElementById('nutriCommand').textContent;
+  if (cmd) {
+    copyToClipboard(cmd);
+    const btn = document.getElementById('nutriCopyBtn');
+    btn.textContent = 'COPIED ✓';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '📋 Copy /nutrition command'; btn.classList.remove('copied'); }, 1500);
+  }
+});
+
+// ============================================================
+// UTILS
+// ============================================================
+function copyToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); } catch (e) {}
+  document.body.removeChild(ta);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+(async () => {
+  const data = await loadExercises();
+  if (data) {
+    categories = data.categories || {};
+    logTypes = data.logTypes || {};
+    allExercises = flattenExercises(data);
+  }
+  document.getElementById('catTabs').innerHTML = '';
+  renderCategoryTabs();
+  renderExercises();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+TESTIMONIALS BACKEND SPEC
+==========================
+
+Endpoint:  GET /api/testimonials
+
+Response shape (JSON array):
+[
+  {
+    "name":     "Mike R.",
+    "content":  "I've tried every fitness app out there...",
+    "stars":    5,
+    "avatar":   "https://example.com/avatar.jpg",   // optional — URL to avatar image
+    "platform": "iMessage",                          // optional — channel used
+    "date":     "2025-06-01T00:00:00Z"              // optional — ISO timestamp
+  },
+  ...
+]
+
+Required fields per entry:
+  name    — display name (string)
+  content — testimonial text (string, up to ~200 chars)
+  stars   — rating 1-5 (number)
+
+Optional fields:
+  avatar   — URL to avatar image; falls back to initials circle
+  platform — messaging platform used (iMessage, SMS, Telegram, etc.)
+  date     — when the testimonial was submitted
+
+Frontend behavior:
+  - Falls back to 15 hardcoded entries if the endpoint is unreachable
+  - Renders a floating card wall with draggable 3D-flip cards
+  - Each card front shows avatar (image or initial) + name
+  - Clicking flips to show star rating + full testimonial text
+  - Cards can be dragged/repositioned with mouse
+
+Page URL:  https://thetrackerapp.io/testimonials

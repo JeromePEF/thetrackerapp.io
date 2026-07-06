@@ -1,0 +1,90 @@
+============================================================
+BACKEND — Email Verification Flow
+============================================================
+
+Date: 2026-06-20
+
+
+CURRENT STATE
+-------------
+Frontend checks these JSON paths for email verified status:
+
+  localStorage (auth user):
+    user.emailVerified
+    user.primaryEmailVerified
+    user.email_verified
+    user.verifiedEmail
+    user.isEmailVerified
+
+  Backend snapshot (from /api/account/profile):
+    payload.emailVerified
+    payload.primaryEmailVerified
+    payload.profile.emailVerified
+    payload.profile.primaryEmailVerified
+    payload.profile.email_verified
+    payload.profile.verifiedEmail
+    payload.profile.isEmailVerified
+
+  API verification response (from POST /api/user/email/verify):
+    body.emailVerified
+    body.primaryEmailVerified
+    body.verified
+    body.profile.emailVerified
+    body.profile.primaryEmailVerified
+
+
+WHAT THE FRONTEND NEEDS
+-----------------------
+
+1. An `emailVerifiedAt` timestamp field that the backend returns in ALL
+   responses that include the user's profile.  The frontend will check:
+
+     user.emailVerifiedAt
+     payload.emailVerifiedAt
+     payload.profile.emailVerifiedAt
+     payload.profile.email_verified_at
+
+   If this timestamp exists, the frontend can show "Verified on 6/20/2026".
+
+2. The existing emailVerified boolean should also be present (the
+   frontend already reads it).
+
+3. When the verification email is sent and the user clicks the link,
+   the backend should:
+     a. Set emailVerified = true
+     b. Set emailVerifiedAt = <current ISO timestamp>
+     c. Return both in the next /api/user/profile response
+
+
+VERIFICATION FLOW (FRONTEND SIDE)
+----------------------------------
+
+1. User sees "Verify Your Email" prompt if email is not verified.
+   The prompt shows the CURRENT email on file.
+
+2. User can change the email if desired (editable input).
+
+3. User clicks "Send Verification Email":
+   POST /api/user/email/verify
+   {
+     "email": "fide.operandi@gmail.com",
+     "contact": "fide.operandi@gmail.com",
+     "username": "ExhaustiveTester",
+     "accountId": "TRK-571341",
+     "canonical": "ExhaustiveTester",
+     "returnUrl": "https://dashboard.thetrackerapp.io/dashboard?view=account"
+   }
+
+4. Backend sends verification email with a link.
+
+5. User clicks link in email → backend sets emailVerified=true and
+   emailVerifiedAt=<now>.
+
+6. On next login or profile fetch, the frontend sees emailVerified=true
+   and emailVerifiedAt="2026-06-20T..." and shows "Email verified on ..."
+
+
+TIMESTAMP FORMAT
+----------------
+  ISO 8601 string:
+  "emailVerifiedAt": "2026-06-20T19:45:00.000Z"

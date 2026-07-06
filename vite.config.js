@@ -42,6 +42,8 @@ export default defineConfig({
         foodDiary: resolve(__dirname, "tools/food-diary.html"),
         calorieMacroEstimator: resolve(__dirname, "tools/calorie-macro-estimator.html"),
         workoutCommands: resolve(__dirname, "tools/workout-commands.html"),
+        exerciseNutrition: resolve(__dirname, "tools/exercise-nutrition.html"),
+        fitnessExams: resolve(__dirname, "tools/fitness-exams.html"),
         user: resolve(__dirname, "user.html"),
         stream: resolve(__dirname, "stream.html"),
         testimonials: resolve(__dirname, "testimonials.html"),

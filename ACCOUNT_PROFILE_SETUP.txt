@@ -1,0 +1,119 @@
+============================================================
+BACKEND — Account Profile Setup (Account Tab)
+============================================================
+
+Date: 2026-06-20
+
+
+HOW THE ACCOUNT TAB GETS DATA FROM BACKEND
+------------------------------------------
+
+On dashboard load, the frontend calls GET /api/user/profile to fetch
+the user's profile. It also calls GET /api/portal (billing/data).
+
+The profile response includes these fields used in the Account tab:
+
+  {
+    "email": "user@example.com",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-06-20T...",
+    "username": "johndoe",
+    "age": 28,
+    "accountId": "TRK-571341",
+    "canonical": "ExhaustiveTester",
+    "phone": "+15551234567",
+    "billingStatus": "active",
+    "billingPlan": "monthly"
+  }
+
+The frontend renders these into the Account tab's editable cards:
+  - Email (input + Save button + Verify button if not verified)
+  - Username (input + Save button)
+  - Age (input + Save button)
+
+Additional data shown (read-only):
+  - Account ID
+  - Canonical name
+  - Login method
+  - Contact/masked credential
+  - Login timestamp
+  - Billing status
+  - Billing plan
+
+
+HOW THE FRONTEND SENDS UPDATES TO BACKEND
+------------------------------------------
+
+When the user edits a field and clicks "Save":
+
+1. Frontend reads the input value
+2. Validates it (email format, age range 0-130, username no @ prefix)
+3. POST to /api/user/profile or /api/account/profile:
+
+   POST /api/user/profile
+   {
+     "email": "newemail@example.com"
+   }
+
+   Or for age:
+   { "age": 28 }
+
+4. Backend saves to database and returns the updated profile
+5. Frontend persists the update to localStorage
+6. UI updates to show the new value and a "Updated" checkmark
+
+
+ENDPOINTS TRIED (in order, falls through on failure)
+-----------------------------------------------------
+
+  POST:
+    /api/account/profile
+    https://api.thetrackerapp.io/api/account/profile
+    /api/user/profile
+    https://api.thetrackerapp.io/api/user/profile
+    /api/account/update-profile
+
+
+WHAT BACKEND MUST RETURN
+-------------------------
+
+After a successful save, return the updated profile fields:
+
+  {
+    "email": "newemail@example.com",
+    "username": "newuser",
+    "age": 30
+  }
+
+Or the full profile object with the updated fields.
+
+The frontend reads these paths from the response (in priority order):
+
+  email:    payload.email || payload.primaryEmail
+  username: payload.username || payload.handle
+  age:      payload.age
+
+
+EMAIL VERIFICATION (separate from save)
+----------------------------------------
+
+When user clicks "Verify Email" or the overlay "Send Verification Email":
+
+  POST /api/user/email/verify
+  {
+    "email": "user@example.com",
+    "contact": "user@example.com",
+    "username": "johndoe",
+    "accountId": "TRK-571341",
+    "canonical": "johndoe",
+    "returnUrl": "https://dashboard.thetrackerapp.io/dashboard?view=account"
+  }
+
+Backend should:
+1. Generate verification token
+2. Send verification email (iMessage first, Gmail fallback)
+3. Return { ok: true, emailVerified: false }
+
+When user clicks the link in the email, backend sets:
+  email_verified = 1
+  email_verified_at = NOW()

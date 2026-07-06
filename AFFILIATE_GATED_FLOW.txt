@@ -1,0 +1,89 @@
+============================================================
+BACKEND — Affiliate Gated Flow (Approval → Agreement → Stripe)
+============================================================
+
+Date: 2026-06-20
+
+
+STATE MACHINE
+-------------
+
+  1. Pending Approval  → "Your application is being reviewed"
+  2. Agreement Required → Show signing URL, poll until signed
+  3. Connect Stripe     → Show Stripe Connect button
+  4. Fully Active       → Show referral link, stats, subscribers
+
+
+APPROVAL STATUS (NEW FIELD)
+---------------------------
+
+ADD to GET /api/affiliate/status response:
+
+  {
+    "affiliate": {
+      "approvalStatus": "pending"    // NEW — "pending" | "approved" | "rejected"
+    }
+  }
+
+  Or at top level:
+  {
+    "affiliateApprovalStatus": "approved"
+  }
+
+Values:
+  "pending"    → Frontend shows "Pending Approval" card
+  "approved"   → Frontend advances to agreement step
+  "active"     → Same as approved (fully active already)
+  "rejected"   → (not handled yet — shows empty state)
+  "" / missing → Frontend checks agreement/stripe to determine state
+
+
+AGREEMENT FIELDS (must be in /api/affiliate/status response)
+-----------------------------------------------------------
+
+  agreement.required     (boolean)  → true when agreement must be signed
+  agreement.signed       (boolean)  → true after user signs
+  agreement.signingUrl   (string)   → URL to DocuSeal/HelloSign/etc.
+  agreement.message      (string)   → text to show above the signing link
+
+  Frontend polls GET /api/affiliate/status every 5 seconds while
+  agreement.required=true and signed=false. Stops polling when
+  signed becomes true.
+
+
+STRIPE FIELDS (existing — same paths)
+---------------------------------------
+
+  stripe.status           → "active" | "onboarding" | "pending" | "restricted"
+  stripe.chargesEnabled   → boolean
+  stripe.payoutsEnabled   → boolean
+  stripe.onboardingUrl    → URL for Stripe Connect onboarding
+
+  Frontend shows "Connect Stripe" button.
+  When status="active" (or charges+payouts enabled), frontend shows
+  "Manage Stripe account" button via onboardingUrl.
+
+
+FULLY ACTIVE CHECK
+------------------
+
+Frontend considers the affiliate "fully active" when:
+  stripe.status === "active" OR (chargesEnabled && payoutsEnabled)
+
+When fully active, the frontend shows:
+  - Referral link + copy button
+  - Performance stats (clicks, signups, conversions)
+  - Referred subscribers table
+
+
+BACKEND FLOW SUMMARY
+--------------------
+
+1. POST /api/affiliate/signup → creates affiliate with approvalStatus="pending"
+2. Admin approves in dashboard → sets approvalStatus="approved", agreementRequired=true
+3. POST /api/affiliate/agreement → sends DocuSeal agreement to affiliate
+4. User signs → webhook or poll updates agreement.signed=true
+5. User clicks "Connect Stripe" → POST /api/affiliate/connect
+6. Backend creates Stripe Connect account link → returns onboardingUrl
+7. User completes Stripe onboarding → stripe.status becomes "active"
+8. Frontend sees fully active → shows referral link + stats

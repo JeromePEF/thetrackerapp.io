@@ -1,0 +1,112 @@
+============================================================
+BACKEND — Telegram Login Code Delivery Fix
+============================================================
+
+Date: 2026-06-20
+
+
+PROBLEM
+-------
+User enters Telegram username "autviaminveniam" on the login form.
+Frontend sends the correct payload. Backend responds:
+
+  "Login code request failed. Proxy: Request failed (405).
+   Backend: No supported destination is available for this account."
+
+The backend is rejecting provider="Telegram" / deliveryChannel="telegram".
+
+
+WHAT THE FRONTEND SENDS FOR A TELEGRAM USERNAME
+-----------------------------------------------
+
+POST /api/auth/login-code/request
+
+{
+  "method":           "username",
+  "identifier":       "autviaminveniam",
+  "contact":          null,
+  "phone":            null,
+  "phoneDigits":      null,
+  "email":            null,
+  "username":         "autviaminveniam",
+  "provider":         "Telegram",
+  "deliveryChannel":  "telegram",
+  "recovery":         false,
+  "requestedAt":      "2026-06-20T..."
+}
+
+Key routing fields:
+  provider:         "Telegram"     <-- tells backend which messaging platform
+  deliveryChannel:  "telegram"     <-- tells backend how to deliver
+  method:           "username"     <-- tells backend the identifier is a username
+  identifier:       "autviaminveniam"  <-- the actual Telegram username
+
+
+WHAT THE BACKEND SHOULD DO
+--------------------------
+
+When provider="Telegram" AND deliveryChannel="telegram":
+
+1. Look up the user by username:  SELECT * FROM users WHERE username = ? OR canonical = ?
+
+2. If user not found → 404 ACCOUNT_NOT_FOUND
+
+3. Look up the user's Telegram chat ID. This should be stored when
+   the user first interacts with the Telegram bot.
+   
+   SELECT telegram_chat_id FROM users WHERE username = ?;
+
+   If telegram_chat_id is NULL or empty:
+     → The user has not messaged the bot yet.
+     → Return an error telling the user to message the bot first:
+       { "ok": false, "error": "Send a message to the Telegram bot first, then try logging in again." }
+
+4. If telegram_chat_id exists:
+   → Send the login code via Telegram message to that chat ID
+   → Return:
+     {
+       "ok": true,
+       "requestId": "...",
+       "channel": "Telegram",
+       "maskedDestination": "@aut*********am",
+       "codeLength": 6,
+       "expiresAt": "..."
+     }
+
+
+ROUTING IN chooseLoginCodeDelivery
+-----------------------------------
+
+The routing function already handles provider/deliveryChannel for
+iMessage, SMS, and Email. It needs a branch for Telegram:
+
+  if (provider === "Telegram" || deliveryChannel === "telegram") {
+    // Look up user's telegram_chat_id from profile
+    // If found, deliver via Telegram bot message
+    // If not found, return error: user hasn't messaged the bot
+  }
+
+The existing method===username fallback should NOT send via phone
+or email. Telegram is a separate delivery channel that requires the
+user to have previously messaged the bot from their Telegram account.
+
+
+RESPONSE FIELD
+--------------
+
+When delivery succeeds, include:
+  "channel": "Telegram"
+
+The frontend will show:
+  "We sent a 6-digit code via Telegram to @aut*********am"
+
+
+DATABASE
+--------
+
+The users table needs a column for the Telegram chat ID:
+
+  telegram_chat_id  TEXT  DEFAULT NULL
+
+This is populated when the user sends their first message to the
+@TheTrackerAppBot Telegram bot.

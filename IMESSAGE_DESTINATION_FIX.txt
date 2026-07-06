@@ -1,0 +1,86 @@
+============================================================
+BACKEND — iMessage Routing Uses Wrong Destination
+============================================================
+
+Date: 2026-06-20
+
+
+PROBLEM
+-------
+User enters fide.operandi@gmail.com on the login form.
+
+Frontend sends:
+
+  POST /api/auth/login-code/request
+  {
+    "method": "email",
+    "identifier": "fide.operandi@gmail.com",
+    "email": "fide.operandi@gmail.com",
+    "provider": "iMessage",
+    "deliveryChannel": "imessage",
+    "recovery": false
+  }
+
+Backend responds with:
+
+  {
+    "channel": "iMessage",
+    "maskedDestination": "***-***-4567"     <-- PHONE NUMBER MASK
+  }
+
+This means the backend matched the account by email, found the
+user's phone number (+17373686293) on the profile, and delivered
+the code via iMessage to the PHONE instead of the EMAIL the user
+entered.
+
+
+WHAT SHOULD HAPPEN
+------------------
+When a user enters an email on the sign-in form, the code MUST be
+sent to THAT EMAIL via iMessage.  Do not substitute the phone
+number.
+
+The payload includes "identifier" and "email" fields specifically
+so the backend knows the exact destination the user expects.
+
+For provider="iMessage" with an email identifier:
+  → Send iMessage to THAT EMAIL (not to the phone)
+  → maskedDestination should show the EMAIL mask, e.g. "f***@gmail.com"
+
+
+CURRENT FLOW (BUG)
+------------------
+  User enters   →  fide.operandi@gmail.com
+  Frontend sends → identifier: "fide.operandi@gmail.com", email: "fide.operandi@gmail.com"
+  Backend looks up account by email → finds phone +17373686293
+  Backend sends iMessage to phone → user's iPhone gets the code
+  Backend responds   → maskedDestination: "***-***-4567"  (phone mask)
+
+  Result: User is confused because the UI shows a phone number
+  they didn't enter.  They're looking at their email inbox
+  waiting for a code that went to their phone iMessage.
+
+
+EXPECTED FLOW
+-------------
+  User enters   →  fide.operandi@gmail.com
+  Frontend sends → identifier: "fide.operandi@gmail.com", email: "fide.operandi@gmail.com"
+  Backend looks up account by email → confirms account exists
+  Backend sends iMessage TO FIDE.OPERANDI@GMAIL.COM
+  Backend responds   → maskedDestination: "f***@gmail.com"  (EMAIL mask)
+
+  Result: User sees the masked email they expect, opens iMessage
+  on their Mac/iPhone, finds the code from the tracker app
+  sent to that email address via iMessage.
+
+
+ROUTING RULE
+------------
+The "identifier" field IS the delivery destination.
+
+  identifier is an email    → send to that email
+  identifier is a phone     → send to that phone
+  identifier is a username  → look up profile, send to user's best iMessage address
+
+Do not substitute the identifier with a different contact method
+found on the profile.  Use the identifier the user typed.

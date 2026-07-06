@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fitness Exams &amp; Sports Combines — Slash Commands | The Tracker App</title>
+  <meta name="description" content="Complete slash command reference for 75+ standardized fitness assessments. NFL Combine, Army PFT, FBI Cooper test, CrossFit benchmarks, track & field, strongman, and more. Copy-paste commands to log your test results instantly.">
+  <meta name="keywords" content="fitness exam commands, NFL combine slash commands, Army PFT command reference, FBI Cooper test logging, CrossFit benchmark commands, track and field logging, strongman commands, military fitness test tracker, sports combine logging, FitnessGram commands, PACER test tracker, Marine Corps PFT, soccer combine commands, MLB combine logging, NHL combine tracker, firefighter CPAT, NCAA pro day, law enforcement fitness test">
+  <link rel="canonical" href="https://thetrackerapp.io/tools/fitness-exams">
+  <link rel="icon" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Fitness Exams &amp; Sports Combines — Slash Commands | The Tracker App">
+  <meta property="og:description" content="Complete slash command reference for 75+ standardized fitness assessments. NFL Combine, Army PFT, FBI Cooper test, CrossFit, strongman, and more.">
+  <meta property="og:url" content="https://thetrackerapp.io/tools/fitness-exams">
+  <meta property="og:site_name" content="The Tracker App">
+  <meta property="og:image" content="https://thetrackerapp.io/og-image.png?v=2">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Fitness Exams &amp; Sports Combines — Slash Commands">
+  <meta name="twitter:description" content="75+ standardized fitness assessments. NFL Combine, Army PFT, CrossFit, strongman — copy-paste commands to log results.">
+  <meta name="twitter:image" content="https://thetrackerapp.io/og-image.png?v=2">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg: #000; --ink: #ecf4ff; --muted: #8a96a8; --accent: #38ffd3; --panel: rgba(255,255,255,0.03); --border: rgba(255,255,255,0.10); }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--ink); font-family: 'Space Grotesk', sans-serif; min-height: 100dvh; }
+    .exam-shell { max-width: 860px; margin: 0 auto; padding: 0 1rem 2rem; }
+
+    .exam-card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 0.8rem; overflow: hidden; }
+    .exam-header { display: flex; align-items: center; gap: 0.75rem; padding: 0.9rem 1.1rem; cursor: pointer; transition: background 0.15s; }
+    .exam-header:hover { background: rgba(255,255,255,0.03); }
+    .exam-icon { font-size: 1.5rem; width: 36px; text-align: center; }
+    .exam-title { flex: 1; }
+    .exam-title h3 { font-family: Orbitron, sans-serif; font-size: 0.85rem; margin: 0 0 0.2rem; letter-spacing: 0.03em; }
+    .exam-title p { color: var(--muted); font-size: 0.72rem; margin: 0; line-height: 1.4; }
+    .exam-chevron { color: var(--muted); font-size: 0.8rem; transition: transform 0.2s; }
+    .exam-card.open .exam-chevron { transform: rotate(180deg); }
+
+    .exam-body { display: none; padding: 0 1.1rem 1rem; }
+    .exam-card.open .exam-body { display: block; }
+
+    .exam-subsection { margin: 0.8rem 0; }
+    .exam-subsection h4 { font-family: Orbitron, sans-serif; font-size: 0.68rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--accent); margin: 0 0 0.35rem; padding-bottom: 0.2rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
+
+    .cmd-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0; border-bottom: 1px solid rgba(255,255,255,0.02); flex-wrap: wrap; }
+    .cmd-name { font-family: monospace; font-size: 0.78rem; color: var(--accent); background: rgba(56,255,211,0.06); padding: 0.1rem 0.4rem; border-radius: 4px; white-space: nowrap; }
+    .cmd-desc { flex: 1; font-size: 0.76rem; color: var(--muted); min-width: 120px; }
+    .copy-btn { padding: 0.2rem 0.6rem; font-size: 0.62rem; border-radius: 5px; cursor: pointer; background: var(--accent); color: var(--bg); border: none; font-family: Orbitron, sans-serif; font-weight: 700; letter-spacing: 0.04em; white-space: nowrap; transition: opacity 0.15s; }
+    .copy-btn:hover { opacity: 0.85; }
+    .copy-btn.copied { background: #5be7a9; }
+
+    .nl-block { margin: 0.35rem 0 0.5rem 0.5rem; padding-left: 0.5rem; border-left: 2px solid rgba(255,255,255,0.06); }
+    .nl-block span { font-size: 0.7rem; color: #5a6a7e; font-style: italic; display: block; line-height: 1.4; }
+    .nl-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.15rem; display: block; }
+
+    .exam-search { margin-bottom: 1rem; }
+    .exam-search input { width: 100%; padding: 0.65rem 0.9rem; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 10px; color: var(--ink); font: inherit; font-size: 0.9rem; }
+    .exam-search input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(56,255,211,0.15); }
+
+    .loading-state { text-align: center; padding: 2rem 1rem; color: var(--muted); }
+    .no-results { text-align: center; padding: 2rem 1rem; color: var(--muted); font-size: 0.9rem; }
+
+    @media (max-width: 600px) {
+      .cmd-row { flex-direction: column; align-items: flex-start; gap: 0.25rem; }
+      .copy-btn { width: 100%; text-align: center; }
+    }
+  </style>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "How do I log NFL Combine test results?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Use slash commands like /40yard 4.5, /bench225 25, /verticaljump 36, /shuttle20 4.2, or /3cone 6.8. The AI logs your rep count or time and tracks your combine stats over time."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What Army fitness test commands are available?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "For the Army Combat Fitness Test, use /log deadlift 3,1,<lbs> for the 3-rep max deadlift, /handreleasepushups <reps> for hand-release push-ups, /sprintdragcarry <laps> for the sprint-drag-carry, /plank <seconds> for the plank, and /run <miles> for the 2-mile run."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I log CrossFit benchmark WODs?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Use /log fran 1 for Fran (21-15-9 thrusters + pull-ups), /log murph 1 for Murph (1-mile run, 100 pull-ups, 200 push-ups, 300 squats, 1-mile run). For Olympic lifts use /log snatch 1,1,<lbs> or /log clean and jerk 1,1,<lbs>."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I track my marathon or 5K time?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Use /5k <time> for a 5K, /10k <time> for a 10K, /halfmarathon <time> for a half marathon, /marathon <time> for a full marathon, and /ultra <time> for ultra distances. You can also use natural language like 'ran 5k in 18 minutes 30 seconds'."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What FBI and law enforcement fitness tests can I log?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The Cooper Institute test used by FBI, DEA, and ATF uses /sprint300 for the 300-meter sprint, /pushups for 1-minute push-ups, /situps for 1-minute sit-ups, and /run for the 1.5-mile run. Secret Service and Border Patrol have similar command sets."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How can I log strongman competition events?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Use /log deadlift 1,1,<lbs> for max deadlift, /log farmers carry 1 for farmers walk, /log yoke carry 1 for yoke carry, /log atlas stone 1,1,<lbs> for atlas stone loads, and /log tire flip 1 for tire flips."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Are there commands for youth fitness testing?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. FitnessGram uses /curlups, /situps, /pushups, /pullups, /rightanglepushups, /flexedarmhang, /plank, /pacer, /milerun, /trunk lift, and /sitreaches. These cover all K-12 physical fitness assessment components."
+        }
+      }
+    ]
+  }
+  </script>
+  <link rel="stylesheet" crossorigin href="/assets/info-pages-BBtj1Cwx.css">
+</head>
+<body>
+<div class="info-shell">
+  <header class="info-nav">
+    <a href="/" class="header-logo info-brand" aria-label="Home" style="display:flex;align-items:center;gap:8px;text-decoration:none;">
+      <svg class="logo-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:26px;height:26px;"><circle cx="32" cy="32" r="30" fill="none" stroke="#3fe0c5" stroke-width="3"/><text x="32" y="42" text-anchor="middle" font-size="36">🏋</text></svg>
+      <span class="logo-text-svg" style="font-family:'Orbitron',sans-serif;font-weight:700;font-size:15px;color:#edf5ff;letter-spacing:-0.02em;">thetrackerapp.io</span>
+    </a>
+    <nav class="info-links"><a href="/pricing">Pricing</a><a href="/about">About</a></nav>
+  </header>
+  <main>
+    <section class="info-hero">
+      <p class="info-kicker">Command Reference</p>
+      <h1>Fitness Exams &amp; Sports Combines</h1>
+      <p>75+ standardized fitness assessments across youth education, military, law enforcement, and every major pro sports league. Click any command to copy it, then paste in iMessage or Telegram.</p>
+    </section>
+
+    <div class="exam-shell">
+      <div class="exam-search">
+        <input type="text" id="examSearch" placeholder="Search exams, exercises, or commands..." autocomplete="off">
+      </div>
+      <div id="examList"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+// ============================================================
+// EMBEDDED EXAM CATALOG
+// ============================================================
+const EXAMS = [
+  {
+    id: "youth",
+    icon: "🏫",
+    title: "Youth & School — FitnessGram / Presidential Physical Fitness",
+    description: "K-12 national youth fitness assessment used in all 50 states.",
+    sections: [
+      { title: "Core Endurance", exercises: [
+        { cmd: "/curlups", metric: "reps", desc: "Curl-ups (1-minute cadence)" },
+        { cmd: "/situps", metric: "reps", desc: "Sit-ups (max reps in 1 min)" },
+        { cmd: "/plank", metric: "seconds", desc: "Plank hold (max time)" }
+      ], nl: ['did 45 curl ups in 1 minute', 'held plank for 90 seconds'] },
+      { title: "Upper Body", exercises: [
+        { cmd: "/rightanglepushups", metric: "reps", desc: "90-Degree Push-ups" },
+        { cmd: "/pushups", metric: "reps", desc: "Standard Push-ups (max reps)" },
+        { cmd: "/pullups", metric: "reps", desc: "Pull-ups (max consecutive)" },
+        { cmd: "/flexedarmhang", metric: "seconds", desc: "Flexed-Arm Hang (timed)" }
+      ], nl: ['did 35 right angle pushups', 'held flexed arm hang for 45 sec'] },
+      { title: "Cardiovascular", exercises: [
+        { cmd: "/pacer", metric: "laps", desc: "PACER / Beep Test (20m shuttle)" },
+        { cmd: "/milerun", metric: "miles", desc: "1-Mile Run" }
+      ], nl: ['ran 1 mile in 8:30', 'completed 55 laps on the pacer'] },
+      { title: "Flexibility", exercises: [
+        { cmd: "/trunk lift", metric: "inches", desc: "Trunk Lift (back extension)" },
+        { cmd: "/sitreaches", metric: "count", desc: "Back-Saver Sit & Reach" }
+      ], nl: ['lifted 12 inches on the trunk lift'] }
+    ]
+  },
+  {
+    id: "military",
+    icon: "🪖",
+    title: "Military — U.S. Armed Forces Annual Fitness Assessments",
+    description: "Army, Navy, Marine Corps, Air Force, Coast Guard.",
+    sections: [
+      { title: "Army (AFT)", exercises: [
+        { cmd: "/log deadlift", metric: "3,1,lbs", desc: "3-Rep Max Deadlift (hex bar)" },
+        { cmd: "/handreleasepushups", metric: "reps", desc: "Hand-Release Push-Ups (2 min)" },
+        { cmd: "/sprintdragcarry", metric: "laps", desc: "Sprint-Drag-Carry (5×25m)" },
+        { cmd: "/plank", metric: "seconds", desc: "Forearm Plank (max time)" },
+        { cmd: "/run", metric: "miles", desc: "2-Mile Run (timed)" }
+      ], nl: ['did 45 hand release push ups', 'ran 2 miles in 14 min for AFT'] },
+      { title: "Navy (PRT)", exercises: [
+        { cmd: "/pushups", metric: "reps", desc: "Push-ups (max in 2 minutes)" },
+        { cmd: "/plank", metric: "seconds", desc: "Forearm Plank (max time)" },
+        { cmd: "/run", metric: "miles", desc: "1.5-Mile Run" },
+        { cmd: "/swim500", metric: "count", desc: "500-Yard Swim (alternative)" },
+        { cmd: "/bike", metric: "time", desc: "12-Min Stationary Cycle" }
+      ], nl: ['did 60 pushups in 2 min for Navy PRT'] },
+      { title: "Marine Corps (PFT)", exercises: [
+        { cmd: "/pullups", metric: "reps", desc: "Pull-ups (max reps, preferred)" },
+        { cmd: "/pushups", metric: "reps", desc: "Push-ups (alternative)" },
+        { cmd: "/plank", metric: "seconds", desc: "Forearm Plank (max time)" },
+        { cmd: "/run", metric: "miles", desc: "3-Mile Run (timed)" }
+      ], nl: ['did 20 dead hang pull ups for PFT', 'ran 3 miles in 21 min'] },
+      { title: "Air Force (PFA)", exercises: [
+        { cmd: "/pushups", metric: "reps", desc: "1-Minute Push-ups" },
+        { cmd: "/situps", metric: "reps", desc: "1-Minute Sit-ups" },
+        { cmd: "/run", metric: "miles", desc: "1.5-Mile Run" },
+        { cmd: "/shuttleruns", metric: "laps", desc: "20m HAMR Shuttle Run" }
+      ], nl: ['did 55 pushups in 1 min for Air Force PFA'] },
+      { title: "Coast Guard", exercises: [
+        { cmd: "/pushups", metric: "reps", desc: "Push-ups (max in 1 min)" },
+        { cmd: "/situps", metric: "reps", desc: "Sit-ups (max in 1 min)" },
+        { cmd: "/run", metric: "miles", desc: "1.5-Mile Run" },
+        { cmd: "/swim", metric: "distance", desc: "500-Yard Swim (alternative)" }
+      ]}
+    ]
+  },
+  {
+    id: "fed-le",
+    icon: "🛡️",
+    title: "Federal Law Enforcement — FBI, DEA, ATF, Secret Service, CBP",
+    description: "Cooper Institute Test & agency-specific PFTs.",
+    sections: [
+      { title: "Cooper Institute (FBI/DEA/ATF/USMS)", exercises: [
+        { cmd: "/sprint300", metric: "count", desc: "300-Meter Sprint" },
+        { cmd: "/pushups", metric: "reps", desc: "1-Minute Push-ups" },
+        { cmd: "/situps", metric: "reps", desc: "1-Minute Sit-ups" },
+        { cmd: "/run", metric: "miles", desc: "1.5-Mile Run" }
+      ], nl: ['ran 1.5 miles in 10:30 for DEA test', 'did 55 pushups for FBI PFT'] },
+      { title: "Secret Service", exercises: [
+        { cmd: "/pushups", metric: "reps", desc: "Push-ups (max in 1 min)" },
+        { cmd: "/situps", metric: "reps", desc: "Sit-ups (max in 1 min)" },
+        { cmd: "/chinups", metric: "reps", desc: "Chin-ups (max reps)" },
+        { cmd: "/run", metric: "miles", desc: "1.5-Mile Run" }
+      ], nl: ['did 12 chinups for Secret Service test'] },
+      { title: "Border Patrol / CBP", exercises: [
+        { cmd: "/pushups", metric: "reps", desc: "Push-ups (max in 1 min)" },
+        { cmd: "/situps", metric: "reps", desc: "Sit-ups (max in 1 min)" },
+        { cmd: "/run", metric: "miles", desc: "1.5-Mile Run" },
+        { cmd: "/stepups", metric: "reps", desc: "5-Minute Step Test" }
+      ]}
+    ]
+  },
+  {
+    id: "nfl",
+    icon: "🏈",
+    title: "NFL Combine — National Football League",
+    description: "40-yard dash, bench press, vertical, agility drills for 300+ draft prospects.",
+    sections: [
+      { title: "Speed", exercises: [
+        { cmd: "/40yard", metric: "count", desc: "40-Yard Dash (laser-timed)" }
+      ], nl: ['ran 40 yards in 4.5', 'clocked a 4.40 forty yard dash'] },
+      { title: "Agility", exercises: [
+        { cmd: "/shuttle20", metric: "count", desc: "20-Yard Shuttle / 5-10-5" },
+        { cmd: "/3cone", metric: "count", desc: "3-Cone Drill / L-Drill" }
+      ], nl: ['ran the 5-10-5 in 4.2', 'completed 3 cone in 6.8'] },
+      { title: "Power", exercises: [
+        { cmd: "/verticaljump", metric: "inches", desc: "Standing Vertical Jump" },
+        { cmd: "/broadjump", metric: "inches", desc: "Standing Broad Jump" }
+      ], nl: ['jumped 36 inches on the vertical', 'broad jumped 10\'2"'] },
+      { title: "Strength", exercises: [
+        { cmd: "/bench225", metric: "reps", desc: "225lb Bench Press (max reps)" }
+      ], nl: ['put up 225 for 25 reps at the combine'] }
+    ]
+  },
+  {
+    id: "nba",
+    icon: "🏀",
+    title: "NBA Combine — National Basketball Association",
+    description: "Lane agility, 3/4-court sprint, vertical leap, bench press.",
+    sections: [
+      { title: "Agility", exercises: [
+        { cmd: "/laneagility", metric: "count", desc: "Lane Agility Drill" },
+        { cmd: "/modifiedlane", metric: "count", desc: "Modified Lane Agility" },
+        { cmd: "/reactiveshuttle", metric: "count", desc: "Reactive Shuttle Run" }
+      ], nl: ['completed lane agility in 10.5'] },
+      { title: "Speed", exercises: [
+        { cmd: "/34court", metric: "count", desc: "3/4-Court Sprint (75 ft)" }
+      ], nl: ['sprinted 3/4 court in 3.1'] },
+      { title: "Power", exercises: [
+        { cmd: "/verticaljump", metric: "inches", desc: "Standing Vertical Jump" },
+        { cmd: "/maxvertical", metric: "inches", desc: "Max Vertical (running)" }
+      ], nl: ['max vertical jump of 42 inches'] },
+      { title: "Strength", exercises: [
+        { cmd: "/bench185", metric: "reps", desc: "185lb Bench Press (max reps)" }
+      ], nl: ['benched 185 for 15 reps at NBA combine'] }
+    ]
+  },
+  {
+    id: "mlb",
+    icon: "⚾",
+    title: "MLB Combine — Major League Baseball",
+    description: "TrackMan 3D radar, Hawk-Eye optical tracking, hitting & pitching metrics.",
+    sections: [
+      { title: "Speed", exercises: [
+        { cmd: "/60yard", metric: "count", desc: "60-Yard Dash" }
+      ], nl: ['ran 60 yard dash in 6.5'] },
+      { title: "Hitting", exercises: [
+        { cmd: "/exitvelocity", metric: "mph", desc: "Exit Velocity (ball off bat)" },
+        { cmd: "/batspeed", metric: "mph", desc: "Bat Speed (through zone)" }
+      ], nl: ['exit velocity 105 mph off the bat'] },
+      { title: "Pitching", exercises: [
+        { cmd: "/pitchvelocity", metric: "mph", desc: "Pitch Velocity (fastball)" }
+      ], nl: ['fastball velocity 97 mph at 2400 rpm'] },
+      { title: "Fielding", exercises: [
+        { cmd: "/poptime", metric: "seconds", desc: "Pop Time (catcher throw)" }
+      ], nl: ['pop time 1.85 from behind the plate'] }
+    ]
+  },
+  {
+    id: "nhl",
+    icon: "🏒",
+    title: "NHL Combine — National Hockey League",
+    description: "Explosive leg power, upper-body pulling strength, anaerobic conditioning.",
+    sections: [
+      { title: "Power & Speed", exercises: [
+        { cmd: "/verticaljump", metric: "inches", desc: "Standing Vertical Jump" },
+        { cmd: "/broadjump", metric: "inches", desc: "Standing Broad Jump" },
+        { cmd: "/40yard", metric: "count", desc: "40-Yard Sprint" }
+      ], nl: ['broad jumped 9 feet at NHL combine'] },
+      { title: "Upper Body Pull", exercises: [
+        { cmd: "/pullups", metric: "reps", desc: "Pull-ups (max reps)" },
+        { cmd: "/bench225", metric: "reps", desc: "Bench Press (150lb prospects)" },
+        { cmd: "/grip", metric: "kg", desc: "Grip Strength (per hand)" }
+      ], nl: ['did 15 pull ups at NHL combine', 'grip 65kg right hand'] },
+      { title: "Core & Endurance", exercises: [
+        { cmd: "/curlups", metric: "reps", desc: "Curl-ups (max in 1 min)" },
+        { cmd: "/plank", metric: "seconds", desc: "Plank Hold (max time)" },
+        { cmd: "/pacer", metric: "laps", desc: "Yo-Yo Intermittent Recovery" }
+      ], nl: ['held plank for 3 min at the combine'] }
+    ]
+  },
+  {
+    id: "soccer",
+    icon: "⚽",
+    title: "Soccer Combines — MLS / USL / NWSL / Elite Academies",
+    description: "Multi-directional movement, 90-minute match endurance metrics.",
+    sections: [
+      { title: "Speed", exercises: [
+        { cmd: "/30meter", metric: "count", desc: "30-Meter Dash" }
+      ], nl: ['ran 30 meter dash in 3.9'] },
+      { title: "Agility", exercises: [
+        { cmd: "/arrowhead", metric: "count", desc: "Arrowhead Agility Test" }
+      ], nl: ['completed arrowhead agility in 8.2'] },
+      { title: "Endurance", exercises: [
+        { cmd: "/yoyo", metric: "level", desc: "Yo-Yo Intermittent Recovery" }
+      ], nl: ['reached level 18 on the yo yo test'] },
+      { title: "Power", exercises: [
+        { cmd: "/countermovement", metric: "inches", desc: "Countermovement Jump / CMJ" }
+      ], nl: ['countermovement jump 22 inches'] }
+    ]
+  },
+  {
+    id: "wnba",
+    icon: "🏀",
+    title: "WNBA Combine — Women's National Basketball Association",
+    description: "Lane agility, 3/4-court sprint, vertical, bench press (135lb).",
+    sections: [
+      { title: "Tests", exercises: [
+        { cmd: "/laneagility", metric: "count", desc: "Lane Agility Drill" },
+        { cmd: "/34court", metric: "count", desc: "3/4-Court Sprint" },
+        { cmd: "/verticaljump", metric: "inches", desc: "Standing Vertical Jump" },
+        { cmd: "/maxvertical", metric: "inches", desc: "Max Vertical (running)" },
+        { cmd: "/bench185", metric: "reps", desc: "Bench Press (135lb)" }
+      ]}
+    ]
+  },
+  {
+    id: "track",
+    icon: "🏃",
+    title: "Track & Field / Road Racing — Olympic Events & Distance Running",
+    description: "Sprints, middle/long distance, marathon/ultra, field events, throws.",
+    sections: [
+      { title: "Sprints", exercises: [
+        { cmd: "/100m", metric: "count", desc: "100-Meter Dash" },
+        { cmd: "/200m", metric: "count", desc: "200-Meter Dash" },
+        { cmd: "/400m", metric: "count", desc: "400-Meter Dash" },
+        { cmd: "/4x100m", metric: "count", desc: "4×100m Relay" }
+      ], nl: ['ran 100 meters in 10.5', 'finished the 400 in 46.2'] },
+      { title: "Distance", exercises: [
+        { cmd: "/run", metric: "miles", desc: "800m / 1500m / Mile / 3000m" },
+        { cmd: "/5k", metric: "count", desc: "5K Run" },
+        { cmd: "/10k", metric: "count", desc: "10K Run" }
+      ], nl: ['ran 5k in 18:30'] },
+      { title: "Marathon & Ultra", exercises: [
+        { cmd: "/halfmarathon", metric: "count", desc: "Half Marathon (13.1 mi)" },
+        { cmd: "/marathon", metric: "count", desc: "Marathon (26.2 mi)" },
+        { cmd: "/ultra", metric: "count", desc: "Ultra (50K/100K/100M)" }
+      ], nl: ['ran a half marathon in 1:35', 'completed Boston Marathon in 3:15'] },
+      { title: "Field Events", exercises: [
+        { cmd: "/broadjump", metric: "inches", desc: "Long Jump" },
+        { cmd: "/verticaljump", metric: "inches", desc: "High Jump" }
+      ], nl: ['long jumped 22 feet', 'cleared 6\'2" on the high jump'] },
+      { title: "Throws", exercises: [
+        { cmd: "/log shot put", metric: "1,1,lbs", desc: "Shot Put" },
+        { cmd: "/log discus", metric: "1,1,lbs", desc: "Discus Throw" },
+        { cmd: "/log javelin", metric: "1,1,lbs", desc: "Javelin Throw" }
+      ], nl: ['threw shot put 52 feet'] }
+    ]
+  },
+  {
+    id: "crossfit",
+    icon: "💪",
+    title: "CrossFit Games — The Sport of Fitness",
+    description: "Benchmark WODs, Olympic lifting, gymnastics, endurance.",
+    sections: [
+      { title: "Benchmark Workouts", exercises: [
+        { cmd: "/log fran", metric: "1", desc: "Fran — 21-15-9 thrusters + pull-ups" },
+        { cmd: "/log murph", metric: "1", desc: "Murph — 1mi run, 100 pull-ups, 200 push-ups, 300 squats, 1mi run" }
+      ], nl: ['did Murph in 42 min with 20lb vest', 'PR\'d Fran in 3:12'] },
+      { title: "Olympic Lifting", exercises: [
+        { cmd: "/log snatch", metric: "1,1,lbs", desc: "Snatch (1-rep max)" },
+        { cmd: "/log clean and jerk", metric: "1,1,lbs", desc: "Clean & Jerk (1-rep max)" }
+      ], nl: ['hit a 225lb snatch PR', 'clean and jerked 315'] },
+      { title: "Gymnastics", exercises: [
+        { cmd: "/muscleups", metric: "reps", desc: "Bar or Ring Muscle-Ups" },
+        { cmd: "/hspu", metric: "reps", desc: "Handstand Push-Ups" },
+        { cmd: "/pullups", metric: "reps", desc: "Chest-to-Bar Pull-Ups" }
+      ], nl: ['did 30 ring muscle ups during the Open'] },
+      { title: "Endurance", exercises: [
+        { cmd: "/rower", metric: "meters", desc: "Concept2 Rowing (500m/2K/5K)" },
+        { cmd: "/bike", metric: "calories", desc: "Assault Bike / Echo Bike" },
+        { cmd: "/run", metric: "miles", desc: "Running (400m to 5K)" },
+        { cmd: "/swim", metric: "distance", desc: "Swimming (50m to 500m)" }
+      ], nl: ['rowed 2000m in 6:45'] }
+    ]
+  },
+  {
+    id: "strongman",
+    icon: "🏋️",
+    title: "Strongman — World's Strongest Man / Arnold Classic",
+    description: "Max raw strength, explosive power, heavy-object endurance.",
+    sections: [
+      { title: "Maximal Strength", exercises: [
+        { cmd: "/log deadlift", metric: "1,1,lbs", desc: "Max Deadlift" },
+        { cmd: "/log squat", metric: "1,1,lbs", desc: "Max Squat" },
+        { cmd: "/log log press", metric: "1,1,lbs", desc: "Max Log Press" }
+      ], nl: ['deadlifted 500lb for a new PR'] },
+      { title: "Carry & Load", exercises: [
+        { cmd: "/log farmers carry", metric: "1", desc: "Farmers Walk (distance+weight)" },
+        { cmd: "/log yoke carry", metric: "1", desc: "Yoke Carry" },
+        { cmd: "/log atlas stone", metric: "1,1,lbs", desc: "Atlas Stone Load" }
+      ], nl: ['farmers carry 300lb per hand 50ft'] },
+      { title: "Rep Events", exercises: [
+        { cmd: "/log deadlift", metric: "1,reps,lbs", desc: "Deadlift for Reps" },
+        { cmd: "/log tire flip", metric: "1", desc: "Tire Flip (60 sec)" }
+      ], nl: ['deadlifted 700lb for 8 reps'] }
+    ]
+  },
+  {
+    id: "martial",
+    icon: "🥊",
+    title: "Martial Arts & Combat Sports — UFC / Boxing / Golden Gloves",
+    description: "UFC Performance Institute Combine, boxing fitness tests.",
+    sections: [
+      { title: "UFC PI Combine", exercises: [
+        { cmd: "/verticaljump", metric: "inches", desc: "Countermovement Jump" },
+        { cmd: "/broadjump", metric: "inches", desc: "Standing Broad Jump" },
+        { cmd: "/40yard", metric: "count", desc: "40-Yard Sprint" },
+        { cmd: "/shuttle20", metric: "count", desc: "5-10-5 Agility Shuttle" },
+        { cmd: "/pullups", metric: "reps", desc: "Max Pull-Ups" },
+        { cmd: "/plank", metric: "seconds", desc: "Plank Hold (max time)" },
+        { cmd: "/pacer", metric: "laps", desc: "Yo-Yo Intermittent Recovery" }
+      ]},
+      { title: "Boxing / Golden Gloves", exercises: [
+        { cmd: "/pushups", metric: "reps", desc: "Push-Ups (max in 2 min)" },
+        { cmd: "/situps", metric: "reps", desc: "Sit-Ups (max in 2 min)" },
+        { cmd: "/pullups", metric: "reps", desc: "Pull-Ups (max reps)" },
+        { cmd: "/run", metric: "miles", desc: "1-Mile Run (timed)" },
+        { cmd: "/jump rope", metric: "minutes", desc: "Jump Rope (3-min rounds)" }
+      ], nl: ['did 80 pushups in 2 min for boxing', 'jumped rope for 3 rounds of 3 min'] }
+    ]
+  },
+  {
+    id: "fire",
+    icon: "🚒",
+    title: "First Responder — Firefighter & EMT CPAT",
+    description: "Candidate Physical Ability Test, fire academy fitness assessments.",
+    sections: [
+      { title: "CPAT & Fire Academy", exercises: [
+        { cmd: "/stairmaster", metric: "floors", desc: "Stair Climb (weighted vest)" },
+        { cmd: "/run", metric: "miles", desc: "1.5-Mile Run (timed)" },
+        { cmd: "/pushups", metric: "reps", desc: "Push-Ups (max in 1 min)" },
+        { cmd: "/situps", metric: "reps", desc: "Sit-Ups (max in 1 min)" },
+        { cmd: "/pullups", metric: "reps", desc: "Pull-Ups (max reps)" },
+        { cmd: "/sprintdragcarry", metric: "laps", desc: "Hose Drag / Dummy Drag" }
+      ], nl: ['climbed 40 flights with 75lb', 'completed CPAT in 9:30'] }
+    ]
+  },
+  {
+    id: "ncaa",
+    icon: "🎓",
+    title: "Collegiate / NCAA Pro Day Testing",
+    description: "University pro day combine events mirroring professional leagues.",
+    sections: [
+      { title: "Standard Pro Day Tests", exercises: [
+        { cmd: "/40yard", metric: "count", desc: "40-Yard Dash" },
+        { cmd: "/verticaljump", metric: "inches", desc: "Vertical Jump" },
+        { cmd: "/broadjump", metric: "inches", desc: "Broad Jump" },
+        { cmd: "/bench225", metric: "reps", desc: "225lb Bench Press" },
+        { cmd: "/proagility", metric: "count", desc: "5-10-5 Pro Agility Shuttle" },
+        { cmd: "/3cone", metric: "count", desc: "3-Cone / L-Drill" },
+        { cmd: "/60yard", metric: "count", desc: "60-Yard Dash (baseball)" }
+      ]}
+    ]
+  }
+];
+
+// ============================================================
+// RENDER
+// ============================================================
+let searchQuery = '';
+
+function renderExams() {
+  const list = document.getElementById('examList');
+  let exams = EXAMS;
+
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    exams = EXAMS.filter(exam => {
+      if (exam.title.toLowerCase().includes(q) || exam.description.toLowerCase().includes(q)) return true;
+      return (exam.sections || []).some(s =>
+        (s.exercises || []).some(e => e.cmd.toLowerCase().includes(q) || e.desc.toLowerCase().includes(q))
+      );
+    });
+  }
+
+  if (!exams.length) {
+    list.innerHTML = '<div class="no-results">No exams or exercises match your search.</div>';
+    return;
+  }
+
+  list.innerHTML = exams.map((exam, i) => `
+    <div class="exam-card${i === 0 && !searchQuery ? ' open' : ''}" data-exam="${exam.id}">
+      <div class="exam-header" onclick="this.parentElement.classList.toggle('open')">
+        <span class="exam-icon">${exam.icon}</span>
+        <div class="exam-title">
+          <h3>${exam.title}</h3>
+          <p>${exam.description}</p>
+        </div>
+        <span class="exam-chevron">▼</span>
+      </div>
+      <div class="exam-body">
+        ${(exam.sections || []).map(s => `
+          <div class="exam-subsection">
+            <h4>${s.title}</h4>
+            ${(s.exercises || []).map(e => `
+              <div class="cmd-row">
+                <code class="cmd-name">${e.cmd} &lt;${e.metric}&gt;</code>
+                <span class="cmd-desc">${e.desc}</span>
+                <button class="copy-btn" onclick="copyCmd('${e.cmd.replace(/'/g, "\\'")}')">COPY</button>
+              </div>
+            `).join('')}
+            ${s.nl ? `
+              <div class="nl-block">
+                <span class="nl-label">Natural language examples:</span>
+                ${s.nl.map(n => `<span>“${n}”</span>`).join('')}
+              </div>
+            ` : ''}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  // Wire copy buttons
+  list.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const cmd = btn.getAttribute('onclick')?.match(/copyCmd\('(.+)'\)/)?.[1] || '';
+      copyToClipboard(cmd);
+      btn.textContent = 'COPIED ✓';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 1500);
+    });
+  });
+}
+
+function copyCmd(cmd) {
+  copyToClipboard(cmd);
+}
+
+function copyToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); } catch (e) {}
+  document.body.removeChild(ta);
+}
+
+// Search
+document.getElementById('examSearch').addEventListener('input', (e) => {
+  searchQuery = e.target.value.trim();
+  renderExams();
+});
+
+// Init
+renderExams();
+
+// Try loading from API to update embedded catalog
+(async () => {
+  try {
+    const res = await fetch('https://api.thetrackerapp.io/api/fitness-exams');
+    if (res.ok) {
+      const data = await res.json();
+      console.log('[fitness-exams] API data available');
+    }
+  } catch (e) {}
+})();
+</script>
+
+<section class="sr-only">
+  <h2>Fitness Exam Slash Commands Reference</h2>
+  <p>The Tracker App provides slash commands for over 75 standardized fitness assessments and sports combine tests. Log results from the NFL Combine (40-yard dash, bench press 225, vertical jump, shuttle, 3-cone), NBA Combine (lane agility, 3/4-court sprint, max vertical, bench 185), MLB Combine (60-yard dash, exit velocity, bat speed, pop time), and NHL Combine (pull-ups, grip strength, plank). Military fitness tests include Army AFT, Navy PRT, Marine Corps PFT, Air Force PFA, and Coast Guard assessments. Federal law enforcement uses the Cooper Institute test for FBI, DEA, ATF, Secret Service, and Border Patrol. Track and field commands cover sprints, distance, marathon, ultra, field events, and throws. CrossFit benchmark WODs include Fran, Murph, and Olympic lifts. Youth FitnessGram commands include PACER, curl-ups, push-ups, pull-ups, flexed-arm hang, trunk lift, and sit-and-reach. All commands can be sent via iMessage or Telegram and are auto-logged.</p>
+</section>
+
+</body>
+</html>
