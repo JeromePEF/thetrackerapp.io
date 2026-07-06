@@ -300,44 +300,211 @@
 
           <article id="tabAccount" class="dashboard-panel" data-tab-panel="account" hidden>
             <header class="panel-head">
-              <h2>Account</h2>
-              <p>Account profile data from backend.</p>
+              <h2>Settings</h2>
+              <p>Manage your profile, body metrics, schedule, and privacy.</p>
             </header>
-            <section class="account-edit-grid" aria-label="Editable account fields">
-              <article class="account-edit-card">
-                <label for="accountEmailInput">Email</label>
-                <div class="account-edit-row">
-                  <input id="accountEmailInput" type="email" placeholder="you@example.com" />
-                  <button id="saveAccountEmailButton" type="button" class="btn-primary">Save</button>
-                  <button id="verifyAccountEmailButton" type="button" class="btn-secondary" hidden>Verify Email</button>
-                  <span id="accountEmailSaved" class="account-save-check" hidden>✓ Updated</span>
-                </div>
-                <p id="accountEmailStatus" class="stats-status" role="status" aria-live="polite"></p>
-              </article>
 
-              <article class="account-edit-card">
-                <label for="accountUsernameInput">Username</label>
-                <div class="account-edit-row">
-                  <input id="accountUsernameInput" type="text" placeholder="username" />
-                  <button id="saveAccountUsernameButton" type="button" class="btn-primary">Save</button>
-                  <span id="accountUsernameSaved" class="account-save-check" hidden>✓ Updated</span>
-                </div>
-                <p id="accountUsernameStatus" class="stats-status" role="status" aria-live="polite"></p>
-              </article>
-
-              <article class="account-edit-card">
-                <label for="accountAgeInput">Age</label>
-                <div class="account-edit-row">
-                  <input id="accountAgeInput" type="number" inputmode="numeric" min="0" max="130" placeholder="Age" />
-                  <button id="saveAccountAgeButton" type="button" class="btn-primary">Save</button>
-                  <span id="accountAgeSaved" class="account-save-check" hidden>✓ Updated</span>
-                </div>
-                <p id="accountAgeStatus" class="stats-status" role="status" aria-live="polite"></p>
-              </article>
+            <!-- Red notification banner for incomplete profile fields -->
+            <section id="settingsIncompleteBanner" class="settings-incomplete-banner" hidden aria-label="Incomplete profile fields">
+              <p><strong>⚠️ Complete your profile:</strong> <span id="settingsIncompleteFields"></span></p>
             </section>
 
-            <section class="account-public-profile" aria-label="Public profile settings">
-              <h3>Public Profile</h3>
+            <!-- ===== PROFILE ===== -->
+            <section class="settings-section" aria-label="Profile">
+              <h3 class="settings-section-title">👤 Profile</h3>
+              <div class="account-edit-grid">
+                <article class="account-edit-card">
+                  <label for="accountEmailInput">Email</label>
+                  <div class="account-edit-row">
+                    <input id="accountEmailInput" type="email" placeholder="you@example.com" />
+                    <button id="saveAccountEmailButton" type="button" class="btn-primary">Save</button>
+                    <button id="verifyAccountEmailButton" type="button" class="btn-secondary" hidden>Verify</button>
+                    <span id="accountEmailSaved" class="account-save-check" hidden>✓</span>
+                  </div>
+                  <p id="accountEmailStatus" class="stats-status" role="status" aria-live="polite"></p>
+                </article>
+                <article class="account-edit-card">
+                  <label for="accountUsernameInput">Username <span class="field-required">*</span></label>
+                  <div class="account-edit-row">
+                    <input id="accountUsernameInput" type="text" placeholder="username" />
+                    <button id="saveAccountUsernameButton" type="button" class="btn-primary">Save</button>
+                    <span id="accountUsernameSaved" class="account-save-check" hidden>✓</span>
+                  </div>
+                  <p id="accountUsernameStatus" class="stats-status" role="status" aria-live="polite"></p>
+                </article>
+                <article class="account-edit-card">
+                  <label for="accountAgeInput">Age <span class="field-required">*</span></label>
+                  <div class="account-edit-row">
+                    <input id="accountAgeInput" type="number" inputmode="numeric" min="0" max="130" placeholder="Age" />
+                    <button id="saveAccountAgeButton" type="button" class="btn-primary">Save</button>
+                    <span id="accountAgeSaved" class="account-save-check" hidden>✓</span>
+                  </div>
+                  <p id="accountAgeStatus" class="stats-status" role="status" aria-live="polite"></p>
+                </article>
+                <article class="account-edit-card">
+                  <label for="accountPhoneInput">Phone <span class="field-required">*</span></label>
+                  <div class="account-edit-row">
+                    <input id="accountPhoneInput" type="tel" placeholder="+1 555-0100" />
+                    <button id="saveAccountPhoneButton" type="button" class="btn-primary">Save</button>
+                    <span id="accountPhoneSaved" class="account-save-check" hidden>✓</span>
+                  </div>
+                  <p id="accountPhoneStatus" class="stats-status" role="status" aria-live="polite"></p>
+                </article>
+                <article class="account-edit-card">
+                  <label for="accountCityInput">City <span class="field-required">*</span></label>
+                  <div class="account-edit-row">
+                    <input id="accountCityInput" type="text" placeholder="Austin" />
+                    <button id="saveAccountCityButton" type="button" class="btn-primary">Save</button>
+                    <span id="accountCitySaved" class="account-save-check" hidden>✓</span>
+                  </div>
+                  <p id="accountCityStatus" class="stats-status" role="status" aria-live="polite"></p>
+                </article>
+                <article class="account-edit-card">
+                  <label for="accountCountryInput">Country <span class="field-required">*</span></label>
+                  <div class="account-edit-row">
+                    <input id="accountCountryInput" type="text" placeholder="US" />
+                    <button id="saveAccountCountryButton" type="button" class="btn-primary">Save</button>
+                    <span id="accountCountrySaved" class="account-save-check" hidden>✓</span>
+                  </div>
+                  <p id="accountCountryStatus" class="stats-status" role="status" aria-live="polite"></p>
+                </article>
+              </div>
+            </section>
+
+            <!-- ===== BODY & GOALS ===== -->
+            <section class="settings-section" aria-label="Body & Goals">
+              <h3 class="settings-section-title">🏋️ Body & Goals</h3>
+              <div class="account-edit-grid">
+                <article class="account-edit-card">
+                  <label for="accountWeightInput">Current Weight</label>
+                  <div class="account-edit-row">
+                    <input id="accountWeightInput" type="text" inputmode="decimal" placeholder="e.g. 180 lb" />
+                    <button id="saveAccountWeightButton" type="button" class="btn-primary">Save</button>
+                    <span id="accountWeightSaved" class="account-save-check" hidden>✓</span>
+                  </div>
+                  <p id="accountWeightStatus" class="stats-status" role="status" aria-live="polite"></p>
+                </article>
+                <article class="account-edit-card">
+                  <label for="accountHeightInput">Current Height</label>
+                  <div class="account-edit-row">
+                    <input id="accountHeightInput" type="text" inputmode="decimal" placeholder="e.g. 5ft 10in" />
+                    <button id="saveAccountHeightButton" type="button" class="btn-primary">Save</button>
+                    <span id="accountHeightSaved" class="account-save-check" hidden>✓</span>
+                  </div>
+                  <p id="accountHeightStatus" class="stats-status" role="status" aria-live="polite"></p>
+                </article>
+                <article class="account-edit-card">
+                  <label for="accountGoalWeightInput">Goal Weight</label>
+                  <div class="account-edit-row">
+                    <input id="accountGoalWeightInput" type="text" inputmode="decimal" placeholder="e.g. 165 lb" />
+                    <button id="saveAccountGoalWeightButton" type="button" class="btn-primary">Save</button>
+                    <span id="accountGoalWeightSaved" class="account-save-check" hidden>✓</span>
+                  </div>
+                  <p id="accountGoalWeightStatus" class="stats-status" role="status" aria-live="polite"></p>
+                </article>
+                <article class="account-edit-card">
+                  <label for="accountGoalBodyFatInput">Goal Body Fat %</label>
+                  <div class="account-edit-row">
+                    <input id="accountGoalBodyFatInput" type="text" inputmode="decimal" placeholder="e.g. 15%" />
+                    <button id="saveAccountGoalBodyFatButton" type="button" class="btn-primary">Save</button>
+                    <span id="accountGoalBodyFatSaved" class="account-save-check" hidden>✓</span>
+                  </div>
+                  <p id="accountGoalBodyFatStatus" class="stats-status" role="status" aria-live="polite"></p>
+                </article>
+                <article class="account-edit-card">
+                  <label for="accountFitnessGoalInput">Fitness Goal</label>
+                  <div class="account-edit-row">
+                    <input id="accountFitnessGoalInput" type="text" placeholder="Build muscle, lose fat..." />
+                    <button id="saveAccountFitnessGoalButton" type="button" class="btn-primary">Save</button>
+                    <span id="accountFitnessGoalSaved" class="account-save-check" hidden>✓</span>
+                  </div>
+                  <p id="accountFitnessGoalStatus" class="stats-status" role="status" aria-live="polite"></p>
+                </article>
+                <article class="account-edit-card">
+                  <label for="accountWorkoutSplitInput">Workout Split</label>
+                  <div class="account-edit-row">
+                    <input id="accountWorkoutSplitInput" type="text" placeholder="Push/Pull/Legs, Full Body..." />
+                    <button id="saveAccountWorkoutSplitButton" type="button" class="btn-primary">Save</button>
+                    <span id="accountWorkoutSplitSaved" class="account-save-check" hidden>✓</span>
+                  </div>
+                  <p id="accountWorkoutSplitStatus" class="stats-status" role="status" aria-live="polite"></p>
+                </article>
+              </div>
+            </section>
+
+            <!-- ===== SCHEDULE & PREFERENCES ===== -->
+            <section class="settings-section" aria-label="Schedule & Preferences">
+              <h3 class="settings-section-title">🕐 Schedule & Preferences</h3>
+              <div class="account-edit-grid">
+                <article class="account-edit-card">
+                  <label for="accountTimezoneInput">Timezone</label>
+                  <div class="account-edit-row">
+                    <input id="accountTimezoneInput" type="text" placeholder="America/Chicago" list="timezone-list" />
+                    <datalist id="timezone-list">
+                      <option value="America/New_York" />
+                      <option value="America/Chicago" />
+                      <option value="America/Denver" />
+                      <option value="America/Los_Angeles" />
+                      <option value="America/Phoenix" />
+                      <option value="America/Anchorage" />
+                      <option value="Pacific/Honolulu" />
+                      <option value="Europe/London" />
+                      <option value="Europe/Paris" />
+                      <option value="Europe/Berlin" />
+                      <option value="Asia/Tokyo" />
+                      <option value="Asia/Shanghai" />
+                      <option value="Asia/Kolkata" />
+                      <option value="Australia/Sydney" />
+                      <option value="Pacific/Auckland" />
+                    </datalist>
+                    <button id="saveAccountTimezoneButton" type="button" class="btn-primary">Save</button>
+                    <span id="accountTimezoneSaved" class="account-save-check" hidden>✓</span>
+                  </div>
+                  <p id="accountTimezoneStatus" class="stats-status" role="status" aria-live="polite"></p>
+                </article>
+                <article class="account-edit-card">
+                  <label for="accountGoalSummaryInput">Goal Summary</label>
+                  <div class="account-edit-row">
+                    <textarea id="accountGoalSummaryInput" placeholder="Brief summary of your goals..." rows="3" style="resize:vertical;min-height:58px;"></textarea>
+                    <button id="saveAccountGoalSummaryButton" type="button" class="btn-primary" style="align-self:flex-start;">Save</button>
+                    <span id="accountGoalSummarySaved" class="account-save-check" hidden>✓</span>
+                  </div>
+                  <p id="accountGoalSummaryStatus" class="stats-status" role="status" aria-live="polite"></p>
+                </article>
+              </div>
+            </section>
+
+            <!-- ===== TRACKING PREFERENCES ===== -->
+            <section class="settings-section" aria-label="Tracking Preferences">
+              <h3 class="settings-section-title">⚙️ Tracking Preferences</h3>
+              <div class="tracking-toggles" id="trackingToggles">
+                <label class="toggle-row">
+                  <input type="checkbox" id="toggleTrackBodyMeasures" />
+                  <span>Track Body Measurements</span>
+                </label>
+                <label class="toggle-row">
+                  <input type="checkbox" id="toggleTrackCreatine" />
+                  <span>Track Creatine</span>
+                </label>
+                <label class="toggle-row">
+                  <input type="checkbox" id="toggleLeaderboardOptIn" />
+                  <span>Show me on public leaderboards</span>
+                </label>
+                <label class="toggle-row">
+                  <input type="checkbox" id="toggleWeeklyDigestOptOut" />
+                  <span>Opt out of weekly digest</span>
+                </label>
+              </div>
+              <div class="panel-actions" style="margin-top: 0.75rem;">
+                <button id="saveTrackingPrefsButton" type="button" class="btn-primary">Save Preferences</button>
+                <span id="trackingPrefsSaved" class="account-save-check" hidden>✓ Updated</span>
+              </div>
+              <p id="trackingPrefsStatus" class="stats-status" role="status" aria-live="polite"></p>
+            </section>
+
+            <!-- ===== PRIVACY ===== -->
+            <section class="settings-section" aria-label="Public profile settings">
+              <h3 class="settings-section-title">🔒 Public Profile</h3>
               <p class="account-public-desc">
                 Control what appears on your public profile page at
                 <a id="publicProfileUrl" href="/@" target="_blank" rel="noopener noreferrer">/@<span id="publicProfileUsername">you</span></a>.
@@ -370,10 +537,6 @@
                 <label class="toggle-row">
                   <input type="checkbox" id="toggleRecentWorkoutsVisibility" />
                   <span>Recent Workouts</span>
-                </label>
-                <label class="toggle-row">
-                  <input type="checkbox" id="togglePublicLeaderboardConsent" />
-                  <span>Show me on public leaderboards</span>
                 </label>
               </div>
               <div class="panel-actions" style="margin-top: 0.75rem;">

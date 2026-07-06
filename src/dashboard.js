@@ -180,16 +180,71 @@ const els = {
   emailVerifyPrompt: document.getElementById("emailVerifyPrompt"),
   accountUsernameInput: document.getElementById("accountUsernameInput"),
   accountAgeInput: document.getElementById("accountAgeInput"),
+  accountPhoneInput: document.getElementById("accountPhoneInput"),
+  accountCityInput: document.getElementById("accountCityInput"),
+  accountCountryInput: document.getElementById("accountCountryInput"),
+  accountWeightInput: document.getElementById("accountWeightInput"),
+  accountHeightInput: document.getElementById("accountHeightInput"),
+  accountGoalWeightInput: document.getElementById("accountGoalWeightInput"),
+  accountGoalBodyFatInput: document.getElementById("accountGoalBodyFatInput"),
+  accountFitnessGoalInput: document.getElementById("accountFitnessGoalInput"),
+  accountWorkoutSplitInput: document.getElementById("accountWorkoutSplitInput"),
+  accountTimezoneInput: document.getElementById("accountTimezoneInput"),
+  accountGoalSummaryInput: document.getElementById("accountGoalSummaryInput"),
   saveAccountEmailButton: document.getElementById("saveAccountEmailButton"),
   verifyAccountEmailButton: document.getElementById("verifyAccountEmailButton"),
   saveAccountUsernameButton: document.getElementById("saveAccountUsernameButton"),
   saveAccountAgeButton: document.getElementById("saveAccountAgeButton"),
+  saveAccountPhoneButton: document.getElementById("saveAccountPhoneButton"),
+  saveAccountCityButton: document.getElementById("saveAccountCityButton"),
+  saveAccountCountryButton: document.getElementById("saveAccountCountryButton"),
+  saveAccountWeightButton: document.getElementById("saveAccountWeightButton"),
+  saveAccountHeightButton: document.getElementById("saveAccountHeightButton"),
+  saveAccountGoalWeightButton: document.getElementById("saveAccountGoalWeightButton"),
+  saveAccountGoalBodyFatButton: document.getElementById("saveAccountGoalBodyFatButton"),
+  saveAccountFitnessGoalButton: document.getElementById("saveAccountFitnessGoalButton"),
+  saveAccountWorkoutSplitButton: document.getElementById("saveAccountWorkoutSplitButton"),
+  saveAccountTimezoneButton: document.getElementById("saveAccountTimezoneButton"),
+  saveAccountGoalSummaryButton: document.getElementById("saveAccountGoalSummaryButton"),
   accountEmailSaved: document.getElementById("accountEmailSaved"),
   accountUsernameSaved: document.getElementById("accountUsernameSaved"),
   accountAgeSaved: document.getElementById("accountAgeSaved"),
+  accountPhoneSaved: document.getElementById("accountPhoneSaved"),
+  accountCitySaved: document.getElementById("accountCitySaved"),
+  accountCountrySaved: document.getElementById("accountCountrySaved"),
+  accountWeightSaved: document.getElementById("accountWeightSaved"),
+  accountHeightSaved: document.getElementById("accountHeightSaved"),
+  accountGoalWeightSaved: document.getElementById("accountGoalWeightSaved"),
+  accountGoalBodyFatSaved: document.getElementById("accountGoalBodyFatSaved"),
+  accountFitnessGoalSaved: document.getElementById("accountFitnessGoalSaved"),
+  accountWorkoutSplitSaved: document.getElementById("accountWorkoutSplitSaved"),
+  accountTimezoneSaved: document.getElementById("accountTimezoneSaved"),
+  accountGoalSummarySaved: document.getElementById("accountGoalSummarySaved"),
   accountEmailStatus: document.getElementById("accountEmailStatus"),
   accountUsernameStatus: document.getElementById("accountUsernameStatus"),
   accountAgeStatus: document.getElementById("accountAgeStatus"),
+  accountPhoneStatus: document.getElementById("accountPhoneStatus"),
+  accountCityStatus: document.getElementById("accountCityStatus"),
+  accountCountryStatus: document.getElementById("accountCountryStatus"),
+  accountWeightStatus: document.getElementById("accountWeightStatus"),
+  accountHeightStatus: document.getElementById("accountHeightStatus"),
+  accountGoalWeightStatus: document.getElementById("accountGoalWeightStatus"),
+  accountGoalBodyFatStatus: document.getElementById("accountGoalBodyFatStatus"),
+  accountFitnessGoalStatus: document.getElementById("accountFitnessGoalStatus"),
+  accountWorkoutSplitStatus: document.getElementById("accountWorkoutSplitStatus"),
+  accountTimezoneStatus: document.getElementById("accountTimezoneStatus"),
+  accountGoalSummaryStatus: document.getElementById("accountGoalSummaryStatus"),
+  // Notification banner
+  settingsIncompleteBanner: document.getElementById("settingsIncompleteBanner"),
+  settingsIncompleteFields: document.getElementById("settingsIncompleteFields"),
+  // Tracking preferences
+  toggleTrackBodyMeasures: document.getElementById("toggleTrackBodyMeasures"),
+  toggleTrackCreatine: document.getElementById("toggleTrackCreatine"),
+  toggleLeaderboardOptIn: document.getElementById("toggleLeaderboardOptIn"),
+  toggleWeeklyDigestOptOut: document.getElementById("toggleWeeklyDigestOptOut"),
+  saveTrackingPrefsButton: document.getElementById("saveTrackingPrefsButton"),
+  trackingPrefsSaved: document.getElementById("trackingPrefsSaved"),
+  trackingPrefsStatus: document.getElementById("trackingPrefsStatus"),
 
   publicProfileUrl: document.getElementById("publicProfileUrl"),
   publicProfileUsername: document.getElementById("publicProfileUsername"),
@@ -284,6 +339,87 @@ const ACCOUNT_FIELD_CONFIG = {
     status: () => els.accountAgeStatus,
     check: () => els.accountAgeSaved,
     label: "age",
+  },
+  phone: {
+    input: () => els.accountPhoneInput,
+    button: () => els.saveAccountPhoneButton,
+    status: () => els.accountPhoneStatus,
+    check: () => els.accountPhoneSaved,
+    label: "phone",
+    backendKey: "primaryPhone",
+  },
+  city: {
+    input: () => els.accountCityInput,
+    button: () => els.saveAccountCityButton,
+    status: () => els.accountCityStatus,
+    check: () => els.accountCitySaved,
+    label: "city",
+  },
+  country: {
+    input: () => els.accountCountryInput,
+    button: () => els.saveAccountCountryButton,
+    status: () => els.accountCountryStatus,
+    check: () => els.accountCountrySaved,
+    label: "country",
+    backendKey: "countryCode",
+  },
+  currentWeight: {
+    input: () => els.accountWeightInput,
+    button: () => els.saveAccountWeightButton,
+    status: () => els.accountWeightStatus,
+    check: () => els.accountWeightSaved,
+    label: "weight",
+    backendKey: "currentWeight",
+  },
+  currentHeight: {
+    input: () => els.accountHeightInput,
+    button: () => els.saveAccountHeightButton,
+    status: () => els.accountHeightStatus,
+    check: () => els.accountHeightSaved,
+    label: "height",
+    backendKey: "currentHeight",
+  },
+  goalWeight: {
+    input: () => els.accountGoalWeightInput,
+    button: () => els.saveAccountGoalWeightButton,
+    status: () => els.accountGoalWeightStatus,
+    check: () => els.accountGoalWeightSaved,
+    label: "goal weight",
+  },
+  goalBodyFat: {
+    input: () => els.accountGoalBodyFatInput,
+    button: () => els.saveAccountGoalBodyFatButton,
+    status: () => els.accountGoalBodyFatStatus,
+    check: () => els.accountGoalBodyFatSaved,
+    label: "goal body fat",
+  },
+  fitnessGoal: {
+    input: () => els.accountFitnessGoalInput,
+    button: () => els.saveAccountFitnessGoalButton,
+    status: () => els.accountFitnessGoalStatus,
+    check: () => els.accountFitnessGoalSaved,
+    label: "fitness goal",
+  },
+  workoutSplit: {
+    input: () => els.accountWorkoutSplitInput,
+    button: () => els.saveAccountWorkoutSplitButton,
+    status: () => els.accountWorkoutSplitStatus,
+    check: () => els.accountWorkoutSplitSaved,
+    label: "workout split",
+  },
+  timezone: {
+    input: () => els.accountTimezoneInput,
+    button: () => els.saveAccountTimezoneButton,
+    status: () => els.accountTimezoneStatus,
+    check: () => els.accountTimezoneSaved,
+    label: "timezone",
+  },
+  goalSummary: {
+    input: () => els.accountGoalSummaryInput,
+    button: () => els.saveAccountGoalSummaryButton,
+    status: () => els.accountGoalSummaryStatus,
+    check: () => els.accountGoalSummarySaved,
+    label: "goal summary",
   },
 };
 
@@ -424,6 +560,21 @@ function normalizeAuthUser(rawUser) {
     ),
     personalTrainerName: String(rawUser.personalTrainerName || rawUser.trainerName || "").trim(),
     loginAt: String(rawUser.loginAt || "").trim(),
+    phone: String(rawUser.phone || rawUser.primaryPhone || "").trim(),
+    city: String(rawUser.city || "").trim(),
+    countryCode: String(rawUser.countryCode || rawUser.country || "").trim(),
+    currentWeight: String(rawUser.currentWeight || rawUser.weight || "").trim(),
+    currentHeight: String(rawUser.currentHeight || rawUser.height || "").trim(),
+    goalWeight: String(rawUser.goalWeight || "").trim(),
+    goalBodyFat: String(rawUser.goalBodyFat || "").trim(),
+    fitnessGoal: String(rawUser.fitnessGoal || "").trim(),
+    workoutSplit: String(rawUser.workoutSplit || "").trim(),
+    timezone: String(rawUser.timezone || "").trim(),
+    goalSummary: String(rawUser.goalSummary || "").trim(),
+    trackBodyMeasures: normalizeBoolean(rawUser.trackBodyMeasures),
+    trackCreatine: normalizeBoolean(rawUser.trackCreatine),
+    leaderboardOptIn: normalizeNullableBoolean(rawUser.leaderboardOptIn),
+    weeklyDigestOptOut: normalizeBoolean(rawUser.weeklyDigestOptOut),
   };
 }
 
@@ -1120,15 +1271,25 @@ function renderPersonalTrainer(_user) {
 }
 
 function syncEditableAccountInputs(user) {
-  if (els.accountEmailInput) {
-    els.accountEmailInput.value = user?.email || "";
-  }
-  if (els.accountUsernameInput) {
-    els.accountUsernameInput.value = user?.username || "";
-  }
-  if (els.accountAgeInput) {
-    els.accountAgeInput.value = user?.age || "";
-  }
+  if (els.accountEmailInput) els.accountEmailInput.value = user?.email || "";
+  if (els.accountUsernameInput) els.accountUsernameInput.value = user?.username || "";
+  if (els.accountAgeInput) els.accountAgeInput.value = user?.age || "";
+  if (els.accountPhoneInput) els.accountPhoneInput.value = user?.phone || "";
+  if (els.accountCityInput) els.accountCityInput.value = user?.city || "";
+  if (els.accountCountryInput) els.accountCountryInput.value = user?.countryCode || "";
+  if (els.accountWeightInput) els.accountWeightInput.value = user?.currentWeight || "";
+  if (els.accountHeightInput) els.accountHeightInput.value = user?.currentHeight || "";
+  if (els.accountGoalWeightInput) els.accountGoalWeightInput.value = user?.goalWeight || "";
+  if (els.accountGoalBodyFatInput) els.accountGoalBodyFatInput.value = user?.goalBodyFat || "";
+  if (els.accountFitnessGoalInput) els.accountFitnessGoalInput.value = user?.fitnessGoal || "";
+  if (els.accountWorkoutSplitInput) els.accountWorkoutSplitInput.value = user?.workoutSplit || "";
+  if (els.accountTimezoneInput) els.accountTimezoneInput.value = user?.timezone || "";
+  if (els.accountGoalSummaryInput) els.accountGoalSummaryInput.value = user?.goalSummary || "";
+  // Tracking toggles
+  if (els.toggleTrackBodyMeasures) els.toggleTrackBodyMeasures.checked = user?.trackBodyMeasures === true;
+  if (els.toggleTrackCreatine) els.toggleTrackCreatine.checked = user?.trackCreatine === true;
+  if (els.toggleLeaderboardOptIn) els.toggleLeaderboardOptIn.checked = user?.leaderboardOptIn === true;
+  if (els.toggleWeeklyDigestOptOut) els.toggleWeeklyDigestOptOut.checked = user?.weeklyDigestOptOut === true;
 }
 
 function readAccountEmailVerified(user = readAuthUser()) {
@@ -1183,6 +1344,70 @@ function readAccountEmailVerifiedAt(user = readAuthUser()) {
     state.backendSnapshot?.email_verified_at ||
     ""
   ).trim() || null;
+}
+
+// ---- Incomplete Profile Banner ----
+
+const INCOMPLETE_REQUIRED_FIELDS = ["username", "phone", "age", "city", "country"];
+
+function renderIncompleteProfileBanner(user = readAuthUser()) {
+  if (!els.settingsIncompleteBanner || !els.settingsIncompleteFields) return;
+  const missing = [];
+  for (const field of INCOMPLETE_REQUIRED_FIELDS) {
+    const value = String(field === "phone" ? (user?.phone || "") : (user?.[field] || "")).trim();
+    if (!value) missing.push(ACCOUNT_FIELD_CONFIG[field]?.label || field);
+  }
+  if (!missing.length) {
+    els.settingsIncompleteBanner.hidden = true;
+    return;
+  }
+  els.settingsIncompleteBanner.hidden = false;
+  els.settingsIncompleteFields.textContent = missing.map(f => f.charAt(0).toUpperCase() + f.slice(1)).join(", ") + ".";
+}
+
+// ---- Tracking Preferences ----
+
+async function saveTrackingPreferences() {
+  if (els.saveTrackingPrefsButton) els.saveTrackingPrefsButton.disabled = true;
+  if (els.trackingPrefsSaved) els.trackingPrefsSaved.hidden = true;
+  if (els.trackingPrefsStatus) { els.trackingPrefsStatus.textContent = "Saving..."; els.trackingPrefsStatus.classList.remove("is-error", "is-success"); }
+
+  const payload = pruneEmptyRecord({
+    trackBodyMeasures: els.toggleTrackBodyMeasures?.checked,
+    trackCreatine: els.toggleTrackCreatine?.checked,
+    leaderboardOptIn: els.toggleLeaderboardOptIn?.checked,
+    weeklyDigestOptOut: els.toggleWeeklyDigestOptOut?.checked,
+  });
+
+  try {
+    const body = await postAuthedJson(
+      ["/api/account/profile", `${API_BASE}/api/account/profile`, "/api/user/profile", `${API_BASE}/api/user/profile`],
+      payload,
+    );
+    const updated = normalizeProfileUpdate(body, payload);
+    persistAccountUpdate(updated);
+    if (els.trackingPrefsSaved) els.trackingPrefsSaved.hidden = false;
+    if (els.trackingPrefsStatus) setStatus(els.trackingPrefsStatus, "Preferences saved.", "is-success");
+  } catch (error) {
+    if (els.trackingPrefsStatus) setStatus(els.trackingPrefsStatus, String(error?.message || "Save failed."), "is-error");
+  } finally {
+    if (els.saveTrackingPrefsButton) els.saveTrackingPrefsButton.disabled = false;
+  }
+}
+
+function wireTrackingPreferences() {
+  if (els.saveTrackingPrefsButton) {
+    els.saveTrackingPrefsButton.addEventListener("click", () => { void saveTrackingPreferences(); });
+  }
+  const trackingToggles = [els.toggleTrackBodyMeasures, els.toggleTrackCreatine, els.toggleLeaderboardOptIn, els.toggleWeeklyDigestOptOut];
+  trackingToggles.forEach(toggle => {
+    if (toggle) {
+      toggle.addEventListener("change", () => {
+        if (els.trackingPrefsSaved) els.trackingPrefsSaved.hidden = true;
+        if (els.trackingPrefsStatus) { els.trackingPrefsStatus.textContent = ""; els.trackingPrefsStatus.classList.remove("is-error", "is-success"); }
+      });
+    }
+  });
 }
 
 function renderAccountInfo() {
@@ -1251,6 +1476,7 @@ function renderAccountInfo() {
   populateAffiliateApplyForm();
   renderAiIdentity();
   renderPersonalTrainer(user);
+  renderIncompleteProfileBanner(user);
   void loadAffiliateProfile();
 }
 
@@ -1337,6 +1563,23 @@ function normalizeProfileUpdate(body, fallbackPayload) {
         readAuthUser()?.canonical ??
         "",
     ).trim(),
+    phone: String(
+      payload.phone ?? payload.primaryPhone ?? fallbackPayload.phone ?? readAuthUser()?.phone ?? "",
+    ).trim(),
+    city: String(payload.city ?? fallbackPayload.city ?? readAuthUser()?.city ?? "").trim(),
+    countryCode: String(payload.countryCode ?? payload.country ?? fallbackPayload.countryCode ?? fallbackPayload.country ?? readAuthUser()?.countryCode ?? "").trim(),
+    currentWeight: String(payload.currentWeight ?? payload.weight ?? fallbackPayload.currentWeight ?? fallbackPayload.weight ?? readAuthUser()?.currentWeight ?? "").trim(),
+    currentHeight: String(payload.currentHeight ?? payload.height ?? fallbackPayload.currentHeight ?? fallbackPayload.height ?? readAuthUser()?.currentHeight ?? "").trim(),
+    goalWeight: String(payload.goalWeight ?? fallbackPayload.goalWeight ?? readAuthUser()?.goalWeight ?? "").trim(),
+    goalBodyFat: String(payload.goalBodyFat ?? fallbackPayload.goalBodyFat ?? readAuthUser()?.goalBodyFat ?? "").trim(),
+    fitnessGoal: String(payload.fitnessGoal ?? fallbackPayload.fitnessGoal ?? readAuthUser()?.fitnessGoal ?? "").trim(),
+    workoutSplit: String(payload.workoutSplit ?? fallbackPayload.workoutSplit ?? readAuthUser()?.workoutSplit ?? "").trim(),
+    timezone: String(payload.timezone ?? fallbackPayload.timezone ?? readAuthUser()?.timezone ?? "").trim(),
+    goalSummary: String(payload.goalSummary ?? fallbackPayload.goalSummary ?? readAuthUser()?.goalSummary ?? "").trim(),
+    trackBodyMeasures: payload.trackBodyMeasures !== undefined ? normalizeBoolean(payload.trackBodyMeasures) : (readAuthUser()?.trackBodyMeasures ?? false),
+    trackCreatine: payload.trackCreatine !== undefined ? normalizeBoolean(payload.trackCreatine) : (readAuthUser()?.trackCreatine ?? false),
+    leaderboardOptIn: payload.leaderboardOptIn !== undefined ? normalizeNullableBoolean(payload.leaderboardOptIn) : readAuthUser()?.leaderboardOptIn,
+    weeklyDigestOptOut: payload.weeklyDigestOptOut !== undefined ? normalizeBoolean(payload.weeklyDigestOptOut) : (readAuthUser()?.weeklyDigestOptOut ?? false),
   };
 }
 
@@ -1370,44 +1613,49 @@ function normalizedAccountFieldValue(field) {
   const { input } = accountFieldParts(field);
   const raw = String(input?.value || "").trim();
 
-  if (field === "email") {
-    return raw.toLowerCase();
-  }
-
-  if (field === "username") {
-    return raw.replace(/^@/, "");
-  }
+  if (field === "email") return raw.toLowerCase();
+  if (field === "username") return raw.replace(/^@/, "");
+  if (field === "phone") return normalizeAffiliatePhone(raw) || raw;
+  if (field === "country") return raw.toUpperCase().slice(0, 2);
 
   return raw;
 }
 
 function validateAccountField(field, value) {
   if (field === "email") {
-    if (!value) {
-      return { ok: true, value: "" };
-    }
-    if (!validEmail(value)) {
-      return { ok: false, message: "Enter a valid email address." };
-    }
+    if (!value) return { ok: true, value: "" };
+    if (!validEmail(value)) return { ok: false, message: "Enter a valid email address." };
     return { ok: true, value };
   }
 
   if (field === "username") {
-    if (!value || !validUsername(value)) {
-      return { ok: false, message: "Enter a valid username." };
-    }
+    if (!value || !validUsername(value)) return { ok: false, message: "Enter a valid username." };
     return { ok: true, value };
   }
 
-  const age = String(value || "").trim();
-  if (!age) {
-    return { ok: true, value: "" };
+  if (field === "age") {
+    const age = String(value || "").trim();
+    if (!age) return { ok: true, value: "" };
+    const numericAge = Number(age);
+    if (!Number.isFinite(numericAge) || numericAge < 0 || numericAge > 130) return { ok: false, message: "Enter a valid age." };
+    return { ok: true, value: String(Math.round(numericAge)) };
   }
-  const numericAge = Number(age);
-  if (!Number.isFinite(numericAge) || numericAge < 0 || numericAge > 130) {
-    return { ok: false, message: "Enter a valid age." };
+
+  if (field === "phone") {
+    if (!value) return { ok: true, value: "" };
+    const digits = String(value).replace(/\D/g, "");
+    if (digits.length < 7 || digits.length > 15) return { ok: false, message: "Enter a valid phone number." };
+    return { ok: true, value };
   }
-  return { ok: true, value: String(Math.round(numericAge)) };
+
+  if (field === "country") {
+    if (!value) return { ok: true, value: "" };
+    if (value.length !== 2) return { ok: false, message: "Enter a 2-letter country code (e.g. US)." };
+    return { ok: true, value };
+  }
+
+  // All other fields: accept any non-empty string, allow empty to clear
+  return { ok: true, value: String(value || "") };
 }
 
 async function requestAccountEmailVerification() {
@@ -1516,8 +1764,9 @@ async function saveAccountField(field) {
     return;
   }
 
+  const backendKey = ACCOUNT_FIELD_CONFIG[field]?.backendKey || field;
   const payload = {
-    [field]: field === "age" ? (outgoingValue ? Number(outgoingValue) : null) : outgoingValue,
+    [backendKey]: field === "age" ? (outgoingValue ? Number(outgoingValue) : null) : outgoingValue,
   };
   const { button } = accountFieldParts(field);
 
@@ -5551,6 +5800,7 @@ function wireInitialActions() {
   wireGoals();
   wireAccountEditing();
   wirePublicProfileVisibility();
+  wireTrackingPreferences();
   wireBilling();
   wireIntegrations();
   wireAffiliate();

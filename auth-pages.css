@@ -1966,7 +1966,72 @@ body.dashboard-page .toggle-row input[type="checkbox"] {
   cursor: pointer;
 }
 
+/* ---- Settings Sections ---- */
+
+body.dashboard-page .settings-section {
+  margin-top: 1.4rem;
+  padding: 1.05rem 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+body.dashboard-page .settings-section-title {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+body.dashboard-page .settings-section .account-edit-grid {
+  margin-top: 0;
+}
+
+/* ---- Incomplete Profile Banner ---- */
+
+body.dashboard-page .settings-incomplete-banner {
+  margin: 0.65rem 0 0.25rem;
+  padding: 0.7rem 1rem;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 10px;
+  color: #fca5a5;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+body.dashboard-page .settings-incomplete-banner strong {
+  color: #f87171;
+}
+
+/* ---- Required field indicator ---- */
+
+body.dashboard-page .field-required {
+  color: #ef4444;
+  font-weight: 700;
+  margin-left: 1px;
+}
+
+/* ---- Tracking Preferences ---- */
+
+body.dashboard-page .tracking-toggles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.25rem 0.75rem;
+}
+@media (min-width: 1020px) {
+  body.dashboard-page .tracking-toggles {
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+  }
+}
+
+/* ---- Public profile preview fix ---- */
+
 body.dashboard-page .public-profile-preview {
+  margin-top: 0.7rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--line);
+}
 
 body.dashboard-page .affiliate-empty-billing {
   margin-top: 0.7rem;
