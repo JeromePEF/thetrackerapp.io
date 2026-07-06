@@ -1,4 +1,3 @@
-import { inject } from "@vercel/analytics";
 import { initGoogleAnalytics } from "./google-analytics.js";
 
 const API_BASE = "https://api.thetrackerapp.io";
@@ -576,6 +575,5 @@ async function init() {
   }
 }
 
-inject();
 initGoogleAnalytics();
 init();

@@ -1,4 +1,3 @@
-import { inject } from "@vercel/analytics";
 import { initGoogleAnalytics } from "./google-analytics.js";
 import { affiliateConnect, affiliateStatus, readStoredAffiliateIdentity } from "./api.js";
 import {
@@ -188,6 +187,5 @@ function init() {
   refresh();
 }
 
-inject();
 initGoogleAnalytics();
 init();

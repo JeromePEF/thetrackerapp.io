@@ -1,4 +1,3 @@
-import { inject } from "@vercel/analytics";
 import { initGoogleAnalytics } from "./google-analytics.js";
 
 const SOURCE_DEFS = [
@@ -347,6 +346,5 @@ function init() {
   wireEvents();
 }
 
-inject();
 initGoogleAnalytics();
 init();

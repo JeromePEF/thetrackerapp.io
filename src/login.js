@@ -1,4 +1,3 @@
-import { inject } from "@vercel/analytics";
 import { initGoogleAnalytics } from "./google-analytics.js";
 import { requestLoginCode } from "./api.js";
 
@@ -689,6 +688,5 @@ function init() {
   wireEvents();
 }
 
-inject();
 initGoogleAnalytics();
 init();

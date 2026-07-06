@@ -1,7 +1,0 @@
-credentials.json
-*.pem
-*.key
-*.p12
-.env
-.env.*
-metrics

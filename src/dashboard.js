@@ -1,4 +1,3 @@
-import { inject } from "@vercel/analytics";
 import { initGoogleAnalytics } from "./google-analytics.js";
 import { initFeatureFlags, getCachedFlags } from "./feature-flags.js";
 import {
@@ -180,9 +179,6 @@ const els = {
   emailVerifyPrompt: document.getElementById("emailVerifyPrompt"),
   accountUsernameInput: document.getElementById("accountUsernameInput"),
   accountAgeInput: document.getElementById("accountAgeInput"),
-  accountPhoneInput: document.getElementById("accountPhoneInput"),
-  accountCityInput: document.getElementById("accountCityInput"),
-  accountCountryInput: document.getElementById("accountCountryInput"),
   accountWeightInput: document.getElementById("accountWeightInput"),
   accountHeightInput: document.getElementById("accountHeightInput"),
   accountGoalWeightInput: document.getElementById("accountGoalWeightInput"),
@@ -195,9 +191,6 @@ const els = {
   verifyAccountEmailButton: document.getElementById("verifyAccountEmailButton"),
   saveAccountUsernameButton: document.getElementById("saveAccountUsernameButton"),
   saveAccountAgeButton: document.getElementById("saveAccountAgeButton"),
-  saveAccountPhoneButton: document.getElementById("saveAccountPhoneButton"),
-  saveAccountCityButton: document.getElementById("saveAccountCityButton"),
-  saveAccountCountryButton: document.getElementById("saveAccountCountryButton"),
   saveAccountWeightButton: document.getElementById("saveAccountWeightButton"),
   saveAccountHeightButton: document.getElementById("saveAccountHeightButton"),
   saveAccountGoalWeightButton: document.getElementById("saveAccountGoalWeightButton"),
@@ -209,9 +202,6 @@ const els = {
   accountEmailSaved: document.getElementById("accountEmailSaved"),
   accountUsernameSaved: document.getElementById("accountUsernameSaved"),
   accountAgeSaved: document.getElementById("accountAgeSaved"),
-  accountPhoneSaved: document.getElementById("accountPhoneSaved"),
-  accountCitySaved: document.getElementById("accountCitySaved"),
-  accountCountrySaved: document.getElementById("accountCountrySaved"),
   accountWeightSaved: document.getElementById("accountWeightSaved"),
   accountHeightSaved: document.getElementById("accountHeightSaved"),
   accountGoalWeightSaved: document.getElementById("accountGoalWeightSaved"),
@@ -223,9 +213,6 @@ const els = {
   accountEmailStatus: document.getElementById("accountEmailStatus"),
   accountUsernameStatus: document.getElementById("accountUsernameStatus"),
   accountAgeStatus: document.getElementById("accountAgeStatus"),
-  accountPhoneStatus: document.getElementById("accountPhoneStatus"),
-  accountCityStatus: document.getElementById("accountCityStatus"),
-  accountCountryStatus: document.getElementById("accountCountryStatus"),
   accountWeightStatus: document.getElementById("accountWeightStatus"),
   accountHeightStatus: document.getElementById("accountHeightStatus"),
   accountGoalWeightStatus: document.getElementById("accountGoalWeightStatus"),
@@ -234,9 +221,6 @@ const els = {
   accountWorkoutSplitStatus: document.getElementById("accountWorkoutSplitStatus"),
   accountTimezoneStatus: document.getElementById("accountTimezoneStatus"),
   accountGoalSummaryStatus: document.getElementById("accountGoalSummaryStatus"),
-  // Notification banner
-  settingsIncompleteBanner: document.getElementById("settingsIncompleteBanner"),
-  settingsIncompleteFields: document.getElementById("settingsIncompleteFields"),
   // Tracking preferences
   toggleTrackBodyMeasures: document.getElementById("toggleTrackBodyMeasures"),
   toggleTrackCreatine: document.getElementById("toggleTrackCreatine"),
@@ -339,29 +323,6 @@ const ACCOUNT_FIELD_CONFIG = {
     status: () => els.accountAgeStatus,
     check: () => els.accountAgeSaved,
     label: "age",
-  },
-  phone: {
-    input: () => els.accountPhoneInput,
-    button: () => els.saveAccountPhoneButton,
-    status: () => els.accountPhoneStatus,
-    check: () => els.accountPhoneSaved,
-    label: "phone",
-    backendKey: "primaryPhone",
-  },
-  city: {
-    input: () => els.accountCityInput,
-    button: () => els.saveAccountCityButton,
-    status: () => els.accountCityStatus,
-    check: () => els.accountCitySaved,
-    label: "city",
-  },
-  country: {
-    input: () => els.accountCountryInput,
-    button: () => els.saveAccountCountryButton,
-    status: () => els.accountCountryStatus,
-    check: () => els.accountCountrySaved,
-    label: "country",
-    backendKey: "countryCode",
   },
   currentWeight: {
     input: () => els.accountWeightInput,
@@ -561,7 +522,6 @@ function normalizeAuthUser(rawUser) {
     personalTrainerName: String(rawUser.personalTrainerName || rawUser.trainerName || "").trim(),
     loginAt: String(rawUser.loginAt || "").trim(),
     phone: String(rawUser.phone || rawUser.primaryPhone || "").trim(),
-    city: String(rawUser.city || "").trim(),
     countryCode: String(rawUser.countryCode || rawUser.country || "").trim(),
     currentWeight: String(rawUser.currentWeight || rawUser.weight || "").trim(),
     currentHeight: String(rawUser.currentHeight || rawUser.height || "").trim(),
@@ -1271,12 +1231,14 @@ function renderPersonalTrainer(_user) {
 }
 
 function syncEditableAccountInputs(user) {
-  if (els.accountEmailInput) els.accountEmailInput.value = user?.email || "";
-  if (els.accountUsernameInput) els.accountUsernameInput.value = user?.username || "";
-  if (els.accountAgeInput) els.accountAgeInput.value = user?.age || "";
-  if (els.accountPhoneInput) els.accountPhoneInput.value = user?.phone || "";
-  if (els.accountCityInput) els.accountCityInput.value = user?.city || "";
-  if (els.accountCountryInput) els.accountCountryInput.value = user?.countryCode || "";
+  // Always use the backend (SQLite) as the canonical source for profile fields.
+  // The portal snapshot is the ground truth; localStorage may be stale.
+  const profile = (state.backendSnapshot?.profile && typeof state.backendSnapshot.profile === "object")
+    ? state.backendSnapshot.profile : {};
+
+  if (els.accountEmailInput) els.accountEmailInput.value = profile.email || user?.email || "";
+  if (els.accountUsernameInput) els.accountUsernameInput.value = profile.username || user?.username || "";
+  if (els.accountAgeInput) els.accountAgeInput.value = profile.age ?? user?.age ?? "";
   if (els.accountWeightInput) els.accountWeightInput.value = user?.currentWeight || "";
   if (els.accountHeightInput) els.accountHeightInput.value = user?.currentHeight || "";
   if (els.accountGoalWeightInput) els.accountGoalWeightInput.value = user?.goalWeight || "";
@@ -1348,21 +1310,9 @@ function readAccountEmailVerifiedAt(user = readAuthUser()) {
 
 // ---- Incomplete Profile Banner ----
 
-const INCOMPLETE_REQUIRED_FIELDS = ["username", "phone", "age", "city", "country"];
-
-function renderIncompleteProfileBanner(user = readAuthUser()) {
-  if (!els.settingsIncompleteBanner || !els.settingsIncompleteFields) return;
-  const missing = [];
-  for (const field of INCOMPLETE_REQUIRED_FIELDS) {
-    const value = String(field === "phone" ? (user?.phone || "") : (user?.[field] || "")).trim();
-    if (!value) missing.push(ACCOUNT_FIELD_CONFIG[field]?.label || field);
-  }
-  if (!missing.length) {
-    els.settingsIncompleteBanner.hidden = true;
-    return;
-  }
-  els.settingsIncompleteBanner.hidden = false;
-  els.settingsIncompleteFields.textContent = missing.map(f => f.charAt(0).toUpperCase() + f.slice(1)).join(", ") + ".";
+function renderIncompleteProfileBanner(_user) {
+  // Disabled — no fields are marked as required for the banner
+  if (els.settingsIncompleteBanner) els.settingsIncompleteBanner.hidden = true;
 }
 
 // ---- Tracking Preferences ----
@@ -1421,7 +1371,9 @@ function renderAccountInfo() {
   }
 
   if (els.accountUsernameValue) {
-    els.accountUsernameValue.textContent = user?.username || "-";
+    const backendUsername = (state.backendSnapshot?.profile && typeof state.backendSnapshot.profile === "object")
+      ? (state.backendSnapshot.profile.username || "") : "";
+    els.accountUsernameValue.textContent = backendUsername || user?.username || "-";
   }
 
   if (els.accountAgeValue) {
@@ -1564,10 +1516,9 @@ function normalizeProfileUpdate(body, fallbackPayload) {
         "",
     ).trim(),
     phone: String(
-      payload.phone ?? payload.primaryPhone ?? fallbackPayload.phone ?? readAuthUser()?.phone ?? "",
+      payload.phone ?? payload.primaryPhone ?? readAuthUser()?.phone ?? "",
     ).trim(),
-    city: String(payload.city ?? fallbackPayload.city ?? readAuthUser()?.city ?? "").trim(),
-    countryCode: String(payload.countryCode ?? payload.country ?? fallbackPayload.countryCode ?? fallbackPayload.country ?? readAuthUser()?.countryCode ?? "").trim(),
+    countryCode: String(payload.countryCode ?? payload.country ?? readAuthUser()?.countryCode ?? "").trim(),
     currentWeight: String(payload.currentWeight ?? payload.weight ?? fallbackPayload.currentWeight ?? fallbackPayload.weight ?? readAuthUser()?.currentWeight ?? "").trim(),
     currentHeight: String(payload.currentHeight ?? payload.height ?? fallbackPayload.currentHeight ?? fallbackPayload.height ?? readAuthUser()?.currentHeight ?? "").trim(),
     goalWeight: String(payload.goalWeight ?? fallbackPayload.goalWeight ?? readAuthUser()?.goalWeight ?? "").trim(),
@@ -1615,8 +1566,6 @@ function normalizedAccountFieldValue(field) {
 
   if (field === "email") return raw.toLowerCase();
   if (field === "username") return raw.replace(/^@/, "");
-  if (field === "phone") return normalizeAffiliatePhone(raw) || raw;
-  if (field === "country") return raw.toUpperCase().slice(0, 2);
 
   return raw;
 }
@@ -1639,19 +1588,6 @@ function validateAccountField(field, value) {
     const numericAge = Number(age);
     if (!Number.isFinite(numericAge) || numericAge < 0 || numericAge > 130) return { ok: false, message: "Enter a valid age." };
     return { ok: true, value: String(Math.round(numericAge)) };
-  }
-
-  if (field === "phone") {
-    if (!value) return { ok: true, value: "" };
-    const digits = String(value).replace(/\D/g, "");
-    if (digits.length < 7 || digits.length > 15) return { ok: false, message: "Enter a valid phone number." };
-    return { ok: true, value };
-  }
-
-  if (field === "country") {
-    if (!value) return { ok: true, value: "" };
-    if (value.length !== 2) return { ok: false, message: "Enter a 2-letter country code (e.g. US)." };
-    return { ok: true, value };
   }
 
   // All other fields: accept any non-empty string, allow empty to clear
@@ -6293,7 +6229,6 @@ function enhanceBodyMeasuresAfterLoad() {
   };
 }
 
-inject();
 initGoogleAnalytics();
 init();
 setTimeout(() => {

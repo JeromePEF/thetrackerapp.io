@@ -1,4 +1,3 @@
-import { inject } from "@vercel/analytics";
 import { initGoogleAnalytics } from "./google-analytics.js";
 import { affiliateSignup, affiliateStatus } from "./api.js";
 import { buildAffiliateShape, hasAffiliateProfile } from "./affiliate-shape.js";
@@ -206,6 +205,5 @@ async function boot() {
   }
 }
 
-inject();
 initGoogleAnalytics();
 boot();

@@ -28,11 +28,6 @@ const SITE_CALISTHENICS_SHEET_NAME = "Site Calisthenics";
 const TOP_STREAKS_SHEET_NAME = "Top Streaks";
 const DASHBOARD_SHEET_CACHE_TTL_MS = 5 * 60 * 1000;
 const POST_TIMEOUT_MS = 12000;
-const LOCAL_SIGNUP_PROXY_ENDPOINT = "/api/signup-proxy";
-const LOCAL_LOGIN_CODE_REQUEST_ENDPOINT = "/api/login-code-request";
-const LOCAL_LOGIN_CODE_VERIFY_ENDPOINT = "/api/login-code-verify";
-const LOCAL_BACKEND_PROXY_ENDPOINT = "/api/backend-proxy";
-const PUBLIC_LEADERBOARD_ENDPOINT = "/api/public-leaderboard";
 const LOGIN_CODE_REQUEST_ENDPOINTS = ["/api/auth/login-code/request", "/api/auth/code/request", "/api/login-code/request"];
 const LOGIN_CODE_VERIFY_ENDPOINTS = ["/api/auth/login-code/verify", "/api/auth/code/verify", "/api/login-code/verify"];
 
@@ -2346,15 +2341,8 @@ function csvHeaderIndexMap(headerRow) {
 }
 
 export async function submitSignup(payload) {
-  try {
-    return await postJsonSameOrigin(LOCAL_SIGNUP_PROXY_ENDPOINT, payload);
-  } catch {
-    // Fall back to direct API calls below.
-  }
-
   const onboardingEndpoints = ["/api/onboarding", "/signup"];
   const welcomeEndpoints = ["/api/welcome", "/api/onboarding/trigger", "/api/onboarding/send-welcome"];
-  const onboardingPayloads = [payload];
   const welcomePayloads = buildWelcomePayloadVariants(payload);
   const hasPhone = normalizeName(payload?.phone, "") || normalizeName(payload?.contact, "");
 
@@ -2400,45 +2388,19 @@ export async function submitSignup(payload) {
 }
 
 export async function requestLoginCode(payload) {
-  let proxyError = null;
-  try {
-    return await postJsonSameOrigin(LOCAL_LOGIN_CODE_REQUEST_ENDPOINT, payload);
-  } catch (error) {
-    proxyError = error;
-    // Fall back to direct backend endpoints below.
-  }
-
-  let backendError = null;
   try {
     return await tryEndpointsWithPayloads(LOGIN_CODE_REQUEST_ENDPOINTS, [payload]);
   } catch (error) {
-    backendError = error;
+    throw new Error(`Login code request failed: ${summarizeAuthError(error, "Backend unavailable.")}`);
   }
-
-  const proxyMessage = summarizeAuthError(proxyError, "Proxy unavailable.");
-  const backendMessage = summarizeAuthError(backendError, "Backend unavailable.");
-  throw new Error(`Login code request failed. Proxy: ${proxyMessage}. Backend: ${backendMessage}.`);
 }
 
 export async function verifyLoginCode(payload) {
-  let proxyError = null;
-  try {
-    return await postJsonSameOrigin(LOCAL_LOGIN_CODE_VERIFY_ENDPOINT, payload);
-  } catch (error) {
-    proxyError = error;
-    // Fall back to direct backend endpoints below.
-  }
-
-  let backendError = null;
   try {
     return await tryEndpointsWithPayloads(LOGIN_CODE_VERIFY_ENDPOINTS, [payload]);
   } catch (error) {
-    backendError = error;
+    throw new Error(`Login code verification failed: ${summarizeAuthError(error, "Backend unavailable.")}`);
   }
-
-  const proxyMessage = summarizeAuthError(proxyError, "Proxy unavailable.");
-  const backendMessage = summarizeAuthError(backendError, "Backend unavailable.");
-  throw new Error(`Login code verification failed. Proxy: ${proxyMessage}. Backend: ${backendMessage}.`);
 }
 
 function readAuthSession() {

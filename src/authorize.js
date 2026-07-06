@@ -1,4 +1,3 @@
-import { inject } from "@vercel/analytics";
 import { initGoogleAnalytics } from "./google-analytics.js";
 import { requestLoginCode, verifyLoginCode } from "./api.js";
 
@@ -525,6 +524,5 @@ function init() {
   hydratePendingAuth();
 }
 
-inject();
 initGoogleAnalytics();
 init();

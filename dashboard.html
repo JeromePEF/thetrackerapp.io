@@ -304,11 +304,6 @@
               <p>Manage your profile, body metrics, schedule, and privacy.</p>
             </header>
 
-            <!-- Red notification banner for incomplete profile fields -->
-            <section id="settingsIncompleteBanner" class="settings-incomplete-banner" hidden aria-label="Incomplete profile fields">
-              <p><strong>⚠️ Complete your profile:</strong> <span id="settingsIncompleteFields"></span></p>
-            </section>
-
             <!-- ===== PROFILE ===== -->
             <section class="settings-section" aria-label="Profile">
               <h3 class="settings-section-title">👤 Profile</h3>
@@ -324,7 +319,7 @@
                   <p id="accountEmailStatus" class="stats-status" role="status" aria-live="polite"></p>
                 </article>
                 <article class="account-edit-card">
-                  <label for="accountUsernameInput">Username <span class="field-required">*</span></label>
+                  <label for="accountUsernameInput">Username</label>
                   <div class="account-edit-row">
                     <input id="accountUsernameInput" type="text" placeholder="username" />
                     <button id="saveAccountUsernameButton" type="button" class="btn-primary">Save</button>
@@ -333,40 +328,13 @@
                   <p id="accountUsernameStatus" class="stats-status" role="status" aria-live="polite"></p>
                 </article>
                 <article class="account-edit-card">
-                  <label for="accountAgeInput">Age <span class="field-required">*</span></label>
+                  <label for="accountAgeInput">Age</label>
                   <div class="account-edit-row">
                     <input id="accountAgeInput" type="number" inputmode="numeric" min="0" max="130" placeholder="Age" />
                     <button id="saveAccountAgeButton" type="button" class="btn-primary">Save</button>
                     <span id="accountAgeSaved" class="account-save-check" hidden>✓</span>
                   </div>
                   <p id="accountAgeStatus" class="stats-status" role="status" aria-live="polite"></p>
-                </article>
-                <article class="account-edit-card">
-                  <label for="accountPhoneInput">Phone <span class="field-required">*</span></label>
-                  <div class="account-edit-row">
-                    <input id="accountPhoneInput" type="tel" placeholder="+1 555-0100" />
-                    <button id="saveAccountPhoneButton" type="button" class="btn-primary">Save</button>
-                    <span id="accountPhoneSaved" class="account-save-check" hidden>✓</span>
-                  </div>
-                  <p id="accountPhoneStatus" class="stats-status" role="status" aria-live="polite"></p>
-                </article>
-                <article class="account-edit-card">
-                  <label for="accountCityInput">City <span class="field-required">*</span></label>
-                  <div class="account-edit-row">
-                    <input id="accountCityInput" type="text" placeholder="Austin" />
-                    <button id="saveAccountCityButton" type="button" class="btn-primary">Save</button>
-                    <span id="accountCitySaved" class="account-save-check" hidden>✓</span>
-                  </div>
-                  <p id="accountCityStatus" class="stats-status" role="status" aria-live="polite"></p>
-                </article>
-                <article class="account-edit-card">
-                  <label for="accountCountryInput">Country <span class="field-required">*</span></label>
-                  <div class="account-edit-row">
-                    <input id="accountCountryInput" type="text" placeholder="US" />
-                    <button id="saveAccountCountryButton" type="button" class="btn-primary">Save</button>
-                    <span id="accountCountrySaved" class="account-save-check" hidden>✓</span>
-                  </div>
-                  <p id="accountCountryStatus" class="stats-status" role="status" aria-live="polite"></p>
                 </article>
               </div>
             </section>
