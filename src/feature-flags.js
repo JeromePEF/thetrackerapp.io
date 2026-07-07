@@ -26,33 +26,33 @@ const CACHE_TTL = 15 * 1000; // 15 seconds for live data freshness
 // Tools are true so the calculator/meal-planner pages still work when
 // upstream is unreachable (they're harmless static utilities).
 const DEFAULT_FLAGS = {
-  // Pages — mirrors current production control flags
+  // Pages — mirrors production control state (restored from Jun 24 backup)
   blog: true,
-  press: true,
+  press: false,
   products: true,
   brackets: false,
   win: false,
-  runClubs: true,
-  personalTrainers: true,
-  pebbleApp: true,
-  macApps: true,
-  workoutResources: true,
+  runClubs: false,
+  personalTrainers: false,
+  pebbleApp: false,
+  macApps: false,
+  workoutResources: false,
   pricing: true,
   workoutGroups: true,
   // Sections
-  testimonials: true,
-  faq: true,
+  testimonials: false,
+  faq: false,
   iphoneMockup: true,
   stepTape: true,
-  liveActivityFeed: true,
+  liveActivityFeed: false,
   bodyMeasurements: true,
   multiMetricCharts: true,
-  narrative: true,
+  narrative: false,
   // Maintenance
   maintenanceMode: false,
   maintenanceMessage: "",
   // Chatbot
-  chatbotEnabled: true,
+  chatbotEnabled: false,
   // Free tools — harmless static utilities, default ON so calculators work
   // even when upstream is unreachable.
   tools: {
