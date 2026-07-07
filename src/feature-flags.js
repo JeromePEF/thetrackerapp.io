@@ -26,33 +26,33 @@ const CACHE_TTL = 15 * 1000; // 15 seconds for live data freshness
 // Tools are true so the calculator/meal-planner pages still work when
 // upstream is unreachable (they're harmless static utilities).
 const DEFAULT_FLAGS = {
-  // Pages — gated, default OFF.
-  blog: false,
-  press: false,
-  products: false,
+  // Pages — mirrors current production control flags
+  blog: true,
+  press: true,
+  products: true,
   brackets: false,
   win: false,
-  runClubs: false,
-  personalTrainers: false,
-  pebbleApp: false,
-  macApps: false,
-  workoutResources: false,
-  pricing: true,                    // ALWAYS visible
-  workoutGroups: false,
-  // Sections — gated, default OFF.
-  testimonials: false,
-  faq: false,
-  iphoneMockup: true,               // visual element, not gated
-  stepTape: false,
-  liveActivityFeed: false,
-  bodyMeasurements: false,
-  multiMetricCharts: false,
-  narrative: false,
+  runClubs: true,
+  personalTrainers: true,
+  pebbleApp: true,
+  macApps: true,
+  workoutResources: true,
+  pricing: true,
+  workoutGroups: true,
+  // Sections
+  testimonials: true,
+  faq: true,
+  iphoneMockup: true,
+  stepTape: true,
+  liveActivityFeed: true,
+  bodyMeasurements: true,
+  multiMetricCharts: true,
+  narrative: true,
   // Maintenance
   maintenanceMode: false,
   maintenanceMessage: "",
-  // Floating AI chatbot widget — default OFF when we can't confirm config.
-  chatbotEnabled: false,
+  // Chatbot
+  chatbotEnabled: true,
   // Free tools — harmless static utilities, default ON so calculators work
   // even when upstream is unreachable.
   tools: {
