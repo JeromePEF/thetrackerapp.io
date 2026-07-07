@@ -550,6 +550,7 @@ function normalizeAuthUser(rawUser) {
     trackCreatine: normalizeBoolean(rawUser.trackCreatine),
     leaderboardOptIn: normalizeNullableBoolean(rawUser.leaderboardOptIn),
     weeklyDigestOptOut: normalizeBoolean(rawUser.weeklyDigestOptOut),
+    publicProfileVisibility: rawUser.publicProfileVisibility && typeof rawUser.publicProfileVisibility === "object" ? rawUser.publicProfileVisibility : null,
   };
 }
 
@@ -1630,6 +1631,9 @@ function normalizeProfileUpdate(body, fallbackPayload) {
     trackCreatine: payload.trackCreatine !== undefined ? normalizeBoolean(payload.trackCreatine) : (readAuthUser()?.trackCreatine ?? false),
     leaderboardOptIn: payload.leaderboardOptIn !== undefined ? normalizeNullableBoolean(payload.leaderboardOptIn) : readAuthUser()?.leaderboardOptIn,
     weeklyDigestOptOut: payload.weeklyDigestOptOut !== undefined ? normalizeBoolean(payload.weeklyDigestOptOut) : (readAuthUser()?.weeklyDigestOptOut ?? false),
+    publicProfileVisibility: payload.publicProfileVisibility && typeof payload.publicProfileVisibility === "object"
+      ? payload.publicProfileVisibility
+      : readAuthUser()?.publicProfileVisibility,
   };
 }
 
@@ -1922,9 +1926,10 @@ function hydratePublicProfileVisibility() {
 
   const visibility = state.backendSnapshot?.publicProfileVisibility
     || state.backendSnapshot?.profile?.publicVisibility
+    || user?.publicProfileVisibility
     || {};
 
-  const hasData = state.backendSnapshot && (visibility.workouts !== undefined || visibility.merged !== undefined);
+  const hasData = visibility.merged !== undefined || visibility.workouts !== undefined;
   if (!hasData) return;
 
   if (els.publicProfileToggles) {
@@ -2030,6 +2035,9 @@ async function savePublicProfileVisibility() {
     if (state.backendSnapshot) {
       state.backendSnapshot.publicProfileVisibility = visibility;
     }
+    // Persist to localStorage so checkboxes survive page refresh
+    // before the async portal snapshot loads
+    persistAccountUpdate({ publicProfileVisibility: visibility });
 
     if (els.publicProfileSaved) els.publicProfileSaved.hidden = false;
     if (els.publicProfileStatus) {
