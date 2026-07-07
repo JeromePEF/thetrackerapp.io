@@ -1349,7 +1349,7 @@ async function saveTrackingPreferences() {
 
   try {
     const body = await postAuthedJson(
-      ["/api/account/profile", `${API_BASE}/api/account/profile`, "/api/user/profile", `${API_BASE}/api/user/profile`],
+      [`${API_BASE}/api/account/profile`, `${API_BASE}/api/user/profile`],
       payload,
     );
     const updated = normalizeProfileUpdate(body, payload);
@@ -1748,9 +1748,6 @@ async function requestAccountEmailVerification() {
   try {
     const body = await postAuthedJson(
       [
-        "/api/account/email/verify",
-        "/api/account/verify-email",
-        "/api/user/email/verify",
         `${API_BASE}/api/account/email/verify`,
         `${API_BASE}/api/account/verify-email`,
         `${API_BASE}/api/user/email/verify`,
@@ -1819,9 +1816,7 @@ async function saveAccountField(field) {
   try {
     const body = await postAuthedJson(
       [
-        "/api/account/profile",
         `${API_BASE}/api/account/profile`,
-        "/api/user/profile",
         `${API_BASE}/api/user/profile`,
         `${API_BASE}/api/account/update-profile`,
       ],
@@ -2021,7 +2016,7 @@ async function savePublicProfileVisibility() {
   try {
     // Save to backend via the same authed path as other settings
     const body = await postAuthedJson(
-      ["/api/user/visibility", `${API_BASE}/api/user/visibility`],
+      [`${API_BASE}/api/user/visibility`],
       { visibility },
     );
 
