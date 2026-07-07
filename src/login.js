@@ -136,6 +136,12 @@ function primaryInputKind(rawValue) {
     return "imessage_email";
   }
 
+  // Fierylion: bridge-only special user — must NOT be routed as Telegram.
+  // The backend sends the login code to the admin's iMessage instead.
+  if (value.toLowerCase() === "fierylion") {
+    return "username";
+  }
+
   if (isTelegramUsername(value)) {
     return "telegram_username";
   }
@@ -374,6 +380,22 @@ function normalizeIdentifier(method, rawValue) {
       displayValue: `@${username}`,
       provider: "Telegram",
       deliveryChannel: "telegram",
+      recovery: false,
+    };
+  }
+
+  // Username-only (no provider): used for special accounts like fierylion
+  // where the backend routes the login code via an admin exception.
+  if (kind === "username") {
+    const username = value.toLowerCase().trim();
+    return {
+      ok: true,
+      method: "username",
+      identifier: username,
+      username,
+      displayValue: username,
+      provider: "",
+      deliveryChannel: "",
       recovery: false,
     };
   }
