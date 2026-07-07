@@ -1987,6 +1987,181 @@ body.dashboard-page .settings-section .account-edit-grid {
   margin-top: 0;
 }
 
+/* ---- Workout Analytics (styled after info/workout.html) ---- */
+
+body.dashboard-page .workout-analytics {
+  margin-top: 1.4rem;
+  padding: 1.2rem 1.3rem;
+  background: #181a1d;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+body.dashboard-page .wa-head h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #4dd0ff;
+}
+
+body.dashboard-page .wa-head p {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  color: #8b919d;
+}
+
+body.dashboard-page .wa-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.6rem;
+  margin: 1rem 0;
+}
+
+body.dashboard-page .wa-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.65rem 0.8rem;
+  background: #22252a;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+body.dashboard-page .wa-stat-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8b919d;
+}
+
+body.dashboard-page .wa-stat-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #4dd0ff;
+}
+
+body.dashboard-page .wa-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 0.75rem;
+}
+
+body.dashboard-page .wa-card {
+  position: relative;
+  overflow: hidden;
+  padding: 0.85rem 1rem 0.85rem 1.15rem;
+  background: #1d2024;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  transition: all 0.25s ease;
+}
+
+body.dashboard-page .wa-card:hover {
+  transform: translateY(-2px);
+  background: #22252a;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45), 0 0 0 1px #00b4fc;
+}
+
+body.dashboard-page .wa-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+}
+
+body.dashboard-page .wa-card[data-type="srw"]::before {
+  background: #5ba4fc;
+}
+
+body.dashboard-page .wa-card[data-type="reps"]::before {
+  background: #ffbb33;
+}
+
+body.dashboard-page .wa-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+body.dashboard-page .wa-card-head h4 {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body.dashboard-page .wa-metric-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+body.dashboard-page .wa-metric-row:last-child {
+  border-bottom: none;
+}
+
+body.dashboard-page .wa-metric-label {
+  color: #8b919d;
+  font-size: 0.78rem;
+}
+
+body.dashboard-page .wa-metric-value {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #c8ccd4;
+}
+
+body.dashboard-page .wa-highlight {
+  color: #4dd0ff;
+  font-weight: 700;
+}
+
+body.dashboard-page .wa-unit {
+  font-size: 0.72em;
+  color: #8b919d;
+  margin-left: 3px;
+}
+
+body.dashboard-page .wa-trend {
+  flex-shrink: 0;
+  font-size: 0.66rem;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+body.dashboard-page .wa-trend-up {
+  background: rgba(82, 224, 121, 0.2);
+  color: #52e079;
+}
+
+body.dashboard-page .wa-trend-down {
+  background: rgba(255, 87, 87, 0.2);
+  color: #ff5757;
+}
+
+body.dashboard-page .wa-trend-flat {
+  background: rgba(255, 187, 51, 0.2);
+  color: #ffbb33;
+}
+
+@media (max-width: 768px) {
+  body.dashboard-page .wa-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 /* ---- Setup Checklist & Progress ---- */
 
 body.dashboard-page .setup-progress-bar {

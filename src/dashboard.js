@@ -1053,6 +1053,7 @@ async function loadBackendUserSnapshot() {
     renderSheetLink();
     renderGoals();
     renderBodyMeasures();
+    renderWorkoutAnalytics();
     return snapshot;
   } catch {
     return null;
@@ -1457,6 +1458,157 @@ function renderSetupChecklist() {
       }
     });
   });
+}
+
+// ---- Workout Analytics (per-exercise breakdown, styled after info/workout.html) ----
+
+let waShowAll = false;
+const WA_DEFAULT_VISIBLE = 12;
+
+function waParseDate(value) {
+  const d = new Date(String(value || ""));
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function waFormatDate(value) {
+  const d = waParseDate(value);
+  if (!d) return "-";
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function waDaysAgo(value) {
+  const d = waParseDate(value);
+  if (!d) return null;
+  return Math.floor((Date.now() - d.getTime()) / 86400000);
+}
+
+function buildWorkoutAnalytics(workouts) {
+  const byExercise = new Map();
+  const daySet = new Set();
+  const now = Date.now();
+  const d30 = now - 30 * 86400000;
+  const activeDays30 = new Set();
+
+  for (const entry of workouts) {
+    const name = String(entry.exercise_name || entry.exercise || "").trim().toUpperCase();
+    if (!name) continue;
+    const date = String(entry.date || entry.loggedAt || "").slice(0, 10);
+    if (date) daySet.add(date);
+    const ts = waParseDate(date)?.getTime() || 0;
+    if (ts >= d30 && date) activeDays30.add(date);
+
+    if (!byExercise.has(name)) {
+      byExercise.set(name, {
+        name, sessions: 0, totalReps: 0, maxReps: 0, maxWeight: 0,
+        weightUnit: "", lastDate: "", firstDate: "", hasWeight: false,
+        count15: 0, countPrev15: 0,
+      });
+    }
+    const ex = byExercise.get(name);
+    ex.sessions += 1;
+    const reps = Number(entry.reps) || Number(entry.count) || 0;
+    const sets = Number(entry.sets) || 1;
+    ex.totalReps += reps * Math.max(sets, 1);
+    if (reps > ex.maxReps) ex.maxReps = reps;
+    const weight = Number(entry.weight) || 0;
+    if (weight > 0) {
+      ex.hasWeight = true;
+      if (weight > ex.maxWeight) {
+        ex.maxWeight = weight;
+        ex.weightUnit = String(entry.weight_unit || "lb").trim() || "lb";
+      }
+    }
+    if (!ex.lastDate || date > ex.lastDate) ex.lastDate = date;
+    if (!ex.firstDate || (date && date < ex.firstDate)) ex.firstDate = date;
+    // Trend: last 15 days vs previous 15
+    if (ts >= now - 15 * 86400000) ex.count15 += 1;
+    else if (ts >= d30) ex.countPrev15 += 1;
+  }
+
+  const exercises = [...byExercise.values()].sort((a, b) => (b.lastDate || "").localeCompare(a.lastDate || ""));
+  return {
+    exercises,
+    totalExercises: exercises.length,
+    totalDays: daySet.size,
+    totalLogs: workouts.length,
+    active30: activeDays30.size,
+    dateRange: exercises.length
+      ? `${waFormatDate([...daySet].sort()[0])} → ${waFormatDate([...daySet].sort().at(-1))}`
+      : "-",
+  };
+}
+
+function waTrendBadge(ex) {
+  if (ex.count15 === 0 && ex.countPrev15 === 0) return "";
+  if (ex.count15 > ex.countPrev15) return `<span class="wa-trend wa-trend-up">↑ ${ex.count15} this fortnight</span>`;
+  if (ex.count15 < ex.countPrev15) return `<span class="wa-trend wa-trend-down">↓ ${ex.count15} vs ${ex.countPrev15}</span>`;
+  return `<span class="wa-trend wa-trend-flat">→ steady</span>`;
+}
+
+function renderWorkoutAnalytics() {
+  const section = document.getElementById("workoutAnalytics");
+  const grid = document.getElementById("waGrid");
+  if (!section || !grid) return;
+
+  const workouts = Array.isArray(state.backendSnapshot?.history?.workouts)
+    ? state.backendSnapshot.history.workouts
+    : [];
+  if (!workouts.length) {
+    section.hidden = true;
+    return;
+  }
+
+  const analytics = buildWorkoutAnalytics(workouts);
+  section.hidden = false;
+
+  const set = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = String(value);
+  };
+  set("waTotalExercises", analytics.totalExercises);
+  set("waTotalDays", analytics.totalDays);
+  set("waTotalLogs", analytics.totalLogs.toLocaleString());
+  set("waActive30", `${analytics.active30}/30`);
+  const subtitle = document.getElementById("waSubtitle");
+  if (subtitle) subtitle.textContent = analytics.dateRange;
+
+  const visible = waShowAll ? analytics.exercises : analytics.exercises.slice(0, WA_DEFAULT_VISIBLE);
+  grid.innerHTML = visible.map((ex) => {
+    const type = ex.hasWeight ? "srw" : "reps";
+    const daysAgo = waDaysAgo(ex.lastDate);
+    const lastLabel = daysAgo === 0 ? "Today" : daysAgo === 1 ? "Yesterday" : daysAgo != null ? `${daysAgo}d ago` : "-";
+    const best = ex.hasWeight
+      ? `${ex.maxWeight}<span class="wa-unit">${escapeWaHtml(ex.weightUnit)}</span>`
+      : `${ex.maxReps}<span class="wa-unit">reps</span>`;
+    return `<article class="wa-card" data-type="${type}">
+      <div class="wa-card-head">
+        <h4>${escapeWaHtml(ex.name)}</h4>
+        ${waTrendBadge(ex)}
+      </div>
+      <div class="wa-metric-row"><span class="wa-metric-label">Best</span><span class="wa-metric-value wa-highlight">${best}</span></div>
+      <div class="wa-metric-row"><span class="wa-metric-label">Sessions</span><span class="wa-metric-value">${ex.sessions.toLocaleString()}</span></div>
+      <div class="wa-metric-row"><span class="wa-metric-label">Total reps</span><span class="wa-metric-value">${ex.totalReps.toLocaleString()}</span></div>
+      <div class="wa-metric-row"><span class="wa-metric-label">Last done</span><span class="wa-metric-value">${lastLabel}</span></div>
+    </article>`;
+  }).join("");
+
+  const showAllBtn = document.getElementById("waShowAllButton");
+  if (showAllBtn) {
+    const hiddenCount = analytics.exercises.length - WA_DEFAULT_VISIBLE;
+    showAllBtn.hidden = waShowAll || hiddenCount <= 0;
+    showAllBtn.textContent = `Show all ${analytics.exercises.length} exercises`;
+    if (!showAllBtn.dataset.wired) {
+      showAllBtn.dataset.wired = "1";
+      showAllBtn.addEventListener("click", () => {
+        waShowAll = true;
+        renderWorkoutAnalytics();
+      });
+    }
+  }
+}
+
+function escapeWaHtml(value) {
+  return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
 function renderAccountInfo() {

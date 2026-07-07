@@ -43,7 +43,7 @@
         window.location.replace("https://thetrackerapp.io/login?next=" + next);
       })();
     </script>
-    <script type="module" crossorigin src="/assets/dashboard-BHBh8vwe.js"></script>
+    <script type="module" crossorigin src="/assets/dashboard-C5MMPW5S.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-CC_37BaN.js">
     <link rel="modulepreload" crossorigin href="/assets/preload-helper-ByxlgBmf.js">
     <link rel="modulepreload" crossorigin href="/assets/affiliate-shape-D6V_B5hJ.js">
@@ -54,7 +54,7 @@
     <link rel="modulepreload" crossorigin href="/assets/google-analytics-Di-5cuMN.js">
     <link rel="stylesheet" crossorigin href="/assets/affiliate-shape-C1JFWeLX.css">
     <link rel="stylesheet" crossorigin href="/assets/dashboard-BjUbrqtB.css">
-    <link rel="stylesheet" crossorigin href="/assets/auth-pages-DzyBRdzO.css">
+    <link rel="stylesheet" crossorigin href="/assets/auth-pages-Biy3b25W.css">
   </head>
   <body class="dashboard-page">
     <div class="dashboard-shell">
@@ -125,6 +125,28 @@
                  Backend endpoint: GET /api/chart/data)
                  ============================================ -->
             <div id="progressChartsContainer" class="progress-charts-container"></div>
+
+            <!-- ============================================
+                 Workout Analytics — per-exercise breakdown
+                 (Styled after info/workout.html hyper-analytics.
+                 Data source: portal snapshot history.workouts)
+                 ============================================ -->
+            <section id="workoutAnalytics" class="workout-analytics" hidden>
+              <div class="wa-head">
+                <h3>🏋️ Workout Analytics</h3>
+                <p id="waSubtitle">Per-exercise breakdown from your full history</p>
+              </div>
+              <div id="waOverview" class="wa-overview">
+                <div class="wa-stat"><span class="wa-stat-label">Exercises</span><span id="waTotalExercises" class="wa-stat-value">-</span></div>
+                <div class="wa-stat"><span class="wa-stat-label">Workout Days</span><span id="waTotalDays" class="wa-stat-value">-</span></div>
+                <div class="wa-stat"><span class="wa-stat-label">Total Logs</span><span id="waTotalLogs" class="wa-stat-value">-</span></div>
+                <div class="wa-stat"><span class="wa-stat-label">Active (30d)</span><span id="waActive30" class="wa-stat-value">-</span></div>
+              </div>
+              <div id="waGrid" class="wa-grid"></div>
+              <div class="panel-actions" style="margin-top:0.6rem;">
+                <button id="waShowAllButton" type="button" class="btn-secondary" hidden>Show all exercises</button>
+              </div>
+            </section>
 
             <!-- Hidden but still in DOM so legacy JS that references these IDs
                  (range toolbar inputs, KPI counters) does not crash. -->
