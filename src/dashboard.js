@@ -5874,6 +5874,12 @@ function wireLogout() {
   }
 }
 
+function showEmailVerificationOnce() {
+  if (window.__emailOverlayShown) return;
+  window.__emailOverlayShown = true;
+  initEmailVerificationOverlay();
+}
+
 function initEmailVerificationOverlay() {
   const overlay = document.getElementById("emailVerifyOverlay");
   if (!overlay) return;
@@ -6077,14 +6083,14 @@ function init() {
   void loadBackendUserSnapshot().finally(() => {
     void bootData();
     if (document.getElementById("deletionStatusCard")?.hidden !== false) {
-      initEmailVerificationOverlay();
+      showEmailVerificationOnce();
     }
   });
 
   initDeleteAccountFlow();
 
   checkDeletionStatus().then(isDeleted => {
-    if (!isDeleted) initEmailVerificationOverlay();
+    if (!isDeleted) showEmailVerificationOnce();
   });
 }
 
