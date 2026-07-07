@@ -1926,6 +1926,7 @@ function hydratePublicProfileVisibility() {
 
   const visibility = state.backendSnapshot?.publicProfileVisibility
     || state.backendSnapshot?.profile?.publicVisibility
+    || state.backendSnapshot?.profile?.publicProfileVisibility
     || user?.publicProfileVisibility
     || {};
 
@@ -2018,37 +2019,22 @@ async function savePublicProfileVisibility() {
   };
 
   try {
-    const token = getAuthToken();
-    const res = await fetch(`${API_BASE}/api/user/visibility`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: token ? `Bearer ${token}` : "",
-      },
-      body: JSON.stringify({ visibility }),
-    });
-
-    if (!res.ok) throw new Error(`Server error (${res.status})`);
-    const data = await res.json();
-    if (!data?.ok) throw new Error(data?.error || "Failed to save");
+    // Save to backend via the same authed path as other settings
+    const body = await postAuthedJson(
+      ["/api/user/visibility", `${API_BASE}/api/user/visibility`],
+      { visibility },
+    );
 
     if (state.backendSnapshot) {
       state.backendSnapshot.publicProfileVisibility = visibility;
     }
     // Persist to localStorage so checkboxes survive page refresh
-    // before the async portal snapshot loads
     persistAccountUpdate({ publicProfileVisibility: visibility });
 
     if (els.publicProfileSaved) els.publicProfileSaved.hidden = false;
-    if (els.publicProfileStatus) {
-      els.publicProfileStatus.textContent = "Visibility updated.";
-      els.publicProfileStatus.classList.add("is-success");
-    }
+    if (els.publicProfileStatus) setStatus(els.publicProfileStatus, "Visibility updated.", "is-success");
   } catch (err) {
-    if (els.publicProfileStatus) {
-      els.publicProfileStatus.textContent = err.message || "Save failed.";
-      els.publicProfileStatus.classList.add("is-error");
-    }
+    if (els.publicProfileStatus) setStatus(els.publicProfileStatus, err?.message || "Save failed.", "is-error");
     console.warn("savePublicProfileVisibility failed:", err);
   }
 }
