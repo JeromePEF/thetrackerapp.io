@@ -1924,11 +1924,17 @@ function hydratePublicProfileVisibility() {
     els.publicProfileUrl.href = username ? `https://thetrackerapp.io/@${encodeURIComponent(username)}` : "https://thetrackerapp.io/@";
   }
 
-  const visibility = state.backendSnapshot?.publicProfileVisibility
+  // Merge visibility: localStorage (most recent user action) wins over
+  // backend snapshot (which may be stale/cached). The || chain was broken
+  // because the backend always returns an object (even all-false), which
+  // short-circuits before reaching the localStorage fallback.
+  const backendVis = state.backendSnapshot?.publicProfileVisibility
     || state.backendSnapshot?.profile?.publicVisibility
     || state.backendSnapshot?.profile?.publicProfileVisibility
-    || user?.publicProfileVisibility
     || {};
+  const localVis = user?.publicProfileVisibility || {};
+  // Merge: local overrides backend for any key that was explicitly set
+  const visibility = { ...backendVis, ...localVis };
 
   const hasData = visibility.merged !== undefined || visibility.workouts !== undefined;
   if (!hasData) return;
@@ -2030,6 +2036,8 @@ async function savePublicProfileVisibility() {
     }
     // Persist to localStorage so checkboxes survive page refresh
     persistAccountUpdate({ publicProfileVisibility: visibility });
+    // Re-hydrate the checkboxes immediately to reflect the new state
+    hydratePublicProfileVisibility();
 
     if (els.publicProfileSaved) els.publicProfileSaved.hidden = false;
     if (els.publicProfileStatus) setStatus(els.publicProfileStatus, "Visibility updated.", "is-success");
