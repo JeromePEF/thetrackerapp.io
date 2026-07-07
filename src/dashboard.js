@@ -282,6 +282,16 @@ const els = {
   setupProgressText: document.getElementById("setupProgressText"),
   setupProgressFill: document.getElementById("setupProgressFill"),
   setupChecklist: document.getElementById("setupChecklist"),
+  // Billing
+  billingStatusValue: document.getElementById("billingStatusValue"),
+  billingPlanValue: document.getElementById("billingPlanValue"),
+  billingPlanRow: document.getElementById("billingPlanRow"),
+  billingLastPaymentValue: document.getElementById("billingLastPaymentValue"),
+  billingLastPaymentRow: document.getElementById("billingLastPaymentRow"),
+  billingNextBillingValue: document.getElementById("billingNextBillingValue"),
+  billingNextBillingRow: document.getElementById("billingNextBillingRow"),
+  billingNoAccount: document.getElementById("billingNoAccount"),
+  billingManageLink: document.getElementById("billingManageLink"),
 };
 
 const state = {
@@ -1370,7 +1380,7 @@ function wireTrackingPreferences() {
 // ---- Setup Checklist ----
 
 const SETUP_CHECKLIST_ITEMS = [
-  { id: "age", label: "Pick your age group (for tailored guidance)", category: "Profile", priority: "high", check: () => !!(readAuthUser()?.age), focus: "accountAgeInput" },
+  { id: "age", label: "Pick your age group (for tailored guidance)", category: "Profile", priority: "high", check: () => !!(readAuthUser()?.age), focus: "accountAgeInput", tab: "account" },
   { id: "weight", label: "Add your current weight", category: "Profile", priority: "high", check: () => !!(readAuthUser()?.currentWeight), focus: "accountWeightInput" },
   { id: "height", label: "Add your height", category: "Profile", priority: "medium", check: () => !!(readAuthUser()?.currentHeight), focus: "accountHeightInput" },
   { id: "goalWeight", label: "Set a body goal (lose / maintain / gain)", category: "Profile", priority: "high", check: () => !!(readAuthUser()?.goalWeight), focus: "accountGoalWeightInput" },
@@ -1407,7 +1417,7 @@ function renderSetupChecklist() {
         : item.priority === "medium"
           ? `<span class="setup-priority setup-priority-medium">medium</span>`
           : `<span class="setup-priority setup-priority-low">low</span>`;
-      const focusAttr = item.focus ? ` data-focus="${item.focus}"` : "";
+      const focusAttr = item.focus ? ` data-focus="${item.focus}"${item.tab ? ` data-tab="${item.tab}"` : ""}` : "";
       html += `<div class="setup-item ${cls}"${focusAttr}><span class="setup-check">${item.isDone ? "✓" : "○"}</span><span class="setup-label">${item.label}</span>${prio}</div>`;
     }
     html += "</div>";
@@ -1419,13 +1429,30 @@ function renderSetupChecklist() {
     el.style.cursor = "pointer";
     el.addEventListener("click", () => {
       const targetId = el.dataset.focus;
-      const target = document.getElementById(targetId);
-      if (target) {
-        target.scrollIntoView({ behavior: "smooth", block: "center" });
-        target.focus();
-        target.style.transition = "box-shadow 0.15s";
-        target.style.boxShadow = "0 0 0 3px rgba(56,255,211,0.4)";
-        setTimeout(() => { target.style.boxShadow = ""; }, 1500);
+      const targetTab = el.dataset.tab;
+      // Switch to the target tab if the field is in a different tab
+      if (targetTab && state.activeTab !== targetTab) {
+        setActiveTab(targetTab);
+        // Wait for the panel to become visible, then scroll
+        setTimeout(() => {
+          const target = document.getElementById(targetId);
+          if (target) {
+            target.scrollIntoView({ behavior: "smooth", block: "center" });
+            target.focus();
+            target.style.transition = "box-shadow 0.15s";
+            target.style.boxShadow = "0 0 0 3px rgba(56,255,211,0.4)";
+            setTimeout(() => { target.style.boxShadow = ""; }, 1500);
+          }
+        }, 200);
+      } else {
+        const target = document.getElementById(targetId);
+        if (target) {
+          target.scrollIntoView({ behavior: "smooth", block: "center" });
+          target.focus();
+          target.style.transition = "box-shadow 0.15s";
+          target.style.boxShadow = "0 0 0 3px rgba(56,255,211,0.4)";
+          setTimeout(() => { target.style.boxShadow = ""; }, 1500);
+        }
       }
     });
   });
