@@ -1486,8 +1486,11 @@ function buildWorkoutAnalytics(workouts) {
   const byExercise = new Map();
   const daySet = new Set();
   const now = Date.now();
-  const d30 = now - 30 * 86400000;
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const d7 = now - 7 * 86400000, d30 = now - 30 * 86400000, d90 = now - 90 * 86400000, d365 = now - 365 * 86400000;
   const activeDays30 = new Set();
+  const weekDays = new Set(), monthDays = new Set();
+  const yearDays = new Set();
 
   for (const entry of workouts) {
     const name = String(entry.exercise_name || entry.exercise || "").trim().toUpperCase();
@@ -1496,16 +1499,20 @@ function buildWorkoutAnalytics(workouts) {
     if (date) daySet.add(date);
     const ts = waParseDate(date)?.getTime() || 0;
     if (ts >= d30 && date) activeDays30.add(date);
+    if (ts >= d7 && date) weekDays.add(date);
+    if (ts >= d30 && date) monthDays.add(date);
+    if (ts >= d365 && date) yearDays.add(date);
 
     if (!byExercise.has(name)) {
       byExercise.set(name, {
-        name, sessions: 0, totalReps: 0, maxReps: 0, maxWeight: 0,
+        name, sessions: 0, totalReps: 0, maxReps: 0, maxWeight: 0, dates: [],
         weightUnit: "", lastDate: "", firstDate: "", hasWeight: false,
-        count15: 0, countPrev15: 0,
+        totalWeight: 0, weightCount: 0,
       });
     }
     const ex = byExercise.get(name);
     ex.sessions += 1;
+    ex.dates.push(date);
     const reps = Number(entry.reps) || Number(entry.count) || 0;
     const sets = Number(entry.sets) || 1;
     ex.totalReps += reps * Math.max(sets, 1);
@@ -1513,6 +1520,8 @@ function buildWorkoutAnalytics(workouts) {
     const weight = Number(entry.weight) || 0;
     if (weight > 0) {
       ex.hasWeight = true;
+      ex.totalWeight += weight;
+      ex.weightCount += 1;
       if (weight > ex.maxWeight) {
         ex.maxWeight = weight;
         ex.weightUnit = String(entry.weight_unit || "lb").trim() || "lb";
@@ -1520,9 +1529,34 @@ function buildWorkoutAnalytics(workouts) {
     }
     if (!ex.lastDate || date > ex.lastDate) ex.lastDate = date;
     if (!ex.firstDate || (date && date < ex.firstDate)) ex.firstDate = date;
-    // Trend: last 15 days vs previous 15
-    if (ts >= now - 15 * 86400000) ex.count15 += 1;
-    else if (ts >= d30) ex.countPrev15 += 1;
+  }
+
+  // Compute streka, per-exercise windows
+  for (const [, ex] of byExercise) {
+    ex.dates.sort();
+    const dateSet = new Set(ex.dates);
+    let streak = 0, bestStreak = 0;
+    const check = new Date(todayStr);
+    for (let i = 0; i < 365; i++) {
+      const s = check.toISOString().slice(0, 10);
+      if (dateSet.has(s)) { streak++; if (streak > bestStreak) bestStreak = streak; }
+      else break;
+      check.setDate(check.getDate() - 1);
+    }
+    ex.currentStreak = streak;
+    ex.bestStreak = bestStreak;
+
+    const nowMs = Date.now();
+    ex.count7 = ex.dates.filter(d => waParseDate(d)?.getTime() >= nowMs - 7 * 86400000).length;
+    ex.count30 = ex.dates.filter(d => waParseDate(d)?.getTime() >= nowMs - 30 * 86400000).length;
+    ex.count90 = ex.dates.filter(d => waParseDate(d)?.getTime() >= nowMs - 90 * 86400000).length;
+    ex.count365 = ex.dates.filter(d => waParseDate(d)?.getTime() >= nowMs - 365 * 86400000).length;
+    ex.countToday = ex.dates.filter(d => d === todayStr).length;
+    ex.countWeek = ex.dates.filter(d => waParseDate(d)?.getTime() >= nowMs - 7 * 86400000).length;
+    ex.countMonth = ex.dates.filter(d => waParseDate(d)?.getTime() >= nowMs - 30 * 86400000).length;
+    ex.countYear = ex.dates.filter(d => waParseDate(d)?.getTime() >= nowMs - 365 * 86400000).length;
+    ex.avgReps = ex.sessions > 0 ? Math.round(ex.totalReps / ex.sessions) : 0;
+    ex.avgWeight = ex.weightCount > 0 ? Math.round(ex.totalWeight / ex.weightCount) : 0;
   }
 
   const exercises = [...byExercise.values()].sort((a, b) => (b.lastDate || "").localeCompare(a.lastDate || ""));
@@ -1532,17 +1566,31 @@ function buildWorkoutAnalytics(workouts) {
     totalDays: daySet.size,
     totalLogs: workouts.length,
     active30: activeDays30.size,
+    active90: exercises.filter(e => e.count90 > 0).length,
+    active365: yearDays.size,
+    days90: exercises.filter(e => e.count90 > 0).length > 0 ? Math.round(exercises.filter(e => e.count90 > 0).length / exercises.length * 100) : 0,
+    days365: yearDays.size > 0 ? Math.round(yearDays.size / daySet.size * 100) : 0,
+    activeDays30: activeDays30.size,
+    activeDays90: new Set([...exercises.flatMap(e => e.dates)].filter(d => waParseDate(d)?.getTime() >= d90)).size,
+    activeDays365: yearDays.size,
     dateRange: exercises.length
       ? `${waFormatDate([...daySet].sort()[0])} → ${waFormatDate([...daySet].sort().at(-1))}`
       : "-",
   };
 }
 
+function waLastLabel(date) {
+  const daysAgo = waDaysAgo(date);
+  if (daysAgo === 0) return "Today";
+  if (daysAgo === 1) return "Yesterday";
+  if (daysAgo != null) return `${daysAgo}d ago`;
+  return "-";
+}
+
 function waTrendBadge(ex) {
-  if (ex.count15 === 0 && ex.countPrev15 === 0) return "";
-  if (ex.count15 > ex.countPrev15) return `<span class="wa-trend wa-trend-up">↑ ${ex.count15} this fortnight</span>`;
-  if (ex.count15 < ex.countPrev15) return `<span class="wa-trend wa-trend-down">↓ ${ex.count15} vs ${ex.countPrev15}</span>`;
-  return `<span class="wa-trend wa-trend-flat">→ steady</span>`;
+  if (ex.count30 === 0 && ex.count7 === 0) return `<span class="wa-trend wa-trend-flat">→ idle</span>`;
+  if (ex.count7 > 0 && ex.count30 > ex.count7) return `<span class="wa-trend wa-trend-up">↑ active</span>`;
+  return `<span class="wa-trend wa-trend-flat">→ flat</span>`;
 }
 
 function renderWorkoutAnalytics() {
@@ -1568,7 +1616,11 @@ function renderWorkoutAnalytics() {
   set("waTotalExercises", analytics.totalExercises);
   set("waTotalDays", analytics.totalDays);
   set("waTotalLogs", analytics.totalLogs.toLocaleString());
-  set("waActive30", `${analytics.active30}/30`);
+  set("waActive30", `${analytics.active30}/30 (${analytics.days90}%)`);
+  // Heatmap consistency
+  set("waActiveDays30", analytics.activeDays30);
+  set("waActive90", `${analytics.activeDays90}d`);
+  set("waActive365", `${analytics.activeDays365}d (${analytics.days365}%)`);
   const subtitle = document.getElementById("waSubtitle");
   if (subtitle) subtitle.textContent = analytics.dateRange;
 
@@ -1580,27 +1632,78 @@ function renderWorkoutAnalytics() {
     const best = ex.hasWeight
       ? `${ex.maxWeight}<span class="wa-unit">${escapeWaHtml(ex.weightUnit)}</span>`
       : `${ex.maxReps}<span class="wa-unit">reps</span>`;
-    return `<article class="wa-card" data-type="${type}">
-      <div class="wa-card-head">
+    const id = `wa-${ex.name.replace(/[^a-zA-Z0-9]/g, "_")}`;
+    const detailId = `wa-detail-${ex.name.replace(/[^a-zA-Z0-9]/g, "_")}`;
+    const pct7 = Math.min(100, Math.round(ex.count7 / 7 * 100));
+    const pct30 = Math.min(100, Math.round(ex.count30 / 30 * 100));
+    return `<article class="wa-card" data-type="${type}" id="${id}">
+      <div class="wa-card-head wa-card-click" data-target="${detailId}">
         <h4>${escapeWaHtml(ex.name)}</h4>
+        <span class="wa-expand-icon">▼</span>
         ${waTrendBadge(ex)}
       </div>
       <div class="wa-metric-row"><span class="wa-metric-label">Best</span><span class="wa-metric-value wa-highlight">${best}</span></div>
       <div class="wa-metric-row"><span class="wa-metric-label">Sessions</span><span class="wa-metric-value">${ex.sessions.toLocaleString()}</span></div>
-      <div class="wa-metric-row"><span class="wa-metric-label">Total reps</span><span class="wa-metric-value">${ex.totalReps.toLocaleString()}</span></div>
-      <div class="wa-metric-row"><span class="wa-metric-label">Last done</span><span class="wa-metric-value">${lastLabel}</span></div>
+      <div class="wa-metric-row"><span class="wa-metric-label">Avg reps</span><span class="wa-metric-value">${ex.avgReps.toLocaleString()}</span></div>
+      <div class="wa-metric-row"><span class="wa-metric-label">Last done</span><span class="wa-metric-value">${waLastLabel(ex.lastDate)}</span></div>
+      <div id="${detailId}" class="wa-detail" hidden>
+        <div class="wa-detail-divider"></div>
+        <div class="wa-metric-row"><span class="wa-metric-label">Streak</span><span class="wa-metric-value wa-highlight">${ex.currentStreak} days</span><span class="wa-metric-label">(best: ${ex.bestStreak})</span></div>
+        <div class="wa-metric-row"><span class="wa-metric-label">This Week</span><span class="wa-metric-value">${ex.countWeek}/${Math.min(7, Math.ceil((Date.now() - (new Date() - new Date().getDay()*86400000))/86400000))}</span><span class="wa-metric-label">${pct7}%</span></div>
+        <div class="wa-metric-row"><span class="wa-metric-label">This Month</span><span class="wa-metric-value">${ex.countMonth}/30</span><span class="wa-metric-label">${pct30}%</span></div>
+        <div class="wa-metric-row"><span class="wa-metric-label">This Year</span><span class="wa-metric-value">${ex.countYear}</span></div>
+        <div class="wa-metric-row"><span class="wa-metric-label">All-Time</span><span class="wa-metric-value wa-highlight">${ex.sessions} sessions</span></div>
+        <div class="wa-detail-divider"></div>
+        <div class="wa-metric-row"><span class="wa-metric-label">First Logged</span><span class="wa-metric-value">${waFormatDate(ex.firstDate)}</span></div>
+        <div class="wa-metric-row"><span class="wa-metric-label">Last Logged</span><span class="wa-metric-value">${waFormatDate(ex.lastDate)}</span></div>
+        <div class="wa-detail-divider"></div>
+        <div class="wa-metric-row"><span class="wa-metric-label">Activity Frequency</span></div>
+        <div class="wa-metric-row"><span class="wa-metric-label">7D</span><span class="wa-metric-value">${ex.count7}/${Math.min(7, Math.ceil((Date.now() - (new Date() - new Date().getDay()*86400000))/86400000))} days (${pct7}%)</span></div>
+        <div class="wa-metric-row"><span class="wa-metric-label">30D</span><span class="wa-metric-value">${ex.count30}/30 days (${pct30}%)</span></div>
+        <div class="wa-metric-row"><span class="wa-metric-label">90D</span><span class="wa-metric-value">${ex.count90}/90 days (${Math.min(100,Math.round(ex.count90/90*100))}%)</span></div>
+        <div class="wa-metric-row"><span class="wa-metric-label">365D</span><span class="wa-metric-value">${ex.count365}/365 days (${Math.min(100,Math.round(ex.count365/365*100))}%)</span></div>
+        ${ex.hasWeight ? `<div class="wa-detail-divider"></div><div class="wa-metric-row"><span class="wa-metric-label">Peak Weight</span><span class="wa-metric-value wa-highlight">${ex.maxWeight} ${escapeWaHtml(ex.weightUnit)}</span></div><div class="wa-metric-row"><span class="wa-metric-label">Avg Weight</span><span class="wa-metric-value">${ex.avgWeight} ${escapeWaHtml(ex.weightUnit)}</span></div>` : ""}
+        <div class="wa-metric-row"><span class="wa-metric-label">Peak Reps</span><span class="wa-metric-value wa-highlight">${ex.maxReps}</span></div>
+        <div class="wa-metric-row"><span class="wa-metric-label">Avg Reps</span><span class="wa-metric-value">${ex.avgReps}</span></div>
+        <button class="wa-hide-detail-btn" data-target="${detailId}">▲ Hide Details</button>
+      </div>
     </article>`;
   }).join("");
 
+  // Wire click-to-expand handlers
+  grid.querySelectorAll(".wa-card-click").forEach(head => {
+    head.addEventListener("click", () => {
+      const detail = document.getElementById(head.dataset.target);
+      const icon = head.querySelector(".wa-expand-icon");
+      if (detail) {
+        const showing = !detail.hidden;
+        detail.hidden = showing;
+        if (icon) icon.textContent = showing ? "▼" : "▲";
+      }
+    });
+  });
+  grid.querySelectorAll(".wa-hide-detail-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const detail = document.getElementById(btn.dataset.target);
+      if (detail) detail.hidden = true;
+      const card = btn.closest(".wa-card");
+      if (card) {
+        const icon = card.querySelector(".wa-expand-icon");
+        if (icon) icon.textContent = "▼";
+      }
+    });
+  });
+
   const showAllBtn = document.getElementById("waShowAllButton");
   if (showAllBtn) {
-    const hiddenCount = analytics.exercises.length - WA_DEFAULT_VISIBLE;
-    showAllBtn.hidden = waShowAll || hiddenCount <= 0;
-    showAllBtn.textContent = `Show all ${analytics.exercises.length} exercises`;
+    const total = analytics.exercises.length;
+    if (total <= WA_DEFAULT_VISIBLE) { showAllBtn.hidden = true; return; }
+    showAllBtn.textContent = waShowAll ? `Show less (${WA_DEFAULT_VISIBLE} of ${total})` : `Show all ${total} exercises`;
     if (!showAllBtn.dataset.wired) {
       showAllBtn.dataset.wired = "1";
       showAllBtn.addEventListener("click", () => {
-        waShowAll = true;
+        waShowAll = !waShowAll;
         renderWorkoutAnalytics();
       });
     }

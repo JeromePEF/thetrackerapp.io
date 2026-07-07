@@ -23,10 +23,10 @@ const METHOD_CONFIG = {
   phone: {
     fieldLabel: "Phone, iMessage email, or Telegram username",
     inputMode: "text",
-    placeholder: "+1 555-555-5555, yourname@icloud.com, or @fierylion",
+    placeholder: "+1 555-555-5555, yourname@icloud.com, or @username",
     autocomplete: "off",
     summary: "Use the phone number, iMessage email, or Telegram username on your account. We will use the right delivery route based on what you enter.",
-    hint: "Examples: +1 555-555-5555, yourname@icloud.com, or @fierylion.",
+    hint: "Examples: +1 555-555-5555, yourname@icloud.com, or @username.",
     iconEmoji: "📱",
   },
   email: {
@@ -184,8 +184,8 @@ function primaryPresentation(rawValue) {
     return {
       fieldLabel: "Telegram username",
       summary: "Enter the Telegram username on your account. We will use that to route your login code.",
-      hint: "Example: @fierylion",
-      placeholder: "@fierylion",
+      hint: "Example: @username",
+      placeholder: "@username",
       inputMode: "text",
       autocomplete: "username",
       ...iconStateFor(kind),
