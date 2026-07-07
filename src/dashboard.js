@@ -1924,17 +1924,11 @@ function hydratePublicProfileVisibility() {
     els.publicProfileUrl.href = username ? `https://thetrackerapp.io/@${encodeURIComponent(username)}` : "https://thetrackerapp.io/@";
   }
 
-  // Merge visibility: localStorage (most recent user action) wins over
-  // backend snapshot (which may be stale/cached). The || chain was broken
-  // because the backend always returns an object (even all-false), which
-  // short-circuits before reaching the localStorage fallback.
-  const backendVis = state.backendSnapshot?.publicProfileVisibility
+  // Canonical state is the backend portal snapshot (SQLite).
+  // After any save, the response body updates state.backendSnapshot directly.
+  const visibility = state.backendSnapshot?.publicProfileVisibility
     || state.backendSnapshot?.profile?.publicVisibility
-    || state.backendSnapshot?.profile?.publicProfileVisibility
     || {};
-  const localVis = user?.publicProfileVisibility || {};
-  // Merge: local overrides backend for any key that was explicitly set
-  const visibility = { ...backendVis, ...localVis };
 
   const hasData = visibility.merged !== undefined || visibility.workouts !== undefined;
   if (!hasData) return;
@@ -2031,12 +2025,13 @@ async function savePublicProfileVisibility() {
       { visibility },
     );
 
+    // Use the backend response as the canonical state — no localStorage
+    const savedVisibility = body?.visibility || body?.publicVisibility || visibility;
     if (state.backendSnapshot) {
-      state.backendSnapshot.publicProfileVisibility = visibility;
+      state.backendSnapshot.publicProfileVisibility = savedVisibility;
     }
-    // Persist to localStorage so checkboxes survive page refresh
-    persistAccountUpdate({ publicProfileVisibility: visibility });
-    // Re-hydrate the checkboxes immediately to reflect the new state
+
+    // Re-hydrate the checkboxes from the canonical backend state
     hydratePublicProfileVisibility();
 
     if (els.publicProfileSaved) els.publicProfileSaved.hidden = false;
