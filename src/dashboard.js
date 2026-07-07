@@ -5045,14 +5045,8 @@ async function loadBillingOverview() {
   try {
     const portalPayload = await hydratePortalForContact(contact);
     if (portalPayload && typeof portalPayload === "object") {
-      const snapshot = normalizeBackendSnapshot(portalPayload);
-      if (snapshot) {
-        applySnapshotToState(snapshot);
-        renderAccountInfo();
-        renderSheetLink();
-      }
+      applyBillingPayload(portalPayload);
     }
-    applyBillingPayload(portalPayload);
     renderAccountInfo();
   } catch (error) {
     const message = String(error?.message || "Unable to load billing status.");
