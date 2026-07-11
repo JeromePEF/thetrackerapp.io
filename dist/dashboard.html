@@ -43,15 +43,16 @@
         window.location.replace("https://thetrackerapp.io/login?next=" + next);
       })();
     </script>
-    <script type="module" crossorigin src="/assets/dashboard-DeSw6MI7.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-CC_37BaN.js">
-    <link rel="modulepreload" crossorigin href="/assets/preload-helper-ByxlgBmf.js">
-    <link rel="modulepreload" crossorigin href="/assets/affiliate-shape-D6V_B5hJ.js">
-    <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-BccJOC7i.js">
-    <link rel="modulepreload" crossorigin href="/assets/feature-flags-B-avNlEi.js">
-    <link rel="modulepreload" crossorigin href="/assets/api-quajq75N.js">
-    <link rel="modulepreload" crossorigin href="/assets/billing-prices-_eW2EZCU.js">
-    <link rel="modulepreload" crossorigin href="/assets/google-analytics-Di-5cuMN.js">
+    <script type="module" crossorigin src="/assets/dashboard-DsoDFPTZ.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-BNRNPu-U.js">
+    <link rel="modulepreload" crossorigin href="/assets/preload-helper-okr-PqaP.js">
+    <link rel="modulepreload" crossorigin href="/assets/affiliate-shape-BavZMWWU.js">
+    <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-5Y6NnVb3.js">
+    <link rel="modulepreload" crossorigin href="/assets/feature-flags-CV6tGVCt.js">
+    <link rel="modulepreload" crossorigin href="/assets/api-CFTLfs3_.js">
+    <link rel="modulepreload" crossorigin href="/assets/billing-prices-CdOAmNO4.js">
+    <link rel="modulepreload" crossorigin href="/assets/cookie-consent-Dxv9jc4P.js">
+    <link rel="modulepreload" crossorigin href="/assets/google-analytics-D1WYxicl.js">
     <link rel="stylesheet" crossorigin href="/assets/affiliate-shape-C1JFWeLX.css">
     <link rel="stylesheet" crossorigin href="/assets/dashboard-BjUbrqtB.css">
     <link rel="stylesheet" crossorigin href="/assets/auth-pages-BX9N4-mm.css">
@@ -908,6 +909,20 @@
           <button id="emailVerifySkipBtn" type="button" class="btn-secondary">Skip for now</button>
         </div>
         <p id="emailVerifyStatus" class="stats-status" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+
+    <div id="calcConsentOverlay" class="email-verify-overlay" hidden style="position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;">
+      <div class="email-verify-card">
+        <div class="email-verify-icon">🛡️</div>
+        <h2>Help Improve TheTrackerApp?</h2>
+        <p>If you opt in, we learn from your logs to make food and workout estimates sharper — and to help you out if you get stuck.</p>
+        <p style="color:#9eb0c5; font-size:0.8rem;">We never share your data with third parties. You can use everything normally either way, and change this anytime by texting CONSENT to the bot.</p>
+        <div class="email-verify-actions">
+          <button id="calcConsentYesBtn" type="button" class="btn-primary">Yes, opt in</button>
+          <button id="calcConsentNoBtn" type="button" class="btn-secondary">No thanks</button>
+        </div>
+        <p id="calcConsentStatus" class="stats-status" role="status" aria-live="polite"></p>
       </div>
     </div>
 

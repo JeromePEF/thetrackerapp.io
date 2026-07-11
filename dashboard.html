@@ -902,6 +902,20 @@
       </div>
     </div>
 
+    <div id="calcConsentOverlay" class="email-verify-overlay" hidden style="position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;">
+      <div class="email-verify-card">
+        <div class="email-verify-icon">🛡️</div>
+        <h2>Help Improve TheTrackerApp?</h2>
+        <p>If you opt in, we learn from your logs to make food and workout estimates sharper — and to help you out if you get stuck.</p>
+        <p style="color:#9eb0c5; font-size:0.8rem;">We never share your data with third parties. You can use everything normally either way, and change this anytime by texting CONSENT to the bot.</p>
+        <div class="email-verify-actions">
+          <button id="calcConsentYesBtn" type="button" class="btn-primary">Yes, opt in</button>
+          <button id="calcConsentNoBtn" type="button" class="btn-secondary">No thanks</button>
+        </div>
+        <p id="calcConsentStatus" class="stats-status" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+
     <script type="module" src="/src/dashboard.js"></script>
   </body>
 </html>

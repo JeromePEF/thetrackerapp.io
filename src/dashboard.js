@@ -953,6 +953,7 @@ function persistAuthFromSnapshot(snapshot) {
             snapshot.emailVerified ??
             snapshot.primaryEmailVerified,
         ) ?? current.emailVerified,
+      emailVerifiedAt: current.emailVerifiedAt || snapshot.profile?.emailVerifiedAt || snapshot.profile?.email_verified_at || "",
       age: current.age || snapshot.profile?.age || "",
       billingStatus: snapshot.billingStatus || current.billingStatus || "",
       billingPlan: snapshot.billingPlan || current.billingPlan || "",
@@ -6124,6 +6125,93 @@ function showEmailVerificationOnce() {
   initEmailVerificationOverlay();
 }
 
+function showCalcConsentPromptOnce() {
+  if (window.__calcConsentPromptShown) return;
+  window.__calcConsentPromptShown = true;
+  void initCalcConsentPrompt();
+}
+
+// Algo-improvement consent notification (2026-07-11). Consent is opt-in only
+// and defaults to OFF on the backend; this sign-in prompt is the ONLY place
+// the question is asked (the old text-message prompt was removed). It shows
+// until the user explicitly answers yes or no — `answered` from the backend
+// distinguishes "chose no" (never re-prompt) from "never asked".
+async function initCalcConsentPrompt() {
+  const overlay = document.getElementById("calcConsentOverlay");
+  if (!overlay) return;
+
+  let answered = true;
+  try {
+    const response = await fetchAuthedApi(`${API_BASE}/api/user/calculation-logging`);
+    if (!response.ok) return;
+    const payload = await response.json();
+    if (!payload?.ok) return;
+    answered = payload.answered === true;
+  } catch {
+    return;
+  }
+  if (answered) return;
+
+  const show = () => {
+    // Deletion status card takes priority — same rule as the email overlay.
+    const card = document.getElementById("deletionStatusCard");
+    if (card && !card.hidden) return;
+    overlay.hidden = false;
+  };
+
+  // Don't stack on top of the email-verify overlay: wait for it to close.
+  const emailOverlay = document.getElementById("emailVerifyOverlay");
+  if (emailOverlay && !emailOverlay.hidden) {
+    const observer = new MutationObserver(() => {
+      if (emailOverlay.hidden) {
+        observer.disconnect();
+        show();
+      }
+    });
+    observer.observe(emailOverlay, { attributes: true, attributeFilter: ["hidden"] });
+  } else {
+    show();
+  }
+
+  const yesBtn = document.getElementById("calcConsentYesBtn");
+  const noBtn = document.getElementById("calcConsentNoBtn");
+  const status = document.getElementById("calcConsentStatus");
+
+  const submit = async (enabled) => {
+    if (yesBtn) yesBtn.disabled = true;
+    if (noBtn) noBtn.disabled = true;
+    if (status) { status.textContent = "Saving..."; status.classList.remove("is-error", "is-success"); }
+    try {
+      const response = await fetchAuthedApi(`${API_BASE}/api/user/calculation-logging`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled, source: "dashboard_prompt" }),
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || "Could not save your choice.");
+      }
+      if (status) {
+        status.textContent = enabled
+          ? "Thanks for helping improve TheTrackerApp! 💪"
+          : "No problem — everything works normally.";
+        status.classList.add("is-success");
+      }
+      setTimeout(() => { overlay.hidden = true; }, 1200);
+    } catch (error) {
+      if (status) {
+        status.textContent = String(error?.message || "Could not save your choice. Try again.");
+        status.classList.add("is-error");
+      }
+      if (yesBtn) yesBtn.disabled = false;
+      if (noBtn) noBtn.disabled = false;
+    }
+  };
+
+  if (yesBtn) yesBtn.addEventListener("click", () => { void submit(true); });
+  if (noBtn) noBtn.addEventListener("click", () => { void submit(false); });
+}
+
 function initEmailVerificationOverlay() {
   const overlay = document.getElementById("emailVerifyOverlay");
   if (!overlay) return;
@@ -6132,8 +6220,13 @@ function initEmailVerificationOverlay() {
   if (card && !card.hidden) return;
 
   const user = readAuthUser() || {};
-  const email = String(user.email || "").trim();
-  const verified = user.emailVerified === true || user.emailVerified === "true";
+  // The backend snapshot is fresher than the login-time localStorage user —
+  // an email verified after login exists only in the snapshot until
+  // persistAuthFromSnapshot heals localStorage.
+  const snapProfile = state.backendSnapshot?.profile || {};
+  const email = String(user.email || snapProfile.primaryEmail || snapProfile.email || "").trim();
+  const verified = user.emailVerified === true || user.emailVerified === "true"
+    || snapProfile.emailVerified === true || snapProfile.emailVerified === "true";
 
   if (verified) {
     overlay.hidden = true;
@@ -6160,8 +6253,11 @@ function initEmailVerificationOverlay() {
 
   const timestampsEl = document.getElementById("emailVerifyTimestamp");
   const verifiedAt = readAccountEmailVerifiedAt(user);
-  if (timestampsEl && verifiedAt) {
-    timestampsEl.textContent = `Verified on ${new Date(verifiedAt).toLocaleDateString()}.`;
+  const verifiedDate = verifiedAt ? new Date(verifiedAt) : null;
+  // Guard the parse — a non-date value here previously rendered
+  // "Verified on Invalid Date."
+  if (timestampsEl && verifiedDate && !Number.isNaN(verifiedDate.getTime())) {
+    timestampsEl.textContent = `Verified on ${verifiedDate.toLocaleDateString()}.`;
     timestampsEl.hidden = false;
   }
 
@@ -6319,22 +6415,30 @@ function init() {
   const initialTab = resolveInitialTab();
   setActiveTab(initialTab, false);
 
-  void checkDeletionStatus();
+  const deletionReady = checkDeletionStatus();
 
   void finalizeBillingFromRedirect().finally(() => {
     void loadBillingOverview();
   });
-  void loadBackendUserSnapshot().finally(() => {
+  const snapshotReady = loadBackendUserSnapshot().finally(() => {
     void bootData();
-    if (document.getElementById("deletionStatusCard")?.hidden !== false) {
-      showEmailVerificationOnce();
-    }
   });
 
   initDeleteAccountFlow();
 
-  checkDeletionStatus().then(isDeleted => {
-    if (!isDeleted) showEmailVerificationOnce();
+  // Show the email-verify overlay only after BOTH the backend snapshot and
+  // the deletion check settle. Previously two racing callers triggered the
+  // run-once overlay; when the deletion check won, the overlay rendered from
+  // the stale login-time localStorage user and re-prompted already-verified
+  // accounts.
+  Promise.allSettled([snapshotReady, deletionReady]).then(([, deletion]) => {
+    const isDeleted = deletion.status === "fulfilled" && deletion.value === true;
+    if (!isDeleted && document.getElementById("deletionStatusCard")?.hidden !== false) {
+      showEmailVerificationOnce();
+      // Algo-improvement consent notification — queues behind the email
+      // overlay if that is showing, and only appears until answered.
+      showCalcConsentPromptOnce();
+    }
   });
 }
 
