@@ -73,6 +73,14 @@ function escapeHtml(s) {
 // Item field configuration.
 // Each item id maps to the profile field(s) PATCHed and the widget rendered.
 const ITEM_WIDGETS = {
+  // Algo-improvement consent: submitItem special-cases this id to POST
+  // /api/user/calculation-logging instead of PATCHing a profile field.
+  algo_consent: {
+    type: "radio",
+    field: "algoConsent",
+    options: ["yes", "no"],
+    labels: { yes: "Yes, opt in", no: "No thanks" },
+  },
   age_group: {
     type: "radio",
     field: "ageGroup",
@@ -530,6 +538,41 @@ async function submitItem(form) {
   const widget = ITEM_WIDGETS[id];
   if (!widget) return;
   const status = form.querySelector("[data-status]");
+
+  // Algo-improvement consent has its own endpoint (records the answer +
+  // source), not a profile-field PATCH.
+  if (id === "algo_consent") {
+    const choice = new FormData(form).get("value");
+    if (!choice) {
+      if (status) {
+        status.textContent = "Pick yes or no.";
+        status.className = "checklist-card-status is-error";
+      }
+      return;
+    }
+    try {
+      if (status) {
+        status.textContent = "Saving…";
+        status.className = "checklist-card-status";
+      }
+      await api("/api/user/calculation-logging", {
+        method: "POST",
+        body: JSON.stringify({ enabled: choice === "yes", source: "dashboard_prompt" }),
+      });
+      if (status) {
+        status.textContent = choice === "yes" ? "Thanks for helping improve TheTrackerApp! 💪" : "Saved — everything works normally.";
+        status.className = "checklist-card-status is-ok";
+      }
+      await refresh();
+    } catch (e) {
+      if (status) {
+        status.textContent = `Failed: ${e?.message || ""}`;
+        status.className = "checklist-card-status is-error";
+      }
+    }
+    return;
+  }
+
   const body = buildPayload(form, widget);
   if (!body) {
     if (status) {

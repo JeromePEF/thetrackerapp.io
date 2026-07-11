@@ -2,6 +2,7 @@ import { API_BASE, submitSignup } from "./api.js";
 import { attachRefToPayload, captureRefFromUrl } from "./affiliate-ref.js";
 import { fetchFeatureFlags, applyFeatureFlags } from "./feature-flags.js";
 import { initOnboardingGuide } from "./onboarding-guide.js";
+import { reopenConsent } from "./cookie-consent.js";
 
 // All known messaging providers. Display is gated by the server-injected
 // `window.__MESSAGING_SERVICES__` object (see /api/home.js) AND the
@@ -183,6 +184,8 @@ const els = {
   // so any straggling references no-op rather than throw.
   emailInput: null,
   emailLabel: null,
+  ageGateWrap: document.getElementById("ageGateWrap"),
+  ageGateCheckbox: document.getElementById("ageGateCheckbox"),
   consentWrap: document.getElementById("consentWrap"),
   consentCheckbox: document.getElementById("consentCheckbox"),
   // Terms / Privacy / AI checkboxes were removed from the hero form — the
@@ -1168,7 +1171,7 @@ function normalizeUsername(value) {
 function syncServiceInputRequirements() {
   const service = currentService();
   const input = els.serviceIdentityInput;
-  if (!input || !els.consentWrap || !els.consentCheckbox || !els.serviceIdentityText || !els.serviceIdentityHelp) {
+  if (!input || !els.consentWrap || !els.consentCheckbox || !els.ageGateWrap || !els.ageGateCheckbox || !els.serviceIdentityText || !els.serviceIdentityHelp) {
     return;
   }
 
@@ -1217,17 +1220,24 @@ function syncServiceInputRequirements() {
     els.formFlow.style.visibility = isTelegram ? "hidden" : "";
   }
 
-  // Consent + submit button: hidden for Telegram (the user interacts
+  // Consent + age gate + submit button: hidden for Telegram (the user interacts
   // via the bot link).  visibility: hidden preserves layout space.
   els.consentCheckbox.required = !isTelegram;
+  els.ageGateCheckbox.required = !isTelegram;
   if (isTelegram) {
     els.consentWrap.style.visibility = "hidden";
     els.consentWrap.setAttribute("aria-hidden", "true");
+    els.ageGateWrap.style.visibility = "hidden";
+    els.ageGateWrap.setAttribute("aria-hidden", "true");
   } else {
     if (els.consentCheckbox.disabled) els.consentCheckbox.disabled = false;
+    if (els.ageGateCheckbox.disabled) els.ageGateCheckbox.disabled = false;
     els.consentWrap.classList.remove("is-inactive");
+    els.ageGateWrap.classList.remove("is-inactive");
     els.consentWrap.setAttribute("aria-hidden", "false");
+    els.ageGateWrap.setAttribute("aria-hidden", "false");
     els.consentWrap.style.visibility = "";
+    els.ageGateWrap.style.visibility = "";
   }
 
   if (els.signupForm) {
@@ -1487,6 +1497,16 @@ function validateForm() {
     }
   }
 
+  // Age gate — required for COPPA / ToS eligibility. Must be checked before
+  // consent. If the user is in the EEA/UK/Switzerland (CF-IPCountry header),
+  // enforce 16+; elsewhere 13+. The checkbox label reflects this dynamically.
+  if (!els.ageGateCheckbox?.checked) {
+    return {
+      ok: false,
+      message: "Please confirm your age before signing up.",
+    };
+  }
+
   // Single consent checkbox now covers BOTH the 10DLC/A2P SMS opt-in AND
   // the ToS/Privacy acceptance. The label text on /index makes both
   // explicit. We always require it (even for iMessage/Telegram users)
@@ -1508,6 +1528,7 @@ function validateForm() {
     tos: true,
     privacy: true,
     aiProcessing: true,
+    ageConfirmed: true,
     acceptedAt: new Date().toISOString(),
     version: "v1",
   };
@@ -1801,6 +1822,15 @@ function init() {
   updateServiceVisual();
   syncAuthNavigation();
   wireEvents();
+
+  // Cookie settings link in footer — re-opens consent banner
+  const csl = document.getElementById("cookieSettingsLink");
+  if (csl) {
+    csl.addEventListener("click", (e) => {
+      e.preventDefault();
+      reopenConsent();
+    });
+  }
 
   renderStreakLiveCallout("");
 

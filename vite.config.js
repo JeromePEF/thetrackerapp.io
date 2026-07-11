@@ -9,6 +9,7 @@ export default defineConfig({
         login: resolve(__dirname, "login.html"),
         logout: resolve(__dirname, "logout.html"),
         privacy: resolve(__dirname, "privacy.html"),
+        privacyHealthData: resolve(__dirname, "privacy/health-data.html"),
         terms: resolve(__dirname, "terms.html"),
         pebbleApp: resolve(__dirname, "pebble-app.html"),
         macApps: resolve(__dirname, "mac-apps.html"),
