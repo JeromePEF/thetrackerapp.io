@@ -6131,6 +6131,74 @@ function showCalcConsentPromptOnce() {
   void initCalcConsentPrompt();
 }
 
+function formatConsentConfirmationDate(iso) {
+  const parsed = iso ? new Date(iso) : null;
+  if (!parsed || Number.isNaN(parsed.getTime())) return "";
+  return parsed.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+
+function updateAlgoConsentUI(enabled, updatedAt, answered) {
+  const toggle = document.getElementById("toggleAlgoConsent");
+  const meta = document.getElementById("algoConsentMeta");
+  if (toggle) toggle.checked = enabled === true;
+  if (meta) {
+    if (answered) {
+      const when = formatConsentConfirmationDate(updatedAt);
+      meta.textContent = `${enabled ? "Opted in" : "Opted out"}${when ? ` — confirmed ${when}` : ""}`;
+      meta.classList.remove("is-error");
+    } else {
+      meta.textContent = "Not answered yet — flip the toggle to choose.";
+      meta.classList.remove("is-error");
+    }
+  }
+}
+
+// Privacy toggle (Setup tab): persistent on/off for algo-improvement consent
+// with the confirmation date. Saves instantly on change.
+async function initAlgoConsentToggle() {
+  const toggle = document.getElementById("toggleAlgoConsent");
+  if (!toggle) return;
+  const meta = document.getElementById("algoConsentMeta");
+
+  try {
+    const response = await fetchAuthedApi(`${API_BASE}/api/user/calculation-logging`);
+    if (response.ok) {
+      const payload = await response.json();
+      if (payload?.ok) {
+        updateAlgoConsentUI(payload.enabled === true, payload.updatedAt, payload.answered === true);
+      }
+    } else if (meta) {
+      meta.textContent = "Sign in again to manage this setting.";
+    }
+  } catch {
+    if (meta) meta.textContent = "Could not load this setting.";
+  }
+
+  toggle.addEventListener("change", async () => {
+    const enabled = toggle.checked;
+    toggle.disabled = true;
+    if (meta) meta.textContent = "Saving…";
+    try {
+      const response = await fetchAuthedApi(`${API_BASE}/api/user/calculation-logging`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled, source: "settings" }),
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !payload?.ok) throw new Error(payload?.error || "Save failed");
+      updateAlgoConsentUI(payload.enabled === true, payload.updatedAt, true);
+    } catch (error) {
+      toggle.checked = !enabled;
+      if (meta) {
+        meta.textContent = `Could not save: ${String(error?.message || "try again")}`;
+        meta.classList.add("is-error");
+      }
+    } finally {
+      toggle.disabled = false;
+    }
+  });
+}
+
 // Algo-improvement consent notification (2026-07-11). Consent is opt-in only
 // and defaults to OFF on the backend; this sign-in prompt is the ONLY place
 // the question is asked (the old text-message prompt was removed). It shows
@@ -6197,6 +6265,7 @@ async function initCalcConsentPrompt() {
           : "No problem — everything works normally.";
         status.classList.add("is-success");
       }
+      updateAlgoConsentUI(payload.enabled === true, payload.updatedAt, true);
       setTimeout(() => { overlay.hidden = true; }, 1200);
     } catch (error) {
       if (status) {
@@ -6425,6 +6494,7 @@ function init() {
   });
 
   initDeleteAccountFlow();
+  void initAlgoConsentToggle();
 
   // Show the email-verify overlay only after BOTH the backend snapshot and
   // the deletion check settle. Previously two racing callers triggered the
