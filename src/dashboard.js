@@ -4307,6 +4307,7 @@ function buildExportPayload() {
     bodyMetrics: history.bodyMetrics || [],
     bodyMeasures: history.bodyMeasures || [],
     bloodWork: history.bloodWork || [],
+    messages: history.messages || [],
     goals: state.goals || {},
   };
 }
@@ -4380,6 +4381,18 @@ function convertExportToCsv(payload) {
     }
   }
   
+  // Messages (user inputs & bot replies)
+  lines.push("");
+  lines.push("# Messages");
+  lines.push("timestamp,direction,message_text");
+  for (const m of payload.messages || []) {
+    lines.push([
+      csvEscape(String(m.timestamp || "").slice(0,19)),
+      csvEscape(m.direction || ""),
+      csvEscape(m.message_text || ""),
+    ].join(","));
+  }
+
   // Body measures (legacy format)
   if ((payload.bodyMeasures || []).length) {
     lines.push("");
