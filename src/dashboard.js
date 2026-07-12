@@ -4296,87 +4296,349 @@ async function loadLeaderboardRank() {
 }
 
 function buildExportPayload() {
-  const profile = readAuthUser();
-  const ranges = {};
-  state.metricsByRange.forEach((value, key) => {
-    ranges[key] = {
-      workoutsLogged: metricValue(value?.workoutsLogged),
-      caloriesTracked: metricValue(value?.caloriesTracked),
-      gallonsDrank: metricValue(value?.gallonsDrank),
-      usersActive: metricValue(value?.usersUsingToday),
-      generatedAt: value?.generatedAt || null,
-    };
-  });
-
+  const snapshot = state.backendSnapshot || {};
+  const history = snapshot.history || {};
   return {
     exportedAt: new Date().toISOString(),
-    profile,
-    goals: state.goals,
-    statsByRange: ranges,
-    bodyMeasures: state.bodyMeasures,
-    leaderboardRank: state.leaderboardRank,
+    profile: snapshot.profile || {},
+    workouts: history.workouts || [],
+    nutrition: history.nutrition || [],
+    water: history.water || [],
+    bodyMetrics: history.bodyMetrics || [],
+    bodyMeasures: history.bodyMeasures || [],
+    bloodWork: history.bloodWork || [],
+    goals: state.goals || {},
   };
+}
+
+function csvEscape(value) {
+  const s = String(value ?? "");
+  if (s.includes(",") || s.includes('"') || s.includes("\n")) {
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  return s;
+}
+
+function convertExportToCsv(payload) {
+  const lines = [];
+  
+  // Workouts
+  lines.push("# Workouts");
+  lines.push("date,exercise,sets,reps,weight,weight_unit,type,seconds");
+  for (const w of payload.workouts || []) {
+    lines.push([
+      csvEscape((w.date || "").slice(0,10)),
+      csvEscape(w.exercise_name || w.exercise || ""),
+      csvEscape(w.sets ?? ""),
+      csvEscape(w.reps ?? w.count ?? ""),
+      csvEscape(w.weight ?? ""),
+      csvEscape(w.weight_unit || ""),
+      csvEscape(w.type || ""),
+      csvEscape(w.seconds ?? ""),
+    ].join(","));
+  }
+  
+  // Nutrition
+  lines.push("");
+  lines.push("# Nutrition");
+  lines.push("date,description,calories,protein,carbs,fats,fiber,sugar,sodium");
+  for (const n of payload.nutrition || []) {
+    lines.push([
+      csvEscape(String(n.timestamp || n.date || "").slice(0,10)),
+      csvEscape(n.description || n.name || ""),
+      csvEscape(n.calories ?? n.kcal ?? n.kcals ?? ""),
+      csvEscape(n.protein ?? ""),
+      csvEscape(n.carbs ?? ""),
+      csvEscape(n.fats ?? ""),
+      csvEscape(n.fiber ?? ""),
+      csvEscape(n.sugar ?? ""),
+      csvEscape(n.sodium ?? ""),
+    ].join(","));
+  }
+  
+  // Water
+  lines.push("");
+  lines.push("# Water");
+  lines.push("date,amount_oz");
+  for (const w of payload.water || []) {
+    lines.push([
+      csvEscape(String(w.timestamp || w.date || "").slice(0,10)),
+      csvEscape(w.amount ?? w.ounces ?? w.oz ?? ""),
+    ].join(","));
+  }
+  
+  // Body metrics
+  lines.push("");
+  lines.push("# Body Metrics");
+  if ((payload.bodyMetrics || []).length) {
+    const keys = new Set();
+    for (const bm of payload.bodyMetrics || []) Object.keys(bm).forEach(k => keys.add(k));
+    const cols = ["date", ...Array.from(keys).filter(k => !["id","date","timestamp","canonical_contact","loggedAt","recordedAt","createdAt","time"].includes(k))];
+    lines.push(cols.join(","));
+    for (const bm of payload.bodyMetrics || []) {
+      lines.push(cols.map(c => csvEscape(bm[c] ?? "")).join(","));
+    }
+  }
+  
+  // Body measures (legacy format)
+  if ((payload.bodyMeasures || []).length) {
+    lines.push("");
+    lines.push("# Body Measures (Legacy)");
+    lines.push("date,weight,bodyFat,waist,glute");
+    for (const bm of payload.bodyMeasures || []) {
+      lines.push([
+        csvEscape(bm.date || ""),
+        csvEscape(bm.weight ?? ""),
+        csvEscape(bm.bodyFat ?? ""),
+        csvEscape(bm.waist ?? ""),
+        csvEscape(bm.glute ?? ""),
+      ].join(","));
+    }
+  }
+  
+  return lines.join("\n");
+}
+
+// ---- IMPORT ----
+
+const IMPORT_FORMATS = {
+  myfitnesspal: {
+    name: "MyFitnessPal",
+    detect: (headers, rows) => {
+      const h = headers.map(h => h.toLowerCase());
+      return h.includes("date") && (h.includes("calories") || h.includes("meal"));
+    },
+    parse: (rows, headers) => {
+      const h = headers.map(h => h.toLowerCase());
+      const col = (name) => h.indexOf(name);
+      const dateCol = col("date");
+      const calCol = col("calories");
+      const descCol = col("description") >= 0 ? col("description") : col("food") >= 0 ? col("food") : col("item");
+      const proCol = col("protein"); const carbCol = col("carbs") >= 0 ? col("carbs") : col("carbohydrates");
+      const fatCol = col("fat"); const fibCol = col("fiber"); const sugCol = col("sugar"); const sodCol = col("sodium");
+      return rows.slice(1).filter(r => r[calCol]).map(r => ({
+        type: "nutrition",
+        date: String(r[dateCol] || "").trim(),
+        description: String(r[descCol] || "").trim(),
+        calories: parseFloat(r[calCol]) || 0,
+        protein: parseFloat(r[proCol]) || 0,
+        carbs: parseFloat(r[carbCol]) || 0,
+        fats: parseFloat(r[fatCol]) || 0,
+        fiber: parseFloat(r[fibCol]) || 0,
+        sugar: parseFloat(r[sugCol]) || 0,
+        sodium: parseFloat(r[sodCol]) || 0,
+      })).filter(e => e.description);
+    }
+  },
+  cronometer: {
+    name: "Cronometer",
+    detect: (headers) => {
+      const h = headers.map(h => h.toLowerCase());
+      return h.includes("day") && h.includes("food") && h.includes("energy (kcal)");
+    },
+    parse: (rows, headers) => {
+      const h = headers.map(h => h.toLowerCase());
+      const col = (name) => h.indexOf(name);
+      return rows.slice(1).filter(r => r[col("day")]).map(r => ({
+        type: "nutrition",
+        date: String(r[col("day")] || "").trim(),
+        description: String(r[col("food")] || "").trim(),
+        calories: parseFloat(r[col("energy (kcal)")]) || 0,
+        protein: parseFloat(r[col("protein (g)")]) || 0,
+        carbs: parseFloat(r[col("carbs (g)")]) || 0,
+        fats: parseFloat(r[col("fat (g)")]) || 0,
+      })).filter(e => e.description);
+    }
+  },
+  hevy: {
+    name: "Hevy / Strong",
+    detect: (headers) => {
+      const h = headers.map(h => h.toLowerCase());
+      return h.includes("exercise_name") && h.includes("reps") ||
+             (h.includes("exercise") && h.includes("weight_kg") || h.includes("weight_lbs"));
+    },
+    parse: (rows, headers) => {
+      const h = headers.map(h => h.toLowerCase());
+      const col = (name) => h.indexOf(name);
+      const exCol = col("exercise_name") >= 0 ? col("exercise_name") : col("exercise");
+      const dateCol = col("date") >= 0 ? col("date") : col("workout_date") >= 0 ? col("workout_date") : col("start_time");
+      const setsCol = col("sets") >= 0 ? col("sets") : col("set_order");
+      const repsCol = col("reps");
+      const wtCol = col("weight_kg") >= 0 ? col("weight_kg") : col("weight_lbs") >= 0 ? col("weight_lbs") : col("weight");
+      const wtUnitCol = col("weight_unit");
+      return rows.slice(1).filter(r => r[exCol]).map(r => ({
+        type: "workout",
+        date: String(r[dateCol] || "").trim().slice(0,10),
+        exercise: String(r[exCol] || "").trim(),
+        sets: parseInt(r[setsCol]) || 1,
+        reps: parseInt(r[repsCol]) || 0,
+        weight: parseFloat(r[wtCol]) || 0,
+        weightUnit: r[wtUnitCol] || (h.includes("weight_lbs") ? "lb" : "kg"),
+      })).filter(e => e.exercise);
+    }
+  },
+  generic: {
+    name: "Generic CSV",
+    detect: () => true,
+    parse: (rows, headers) => {
+      const h = headers.map(h => h.toLowerCase());
+      const dateCol = h.indexOf("date") >= 0 ? h.indexOf("date") : 0;
+      const type = h.includes("calories") || h.includes("protein") ? "nutrition" :
+                   h.includes("exercise") || h.includes("reps") ? "workout" :
+                   h.includes("amount") || h.includes("oz") ? "water" : "unknown";
+      return rows.slice(1).filter(r => r[dateCol]).map(r => ({ type, raw: r }));
+    }
+  }
+};
+
+function detectImportFormat(headers, rows) {
+  for (const [key, fmt] of Object.entries(IMPORT_FORMATS)) {
+    if (key === "generic") continue;
+    if (fmt.detect(headers, rows)) return key;
+  }
+  return "generic";
+}
+
+function parseImportCSV(text) {
+  const lines = text.split(/\n/).filter(l => l.trim() && !l.trim().startsWith("#"));
+  if (!lines.length) return null;
+  const headers = lines[0].split(/[,\t]/).map(h => h.trim().toLowerCase().replace(/^"|"$/g, ""));
+  const rows = lines.map(l => l.split(/[,\t]/).map(c => c.trim().replace(/^"|"$/g, "")));
+  const formatKey = detectImportFormat(headers, rows);
+  const format = IMPORT_FORMATS[formatKey];
+  const entries = format.parse(rows, headers);
+  return { formatKey, formatName: format.name, entries, headers, rows };
+}
+
+function wireImport() {
+  const dropZone = document.getElementById("importDropZone");
+  const fileInput = document.getElementById("importFileInput");
+  const detected = document.getElementById("importDetected");
+  const status = document.getElementById("importStatus");
+  if (!dropZone || !fileInput) return;
+
+  let pendingEntries = [];
+  let pendingFormat = "";
+
+  const handleFile = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = parseImportCSV(reader.result);
+      if (!result) {
+        if (status) setStatus(status, "Could not parse CSV file.", "is-error");
+        return;
+      }
+      pendingEntries = result.entries;
+      pendingFormat = result.formatName;
+      const srcEl = document.getElementById("importDetectedSource");
+      const countEl = document.getElementById("importDetectedCount");
+      const preview = document.getElementById("importPreview");
+      if (srcEl) srcEl.textContent = result.formatName;
+      if (countEl) countEl.textContent = result.entries.length;
+      if (preview) {
+        preview.innerHTML = result.entries.slice(0, 8).map(e =>
+          `<div>${csvEscape(e.type)} | ${csvEscape(e.date || "?")} | ${csvEscape(e.description || e.exercise || e.raw?.[0] || "?")}</div>`
+        ).join("");
+        if (result.entries.length > 8) preview.innerHTML += `<div>... and ${result.entries.length - 8} more</div>`;
+      }
+      if (detected) detected.hidden = false;
+    };
+    reader.readAsText(file);
+  };
+
+  dropZone.addEventListener("dragover", (e) => { e.preventDefault(); dropZone.classList.add("import-dragover"); });
+  dropZone.addEventListener("dragleave", () => dropZone.classList.remove("import-dragover"));
+  dropZone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropZone.classList.remove("import-dragover");
+    handleFile(e.dataTransfer.files[0]);
+  });
+  dropZone.addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", () => handleFile(fileInput.files[0]));
+
+  const startBtn = document.getElementById("importStartButton");
+  if (startBtn) {
+    startBtn.addEventListener("click", async () => {
+      const dryRun = document.getElementById("importDryRun")?.checked ?? true;
+      if (!pendingEntries.length) return;
+      startBtn.disabled = true;
+      if (status) setStatus(status, `Importing ${pendingEntries.length} entries...`, "");
+      
+      const token = readSessionToken();
+      try {
+        const res = await fetch(`${API_BASE}/api/import/csv`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: token ? `Bearer ${token}` : "",
+          },
+          body: JSON.stringify({
+            entries: pendingEntries,
+            source: pendingFormat,
+            dryRun,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data?.ok) throw new Error(data?.error || `Server error (${res.status})`);
+        
+        if (dryRun) {
+          if (status) setStatus(status, `Preview: ${data.count} entries ready to import. Uncheck "Preview only" to save.`, "is-success");
+        } else {
+          if (status) setStatus(status, `Imported ${data.count} entries successfully!`, "is-success");
+          // Reload the portal to reflect new data
+          if (typeof loadBackendUserSnapshot === "function") {
+            loadBackendUserSnapshot().then(() => renderAccountInfo());
+          }
+        }
+      } catch (err) {
+        if (status) setStatus(status, err?.message || "Import failed.", "is-error");
+      } finally {
+        startBtn.disabled = false;
+      }
+    });
+  }
 }
 
 function triggerDownload(filename, content, mimeType) {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
-
   const link = document.createElement("a");
   link.href = url;
   link.download = filename;
   document.body.appendChild(link);
   link.click();
   link.remove();
-
   URL.revokeObjectURL(url);
-}
-
-function convertExportToCsv(payload) {
-  const lines = [];
-  lines.push("section,key,value");
-
-  Object.entries(payload.profile || {}).forEach(([key, value]) => {
-    lines.push(`profile,${key},"${String(value ?? "").replaceAll('"', '""')}"`);
-  });
-
-  Object.entries(payload.goals || {}).forEach(([key, value]) => {
-    lines.push(`goals,${key},"${String(value ?? "").replaceAll('"', '""')}"`);
-  });
-
-  Object.entries(payload.statsByRange || {}).forEach(([range, stats]) => {
-    Object.entries(stats || {}).forEach(([key, value]) => {
-      lines.push(`stats_${range},${key},"${String(value ?? "").replaceAll('"', '""')}"`);
-    });
-  });
-
-  (payload.bodyMeasures || []).forEach((entry, index) => {
-    lines.push(`body_measure_${index + 1},date,"${String(entry.date || "").replaceAll('"', '""')}"`);
-    lines.push(`body_measure_${index + 1},weight,"${String(entry.weight ?? "").replaceAll('"', '""')}"`);
-    lines.push(`body_measure_${index + 1},bodyFat,"${String(entry.bodyFat ?? "").replaceAll('"', '""')}"`);
-    lines.push(`body_measure_${index + 1},waist,"${String(entry.waist ?? "").replaceAll('"', '""')}"`);
-    lines.push(`body_measure_${index + 1},glute,"${String(entry.glute ?? "").replaceAll('"', '""')}"`);
-  });
-
-  return lines.join("\n");
 }
 
 function wireExport() {
   if (els.exportCsvButton) {
     els.exportCsvButton.addEventListener("click", () => {
-      const payload = buildExportPayload();
-      const csv = convertExportToCsv(payload);
-      triggerDownload(`tracker-export-${Date.now()}.csv`, csv, "text/csv;charset=utf-8");
-      setStatus(els.exportStatus, "CSV exported.", "is-success");
+      try {
+        const payload = buildExportPayload();
+        const csv = convertExportToCsv(payload);
+        const workoutCount = (payload.workouts || []).length;
+        const nutritionCount = (payload.nutrition || []).length;
+        const waterCount = (payload.water || []).length;
+        triggerDownload(`tracker-export-${Date.now()}.csv`, csv, "text/csv;charset=utf-8");
+        setStatus(els.exportStatus, `Exported ${workoutCount} workouts, ${nutritionCount} nutrition, ${waterCount} water entries.`, "is-success");
+      } catch (err) {
+        setStatus(els.exportStatus, "Export failed: " + (err?.message || "unknown error"), "is-error");
+      }
     });
   }
 
   if (els.exportJsonButton) {
     els.exportJsonButton.addEventListener("click", () => {
-      const payload = buildExportPayload();
-      const json = JSON.stringify(payload, null, 2);
-      triggerDownload(`tracker-export-${Date.now()}.json`, json, "application/json;charset=utf-8");
-      setStatus(els.exportStatus, "JSON exported.", "is-success");
+      try {
+        const payload = buildExportPayload();
+        const json = JSON.stringify(payload, null, 2);
+        triggerDownload(`tracker-export-${Date.now()}.json`, json, "application/json;charset=utf-8");
+        setStatus(els.exportStatus, "JSON exported.", "is-success");
+      } catch (err) {
+        setStatus(els.exportStatus, "Export failed: " + (err?.message || "unknown error"), "is-error");
+      }
     });
   }
 }
@@ -6074,6 +6336,7 @@ function wireInitialActions() {
   wireStatsControls();
   wireMilestonesToggle();
   wireExport();
+  wireImport();
   wireGoals();
   wireAccountEditing();
   wirePublicProfileVisibility();

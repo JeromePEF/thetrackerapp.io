@@ -51,6 +51,18 @@
     .copy-btn:hover { opacity: 0.85; }
     .copy-btn.copied { background: #5be7a9; }
     .ex-placeholder { font-size: 0.66rem; color: var(--muted); }
+    .ex-set-group { display: inline-flex; align-items: center; gap: 0.25rem; }
+    .ex-set-input { width: 52px; padding: 0.3rem 0.4rem; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 6px; color: var(--ink); font: inherit; font-size: 0.8rem; text-align: center; -moz-appearance: textfield; }
+    .ex-set-input::-webkit-outer-spin-button, .ex-set-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .ex-set-input:focus { border-color: var(--accent); outline: none; }
+    .ex-set-sep { color: var(--muted); font-size: 0.75rem; }
+    .ex-set-lbl { font-size: 0.56rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+    .ex-notes { flex-basis: 100%; }
+    .ex-alias-note { font-size: 0.62rem; color: var(--muted); padding: 0.1rem 0 0.15rem; display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
+    .copy-chip { background: rgba(56,255,211,0.06); border: 1px solid rgba(56,255,211,0.18); border-radius: 5px; padding: 0.12rem 0.45rem; cursor: pointer; font-size: 0.62rem; font-family: inherit; color: var(--accent); transition: all 0.15s; }
+    .copy-chip:hover { border-color: var(--accent); background: rgba(56,255,211,0.14); }
+    .copy-chip code { color: var(--accent); font-size: 0.62rem; }
+    .ex-detail-hint { color: #5a6a7e; }
 
     .no-results { text-align: center; padding: 2rem 1rem; color: var(--muted); font-size: 0.9rem; }
     .loading-state { text-align: center; padding: 2rem 1rem; color: var(--muted); }
@@ -153,6 +165,7 @@ let activeCat = null;
 let activeSearch = '';
 let exLogTypeSelections = {}; // canonical -> selected logType
 let exInputValues = {};       // canonical -> input value
+let exSetValues = {};         // canonical -> { sets, reps, weight } for multi-slot log types
 
 // ============================================================
 // TAB SWITCHING
@@ -176,7 +189,7 @@ async function loadExercises() {
   }
 
   // 2. localStorage cache (24h)
-  const cacheKey = 'tta.exercises.v2';
+  const cacheKey = 'tta.exercises.v3';
   const cacheAge = 'tta.exercises.ts';
   try {
     const cached = localStorage.getItem(cacheKey);
@@ -268,33 +281,183 @@ function getLogTypeLabel(lt) {
   return labels[lt] || lt.replace(/_/g, ' ');
 }
 
-function getCommand(ex, logType, value) {
+// Multi-word command names use underscores as the primary display form.
+// The bot treats underscores, dashes, and spaces as the same workout
+// (/knee_pushups == /knee-pushups == /knee pushups), so multi-word rows
+// also show the dash + space variants as copyable chips. The command name
+// always matches the exercise name shown on the row — an unrelated first
+// alias (e.g. mountain pose → "tadasana") becomes an "also valid" chip
+// instead of silently replacing the copied command.
+function slashName(ex) {
+  const explicit = COMMAND_NAME_MAP[ex.canonical];
+  if (explicit) return String(explicit).trim().replace(/\s+/g, '_');
+  const canon = String(ex.canonical || '').trim();
+  const cl = canon.toLowerCase();
+  // Prefer the plain plural alias (/pushups over /pushup) but never an
+  // unrelated alias.
+  const plural = (ex.aliases || []).find(a => {
+    const al = String(a).trim().toLowerCase();
+    return al === cl + 's' || al === cl + 'es';
+  });
+  return String(plural || canon).replace(/\s+/g, '_');
+}
+
+// Bare slash handlers are typed (count vs time vs distance), so logging a
+// value of a DIFFERENT kind than the exercise's default (e.g. Distance on
+// bear crawl, Duration on run) must go through /log, which parses time,
+// distance, and rep details for any exercise.
+const LOG_FAMILY = { reps: 'count', count: 'count', sets_reps: 'count', sets_reps_weight: 'count', duration: 'time', distance: 'distance', distance_duration: 'distance' };
+function usesLogForm(ex, logType) {
+  // Weighted/strength exercises have no bare slash commands — /log only
+  if ((ex.category || '') === 'strength') return true;
+  if (logType === 'sets_reps' || logType === 'sets_reps_weight') {
+    // Bare rep-based commands accept sets args directly:
+    // /pullups 3x10@45 ≡ /log pullups 3x10@45
+    return LOG_FAMILY[ex.defaultLogType || 'reps'] !== 'count';
+  }
+  return LOG_FAMILY[logType] !== LOG_FAMILY[ex.defaultLogType || 'reps'];
+}
+
+function buildCommand(name, useLog, value) {
   const v = (value || '').trim();
-  if (!v) return '';
-  // Use alias or canonical for command name, with specific overrides
-  const name = COMMAND_NAME_MAP[ex.canonical] || (ex.aliases && ex.aliases[0]) || ex.canonical;
-  if (logType === 'sets_reps' || logType === 'sets_reps_weight') return `/log ${name} ${v}`;
-  return `/${name} ${v}`;
+  if (!v || !name) return '';
+  return useLog ? `/log ${name} ${v}` : `/${name} ${v}`;
+}
+
+// A bare number typed into a Duration field means seconds — copy "60"
+// as "60s" so the bot logs time, not reps.
+function normalizeValue(logType, value) {
+  const v = String(value || '').trim();
+  if (LOG_FAMILY[logType] === 'time' && /^\d+(\.\d+)?$/.test(v)) return v + 's';
+  return v;
+}
+
+function getCommand(ex, logType, value) {
+  return buildCommand(slashName(ex), usesLogForm(ex, logType), normalizeValue(logType, value));
+}
+
+// Short /log names the bot's normalizer coalesces into the same history
+// bucket as the canonical (backend WHOLE_ALIASES) — safe to offer as chips.
+const EXTRA_LOG_FORMS = { 'bench press': ['bench', 'benchpress'] };
+
+function commandVariants(ex, logType, value) {
+  const name = slashName(ex);
+  const useLog = usesLogForm(ex, logType);
+  const v = normalizeValue(logType, value);
+  const primary = buildCommand(name, useLog, v);
+  if (!primary) return [];
+  const out = [];
+  if (name.includes('_')) {
+    out.push(buildCommand(name.replace(/_/g, '-'), useLog, v));
+    out.push(buildCommand(name.replace(/_/g, ' '), useLog, v));
+  }
+  if (useLog) {
+    (EXTRA_LOG_FORMS[ex.canonical] || []).forEach(short => {
+      out.push(buildCommand(short, useLog, v));
+    });
+  } else if (logType === 'sets_reps' || logType === 'sets_reps_weight') {
+    // /log form is fully equivalent for sets×reps(@weight)
+    out.push(buildCommand(name, true, v));
+  } else {
+    // First alias as an extra valid name (e.g. mountain pose ↔ tadasana,
+    // elliptical ↔ elliptical machine). Bare slash only: the /log path
+    // stores by the literal name, so an arbitrary alias there ("ran",
+    // "ohp") would split the exercise into a separate history bucket.
+    const alias = String((ex.aliases || [])[0] || '').trim().replace(/\s+/g, '_');
+    if (alias && alias.toLowerCase() !== name.toLowerCase()) {
+      out.push(buildCommand(alias, useLog, v));
+    }
+  }
+  return [...new Set(out.filter(c => c && c !== primary))];
+}
+
+// Machines accept a fully detailed spec — time, speed, incline/level/
+// resistance, and brand are all optional add-ons.
+const DETAIL_EXAMPLES = {
+  'treadmill':   '/log Treadmill 20m 3.2mph 10 incline brand Matrix',
+  'elliptical':  'elliptical 45 mins resistance 5',
+  'stairmaster': 'stairmaster 20 minutes level 8',
+};
+
+function chipHtml(cmd) {
+  return `<button class="copy-chip" data-cmd="${escapeAttr(cmd)}" type="button"><code>${escapeHtml(cmd)}</code> 📋</button>`;
+}
+
+function aliasNoteHtml(ex, logType, val) {
+  let html = '';
+  const variants = commandVariants(ex, logType, val);
+  if (variants.length) {
+    html += `<div class="ex-alias-note">also valid: ${variants.map(chipHtml).join(' ')}</div>`;
+  }
+  const detail = DETAIL_EXAMPLES[String(ex.canonical || '').toLowerCase()];
+  if (detail) {
+    html += `<div class="ex-alias-note">detailed: ${chipHtml(detail)} <span class="ex-detail-hint">time · speed · incline/level · brand all optional</span></div>`;
+  }
+  return html;
+}
+
+// Default input values: reps/duration have fixed defaults; distance-type
+// exercises pull the first placeholder suggestion ("5mi or 30m" → "5mi")
+// so COPY always produces a working command instead of an empty one.
+function placeholderAlts(ex) {
+  return String(ex.placeholder || '').split(/\s+or\s+/).map(s => s.trim()).filter(Boolean);
+}
+
+function defaultValueFor(ex, logType) {
+  const alts = placeholderAlts(ex);
+  if (logType === 'reps' || logType === 'count') return alts.find(a => /^\d+$/.test(a)) || '50';
+  if (logType === 'duration') return alts.find(a => /^\d+(\.\d+)?\s*(s|sec|secs|m|min|mins|h|hr|hrs)$/i.test(a)) || '60s';
+  return alts[0] || '';
+}
+
+function inputKey(canonical, logType) { return canonical + '|' + logType; }
+
+// Multi-slot integer inputs for set-based log types
+const SET_PARTS = { sets_reps: ['sets', 'reps'], sets_reps_weight: ['sets', 'reps', 'weight'] };
+const SET_DEFAULTS = { sets: '3', reps: '10', weight: '45' };
+
+function getSetValues(canonical) {
+  if (!exSetValues[canonical]) exSetValues[canonical] = { ...SET_DEFAULTS };
+  return exSetValues[canonical];
+}
+
+function composeSetsValue(canonical, logType) {
+  const v = getSetValues(canonical);
+  const sets = String(v.sets || '').trim();
+  const reps = String(v.reps || '').trim();
+  const wt = String(v.weight || '').trim();
+  if (!sets || !reps) return '';
+  if (logType === 'sets_reps_weight') return wt ? `${sets}x${reps}@${wt}` : '';
+  return `${sets}x${reps}`;
+}
+
+function currentValue(ex, logType) {
+  if (SET_PARTS[logType]) return composeSetsValue(ex.canonical, logType);
+  const typed = exInputValues[inputKey(ex.canonical, logType)];
+  return (typed !== undefined && typed !== '') ? typed : defaultValueFor(ex, logType);
 }
 
 // Preferred command names — maps canonical → slash command name
 const COMMAND_NAME_MAP = {
   'pushup': 'pushups',
   'pullup': 'pullups',
-  'muscle up': 'muscleup',
   'chinup': 'chinups',
   'situp': 'situps',
-  'bench press': 'bench',
-  'bicep curl': 'curls',
+  // canonical-based so the /log storage bucket matches the shown name;
+  // short forms (/log bench) appear as EXTRA_LOG_FORMS chips instead
+  'bench press': 'bench_press',
+  'bicep curl': 'bicep_curls',
   'lunge': 'lunges',
   'crunch': 'crunches',
   'burpee': 'burpees',
+  // bare /row belongs to bodyweight inverted rows — machine rowing is /rowing
+  'row': 'rowing',
 };
 
 function renderExerciseRowHtml(ex) {
   const logType = exLogTypeSelections[ex.canonical] || ex.defaultLogType || 'reps';
   const types = ex.suggestedLogTypes || [logType];
-  const val = exInputValues[ex.canonical] || (ex.defaultLogType === 'reps' ? '50' : ex.defaultLogType === 'duration' ? '60s' : '');
+  const val = currentValue(ex, logType);
 
   let row = `<div class="ex-row" data-canonical="${ex.canonical}">
     <span class="ex-name">${ex.canonical}</span>`;
@@ -309,9 +472,22 @@ function renderExerciseRowHtml(ex) {
     row += `<span class="ex-placeholder">${getLogTypeLabel(types[0])}</span>`;
   }
 
-  row += `<input class="ex-input" type="text" value="${escapeHtml(val)}" placeholder="${ex.placeholder || ''}">
-    <button class="copy-btn" data-cmd="${escapeAttr(getCommand(ex, logType, val))}">COPY</button>
-  </div>`;
+  if (SET_PARTS[logType]) {
+    const sv = getSetValues(ex.canonical);
+    const sepAfter = { reps: '×', weight: '@' };
+    row += '<span class="ex-set-group">';
+    SET_PARTS[logType].forEach((part, i) => {
+      if (i > 0) row += `<span class="ex-set-sep">${sepAfter[part] || '×'}</span>`;
+      row += `<input class="ex-set-input" type="number" min="0" inputmode="numeric" data-part="${part}" value="${escapeHtml(sv[part])}" aria-label="${part}" title="${part}">`;
+    });
+    row += `<span class="ex-set-lbl">${logType === 'sets_reps_weight' ? 'sets×reps@lb' : 'sets×reps'}</span></span>`;
+  } else {
+    row += `<input class="ex-input" type="text" value="${escapeHtml(val)}" placeholder="${ex.placeholder || ''}">`;
+  }
+
+  row += `<button class="copy-btn" data-cmd="${escapeAttr(getCommand(ex, logType, val))}">COPY</button>`;
+  row += `<div class="ex-notes">${aliasNoteHtml(ex, logType, val)}</div>`;
+  row += '</div>';
   return row;
 }
 
@@ -389,11 +565,18 @@ function renderExercises() {
     input.addEventListener('input', () => {
       const row = input.closest('.ex-row');
       const canonical = row.dataset.canonical;
-      exInputValues[canonical] = input.value;
       const ex = allExercises.find(e => e.canonical === canonical);
       const lt = exLogTypeSelections[canonical] || ex?.defaultLogType || 'reps';
-      const btn = row.querySelector('.copy-btn');
-      if (btn) btn.dataset.cmd = getCommand(ex || {}, lt, input.value);
+      exInputValues[inputKey(canonical, lt)] = input.value;
+      refreshRowCommand(row);
+    });
+  });
+
+  list.querySelectorAll('.ex-set-input').forEach(input => {
+    input.addEventListener('input', () => {
+      const row = input.closest('.ex-row');
+      getSetValues(row.dataset.canonical)[input.dataset.part] = input.value;
+      refreshRowCommand(row);
     });
   });
 
@@ -408,6 +591,30 @@ function renderExercises() {
     });
   });
 }
+
+function refreshRowCommand(row) {
+  const canonical = row.dataset.canonical;
+  const ex = allExercises.find(e => e.canonical === canonical);
+  if (!ex) return;
+  const lt = exLogTypeSelections[canonical] || ex.defaultLogType || 'reps';
+  const val = currentValue(ex, lt);
+  const btn = row.querySelector('.copy-btn');
+  if (btn) btn.dataset.cmd = getCommand(ex, lt, val);
+  const notes = row.querySelector('.ex-notes');
+  if (notes) notes.innerHTML = aliasNoteHtml(ex, lt, val);
+}
+
+// Copy chips ("also valid" / "detailed" examples) — delegated so it
+// survives every re-render of the list.
+document.getElementById('exList').addEventListener('click', (e) => {
+  const chip = e.target.closest('.copy-chip');
+  if (!chip || !chip.dataset.cmd) return;
+  copyToClipboard(chip.dataset.cmd);
+  chip.childNodes.forEach(n => { if (n.nodeType === 3) n.textContent = ' ✅'; });
+  setTimeout(() => {
+    chip.childNodes.forEach(n => { if (n.nodeType === 3) n.textContent = ' 📋'; });
+  }, 1200);
+});
 
 function escapeHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function escapeAttr(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }

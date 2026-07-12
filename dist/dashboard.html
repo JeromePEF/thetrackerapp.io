@@ -43,7 +43,7 @@
         window.location.replace("https://thetrackerapp.io/login?next=" + next);
       })();
     </script>
-    <script type="module" crossorigin src="/assets/dashboard-D6g4oSmh.js"></script>
+    <script type="module" crossorigin src="/assets/dashboard-BSq1ngfT.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-BNRNPu-U.js">
     <link rel="modulepreload" crossorigin href="/assets/preload-helper-okr-PqaP.js">
     <link rel="modulepreload" crossorigin href="/assets/affiliate-shape-BavZMWWU.js">
@@ -55,7 +55,7 @@
     <link rel="modulepreload" crossorigin href="/assets/google-analytics-D1WYxicl.js">
     <link rel="stylesheet" crossorigin href="/assets/affiliate-shape-C1JFWeLX.css">
     <link rel="stylesheet" crossorigin href="/assets/dashboard-BjUbrqtB.css">
-    <link rel="stylesheet" crossorigin href="/assets/auth-pages-BX9N4-mm.css">
+    <link rel="stylesheet" crossorigin href="/assets/auth-pages-CrxYeMXO.css">
   </head>
   <body class="dashboard-page">
     <div class="dashboard-shell">
@@ -592,14 +592,49 @@
 
           <article id="tabExport" class="dashboard-panel" data-tab-panel="export" hidden>
             <header class="panel-head">
-              <h2>Export</h2>
-              <p>Download account and stats data.</p>
+              <h2>Export & Import</h2>
+              <p>Download your complete history or import from other apps.</p>
             </header>
-            <div class="panel-actions">
-              <button id="exportCsvButton" type="button" class="btn-primary">Export to CSV</button>
-              <button id="exportJsonButton" type="button" class="btn-secondary">Export to JSON</button>
-            </div>
-            <p id="exportStatus" class="stats-status" role="status" aria-live="polite"></p>
+
+            <!-- ===== EXPORT ===== -->
+            <section class="settings-section" style="margin-top:0">
+              <h3 class="settings-section-title">📤 Export Your Data</h3>
+              <p style="color:var(--ink-muted);font-size:0.85rem;margin-bottom:0.75rem">Includes all workouts, nutrition, water, body metrics, blood work, and profile data.</p>
+              <div class="panel-actions">
+                <button id="exportCsvButton" type="button" class="btn-primary">Export to CSV</button>
+                <button id="exportJsonButton" type="button" class="btn-secondary">Export to JSON</button>
+              </div>
+              <p id="exportStatus" class="stats-status" role="status" aria-live="polite"></p>
+            </section>
+
+            <!-- ===== IMPORT ===== -->
+            <section class="settings-section">
+              <h3 class="settings-section-title">📥 Import from Other Apps</h3>
+              <p style="color:var(--ink-muted);font-size:0.85rem;margin-bottom:0.75rem">
+                Supports CSV exports from MyFitnessPal, Cronometer, Noom, MacroFactor, MyNetDiary, and Hevy.
+                Drop a CSV file or click to browse.
+              </p>
+              <div id="importDropZone" class="import-drop-zone">
+                <div class="import-drop-inner">
+                  <span class="import-drop-icon">📂</span>
+                  <p>Drop CSV file here or <label for="importFileInput" class="import-file-label">browse</label></p>
+                  <input type="file" id="importFileInput" accept=".csv,.tsv,.txt" hidden />
+                </div>
+              </div>
+              <div id="importDetected" class="import-detected" hidden>
+                <p><strong id="importDetectedSource"></strong> — <span id="importDetectedCount"></span> entries detected</p>
+                <div class="import-preview" id="importPreview" style="max-height:150px;overflow:auto;font-size:0.75rem;background:rgba(255,255,255,0.03);padding:0.5rem;border-radius:6px;margin:0.5rem 0"></div>
+                <div>
+                  <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.85rem;margin:0.5rem 0">
+                    <input type="checkbox" id="importDryRun" checked /> Preview only (don't save)
+                  </label>
+                </div>
+                <div class="panel-actions">
+                  <button id="importStartButton" type="button" class="btn-primary">Import Data</button>
+                </div>
+              </div>
+              <p id="importStatus" class="stats-status" role="status" aria-live="polite"></p>
+            </section>
 
             <hr style="margin: 2rem 0 1rem; border-color: rgba(166,193,225,0.1);">
 

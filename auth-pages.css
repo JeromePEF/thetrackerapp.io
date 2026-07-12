@@ -2226,6 +2226,44 @@ body.dashboard-page .wa-trend-flat {
   }
 }
 
+/* ---- Import Drop Zone ---- */
+
+body.dashboard-page .import-drop-zone {
+  border: 2px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+body.dashboard-page .import-drop-zone:hover,
+body.dashboard-page .import-drop-zone.import-dragover {
+  border-color: #4dd0ff;
+  background: rgba(0, 180, 252, 0.06);
+}
+
+body.dashboard-page .import-drop-inner p {
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+  color: #8b919d;
+}
+
+body.dashboard-page .import-drop-icon {
+  font-size: 2rem;
+}
+
+body.dashboard-page .import-file-label {
+  color: #4dd0ff;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+body.dashboard-page .import-detected {
+  margin-top: 1rem;
+}
+
 /* ---- Setup Checklist & Progress ---- */
 
 body.dashboard-page .setup-progress-bar {

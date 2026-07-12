@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && cp _worker.js dist/_worker.js && cp public/llms.txt dist/llms.txt",
+    "build": "vite build && cp _worker.js dist/_worker.js && cp public/llms.txt dist/llms.txt && node scripts/generate-exercise-pages.mjs",
     "deploy:pages": "npm run build && npx wrangler pages deploy dist/ --project-name=thetrackerapp --branch=main --commit-dirty=true && npx wrangler r2 object put thetrackerapp-assets/dist/index.html --file=dist/index.html --content-type=\"text/html; charset=utf-8\" --remote",
     "preview": "vite preview",
     "metrics:google": "node scripts/google-metrics.mjs",

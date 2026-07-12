@@ -77,3 +77,6 @@ Allow: /
 
 # ─── Sitemap (must come last per spec for max compatibility) ──────────
 Sitemap: https://thetrackerapp.io/sitemap.xml
+
+# Exercise directory — one page per loggable workout.
+Sitemap: https://thetrackerapp.io/sitemap-exercises.xml
