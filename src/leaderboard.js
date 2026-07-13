@@ -97,6 +97,22 @@ function renderCategoryTabs() {
   });
 }
 
+// Each metric is a real workout — link straight to its dedicated
+// /exercises/<slug>/ page (commands, demo, how-to).
+const METRIC_PAGES = {
+  "strength:bench":        "bench-press",
+  "strength:squat":        "barbell-squat",
+  "strength:deadlift":     "deadlift",
+  "calisthenics:pushups":  "pushup",
+  "calisthenics:pullups":  "pullup",
+  "calisthenics:squats":   "squat",
+  "calisthenics:dips":     "dip",
+};
+
+function metricPageSlug(category, metric) {
+  return METRIC_PAGES[`${category}:${metric}`] || null;
+}
+
 function renderMetricTabs() {
   if (!elsByQuery.metrics) return;
   const cat = CATEGORIES.find((c) => c.key === state.category);
@@ -105,9 +121,21 @@ function renderMetricTabs() {
     elsByQuery.metrics.innerHTML = "";
     return;
   }
-  elsByQuery.metrics.innerHTML = metrics.map(
-    (m) => `<button type="button" class="${m === state.metric ? "active" : ""}" data-metric="${m}">${m[0].toUpperCase() + m.slice(1)}</button>`
-  ).join("");
+  // Split pill per metric: the NAME is a real hyperlink to the workout's
+  // dedicated /exercises/<slug>/ page; the 📊 segment filters the board.
+  // Metrics without a page (e.g. streak days) stay plain filter buttons.
+  elsByQuery.metrics.innerHTML = metrics.map((m) => {
+    const slug = metricPageSlug(state.category, m);
+    const label = m[0].toUpperCase() + m.slice(1);
+    const active = m === state.metric ? "active" : "";
+    if (!slug) {
+      return `<span class="lb-metric-group ${active}"><button type="button" data-metric="${m}">${label}</button></span>`;
+    }
+    return `<span class="lb-metric-group ${active}">` +
+      `<a class="lb-metric-name" href="/exercises/${slug}/" title="${label}: demo, how-to & logging commands">${label}</a>` +
+      `<button type="button" class="lb-metric-filter" data-metric="${m}" title="Show the ${label} leaderboard" aria-label="Show ${label} leaderboard">📊</button>` +
+      `</span>`;
+  }).join("");
   elsByQuery.metrics.querySelectorAll("button").forEach((btn) => {
     btn.addEventListener("click", () => {
       state.metric = btn.dataset.metric;

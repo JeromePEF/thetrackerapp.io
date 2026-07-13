@@ -318,13 +318,8 @@
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="shared-sections.css" />
 
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RNSBGSR08Y"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-RNSBGSR08Y');
-    </script>
+    <!-- Google Analytics removed 2026-07-11 (with the cookie banner):
+         no non-essential cookies remain on the site. -->
   </head>
   <body>
     <!-- Skip to main content link for keyboard users (ADA compliance) -->
@@ -344,6 +339,7 @@
             <!-- Pricing always renders. No data-feature attribute so the
                  feature-flags applier never touches it, even if backend
                  toggles `pricing:false` in /control. -->
+          <a href="/tools/exercise-nutrition" style="color:#38ffd3;font-weight:700;">Exercises</a>
           <a href="/pricing">Pricing</a>
           <a href="/about">About</a>
             <a href="/mac-apps" data-feature="macApps" hidden>Mac Apps</a>
@@ -525,14 +521,8 @@
               </div>
             </div>
 
-            <label id="ageGateWrap" class="consent-row" for="ageGateCheckbox">
-              <input id="ageGateCheckbox" name="ageGateCheckbox" type="checkbox" required />
-              <span class="consent-row-text">
-                <span class="required-mark" aria-hidden="true">*</span>
-                I confirm I am at least 13 years old (16 in the EEA, UK, or Switzerland).
-              </span>
-            </label>
-
+            <!-- Age eligibility is covered by the Terms of Service accepted
+                 below — the separate age checkbox was removed 2026-07-11. -->
             <label id="consentWrap" class="consent-row" for="consentCheckbox">
               <input id="consentCheckbox" name="consentCheckbox" type="checkbox" required />
               <span class="consent-row-text">
@@ -544,6 +534,9 @@
               </span>
             </label>
 
+            <!-- AI-parsing consent checkbox removed 2026-07-12 — AI processing
+                 is covered by the ToS/Privacy acceptance above; granular
+                 consent lives in the dashboard settings. -->
             <div class="cta-row">
               <button id="signupSubmitButton" type="submit">Submit Onboarding</button>
             </div>
@@ -582,6 +575,8 @@
           The Tracker App is the foremost iMessage calorie counter and workout tracker. Weight loss tracking, macro counting, body measurement logging, and fitness streak leaderboards — all through text messages. Free calorie tracking via iMessage and Telegram.
         </p>
         <div class="footer-links">
+          <a href="/tools/exercise-nutrition" style="color:#38ffd3;font-weight:700;">🏋️ Exercise Commands</a>
+          <a href="/exercises/" style="color:#38ffd3;font-weight:700;">📖 All Exercises</a>
           <a href="mailto:contact@thetrackerapp.io">contact@thetrackerapp.io</a>
           <a href="/pricing">Pricing</a>
           <a href="/about">About</a>
@@ -591,7 +586,7 @@
           <a href="/llms.txt">llms.txt</a>
           <a href="/privacy">Privacy</a>
           <a href="/terms">Terms</a>
-          <button type="button" id="cookieSettingsLink" class="ccb-settings-link" style="background:none;border:none;color:inherit;text-decoration:underline;cursor:pointer;font:inherit;padding:0;">Cookie Settings</button>
+<!-- Cookie Settings link removed 2026-07-11 — no analytics cookies remain -->
         </div>
         <div class="container mobile-download-links" aria-label="App downloads">
           <a href="/mac-apps" data-feature="footer.macApps" hidden>Mac Apps</a>

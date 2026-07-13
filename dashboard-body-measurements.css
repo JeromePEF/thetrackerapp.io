@@ -5054,3 +5054,117 @@ details.stats-legacy > .milestones-toggle-card {
   gap: 8px;
   flex-wrap: wrap;
 }
+
+/* ── Calendar ✓/✗ adherence marks + 📌 date pins (2026-07-12) ── */
+.cal-cell-mark {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.cal-cell-mark.is-hit { color: #59db98; }
+.cal-cell-mark.is-missed { color: #f65252; }
+.cal-cell-mark.is-partial { color: #eab308; }
+.cal-cell-pin { font-size: 0.6rem; }
+
+/* ── Calendar tab: workout-plan picker (2026-07-12) ── */
+.cal-plan-row { font-size: 0.85rem; color: var(--text-muted, #93a5b8); margin: 0 0 0.7rem; }
+.cal-plan-row strong { color: var(--accent, #38ffd3); }
+.cal-inline-btn {
+  background: none; border: 1px solid rgba(56, 255, 211, 0.3); border-radius: 999px;
+  color: var(--accent, #38ffd3); font: inherit; font-size: 0.72rem;
+  padding: 0.15rem 0.7rem; margin-left: 0.4rem; cursor: pointer;
+}
+.cal-inline-btn:hover { background: rgba(56, 255, 211, 0.1); }
+.cal-plan-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 0.55rem; margin-bottom: 0.9rem;
+}
+.cal-plan-card {
+  display: flex; flex-direction: column; gap: 0.3rem;
+  background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(166, 193, 225, 0.14);
+  border-radius: 10px; padding: 0.7rem 0.8rem;
+}
+.cal-plan-card.is-active { border-color: rgba(56, 255, 211, 0.5); background: rgba(56, 255, 211, 0.06); }
+.cal-plan-name { font-weight: 700; font-size: 0.85rem; }
+.cal-plan-meta { font-size: 0.7rem; color: var(--text-muted, #93a5b8); }
+.cal-plan-apply {
+  margin-top: 0.25rem; align-self: flex-start;
+  background: rgba(56, 255, 211, 0.14); border: 1px solid rgba(56, 255, 211, 0.4);
+  border-radius: 7px; color: var(--accent, #38ffd3);
+  font: inherit; font-size: 0.72rem; font-weight: 700;
+  padding: 0.3rem 0.7rem; cursor: pointer;
+}
+.cal-plan-apply:hover { background: rgba(56, 255, 211, 0.22); }
+.cal-plan-active-badge { margin-top: 0.25rem; font-size: 0.74rem; font-weight: 700; color: #59db98; }
+
+/* ── Calendar: copy chips, rx checklists, progression form (2026-07-12) ── */
+.cal-chip-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.4rem; }
+.cal-copy-chip {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  background: rgba(56, 255, 211, 0.06); border: 1px solid rgba(56, 255, 211, 0.22);
+  border-radius: 7px; padding: 0.3rem 0.6rem; cursor: pointer; font: inherit;
+}
+.cal-copy-chip:hover { border-color: var(--accent, #38ffd3); background: rgba(56, 255, 211, 0.12); }
+.cal-copy-chip code { color: var(--accent, #38ffd3); font-size: 0.74rem; background: none; }
+.cal-copy-ico { font-size: 0.78rem; }
+.cal-drawer-sub { font-size: 0.68rem; font-weight: 400; color: var(--text-dim, #6b7c91); text-transform: none; letter-spacing: 0; }
+.cal-rx-list { list-style: none; margin: 0.3rem 0 0.4rem; padding: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+.cal-rx { font-size: 0.85rem; color: var(--text, #ecf4ff); }
+.cal-rx.is-missed { color: var(--text-muted, #93a5b8); }
+.cal-rx-done { color: #59db98; font-weight: 700; }
+.cal-rx-missed { color: #f65252; font-weight: 700; }
+.cal-days-select {
+  background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(166, 193, 225, 0.2);
+  border-radius: 7px; color: var(--text, #ecf4ff); font: inherit; font-size: 0.8rem;
+  padding: 0.15rem 0.4rem; margin: 0 0.35rem;
+}
+.cal-weekday-edit { opacity: 0.45; cursor: pointer; font-size: 0.72rem; }
+.cal-weekday-edit:hover { opacity: 1; color: var(--accent, #38ffd3); }
+.cal-prog-card { border: 1px solid rgba(166, 193, 225, 0.14); border-radius: 10px; padding: 0.7rem 0.8rem; margin: 0.6rem 0; }
+.cal-prog-head { margin: 0 0 0.5rem; font-size: 0.8rem; }
+.cal-prog-row { display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 0.35rem; }
+.cal-prog-name { min-width: 110px; font-size: 0.8rem; text-transform: capitalize; }
+.cal-prog-in {
+  width: 62px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(166, 193, 225, 0.2);
+  border-radius: 6px; color: var(--text, #ecf4ff); font: inherit; font-size: 0.76rem;
+  padding: 0.2rem 0.35rem; text-align: center;
+}
+.cal-prog-in:focus { border-color: var(--accent, #38ffd3); outline: none; }
+.cal-prog-sep { font-size: 0.72rem; color: var(--text-dim, #6b7c91); }
+
+/* ── Plan-builder wizard (2026-07-12) ── */
+.cal-plan-actions { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+.cal-wiz-name {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(166,193,225,0.2); border-radius: 7px;
+  color: var(--text, #ecf4ff); font: inherit; font-size: 0.82rem; padding: 0.2rem 0.5rem; width: 180px;
+}
+.cal-wiz-days { display: flex; flex-direction: column; gap: 0.45rem; margin: 0.5rem 0; }
+.cal-wiz-day { border: 1px solid rgba(166,193,225,0.12); border-radius: 10px; padding: 0.5rem 0.65rem; opacity: 0.55; }
+.cal-wiz-day.is-on { opacity: 1; border-color: rgba(56,255,211,0.25); }
+.cal-wiz-day-head { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.35rem; font-size: 0.82rem; }
+.cal-wiz-label {
+  flex: 1; min-width: 110px; background: rgba(255,255,255,0.05); border: 1px solid rgba(166,193,225,0.18);
+  border-radius: 6px; color: var(--text, #ecf4ff); font: inherit; font-size: 0.76rem; padding: 0.18rem 0.45rem;
+}
+.cal-wiz-cadence {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(166,193,225,0.18); border-radius: 6px;
+  color: var(--text-muted, #93a5b8); font: inherit; font-size: 0.7rem; padding: 0.15rem 0.3rem;
+}
+.cal-wiz-chips { display: flex; flex-wrap: wrap; gap: 0.3rem; min-height: 1.6rem; border-radius: 8px; padding: 0.15rem; }
+.cal-wiz-chips.is-over { outline: 1px dashed var(--accent, #38ffd3); background: rgba(56,255,211,0.05); }
+.cal-wiz-chip {
+  display: inline-flex; align-items: center; gap: 0.25rem; cursor: grab;
+  background: rgba(56,255,211,0.08); border: 1px solid rgba(56,255,211,0.25); border-radius: 999px;
+  padding: 0.15rem 0.55rem; font-size: 0.72rem; text-transform: lowercase;
+}
+.cal-wiz-chip:active { cursor: grabbing; }
+.cal-wiz-x { background: none; border: none; color: var(--text-dim, #6b7c91); cursor: pointer; font-size: 0.85rem; padding: 0 0.05rem; }
+.cal-wiz-x:hover { color: #f65252; }
+.cal-wiz-add {
+  background: transparent; border: 1px dashed rgba(166,193,225,0.3); border-radius: 999px;
+  color: var(--text, #ecf4ff); font: inherit; font-size: 0.72rem; padding: 0.15rem 0.6rem; width: 190px;
+}
+.cal-wiz-add:focus { border-color: var(--accent, #38ffd3); outline: none; }

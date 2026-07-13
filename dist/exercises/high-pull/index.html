@@ -31,12 +31,26 @@ h2{font-family:Orbitron,sans-serif;font-size:1rem;letter-spacing:.05em;margin:1.
 .cmd-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:1rem 1.1rem;margin-bottom:.7rem}
 .cmd-type{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.45rem}
 .cmd-row{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:.3rem}
+.cmd-input{width:96px;padding:.42rem .55rem;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:8px;color:var(--ink);font:inherit;font-size:.9rem;text-align:center}
+.cmd-input:focus{border-color:var(--accent);outline:none}
 code.cmd{font-family:'SF Mono',Menlo,Consolas,monospace;font-size:.95rem;color:var(--accent);background:rgba(0,0,0,.35);border-radius:8px;padding:.45rem .8rem}
 .copy{font-family:Orbitron,sans-serif;font-size:.66rem;font-weight:700;letter-spacing:.06em;background:var(--accent);color:#08111d;border:none;border-radius:6px;padding:.4rem .8rem;cursor:pointer}
 .copy:hover{opacity:.85}
 .equiv{font-size:.74rem;color:var(--muted)}.equiv code{color:var(--accent);font-size:.74rem}
 .demo-media{border:1px dashed var(--line);border-radius:12px;padding:1.1rem;color:var(--muted);font-size:.82rem;text-align:center}
 .demo-media img,.demo-media video{max-width:100%;border-radius:10px}
+.demo-media.has-demo{border-style:solid;background:#fff}
+.demo-media.has-demo img{image-rendering:auto}
+.demo-frames{position:relative;display:inline-block;max-width:100%}
+.demo-frames img{display:block;max-width:min(100%,420px);height:auto}
+.demo-flip .demo-frame-1{position:absolute;inset:0;opacity:0;animation:demoflip 2.4s steps(1) infinite}
+@keyframes demoflip{0%{opacity:0}50%{opacity:1}100%{opacity:0}}
+.demo-caption{margin-top:.5rem;font-size:.68rem;color:#5a6a7e}
+.demo-caption a{color:#5a6a7e}
+.muscle-row{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.8rem}
+.muscle-chip{font-size:.7rem;letter-spacing:.04em;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:.22rem .7rem;text-transform:capitalize}
+.howto-steps{margin:0 0 .5rem 1.2rem;display:flex;flex-direction:column;gap:.45rem;font-size:.92rem;color:var(--ink)}
+.howto-steps li{line-height:1.5}
 .related{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.5rem}
 .related a{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:.6rem .8rem;font-size:.84rem;color:var(--ink)}
 .related a:hover{border-color:var(--accent);text-decoration:none}
@@ -47,6 +61,7 @@ footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--line);font-
 .dir-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:.45rem}
 .search{width:100%;padding:.65rem .9rem;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:10px;color:var(--ink);font:inherit;margin-bottom:1.4rem}
 .search:focus{border-color:var(--accent);outline:none}
+.demo-dot{font-size:.72em;opacity:.85}
 </style>
 <script type="application/ld+json">[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://thetrackerapp.io"},{"@type":"ListItem","position":2,"name":"Exercises","item":"https://thetrackerapp.io/exercises/"},{"@type":"ListItem","position":3,"name":"High Pull","item":"https://thetrackerapp.io/exercises/high-pull/"}]},{"@context":"https://schema.org","@type":"HowTo","name":"How to log High Pull by text","description":"Track High Pull (Strength / Weighted) by sending a text message — works over iMessage, Telegram, or Signal.","step":[{"@type":"HowToStep","name":"Send the command","text":"Text \"/log high_pulls 3x10@45\" to TheTrackerApp bot."},{"@type":"HowToStep","name":"Get your totals","text":"The bot replies instantly with today's totals for this exercise."}]}]</script>
 </head>
@@ -59,22 +74,27 @@ footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--line);font-
   <p class="aka">Also known as: high pulls, clean high pull, snatch grip high pull, barbell high pull</p>
 
   <h2>Log it by text</h2>
-  <div class="cmd-card"><div class="cmd-type">Sets × Reps @ Weight</div>
-<div class="cmd-row"><code class="cmd">/log high_pulls 3x10@45</code><button class="copy" data-cmd="/log high_pulls 3x10@45">COPY</button></div><div class="equiv">also valid: <code>/log high-pulls 3x10@45</code> · <code>/log high pulls 3x10@45</code></div></div>
-<div class="cmd-card"><div class="cmd-type">Sets × Reps</div>
-<div class="cmd-row"><code class="cmd">/log high_pulls 3x10</code><button class="copy" data-cmd="/log high_pulls 3x10">COPY</button></div><div class="equiv">also valid: <code>/log high-pulls 3x10</code> · <code>/log high pulls 3x10</code></div></div>
-<div class="cmd-card"><div class="cmd-type">Reps</div>
-<div class="cmd-row"><code class="cmd">/log high_pulls 20</code><button class="copy" data-cmd="/log high_pulls 20">COPY</button></div><div class="equiv">also valid: <code>/log high-pulls 20</code> · <code>/log high pulls 20</code></div></div>
+  <div class="cmd-card" data-family="count"><div class="cmd-type">Sets × Reps @ Weight</div>
+<div class="cmd-row"><input class="cmd-input" type="text" value="3x10@45" placeholder="3x10@45" aria-label="Sets × Reps @ Weight value"><code class="cmd" data-tpl="/log high_pulls {v}">/log high_pulls 3x10@45</code><button class="copy" data-cmd="/log high_pulls 3x10@45" data-tpl="/log high_pulls {v}">COPY</button></div><div class="equiv">also valid: <code data-tpl="/log high-pulls {v}">/log high-pulls 3x10@45</code> · <code data-tpl="/log high pulls {v}">/log high pulls 3x10@45</code></div></div>
+<div class="cmd-card" data-family="count"><div class="cmd-type">Sets × Reps</div>
+<div class="cmd-row"><input class="cmd-input" type="text" value="3x10" placeholder="3x10" aria-label="Sets × Reps value"><code class="cmd" data-tpl="/log high_pulls {v}">/log high_pulls 3x10</code><button class="copy" data-cmd="/log high_pulls 3x10" data-tpl="/log high_pulls {v}">COPY</button></div><div class="equiv">also valid: <code data-tpl="/log high-pulls {v}">/log high-pulls 3x10</code> · <code data-tpl="/log high pulls {v}">/log high pulls 3x10</code></div></div>
+<div class="cmd-card" data-family="count"><div class="cmd-type">Reps</div>
+<div class="cmd-row"><input class="cmd-input" type="text" value="20" placeholder="20" aria-label="Reps value"><code class="cmd" data-tpl="/log high_pulls {v}">/log high_pulls 20</code><button class="copy" data-cmd="/log high_pulls 20" data-tpl="/log high_pulls {v}">COPY</button></div><div class="equiv">also valid: <code data-tpl="/log high-pulls {v}">/log high-pulls 20</code> · <code data-tpl="/log high pulls {v}">/log high pulls 20</code></div></div>
   <p class="equiv" style="margin-top:.6rem">Underscores, dashes, and spaces are interchangeable — every spelling above logs the same exercise.</p>
 
   <h2>Demonstration</h2>
   <section class="demo-media" data-slot="demo">📹 Image &amp; video demonstration coming soon</section>
+
+  
 
   <h2>Related Strength / Weighted exercises</h2><div class="related"><a href="/exercises/clean/">Clean</a><a href="/exercises/clean-and-jerk/">Clean And Jerk</a><a href="/exercises/clean-pull/">Clean Pull</a><a href="/exercises/hang-clean/">Hang Clean</a><a href="/exercises/hang-snatch/">Hang Snatch</a><a href="/exercises/muscle-snatch/">Muscle Snatch</a><a href="/exercises/power-clean/">Power Clean</a><a href="/exercises/power-snatch/">Power Snatch</a><a href="/exercises/push-jerk/">Push Jerk</a><a href="/exercises/snatch/">Snatch</a><a href="/exercises/snatch-pull/">Snatch Pull</a><a href="/exercises/split-jerk/">Split Jerk</a></div>
 
   <div class="cta">Track High Pull — and everything else — by texting a bot.<br><a href="/">Start your free trial →</a> · <a href="/tools/exercise-nutrition">Try the command builder</a></div>
   <footer><a href="/exercises/">Exercise directory</a><a href="/tools/exercise-nutrition">Command builder</a><a href="/pricing">Pricing</a><a href="/about">About</a></footer>
 </div>
-<script>document.addEventListener('click',function(e){var b=e.target.closest('.copy');if(!b)return;var c=b.dataset.cmd;if(!c)return;(navigator.clipboard&&navigator.clipboard.writeText)?navigator.clipboard.writeText(c):0;b.textContent='COPIED ✓';setTimeout(function(){b.textContent='COPY'},1400)});</script>
+<script>
+document.addEventListener('click',function(e){var b=e.target.closest('.copy');if(!b)return;var c=b.dataset.cmd;if(!c)return;(navigator.clipboard&&navigator.clipboard.writeText)?navigator.clipboard.writeText(c):0;b.textContent='COPIED ✓';setTimeout(function(){b.textContent='COPY'},1400)});
+document.addEventListener('input',function(e){var i=e.target.closest('.cmd-input');if(!i)return;var card=i.closest('.cmd-card');if(!card)return;var v=i.value.trim()||i.getAttribute('placeholder')||'';if(card.dataset.family==='time'&&/^\d+(\.\d+)?$/.test(v))v+='s';card.querySelectorAll('[data-tpl]').forEach(function(el){var c=el.getAttribute('data-tpl').split('{v}').join(v);if(el.tagName==='CODE'){el.textContent=c}else{el.dataset.cmd=c}})});
+</script>
 </body>
 </html>

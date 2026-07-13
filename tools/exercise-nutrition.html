@@ -41,7 +41,9 @@
     .subcat-group { margin-bottom: 1rem; }
     .subcat-header { font-family: Orbitron, sans-serif; font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin: 1rem 0 0.4rem; padding-bottom: 0.25rem; border-bottom: 1px solid rgba(255,255,255,0.06); }
     .ex-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0; border-bottom: 1px solid rgba(255,255,255,0.03); flex-wrap: wrap; }
-    .ex-name { flex: 1; min-width: 100px; font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ex-name { flex: 1; min-width: 100px; font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink); text-decoration: none; }
+    a.ex-name:hover { color: var(--accent); text-decoration: underline; }
+    .ex-demo-dot { font-size: 0.7em; opacity: 0.85; }
     .ex-type-toggles { display: flex; gap: 0.2rem; }
     .ex-type-btn { padding: 0.2rem 0.45rem; font-size: 0.62rem; border-radius: 4px; cursor: pointer; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: var(--muted); font-family: inherit; transition: all 0.15s; }
     .ex-type-btn.active { background: rgba(56,255,211,0.15); border-color: var(--accent); color: var(--accent); }
@@ -63,6 +65,11 @@
     .copy-chip:hover { border-color: var(--accent); background: rgba(56,255,211,0.14); }
     .copy-chip code { color: var(--accent); font-size: 0.62rem; }
     .ex-detail-hint { color: #5a6a7e; }
+    .ex-detail-row { align-items: flex-end; }
+    .ex-mach-field { display: inline-flex; flex-direction: column; align-items: center; gap: 1px; }
+    .ex-mach-field label { font-size: 0.5rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .ex-mach-input { padding: 0.2rem 0.35rem; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 5px; color: var(--ink); font: inherit; font-size: 0.66rem; text-align: center; }
+    .ex-mach-input:focus { border-color: var(--accent); outline: none; }
 
     .no-results { text-align: center; padding: 2rem 1rem; color: var(--muted); font-size: 0.9rem; }
     .loading-state { text-align: center; padding: 2rem 1rem; color: var(--muted); }
@@ -189,7 +196,7 @@ async function loadExercises() {
   }
 
   // 2. localStorage cache (24h)
-  const cacheKey = 'tta.exercises.v3';
+  const cacheKey = 'tta.exercises.v5';
   const cacheAge = 'tta.exercises.ts';
   try {
     const cached = localStorage.getItem(cacheKey);
@@ -201,7 +208,7 @@ async function loadExercises() {
 
   // 3. Fetch from API (client-side fallback)
   try {
-    const res = await fetch('https://api.thetrackerapp.io/api/exercises/registry');
+    const res = await fetch('https://api.thetrackerapp.io/api/exercises/registry?v=5');
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     try {
@@ -363,8 +370,10 @@ function commandVariants(ex, logType, value) {
     // elliptical ↔ elliptical machine). Bare slash only: the /log path
     // stores by the literal name, so an arbitrary alias there ("ran",
     // "ohp") would split the exercise into a separate history bucket.
-    const alias = String((ex.aliases || [])[0] || '').trim().replace(/\s+/g, '_');
-    if (alias && alias.toLowerCase() !== name.toLowerCase()) {
+    // Aliases with punctuation ("90/90 stretch") can't be commands — skip.
+    const rawAlias = String((ex.aliases || [])[0] || '').trim().toLowerCase();
+    const alias = /^[a-z0-9\s_-]+$/.test(rawAlias) ? rawAlias.replace(/\s+/g, '_') : '';
+    if (alias && alias !== name.toLowerCase()) {
       out.push(buildCommand(alias, useLog, v));
     }
   }
@@ -372,12 +381,48 @@ function commandVariants(ex, logType, value) {
 }
 
 // Machines accept a fully detailed spec — time, speed, incline/level/
-// resistance, and brand are all optional add-ons.
-const DETAIL_EXAMPLES = {
-  'treadmill':   '/log Treadmill 20m 3.2mph 10 incline brand Matrix',
-  'elliptical':  'elliptical 45 mins resistance 5',
-  'stairmaster': 'stairmaster 20 minutes level 8',
+// resistance, and brand are all optional add-ons. Each machine gets its
+// own input row; the composed command updates + copies live.
+const MACHINE_DETAILS = {
+  'treadmill': {
+    fields: [
+      { k: 'time', ph: '20m', label: 'time' },
+      { k: 'speed', ph: '3.2', label: 'mph' },
+      { k: 'incline', ph: '10', label: 'incline' },
+      { k: 'brand', ph: 'Matrix', label: 'brand' },
+    ],
+    compose: v => '/log treadmill ' + (v.time || '20m')
+      + (v.speed ? ' ' + v.speed + 'mph' : '')
+      + (v.incline ? ' ' + v.incline + ' incline' : '')
+      + (v.brand ? ' brand ' + v.brand : ''),
+  },
+  'elliptical': {
+    fields: [
+      { k: 'time', ph: '30m', label: 'time' },
+      { k: 'resistance', ph: '5', label: 'resistance' },
+      { k: 'brand', ph: '', label: 'brand' },
+    ],
+    compose: v => '/log elliptical ' + (v.time || '30m')
+      + (v.resistance ? ' resistance ' + v.resistance : '')
+      + (v.brand ? ' brand ' + v.brand : ''),
+  },
+  'stairmaster': {
+    fields: [
+      { k: 'time', ph: '20m', label: 'time' },
+      { k: 'level', ph: '8', label: 'level' },
+      { k: 'brand', ph: '', label: 'brand' },
+    ],
+    compose: v => '/log stairmaster ' + (v.time || '20m')
+      + (v.level ? ' level ' + v.level : '')
+      + (v.brand ? ' brand ' + v.brand : ''),
+  },
 };
+let exMachineValues = {}; // canonical -> { time, speed, incline, ... }
+
+function machineValues(canonical) {
+  if (!exMachineValues[canonical]) exMachineValues[canonical] = {};
+  return exMachineValues[canonical];
+}
 
 function chipHtml(cmd) {
   return `<button class="copy-chip" data-cmd="${escapeAttr(cmd)}" type="button"><code>${escapeHtml(cmd)}</code> 📋</button>`;
@@ -389,9 +434,13 @@ function aliasNoteHtml(ex, logType, val) {
   if (variants.length) {
     html += `<div class="ex-alias-note">also valid: ${variants.map(chipHtml).join(' ')}</div>`;
   }
-  const detail = DETAIL_EXAMPLES[String(ex.canonical || '').toLowerCase()];
-  if (detail) {
-    html += `<div class="ex-alias-note">detailed: ${chipHtml(detail)} <span class="ex-detail-hint">time · speed · incline/level · brand all optional</span></div>`;
+  const md = MACHINE_DETAILS[String(ex.canonical || '').toLowerCase()];
+  if (md) {
+    const mv = machineValues(ex.canonical);
+    const inputs = md.fields.map(f =>
+      `<span class="ex-mach-field"><input class="ex-mach-input" type="text" data-part="${f.k}" value="${escapeHtml(mv[f.k] || '')}" placeholder="${escapeHtml(f.ph)}" size="${f.k === 'brand' ? 7 : 4}"><label>${escapeHtml(f.label)}</label></span>`
+    ).join('');
+    html += `<div class="ex-alias-note ex-detail-row">detailed: ${inputs} ${chipHtml(md.compose(mv))}</div>`;
   }
   return html;
 }
@@ -411,6 +460,12 @@ function defaultValueFor(ex, logType) {
 }
 
 function inputKey(canonical, logType) { return canonical + '|' + logType; }
+
+// Slug matching scripts/generate-exercise-pages.mjs — routes each name to
+// its dedicated /exercises/<slug>/ page.
+function exerciseSlug(name) {
+  return String(name).toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/[\s_]+/g, '-').replace(/-+/g, '-');
+}
 
 // Multi-slot integer inputs for set-based log types
 const SET_PARTS = { sets_reps: ['sets', 'reps'], sets_reps_weight: ['sets', 'reps', 'weight'] };
@@ -459,8 +514,9 @@ function renderExerciseRowHtml(ex) {
   const types = ex.suggestedLogTypes || [logType];
   const val = currentValue(ex, logType);
 
+  const demoBadge = ex.demo ? ' <span class="ex-demo-dot" title="Video demonstration on the workout page">🎬</span>' : '';
   let row = `<div class="ex-row" data-canonical="${ex.canonical}">
-    <span class="ex-name">${ex.canonical}</span>`;
+    <a class="ex-name" href="/exercises/${exerciseSlug(ex.canonical)}/" title="Open the ${escapeHtml(ex.canonical)} page${ex.demo ? ' (video demo)' : ''}">${escapeHtml(ex.canonical)}${demoBadge}</a>`;
 
   if (types.length > 1) {
     row += '<span class="ex-type-toggles">';
@@ -603,6 +659,25 @@ function refreshRowCommand(row) {
   const notes = row.querySelector('.ex-notes');
   if (notes) notes.innerHTML = aliasNoteHtml(ex, lt, val);
 }
+
+// Machine detail inputs (treadmill mph/incline/brand …) — delegated;
+// updates only the sibling chip so typing never loses focus.
+document.getElementById('exList').addEventListener('input', (e) => {
+  const inp = e.target.closest('.ex-mach-input');
+  if (!inp) return;
+  const row = inp.closest('.ex-row');
+  const canonical = row.dataset.canonical;
+  const md = MACHINE_DETAILS[String(canonical || '').toLowerCase()];
+  if (!md) return;
+  machineValues(canonical)[inp.dataset.part] = inp.value.trim();
+  const cmd = md.compose(machineValues(canonical));
+  const chip = inp.closest('.ex-detail-row').querySelector('.copy-chip');
+  if (chip) {
+    chip.dataset.cmd = cmd;
+    const code = chip.querySelector('code');
+    if (code) code.textContent = cmd;
+  }
+});
 
 // Copy chips ("also valid" / "detailed" examples) — delegated so it
 // survives every re-render of the list.

@@ -341,6 +341,11 @@ export default {
 
     if (path === "/" || path === "/index.html") return handleHomepage(request, env);
 
+    // /tools/workout-commands merged into the exercise picker (2026-07-11)
+    if (path === "/tools/workout-commands" || path === "/tools/workout-commands.html") {
+      return Response.redirect(`${url.origin}/tools/exercise-nutrition`, 301);
+    }
+
     if (path.startsWith("/@")) return env.ASSETS.fetch(new URL("/user.html", request.url));
 
     // Feature-gated routes — block when flag is false in /api/control

@@ -23,6 +23,7 @@ const DIST = path.join(SITE_ROOT, "dist");
 const BASE_URL = "https://thetrackerapp.io";
 
 const LOCAL_DATA = process.env.EXERCISES_SRC || path.resolve(SITE_ROOT, "..", "data", "exercises", "exercises.json");
+const ENRICHMENT_DATA = process.env.ENRICHMENT_SRC || path.resolve(SITE_ROOT, "..", "data", "exercises", "enrichment.json");
 const API_URL = "https://api.thetrackerapp.io/api/exercises/registry";
 
 async function loadData() {
@@ -33,6 +34,14 @@ async function loadData() {
         if (!res.ok) throw new Error(`registry fetch failed: ${res.status}`);
         return res.json();
     }
+}
+
+// slug → { image, gif, demoName, steps, target, secondaryMuscles,
+// equipment, attribution } — media & how-to sourced from the Gym visual
+// dataset (redistributed with permission; 180×180 + attribution required).
+function loadEnrichment() {
+    try { return JSON.parse(fs.readFileSync(ENRICHMENT_DATA, "utf8")); }
+    catch (_) { return {}; }
 }
 
 // ── command generation (mirrors tools/exercise-nutrition.html) ─────────────
@@ -107,12 +116,26 @@ h2{font-family:Orbitron,sans-serif;font-size:1rem;letter-spacing:.05em;margin:1.
 .cmd-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:1rem 1.1rem;margin-bottom:.7rem}
 .cmd-type{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.45rem}
 .cmd-row{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:.3rem}
+.cmd-input{width:96px;padding:.42rem .55rem;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:8px;color:var(--ink);font:inherit;font-size:.9rem;text-align:center}
+.cmd-input:focus{border-color:var(--accent);outline:none}
 code.cmd{font-family:'SF Mono',Menlo,Consolas,monospace;font-size:.95rem;color:var(--accent);background:rgba(0,0,0,.35);border-radius:8px;padding:.45rem .8rem}
 .copy{font-family:Orbitron,sans-serif;font-size:.66rem;font-weight:700;letter-spacing:.06em;background:var(--accent);color:#08111d;border:none;border-radius:6px;padding:.4rem .8rem;cursor:pointer}
 .copy:hover{opacity:.85}
 .equiv{font-size:.74rem;color:var(--muted)}.equiv code{color:var(--accent);font-size:.74rem}
 .demo-media{border:1px dashed var(--line);border-radius:12px;padding:1.1rem;color:var(--muted);font-size:.82rem;text-align:center}
 .demo-media img,.demo-media video{max-width:100%;border-radius:10px}
+.demo-media.has-demo{border-style:solid;background:#fff}
+.demo-media.has-demo img{image-rendering:auto}
+.demo-frames{position:relative;display:inline-block;max-width:100%}
+.demo-frames img{display:block;max-width:min(100%,420px);height:auto}
+.demo-flip .demo-frame-1{position:absolute;inset:0;opacity:0;animation:demoflip 2.4s steps(1) infinite}
+@keyframes demoflip{0%{opacity:0}50%{opacity:1}100%{opacity:0}}
+.demo-caption{margin-top:.5rem;font-size:.68rem;color:#5a6a7e}
+.demo-caption a{color:#5a6a7e}
+.muscle-row{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.8rem}
+.muscle-chip{font-size:.7rem;letter-spacing:.04em;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:.22rem .7rem;text-transform:capitalize}
+.howto-steps{margin:0 0 .5rem 1.2rem;display:flex;flex-direction:column;gap:.45rem;font-size:.92rem;color:var(--ink)}
+.howto-steps li{line-height:1.5}
 .related{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.5rem}
 .related a{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:.6rem .8rem;font-size:.84rem;color:var(--ink)}
 .related a:hover{border-color:var(--accent);text-decoration:none}
@@ -123,6 +146,7 @@ footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--line);font-
 .dir-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:.45rem}
 .search{width:100%;padding:.65rem .9rem;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:10px;color:var(--ink);font:inherit;margin-bottom:1.4rem}
 .search:focus{border-color:var(--accent);outline:none}
+.demo-dot{font-size:.72em;opacity:.85}
 `;
 
 const HEAD_COMMON = `
@@ -132,7 +156,10 @@ const HEAD_COMMON = `
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 `;
 
-const COPY_SCRIPT = `<script>document.addEventListener('click',function(e){var b=e.target.closest('.copy');if(!b)return;var c=b.dataset.cmd;if(!c)return;(navigator.clipboard&&navigator.clipboard.writeText)?navigator.clipboard.writeText(c):0;b.textContent='COPIED ✓';setTimeout(function(){b.textContent='COPY'},1400)});</script>`;
+const COPY_SCRIPT = `<script>
+document.addEventListener('click',function(e){var b=e.target.closest('.copy');if(!b)return;var c=b.dataset.cmd;if(!c)return;(navigator.clipboard&&navigator.clipboard.writeText)?navigator.clipboard.writeText(c):0;b.textContent='COPIED ✓';setTimeout(function(){b.textContent='COPY'},1400)});
+document.addEventListener('input',function(e){var i=e.target.closest('.cmd-input');if(!i)return;var card=i.closest('.cmd-card');if(!card)return;var v=i.value.trim()||i.getAttribute('placeholder')||'';if(card.dataset.family==='time'&&/^\\d+(\\.\\d+)?$/.test(v))v+='s';card.querySelectorAll('[data-tpl]').forEach(function(el){var c=el.getAttribute('data-tpl').split('{v}').join(v);if(el.tagName==='CODE'){el.textContent=c}else{el.dataset.cmd=c}})});
+</script>`;
 
 function nameForms(name) {
     if (!name.includes("_")) return [];
@@ -147,17 +174,36 @@ function commandBlocks(ex) {
         const v = defaultValueFor(ex, lt);
         const primary = buildCommand(name, useLog, v);
         if (!primary) return "";
+        // Templates: {v} is replaced live as the visitor edits the value input
+        const tpl = cmd => esc(cmd.slice(0, cmd.length - v.length) + "{v}");
         const equivalents = [];
         for (const alt of nameForms(name)) equivalents.push(buildCommand(alt, useLog, v));
         if (!useLog && (lt === "sets_reps" || lt === "sets_reps_weight")) equivalents.push(buildCommand(name, true, v));
         const equivHtml = equivalents.length
-            ? `<div class="equiv">also valid: ${equivalents.map(c => `<code>${esc(c)}</code>`).join(" · ")}</div>` : "";
-        return `<div class="cmd-card"><div class="cmd-type">${esc(LOG_TYPE_LABELS[lt] || lt)}</div>
-<div class="cmd-row"><code class="cmd">${esc(primary)}</code><button class="copy" data-cmd="${esc(primary)}">COPY</button></div>${equivHtml}</div>`;
+            ? `<div class="equiv">also valid: ${equivalents.map(c => `<code data-tpl="${tpl(c)}">${esc(c)}</code>`).join(" · ")}</div>` : "";
+        return `<div class="cmd-card" data-family="${esc(LOG_FAMILY[lt] || "count")}"><div class="cmd-type">${esc(LOG_TYPE_LABELS[lt] || lt)}</div>
+<div class="cmd-row"><input class="cmd-input" type="text" value="${esc(v)}" placeholder="${esc(v)}" aria-label="${esc(LOG_TYPE_LABELS[lt] || lt)} value"><code class="cmd" data-tpl="${tpl(primary)}">${esc(primary)}</code><button class="copy" data-cmd="${esc(primary)}" data-tpl="${tpl(primary)}">COPY</button></div>${equivHtml}</div>`;
     }).join("\n");
 }
 
 function mediaBlock(ex) {
+    const en = ex.enrich;
+    if (en && en.frames && en.frames.length) {
+        // free-exercise-db (public domain): start/end frames cross-fade
+        const caption = `Demo: ${esc(titleCase(en.demoName || ex.canonical))} — ${esc(en.attribution || "free-exercise-db (public domain)")}`;
+        const imgs = en.frames.map((f, i) =>
+            `<img class="demo-frame demo-frame-${i}" src="${esc(f)}" alt="${esc(titleCase(ex.canonical))} — position ${i + 1}" loading="lazy">`).join("");
+        return `<section class="demo-media has-demo ${en.frames.length > 1 ? "demo-flip" : ""}" data-slot="demo">
+<div class="demo-frames">${imgs}</div>
+<div class="demo-caption">${caption}</div></section>`;
+    }
+    if (en && en.gif) {
+        // Gym visual terms: 180×180 as distributed, attribution on every use.
+        const caption = `Demo: ${esc(titleCase(en.demoName || ex.canonical))} — <a href="https://gymvisual.com/" rel="external nofollow">© Gym visual</a>`;
+        return `<section class="demo-media has-demo" data-slot="demo">
+<img src="${esc(en.gif)}" alt="${esc(titleCase(ex.canonical))} demonstration animation" width="180" height="180" loading="lazy">
+<div class="demo-caption">${caption}</div></section>`;
+    }
     const m = ex.media || {};
     if (m.video) {
         return `<section class="demo-media" data-slot="demo"><video controls preload="none" ${m.poster ? `poster="${esc(m.poster)}"` : ""}><source src="${esc(m.video)}"></video></section>`;
@@ -166,6 +212,18 @@ function mediaBlock(ex) {
         return `<section class="demo-media" data-slot="demo"><img src="${esc(m.image)}" alt="${esc(titleCase(ex.canonical))} demonstration" loading="lazy"></section>`;
     }
     return `<section class="demo-media" data-slot="demo">📹 Image &amp; video demonstration coming soon</section>`;
+}
+
+function howToBlock(ex) {
+    const en = ex.enrich;
+    if (!en || !Array.isArray(en.steps) || !en.steps.length) return "";
+    const chips = [];
+    if (en.target) chips.push(`<span class="muscle-chip">🎯 ${esc(titleCase(en.target))}</span>`);
+    for (const m of (en.secondaryMuscles || []).slice(0, 4)) chips.push(`<span class="muscle-chip">${esc(titleCase(m))}</span>`);
+    if (en.equipment) chips.push(`<span class="muscle-chip">🛠 ${esc(titleCase(en.equipment))}</span>`);
+    return `<h2>How to perform</h2>
+${chips.length ? `<div class="muscle-row">${chips.join("")}</div>` : ""}
+<ol class="howto-steps">${en.steps.map(s => `<li>${esc(s)}</li>`).join("")}</ol>`;
 }
 
 function jsonLd(ex, slug, catMeta) {
@@ -182,12 +240,14 @@ function jsonLd(ex, slug, catMeta) {
         },
         {
             "@context": "https://schema.org", "@type": "HowTo",
-            "name": `How to log ${name} by text`,
+            "name": (ex.enrich && ex.enrich.steps && ex.enrich.steps.length) ? `How to do ${name}` : `How to log ${name} by text`,
             "description": `Track ${name} (${catMeta.label}) by sending a text message — works over iMessage, Telegram, or Signal.`,
-            "step": [
-                { "@type": "HowToStep", "name": "Send the command", "text": `Text "${cmd}" to TheTrackerApp bot.` },
-                { "@type": "HowToStep", "name": "Get your totals", "text": "The bot replies instantly with today's totals for this exercise." }
-            ]
+            "step": (ex.enrich && ex.enrich.steps && ex.enrich.steps.length)
+                ? ex.enrich.steps.map((s, i) => ({ "@type": "HowToStep", "position": i + 1, "text": s }))
+                : [
+                    { "@type": "HowToStep", "name": "Send the command", "text": `Text "${cmd}" to TheTrackerApp bot.` },
+                    { "@type": "HowToStep", "name": "Get your totals", "text": "The bot replies instantly with today's totals for this exercise." }
+                ]
         }
     ]);
 }
@@ -228,6 +288,8 @@ ${HEAD_COMMON}
   <h2>Demonstration</h2>
   ${mediaBlock(ex)}
 
+  ${howToBlock(ex)}
+
   ${related.length ? `<h2>Related ${esc(catMeta.label)} exercises</h2><div class="related">${relatedHtml}</div>` : ""}
 
   <div class="cta">Track ${esc(name)} — and everything else — by texting a bot.<br><a href="/">Start your free trial →</a> · <a href="/tools/exercise-nutrition">Try the command builder</a></div>
@@ -245,7 +307,7 @@ function indexPage(byCategory) {
         const meta = CATEGORY_META[cat] || { label: cat, icon: "🏋️" };
         total += list.length;
         sections += `<section class="dir-cat" id="${esc(cat)}"><h2>${meta.icon} ${esc(meta.label)} (${list.length})</h2><div class="dir-grid">` +
-            list.map(e => `<a href="/exercises/${e.slug}/" data-n="${esc(e.canonical.toLowerCase())} ${esc((e.aliases || []).join(" ").toLowerCase())}">${esc(titleCase(e.canonical))}</a>`).join("") +
+            list.map(e => `<a href="/exercises/${e.slug}/" data-n="${esc(e.canonical.toLowerCase())} ${esc((e.aliases || []).join(" ").toLowerCase())}">${esc(titleCase(e.canonical))}${e.enrich ? ' <span class="demo-dot" title="Has video demonstration">🎬</span>' : ""}</a>`).join("") +
             `</div></section>`;
     }
     const desc = `Directory of ${total} exercises you can log by text message — calisthenics, pilates, yoga, cardio, strength, and flexibility. Copy-paste commands for every workout.`;
@@ -285,13 +347,17 @@ const exercises = (data.exercises || []).filter(e => typeof e === "object" && e.
 if (!exercises.length) throw new Error("no exercises loaded");
 if (!fs.existsSync(DIST)) throw new Error("dist/ missing — run vite build first");
 
+const enrichment = loadEnrichment();
 const seen = new Set();
 const catalog = [];
+let enriched = 0;
 for (const ex of exercises) {
     const slug = slugify(ex.canonical);
     if (!slug || seen.has(slug)) continue;
     seen.add(slug);
-    catalog.push({ ...ex, slug });
+    const enrich = enrichment[slug] || null;
+    if (enrich) enriched++;
+    catalog.push({ ...ex, slug, enrich });
 }
 
 const byCategory = {};
@@ -319,4 +385,4 @@ const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://w
     `\n</urlset>\n`;
 fs.writeFileSync(path.join(DIST, "sitemap-exercises.xml"), sitemap);
 
-console.log(`[exercise-pages] ${pages} exercise pages + directory + sitemap (${urls.length} URLs)`);
+console.log(`[exercise-pages] ${pages} exercise pages (${enriched} with demo media + how-to) + directory + sitemap (${urls.length} URLs)`);

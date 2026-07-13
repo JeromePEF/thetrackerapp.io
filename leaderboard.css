@@ -414,3 +414,89 @@ footer.trust-footer,
 footer.lb-page-footer,
 .status-footer { position: relative; }
 
+
+/* ── "How to get on this board" CTA (→ /tools/exercise-nutrition) ── */
+.lb-howto-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-top: 1rem;
+  padding: 0.7rem 1.2rem;
+  background: linear-gradient(120deg, rgba(56, 255, 211, 0.10), rgba(56, 255, 211, 0.03));
+  border: 1px solid rgba(56, 255, 211, 0.35);
+  border-radius: 12px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.92rem;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+.lb-howto-cta:hover {
+  border-color: var(--accent);
+  background: linear-gradient(120deg, rgba(56, 255, 211, 0.16), rgba(56, 255, 211, 0.06));
+  transform: translateY(-1px);
+}
+.lb-howto-cta strong { color: var(--accent); }
+.lb-howto-icon { font-size: 1.25rem; }
+.lb-howto-arrow { color: var(--accent); font-weight: 700; }
+
+/* Active-metric guide link beside the metric tabs */
+.lb-metric-page {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.6rem;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid rgba(56, 255, 211, 0.3);
+  border-radius: 999px;
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.76rem;
+  white-space: nowrap;
+  text-transform: capitalize;
+}
+.lb-metric-page:hover { background: rgba(56, 255, 211, 0.1); }
+
+/* ── Split metric pills: the NAME links to the workout page, 📊 filters ── */
+.lb-metric-group {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.lb-metric-group button {
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+.lb-metric-group .lb-metric-name {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 0.85rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-family: "Orbitron", sans-serif;
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: color 0.15s, background 0.15s;
+}
+.lb-metric-group .lb-metric-name:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+.lb-metric-group .lb-metric-filter {
+  padding: 0 0.55rem !important;
+  border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
+  font-size: 0.72rem;
+  opacity: 0.75;
+}
+.lb-metric-group .lb-metric-filter:hover {
+  opacity: 1;
+  background: rgba(56, 255, 211, 0.12) !important;
+}
+.lb-metric-group.active {
+  background: rgba(56, 255, 211, 0.16);
+  border-color: rgba(56, 255, 211, 0.4);
+}
+.lb-metric-group.active .lb-metric-name,
+.lb-metric-group.active button { color: var(--accent) !important; }

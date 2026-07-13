@@ -188,12 +188,12 @@ const els = {
   ageGateCheckbox: document.getElementById("ageGateCheckbox"),
   consentWrap: document.getElementById("consentWrap"),
   consentCheckbox: document.getElementById("consentCheckbox"),
-  // Terms / Privacy / AI checkboxes were removed from the hero form — the
-  // single consent checkbox covers consent opt-in + implicit ToS/Privacy
-  // acceptance (those disclosures live on the respective pages).
-  termsConsentCheckbox: null,
-  aiConsentCheckbox: null,
-  aiConsentWrap: null,
+  // Separate AI processing consent — satisfies GDPR (EEA/UK requires
+  // explicit opt-in) and Washington MHMDA (separate consent for sharing
+  // consumer health data with processors). Defaults to checked for
+  // non-EEA users; unchecked for EEA/UK.
+  aiConsentWrap: document.getElementById("aiConsentWrap"),
+  aiConsentCheckbox: document.getElementById("aiConsentCheckbox"),
   signupStatus: document.getElementById("signupStatus"),
   liveWorkoutToast: document.getElementById("liveWorkoutToast"),
   liveWorkoutToastMessage: document.getElementById("liveWorkoutToastMessage"),
@@ -1171,7 +1171,7 @@ function normalizeUsername(value) {
 function syncServiceInputRequirements() {
   const service = currentService();
   const input = els.serviceIdentityInput;
-  if (!input || !els.consentWrap || !els.consentCheckbox || !els.ageGateWrap || !els.ageGateCheckbox || !els.serviceIdentityText || !els.serviceIdentityHelp) {
+  if (!input || !els.consentWrap || !els.consentCheckbox || !els.serviceIdentityText || !els.serviceIdentityHelp) {
     return;
   }
 
@@ -1220,24 +1220,37 @@ function syncServiceInputRequirements() {
     els.formFlow.style.visibility = isTelegram ? "hidden" : "";
   }
 
-  // Consent + age gate + submit button: hidden for Telegram (the user interacts
-  // via the bot link).  visibility: hidden preserves layout space.
+  // Consent + age gate + AI consent + submit: hidden for Telegram
+  // (the user interacts via the bot link).  visibility: hidden preserves
+  // layout space.
   els.consentCheckbox.required = !isTelegram;
-  els.ageGateCheckbox.required = !isTelegram;
+  if (els.ageGateCheckbox) els.ageGateCheckbox.required = !isTelegram;
   if (isTelegram) {
     els.consentWrap.style.visibility = "hidden";
     els.consentWrap.setAttribute("aria-hidden", "true");
-    els.ageGateWrap.style.visibility = "hidden";
-    els.ageGateWrap.setAttribute("aria-hidden", "true");
+    if (els.ageGateWrap) {
+      els.ageGateWrap.style.visibility = "hidden";
+      els.ageGateWrap.setAttribute("aria-hidden", "true");
+    }
+    if (els.aiConsentWrap) {
+      els.aiConsentWrap.style.visibility = "hidden";
+      els.aiConsentWrap.setAttribute("aria-hidden", "true");
+    }
   } else {
     if (els.consentCheckbox.disabled) els.consentCheckbox.disabled = false;
-    if (els.ageGateCheckbox.disabled) els.ageGateCheckbox.disabled = false;
     els.consentWrap.classList.remove("is-inactive");
-    els.ageGateWrap.classList.remove("is-inactive");
     els.consentWrap.setAttribute("aria-hidden", "false");
-    els.ageGateWrap.setAttribute("aria-hidden", "false");
     els.consentWrap.style.visibility = "";
-    els.ageGateWrap.style.visibility = "";
+    if (els.ageGateWrap) {
+      els.ageGateWrap.classList.remove("is-inactive");
+      els.ageGateWrap.setAttribute("aria-hidden", "false");
+      els.ageGateWrap.style.visibility = "";
+    }
+    if (els.aiConsentWrap) {
+      els.aiConsentWrap.classList.remove("is-inactive");
+      els.aiConsentWrap.setAttribute("aria-hidden", "false");
+      els.aiConsentWrap.style.visibility = "";
+    }
   }
 
   if (els.signupForm) {
@@ -1310,6 +1323,32 @@ function renderServiceOptions() {
   }).join("");
 }
 
+// Exercise names on the homepage leaderboards link to their dedicated
+// /exercises/<slug>/ pages (demo, how-to, logging commands). Slugs are
+// singular ("PUSHUPS" → pushup); ambiguous names resolve per board —
+// SQUATS on the strength board is the barbell squat, on calisthenics
+// the bodyweight squat.
+const STRENGTH_EXERCISE_PAGES = { bench: "bench-press", squat: "barbell-squat" };
+
+function exercisePageSlug(exercise, flavor) {
+  const base = String(exercise || "").toLowerCase().trim().replace(/[^a-z0-9\s-]/g, "");
+  if (!base || base === "n/a" || base === "no data") return null;
+  const words = base.split(/\s+/);
+  const last = words[words.length - 1];
+  if (last.endsWith("s") && !last.endsWith("ss")) words[words.length - 1] = last.slice(0, -1);
+  const slug = words.join("-");
+  if (flavor === "strength" && STRENGTH_EXERCISE_PAGES[slug]) return STRENGTH_EXERCISE_PAGES[slug];
+  return slug;
+}
+
+function exerciseCellHtml(displayExercise, flavor) {
+  const slug = exercisePageSlug(displayExercise, flavor);
+  const label = escapeHtml(displayExercise);
+  return slug
+    ? `<a class="leaderboard-exercise-link" href="/exercises/${slug}/" title="${label}: demo, how-to & logging commands">${label}</a>`
+    : label;
+}
+
 function limitTopTwoPerExercise(entries) {
   const seen = new Map();
   return entries.filter((entry) => {
@@ -1341,7 +1380,7 @@ function renderLeaderboard(entries) {
       const profileLink = normalized.canonical ? `<a href="/@${escapeHtml(normalized.canonical)}" class="leaderboard-profile-link">${escapeHtml(displayName)}</a>` : escapeHtml(displayName);
       return `<li>
         <span class="leaderboard-cell leaderboard-cell-rank leaderboard-rank">#${normalized.rank || 1}</span>
-        <span class="leaderboard-cell leaderboard-cell-exercise leaderboard-user">${escapeHtml(displayExercise)}</span>
+        <span class="leaderboard-cell leaderboard-cell-exercise leaderboard-user">${exerciseCellHtml(displayExercise, "strength")}</span>
         <span class="leaderboard-cell leaderboard-cell-name leaderboard-user">${profileLink}</span>
         <span class="leaderboard-cell leaderboard-cell-value leaderboard-score">${escapeHtml(displayValue)}</span>
       </li>`;
@@ -1372,7 +1411,7 @@ function renderGroupLeaderboard(entries) {
       const profileLink = normalized.canonical ? `<a href="/@${escapeHtml(normalized.canonical)}" class="leaderboard-profile-link">${escapeHtml(displayName)}</a>` : escapeHtml(displayName);
       return `<li>
         <span class="leaderboard-cell leaderboard-cell-rank leaderboard-rank">#${normalized.rank || 1}</span>
-        <span class="leaderboard-cell leaderboard-cell-exercise leaderboard-user">${escapeHtml(displayExercise)}</span>
+        <span class="leaderboard-cell leaderboard-cell-exercise leaderboard-user">${exerciseCellHtml(displayExercise, "calisthenics")}</span>
         <span class="leaderboard-cell leaderboard-cell-name leaderboard-user">${profileLink}</span>
         <span class="leaderboard-cell leaderboard-cell-value leaderboard-score">${escapeHtml(displayValue)}</span>
       </li>`;
@@ -1497,15 +1536,8 @@ function validateForm() {
     }
   }
 
-  // Age gate — required for COPPA / ToS eligibility. Must be checked before
-  // consent. If the user is in the EEA/UK/Switzerland (CF-IPCountry header),
-  // enforce 16+; elsewhere 13+. The checkbox label reflects this dynamically.
-  if (!els.ageGateCheckbox?.checked) {
-    return {
-      ok: false,
-      message: "Please confirm your age before signing up.",
-    };
-  }
+  // Age eligibility (13+, 16+ in EEA/UK/CH) is asserted via the Terms of
+  // Service acceptance below — the standalone age checkbox was removed.
 
   // Single consent checkbox now covers BOTH the 10DLC/A2P SMS opt-in AND
   // the ToS/Privacy acceptance. The label text on /index makes both
@@ -1520,14 +1552,17 @@ function validateForm() {
     };
   }
 
-  // Consent record persisted on the user profile for audit. AI processing
-  // defaults to allowed because the disclosure lives in the Privacy Policy
-  // — users who don't want AI parsing can text /stop or change the
-  // preference from their account settings later.
+  // Consent record persisted on the user profile for audit.
+  // AI processing is a separate checkbox — satisfies GDPR (EEA/UK requires
+  // explicit opt-in) and WA MHMDA (separate consent for sharing consumer
+  // health data with processors like Google Gemini). Defaults to checked
+  // for non-EEA users; unchecked for EEA/UK. Users who decline can still
+  // use slash commands (/water 20, /log Bench 3x10 at 185) without AI.
+  const aiProcessing = els.aiConsentCheckbox ? els.aiConsentCheckbox.checked : true;
   const consent = {
     tos: true,
     privacy: true,
-    aiProcessing: true,
+    aiProcessing,
     ageConfirmed: true,
     acceptedAt: new Date().toISOString(),
     version: "v1",
@@ -1756,6 +1791,14 @@ function countryFlagEmoji(code) {
   return String.fromCodePoint(a, b);
 }
 
+// EEA member states + UK + Switzerland — AI consent must be opt-in per GDPR.
+const EEA_COUNTRY_CODES = new Set([
+  "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR",
+  "DE", "GR", "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL",
+  "PL", "PT", "RO", "SK", "SI", "ES", "SE", "IS", "LI", "NO",
+  "GB", "CH",
+]);
+
 async function loadCountryFlag() {
   try {
     const res = await fetch("https://ipapi.co/json/");
@@ -1764,6 +1807,14 @@ async function loadCountryFlag() {
       const flag = countryFlagEmoji(data.country_code);
       const el = document.getElementById("countryFlag");
       if (el && flag) el.textContent = flag;
+
+      // GDPR / MHMDA: AI processing consent must be opt-in for EEA/UK/CH.
+      // Default the checkbox to unchecked for these regions so the user must
+      // affirmatively opt in. For all other regions, default checked.
+      const code = String(data.country_code || "").toUpperCase();
+      if (EEA_COUNTRY_CODES.has(code) && els.aiConsentCheckbox) {
+        els.aiConsentCheckbox.checked = false;
+      }
     }
   } catch {}
 }
