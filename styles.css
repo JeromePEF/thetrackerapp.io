@@ -323,13 +323,14 @@ a:focus-visible {
 }
 
 .leaderboard-unit-toggle {
-  min-width: 36px;
-  padding: 0.18rem 0.4rem;
-  font-size: 0.56rem;
+  min-width: auto;
+  padding: 0.18rem 0.5rem;
+  font-size: 0.50rem;
   border-color: rgba(255, 255, 255, 0.2);
   background: rgba(255, 255, 255, 0.03);
   color: rgba(219, 232, 247, 0.9);
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .leaderboard-unit-toggle:hover,
