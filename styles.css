@@ -705,7 +705,7 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
    ============================================ */
 .hero-fullscreen-layout {
   display: grid;
-  grid-template-columns: clamp(260px, 22vw, 340px) minmax(0, 1fr) auto;
+  grid-template-columns: clamp(280px, 26vw, 390px) minmax(0, 1fr) auto;
   gap: clamp(0.75rem, 1.4vw, 2rem);
   /* Fill the viewport so content stays proportional and dead whitespace
      never grows on scrunched / unconventional windows. The iPhone column
@@ -2214,7 +2214,7 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
 /* Extra large screens */
 @media (min-width: 1600px) {
   .hero-fullscreen-layout {
-    grid-template-columns: 340px minmax(0, 1fr) auto;
+    grid-template-columns: 390px minmax(0, 1fr) auto;
     gap: 1.25rem;
   }
   
