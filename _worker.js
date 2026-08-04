@@ -317,6 +317,38 @@ async function handleVersionUpdate(req, env) {
   });
 }
 
+const SECURITY_HEADERS = {
+  "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+  "Content-Security-Policy": [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://pagead2.googlesyndication.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "img-src 'self' data: https: blob:",
+    "font-src 'self' https://fonts.gstatic.com",
+    "connect-src 'self' https://api.thetrackerapp.io https://www.google-analytics.com https://pagead2.googlesyndication.com https://docs.google.com https://ipapi.co",
+    "frame-src 'self' https://www.youtube.com https://js.stripe.com",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ].join("; "),
+};
+
+function addSecurityHeaders(response) {
+  const headers = new Headers(response.headers);
+  for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
+    if (!headers.has(key)) headers.set(key, value);
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 async function addCors(responsePromise) {
   const response = await responsePromise;
   const headers = new Headers(response.headers);
@@ -335,18 +367,18 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    if (path === "/api/control") return handleControl(request, env);
-    if (path === "/api/control-version") return handleVersion(request, env);
-    if (path === "/api/control-update") return handleVersionUpdate(request, env);
+    if (path === "/api/control") return addSecurityHeaders(await handleControl(request, env));
+    if (path === "/api/control-version") return addSecurityHeaders(await handleVersion(request, env));
+    if (path === "/api/control-update") return addSecurityHeaders(await handleVersionUpdate(request, env));
 
-    if (path === "/" || path === "/index.html") return handleHomepage(request, env);
+    if (path === "/" || path === "/index.html") return addSecurityHeaders(await handleHomepage(request, env));
 
     // /tools/workout-commands merged into the exercise picker (2026-07-11)
     if (path === "/tools/workout-commands" || path === "/tools/workout-commands.html") {
-      return Response.redirect(`${url.origin}/tools/exercise-nutrition`, 301);
+      return addSecurityHeaders(Response.redirect(`${url.origin}/tools/exercise-nutrition`, 301));
     }
 
-    if (path.startsWith("/@")) return env.ASSETS.fetch(new URL("/user.html", request.url));
+    if (path.startsWith("/@")) return addSecurityHeaders(await env.ASSETS.fetch(new URL("/user.html", request.url)));
 
     // Feature-gated routes — block when flag is false in /api/control
     const GATED_ROUTES = {
@@ -367,10 +399,10 @@ export default {
     if (flagKey) {
       const flags = await fetchUpstreamFlags();
       if (flags && flags[flagKey] === false) {
-        return new Response("Not Found", { status: 404, headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, s-maxage=30" } });
+        return addSecurityHeaders(new Response("Not Found", { status: 404, headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, s-maxage=30" } }));
       }
     }
 
-    return env.ASSETS.fetch(request);
+    return addSecurityHeaders(await env.ASSETS.fetch(request));
   },
 };
