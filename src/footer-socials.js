@@ -41,6 +41,10 @@ const ICONS = {
   kick: `<path d="M3 3h5v4h2V5h2V3h6v6h-2v2h-2v2h2v2h2v6h-6v-2h-2v-2h-2v4H3V3Z"/>`,
   // Bitchute
   bitchute: `<path d="M2 2v20h20V2H2Zm13.6 16.4H5.4V5.6h2.55v10.255h5.1V8.4h2.55v10ZM18.6 9.4h-2.55V5.6h2.55v3.8Z"/>`,
+  // Tumblr
+  tumblr: `<path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0Zm2.5 16h-2c-.7 0-1.3-.4-1.3-1V9.5H9v-2h2.5V4.5h2.5v3H16.5v2H14v5.5c0 .3.2.5.5.5V16Z"/>`,
+  // Truth Social
+  truthSocial: `<path d="M18 2H6C3.79 2 2 3.79 2 6v12c0 2.21 1.79 4 4 4h12c2.21 0 4-1.79 4-4V6c0-2.21-1.79-4-4-4Zm-2 8h-2v3c0 1.1-.45 2-1.5 2S11 14.1 11 13s.9-2 2-2c.28 0 .5.22.5.5s-.22.5-.5.5c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1V10Z"/>`,
   // GBP – Google Business Profile (map pin)
   gbp: `<path d="M12 2C7.589 2 4 5.589 4 10c0 7 8 12 8 12s8-5 8-12c0-4.411-3.589-8-8-8Zm0 11.5c-1.93 0-3.5-1.57-3.5-3.5S10.07 6.5 12 6.5s3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5Z"/>`,
   // Generic fallback (link icon)
@@ -74,6 +78,8 @@ const SOCIAL_ORDER = [
   "discord",
   "telegram",
   "mastodon",
+  "tumblr",
+  "truthSocial",
   // Audio / podcasts
   "spotify",
   "appleMusic",
