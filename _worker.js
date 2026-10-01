@@ -367,10 +367,20 @@ const SECURITY_HEADERS = {
 // do call it the module sees this tag and no-ops instead of configuring the
 // same property twice.
 //
-// Cookieless, matching the module: the banner was deliberately removed, so
-// client_storage:"none" plus consent-mode denied keeps it that way. The CSP
-// already allows googletagmanager.com in script-src and google-analytics.com
-// in connect-src — it was provisioned for this and never un-provisioned.
+// COOKIES ARE ON, chosen deliberately for measurement accuracy. client_storage
+// was "none", which wrote no cookie but also persisted no client_id — so every
+// pageview looked like a new person and "users" was really "sessions". With the
+// first-party _ga cookie restored, returning visitors, session counts and
+// retention are correct, which is the difference between knowing a campaign
+// brought 40 people back and guessing.
+//
+// The cost is honest: a first-party analytics cookie is what a consent banner
+// normally exists to cover, and the banner was removed in July.
+// src/cookie-consent.js is still present (stubbed), so restoring one is a
+// contained job if that becomes necessary.
+//
+// Advertising storage stays denied on all three axes and Google Signals stays
+// off: this is first-party measurement only, nothing to do with ads.
 const GA_MEASUREMENT_ID = "G-RNSBGSR08Y";
 const GA_SNIPPET =
   `<script async src="https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}"` +
@@ -390,8 +400,7 @@ const GA_SNIPPET =
   `gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',` +
   `ad_personalization:'denied',analytics_storage:'granted'});` +
   `gtag('config','${GA_MEASUREMENT_ID}',{anonymize_ip:true,transport_type:'beacon',` +
-  `client_storage:'none',allow_google_signals:false,` +
-  `allow_ad_personalization_signals:false});</script>`;
+  `allow_google_signals:false,allow_ad_personalization_signals:false});</script>`;
 
 class GaHeadInjector {
   element(head) {

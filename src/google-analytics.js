@@ -52,10 +52,13 @@ function getMeasurementId() {
   return id;
 }
 
+// Default FALSE: cookies on, for accurate returning-visitor and session
+// counts. Set VITE_GA_COOKIELESS=1 to go back to no-cookie mode, accepting
+// that "users" then collapses into "sessions".
 function cookielessWanted() {
   const raw = import.meta.env.VITE_GA_COOKIELESS;
-  if (typeof raw !== "string") return true;            // default: no cookies
-  return !/^(0|false|no)$/i.test(raw.trim());
+  if (typeof raw !== "string") return false;
+  return /^(1|true|yes)$/i.test(raw.trim());
 }
 
 export function initGoogleAnalytics() {
