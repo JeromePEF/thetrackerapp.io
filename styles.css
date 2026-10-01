@@ -1290,14 +1290,30 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
 .signup-form input,
 .signup-form select {
   width: 100%;
-  min-height: 50px;
+  /* THE SELECTED TEXT WAS CLIPPED ON iPHONE — "iMessage" lost its bottom half.
+     The arithmetic, with the global * { box-sizing: border-box }:
+         min-height 50px - padding 24px - border 4px = 22px of content box
+         `font: inherit` sets line-height to the inherited 1.5, and the
+         following font-size:1.1rem makes that 1.5 x 17.6px = 26.4px
+         26.4px of line box in a 22px content box -> the glyphs overflow and
+         the control clips them, so the lower half shows the near-white
+         #f3f7ff background instead of the letters.
+     The `font: inherit` shorthand is the trap: it RESETS line-height from the
+     cascade, and the font-size override on the next line then grows the text
+     without growing the line box it was sized for.
+     Fixed three ways so it cannot come back marginally: an explicit
+     line-height instead of whatever is inherited, less vertical padding, and a
+     slightly taller control (which is also a better touch target).
+         52px - 16px - 4px = 32px content box vs a 22px line box. */
+  min-height: 52px;
   border: 2px solid #7ca9ff;
   border-radius: 9px;
-  padding: 0.75rem 0.9rem;
+  padding: 0.5rem 0.9rem;
   background: #f3f7ff;
   color: #08111c;
   font: inherit;
   font-size: 1.1rem;
+  line-height: 1.25;
   font-weight: 600;
   scroll-margin-bottom: calc(8.5rem + env(safe-area-inset-bottom, 0px));
 }
@@ -2408,11 +2424,14 @@ body.is-authenticated .auth-brackets-panel:not([hidden]) {
   font-size: 112.5% !important;
 }
 
+/* Larger-text mode forces font-size and min-height; it must not reinstate the
+   clip, so it gets the same explicit line-height. */
 .a11y-larger-text .signup-form input,
 .a11y-larger-text .signup-form select,
 .a11y-larger-text .signup-form button {
   font-size: 1.1rem !important;
-  min-height: 50px !important;
+  line-height: 1.25 !important;
+  min-height: 52px !important;
 }
 
 .a11y-high-contrast {
