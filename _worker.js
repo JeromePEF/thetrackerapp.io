@@ -6,6 +6,29 @@ const STALE_WHILE_REVALIDATE = 150;
 const viewerTimestamps = new Map();
 const VIEWER_TTL_MS = 30000;
 
+// ── Rate limiting (in-memory) for public worker API endpoints ──────────────
+const rateLimitStore = new Map();
+const RATE_LIMIT_MAX = 60;        // requests per window
+const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
+
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const entry = rateLimitStore.get(ip);
+  if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
+    rateLimitStore.set(ip, { count: 1, windowStart: now });
+    return true;
+  }
+  entry.count++;
+  return entry.count <= RATE_LIMIT_MAX;
+}
+
+function cleanRateLimitStore() {
+  const now = Date.now();
+  for (const [ip, entry] of rateLimitStore) {
+    if (now - entry.windowStart > RATE_LIMIT_WINDOW_MS * 2) rateLimitStore.delete(ip);
+  }
+}
+
 function htmlEscape(value) {
   return String(value || "")
     .replace(/&/g, "&amp;")
@@ -234,6 +257,8 @@ async function handleHomepage(req, env) {
   });
 }
 
+const CORS_ORIGIN = "https://thetrackerapp.io";
+
 async function handleControl(req, env) {
   const url = new URL(req.url);
   const action = url.searchParams.get("action");
@@ -242,7 +267,7 @@ async function handleControl(req, env) {
     const videoId = await fetchLiveVideoId();
     return new Response(JSON.stringify({ videoId: videoId || null }), {
       status: 200,
-      headers: { "Content-Type": "application/json", "Cache-Control": "public, s-maxage=60, stale-while-revalidate=30", "Access-Control-Allow-Origin": "*" },
+      headers: { "Content-Type": "application/json", "Cache-Control": "public, s-maxage=60, stale-while-revalidate=30", "Access-Control-Allow-Origin": CORS_ORIGIN },
     });
   }
 
@@ -252,7 +277,7 @@ async function handleControl(req, env) {
     viewerTimestamps.set(viewerId, Date.now());
     return new Response(JSON.stringify({ viewers: viewerTimestamps.size }), {
       status: 200,
-      headers: { "Content-Type": "application/json", "Cache-Control": "no-store", "Access-Control-Allow-Origin": "*" },
+      headers: { "Content-Type": "application/json", "Cache-Control": "no-store", "Access-Control-Allow-Origin": CORS_ORIGIN },
     });
   }
 
@@ -260,13 +285,13 @@ async function handleControl(req, env) {
     cleanViewers();
     return new Response(JSON.stringify({ viewers: viewerTimestamps.size }), {
       status: 200,
-      headers: { "Content-Type": "application/json", "Cache-Control": "no-store", "Access-Control-Allow-Origin": "*" },
+      headers: { "Content-Type": "application/json", "Cache-Control": "no-store", "Access-Control-Allow-Origin": CORS_ORIGIN },
     });
   }
 
   return new Response(JSON.stringify({ error: "Unknown action" }), {
     status: 400,
-    headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+    headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN },
   });
 }
 
@@ -275,12 +300,12 @@ async function handleVersion(req, env) {
     const v = await env.CONTROL_VERSION.get("latest");
     return new Response(JSON.stringify({ version: v || null }), {
       status: 200,
-      headers: { "Content-Type": "application/json", "Cache-Control": "public, s-maxage=3", "Access-Control-Allow-Origin": "*" },
+      headers: { "Content-Type": "application/json", "Cache-Control": "public, s-maxage=3", "Access-Control-Allow-Origin": CORS_ORIGIN },
     });
   } catch (e) {
     return new Response(JSON.stringify({ version: null }), {
       status: 200,
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN },
     });
   }
 }
@@ -433,23 +458,22 @@ function addSecurityHeaders(response) {
   }));
 }
 
-async function addCors(responsePromise) {
-  const response = await responsePromise;
-  const headers = new Headers(response.headers);
-  headers.set("Access-Control-Allow-Origin", "*");
-  headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers,
-  });
-}
-
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const path = url.pathname;
+
+    // Rate limit public worker API endpoints (no auth) by client IP.
+    if (path === "/api/control" || path === "/api/control-version") {
+      cleanRateLimitStore();
+      const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+      if (!checkRateLimit(ip)) {
+        return addSecurityHeaders(new Response(JSON.stringify({ error: "rate limited" }), {
+          status: 429,
+          headers: { "Content-Type": "application/json", "Cache-Control": "no-store", "Retry-After": "60" },
+        }));
+      }
+    }
 
     if (path === "/api/control") return addSecurityHeaders(await handleControl(request, env));
     if (path === "/api/control-version") return addSecurityHeaders(await handleVersion(request, env));
