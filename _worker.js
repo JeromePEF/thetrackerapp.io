@@ -337,16 +337,76 @@ const SECURITY_HEADERS = {
   ].join("; "),
 };
 
+// ── ANALYTICS, INJECTED AT THE EDGE ──────────────────────────────────────
+// GA4 for account 262650966 / property 533184487. Data stops in GA4 on
+// 2026-07-13, the day the tracker was removed along with the cookie banner.
+//
+// WHY HERE AND NOT ONLY IN THE BUNDLE. Restoring src/google-analytics.js is not
+// enough to bring the numbers back, because almost nothing in the marketing
+// funnel ever loaded it:
+//   • src/main.js — the HOMEPAGE — never called initGoogleAnalytics() at all.
+//     It was tracked by a hardcoded snippet in index.html's <head>, and that
+//     snippet is what got deleted.
+//   • the 2,033 generated /exercises/* pages load NO module whatsoever. That is
+//     2,034 URLs of SEO surface, the pages most likely to receive organic and
+//     campaign traffic, and the bundle could never have covered them.
+//   • only 8 of ~40 entries call it, mostly dashboard/login/affiliate pages.
+//
+// Every response leaves through addSecurityHeaders, so injecting here is the
+// one place that covers static pages, the rendered homepage and generated
+// pages alike — and it cannot be forgotten by a new page or a new generator.
+//
+// NO DOUBLE COUNTING. The tag carries data-ga-loader, which is exactly what
+// initGoogleAnalytics() checks before adding its own, so on the 8 pages that
+// do call it the module sees this tag and no-ops instead of configuring the
+// same property twice.
+//
+// Cookieless, matching the module: the banner was deliberately removed, so
+// client_storage:"none" plus consent-mode denied keeps it that way. The CSP
+// already allows googletagmanager.com in script-src and google-analytics.com
+// in connect-src — it was provisioned for this and never un-provisioned.
+const GA_MEASUREMENT_ID = "G-RNSBGSR08Y";
+const GA_SNIPPET =
+  `<script async src="https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}"` +
+  ` data-ga-loader="${GA_MEASUREMENT_ID}"></script>` +
+  `<script>window.dataLayer=window.dataLayer||[];` +
+  `function gtag(){dataLayer.push(arguments);}` +
+  `gtag('js',new Date());` +
+  `gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',` +
+  `ad_personalization:'denied',analytics_storage:'denied'});` +
+  `gtag('config','${GA_MEASUREMENT_ID}',{anonymize_ip:true,transport_type:'beacon',` +
+  `client_storage:'none',allow_google_signals:false,` +
+  `allow_ad_personalization_signals:false});</script>`;
+
+class GaHeadInjector {
+  element(head) {
+    head.append(GA_SNIPPET, { html: true });
+  }
+}
+
+function injectAnalytics(response) {
+  // HTML only: JSON routes, the plain-text 404 and redirects must pass through
+  // untouched, and HTMLRewriter on a non-HTML body would be wasted work.
+  const ct = response.headers.get("content-type") || "";
+  if (!ct.includes("text/html")) return response;
+  try {
+    return new HTMLRewriter().on("head", new GaHeadInjector()).transform(response);
+  } catch (_) {
+    // Never let analytics take the page down.
+    return response;
+  }
+}
+
 function addSecurityHeaders(response) {
   const headers = new Headers(response.headers);
   for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
     if (!headers.has(key)) headers.set(key, value);
   }
-  return new Response(response.body, {
+  return injectAnalytics(new Response(response.body, {
     status: response.status,
     statusText: response.statusText,
     headers,
-  });
+  }));
 }
 
 async function addCors(responsePromise) {

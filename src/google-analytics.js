@@ -29,10 +29,23 @@
 
 const GA_SCRIPT_ORIGIN = "https://www.googletagmanager.com/gtag/js";
 
+// The property's real measurement ID, recovered from git history: it was live
+// in index.html and in the built bundle through 73bc7a1 (2026-07-11) and gone
+// from 465760b (2026-07-13) onward — which is the day the data stops in GA4.
+// Account 262650966 / property 533184487.
+//
+// Hardcoded as the DEFAULT on purpose. A measurement ID is not a secret — it
+// ships in the page source by definition, and it was literally inline in
+// index.html before. Depending on a build-time variable is what silently broke
+// this: VITE_GA_MEASUREMENT_ID is set in no .env in this repo, so a rebuild on
+// any machine or CI that lacked it would quietly produce a tracker-less site
+// with nothing to indicate it. The env var still wins if present, so staging
+// or a second property can override it.
+const GA_DEFAULT_MEASUREMENT_ID = "G-RNSBGSR08Y";
+
 function getMeasurementId() {
   const raw = import.meta.env.VITE_GA_MEASUREMENT_ID;
-  if (typeof raw !== "string") return "";
-  const id = raw.trim();
+  const id = (typeof raw === "string" && raw.trim()) || GA_DEFAULT_MEASUREMENT_ID;
   // Guard against a placeholder being shipped as if it were real: the setup
   // doc carries "G-XXXXXXXXXX" as an example and it has been copied before.
   if (!/^G-[A-Z0-9]{6,15}$/i.test(id) || /^G-X+$/i.test(id)) return "";
