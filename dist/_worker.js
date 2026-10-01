@@ -329,7 +329,13 @@ const SECURITY_HEADERS = {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src 'self' data: https: blob:",
     "font-src 'self' https://fonts.gstatic.com",
-    "connect-src 'self' https://api.thetrackerapp.io https://www.google-analytics.com https://pagead2.googlesyndication.com https://docs.google.com https://ipapi.co",
+    // GA4 does NOT always post to www.google-analytics.com. From a European
+    // edge (this zone serves CDG) it uses region1.google-analytics.com, and
+    // analytics.google.com is used for some payloads — both were blocked by
+    // connect-src, so the tag loaded, built its hit, and the browser refused
+    // to send it. A CSP that allows the SCRIPT but not its COLLECT endpoint
+    // looks correctly installed and reports nothing.
+    "connect-src 'self' https://api.thetrackerapp.io https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://pagead2.googlesyndication.com https://docs.google.com https://ipapi.co",
     "frame-src 'self' https://www.youtube.com https://js.stripe.com",
     "frame-ancestors 'none'",
     "base-uri 'self'",
@@ -372,8 +378,17 @@ const GA_SNIPPET =
   `<script>window.dataLayer=window.dataLayer||[];` +
   `function gtag(){dataLayer.push(arguments);}` +
   `gtag('js',new Date());` +
+  // analytics_storage GRANTED, deliberately. With it denied, GA4 sends only
+  // cookieless CONSENT PINGS: they are modelled, never surface in Realtime,
+  // and leave the property reporting "Data collection isn't active" — which
+  // is exactly what happened. Granted sends real hits.
+  //
+  // It is still COOKIELESS, because client_storage:'none' below is what
+  // actually governs cookie writing — not this flag. So no _ga cookie is set,
+  // nothing is stored on the device, and the banner that was removed stays
+  // removed. Advertising storage remains denied on all three axes.
   `gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',` +
-  `ad_personalization:'denied',analytics_storage:'denied'});` +
+  `ad_personalization:'denied',analytics_storage:'granted'});` +
   `gtag('config','${GA_MEASUREMENT_ID}',{anonymize_ip:true,transport_type:'beacon',` +
   `client_storage:'none',allow_google_signals:false,` +
   `allow_ad_personalization_signals:false});</script>`;

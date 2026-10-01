@@ -78,7 +78,11 @@ export function initGoogleAnalytics() {
     ad_storage: "denied",
     ad_user_data: "denied",
     ad_personalization: "denied",
-    analytics_storage: cookieless ? "denied" : "granted",
+    // Always granted: this flag decides whether hits are COLLECTED, while
+    // client_storage below decides whether a COOKIE is written. Tying it to
+    // `cookieless` conflated the two and silently reduced the site to
+    // unreportable consent pings.
+    analytics_storage: "granted",
   });
   window.gtag("config", measurementId, {
     anonymize_ip: true,
