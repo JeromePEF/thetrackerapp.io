@@ -22,6 +22,7 @@ function cacheElements() {
     "userRecentWorkouts", "userRecentWorkoutList",
     "userDayLog", "dayWeek", "dayBody", "dayPick",
     "dayPrevWeek", "dayNextWeek", "dayWeekLabel",
+    "userBodyMap", "bmCanvas", "bmNote", "bmModeDay", "bmModeAll",
   ];
   ids.forEach(function (id) {
     els[id] = document.getElementById(id);
@@ -79,9 +80,22 @@ function showProfile() {
   if (els.userRecentWorkouts) els.userRecentWorkouts.hidden = false;
 }
 
-function setMeta(name, displayName) {
-  var title = (displayName || name) + " | The Tracker App";
-  var desc = "View " + (displayName || name) + "'s fitness activity, workout heatmaps, and tracking stats on The Tracker App.";
+/* These links get posted to TikTok and YouTube, where the preview card IS the
+   advert. "View someone's fitness activity" says nothing; "3,340 workouts · a
+   56-day streak" is the proof, and it costs nothing to put the real numbers in
+   the text the scraper already reads. */
+function setMeta(name, displayName, stats, memberNo) {
+  var s = stats || {};
+  var bits = [];
+  if (s.totalWorkouts) bits.push(formatNumber(s.totalWorkouts) + " workouts");
+  if (s.currentStreak) bits.push(s.currentStreak + "-day streak");
+  if (s.activeDays) bits.push(formatNumber(s.activeDays) + " active days");
+  var title = "@" + name + (bits.length ? " — " + bits.slice(0, 2).join(" · ") : "")
+    + " | The Tracker App";
+  var desc = bits.length
+    ? "@" + name + (memberNo ? " (member #" + memberNo + ")" : "") + " on The Tracker App: "
+      + bits.join(" · ") + ". Every set and every meal, logged by text."
+    : "View @" + name + "'s workouts, nutrition and streak on The Tracker App.";
   var profileUrl = "https://thetrackerapp.io/@" + encodeURIComponent(name);
 
   if (els.userPageTitle) els.userPageTitle.textContent = title;
@@ -436,6 +450,139 @@ function renderRecentWorkouts(target, workouts) {
 
 /* ======== Render ======== */
 
+/* ======== Body map ======== */
+/* A blank figure with the trained muscles lit: front and back, because half
+   the groups are not visible from the front and a diagram that cannot show
+   lats or glutes would misrepresent a pulling day entirely.
+   Two modes from the same drawing — THIS DAY (what was trained) and ALL TIME
+   (how the work is distributed, hottest group red) — because "what did I do
+   today" and "what am I neglecting" are different questions. */
+
+var BODY_SHAPES = [
+  // group,        view,    shape          (coords in a 0-100 x 0-260 box)
+  ["neck",        "front", "rect", 44, 30, 12, 10, 3],
+  ["traps",       "front", "path", "M30,42 L50,38 L70,42 L64,50 L36,50 Z"],
+  ["frontDelts",  "front", "circle", 27, 54, 9],
+  ["frontDelts",  "front", "circle", 73, 54, 9],
+  ["chest",       "front", "path", "M36,50 L50,54 L50,76 L34,72 Z"],
+  ["chest",       "front", "path", "M64,50 L50,54 L50,76 L66,72 Z"],
+  ["biceps",      "front", "rect", 17, 64, 10, 26, 5],
+  ["biceps",      "front", "rect", 73, 64, 10, 26, 5],
+  ["forearms",    "front", "rect", 14, 92, 9, 30, 4],
+  ["forearms",    "front", "rect", 77, 92, 9, 30, 4],
+  ["abs",         "front", "rect", 42, 78, 16, 34, 3],
+  ["obliques",    "front", "path", "M34,76 L42,80 L42,112 L34,104 Z"],
+  ["obliques",    "front", "path", "M66,76 L58,80 L58,112 L66,104 Z"],
+  ["quads",       "front", "rect", 34, 126, 14, 46, 6],
+  ["quads",       "front", "rect", 52, 126, 14, 46, 6],
+  ["calves",      "front", "rect", 36, 186, 11, 34, 5],
+  ["calves",      "front", "rect", 53, 186, 11, 34, 5],
+  // back view, drawn in its own 0-100 box and translated
+  ["traps",       "back",  "path", "M30,42 L50,37 L70,42 L62,62 L50,56 L38,62 Z"],
+  ["rearDelts",   "back",  "circle", 27, 54, 9],
+  ["rearDelts",   "back",  "circle", 73, 54, 9],
+  ["upperBack",   "back",  "rect", 38, 60, 24, 18, 3],
+  ["lats",        "back",  "path", "M36,62 L50,70 L50,96 L32,86 Z"],
+  ["lats",        "back",  "path", "M64,62 L50,70 L50,96 L68,86 Z"],
+  ["lowerBack",   "back",  "rect", 42, 96, 16, 20, 3],
+  ["triceps",     "back",  "rect", 17, 64, 10, 26, 5],
+  ["triceps",     "back",  "rect", 73, 64, 10, 26, 5],
+  ["forearms",    "back",  "rect", 14, 92, 9, 30, 4],
+  ["forearms",    "back",  "rect", 77, 92, 9, 30, 4],
+  ["glutes",      "back",  "path", "M34,116 L50,112 L66,116 L66,134 L50,138 L34,134 Z"],
+  ["hamstrings",  "back",  "rect", 34, 138, 14, 42, 6],
+  ["hamstrings",  "back",  "rect", 52, 138, 14, 42, 6],
+  ["calves",      "back",  "rect", 36, 186, 11, 34, 5],
+  ["calves",      "back",  "rect", 53, 186, 11, 34, 5],
+];
+
+var MUSCLE_LABELS = {
+  chest: "Chest", frontDelts: "Front delts", sideDelts: "Side delts",
+  rearDelts: "Rear delts", biceps: "Biceps", triceps: "Triceps",
+  forearms: "Forearms", traps: "Traps", lats: "Lats", upperBack: "Upper back",
+  lowerBack: "Lower back", abs: "Abs", obliques: "Obliques", glutes: "Glutes",
+  quads: "Quads", hamstrings: "Hamstrings", calves: "Calves", neck: "Neck",
+  cardio: "Cardio"
+};
+
+/* Female figures get narrower shoulders and wider hips. Applied as a transform
+   about the body's own centre line so every region moves together rather than
+   needing a second table of coordinates to drift out of sync with the first. */
+function bodySilhouette(view, female) {
+  var shoulder = female ? 0.9 : 1;
+  var hip = female ? 1.1 : 1;
+  return '<path class="bm-silhouette" d="'
+    + "M50,22 C56,22 60,26 60,31 C60,36 56,40 50,40 C44,40 40,36 40,31 C40,26 44,22 50,22 Z"
+    + "M" + (50 - 22 * shoulder) + ",46 C" + (50 - 26 * shoulder) + ",52 " + (50 - 20 * shoulder) + ",70 "
+    + (50 - 18 * shoulder) + ",96 L" + (50 - 20 * hip) + ",124 L" + (50 - 17 * hip) + ",180 L" + (50 - 15 * hip) + ",232 "
+    + "L" + (50 - 4) + ",232 L" + (50 - 6) + ",150 L50,140 L" + (50 + 6) + ",150 L" + (50 + 4) + ",232 "
+    + "L" + (50 + 15 * hip) + ",232 L" + (50 + 17 * hip) + ",180 L" + (50 + 20 * hip) + ",124 "
+    + "L" + (50 + 18 * shoulder) + ",96 C" + (50 + 20 * shoulder) + ",70 " + (50 + 26 * shoulder) + ",52 "
+    + (50 + 22 * shoulder) + ",46 Z"
+    + '" />';
+}
+
+function bodyShapeSvg(def) {
+  var group = def[0], view = def[1], kind = def[2];
+  var attrs = 'class="bm-m" data-m="' + group + '"';
+  if (kind === "rect") {
+    return "<rect " + attrs + ' x="' + def[3] + '" y="' + def[4] + '" width="' + def[5]
+      + '" height="' + def[6] + '" rx="' + (def[7] || 2) + '" />';
+  }
+  if (kind === "circle") {
+    return "<circle " + attrs + ' cx="' + def[3] + '" cy="' + def[4] + '" r="' + def[5] + '" />';
+  }
+  return "<path " + attrs + ' d="' + def[3] + '" />';
+}
+
+function renderBodyMap(target, loads, female) {
+  if (!target) return;
+  var values = Object.keys(loads || {}).map(function (k) { return loads[k]; })
+    .filter(function (v) { return v > 0; });
+  if (!values.length) {
+    target.innerHTML = '<p class="daylog-empty">No mapped movements for this view.</p>';
+    return;
+  }
+  var max = Math.max.apply(null, values);
+
+  function svgFor(view) {
+    var shapes = BODY_SHAPES.filter(function (d) { return d[1] === view; })
+      .map(bodyShapeSvg).join("");
+    return '<svg viewBox="0 0 100 250" class="bm-svg" role="img" aria-label="'
+      + (view === "front" ? "Front" : "Back") + ' muscle map">'
+      + bodySilhouette(view, female) + shapes + "</svg>";
+  }
+
+  target.innerHTML = '<div class="bm-wrap">'
+    + '<figure><figcaption>Front</figcaption>' + svgFor("front") + "</figure>"
+    + '<figure><figcaption>Back</figcaption>' + svgFor("back") + "</figure>"
+    + "</div>";
+
+  // Intensity is applied AFTER the markup exists, so the same drawing serves
+  // both modes and nothing about the figure is duplicated per mode.
+  target.querySelectorAll(".bm-m").forEach(function (el) {
+    var g = el.dataset.m;
+    var v = (loads && loads[g]) || 0;
+    // Square-root scaling: a linear ramp against a 948-set maximum left
+    // everything except the top two or three groups looking untrained.
+    var t = v > 0 ? Math.sqrt(v / max) : 0;
+    el.style.opacity = v > 0 ? String(0.18 + 0.82 * t) : "0";
+    el.setAttribute("data-on", v > 0 ? "1" : "0");
+    if (v > 0) {
+      el.innerHTML = "<title>" + escapeHtml((MUSCLE_LABELS[g] || g) + " — "
+        + (Math.round(v * 10) / 10) + " sets") + "</title>";
+    }
+  });
+
+  var top = Object.keys(loads).filter(function (k) { return loads[k] > 0; })
+    .sort(function (a, b) { return loads[b] - loads[a]; });
+  var legend = top.slice(0, 6).map(function (k) {
+    return '<span class="bm-chip">' + escapeHtml(MUSCLE_LABELS[k] || k) + " "
+      + (Math.round(loads[k] * 10) / 10) + "</span>";
+  }).join("");
+  target.insertAdjacentHTML("beforeend", '<div class="bm-legend">' + legend + "</div>");
+}
+
 /* ======== Daily log ======== */
 /* A streak is a claim; the day's actual sets are the evidence. The strip runs
    Sunday to Saturday because that is how a training week is read, and it can
@@ -443,6 +590,30 @@ function renderRecentWorkouts(target, workouts) {
    current week. */
 
 var dayState = { username: "", weekStart: null, activity: {}, selected: "", earliest: "" };
+var bodyState = { mode: "day", day: null, all: null, female: false };
+
+function paintBodyMap() {
+  if (!els.userBodyMap || els.userBodyMap.hidden) return;
+  var isDay = bodyState.mode === "day";
+  var loads = isDay ? (bodyState.day || {}) : (bodyState.all || {});
+  if (els.bmModeDay) els.bmModeDay.setAttribute("aria-pressed", String(isDay));
+  if (els.bmModeAll) els.bmModeAll.setAttribute("aria-pressed", String(!isDay));
+  renderBodyMap(els.bmCanvas, loads, bodyState.female);
+  if (els.bmNote) {
+    els.bmNote.textContent = isDay
+      ? "Lit regions are what this day's movements trained. Intensity is sets."
+      : "Heat is total sets per muscle over the last year — the hottest region is the most trained.";
+  }
+}
+
+function wireBodyMap() {
+  if (els.bmModeDay) els.bmModeDay.addEventListener("click", function () {
+    bodyState.mode = "day"; paintBodyMap();
+  });
+  if (els.bmModeAll) els.bmModeAll.addEventListener("click", function () {
+    bodyState.mode = "all"; paintBodyMap();
+  });
+}
 
 function isoDay(d) {
   return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0")
@@ -568,9 +739,26 @@ async function loadDay(key) {
     // 403 carries consent:false and is a real answer, not a failure — the
     // difference between "not shared" and "nothing logged" has to survive.
     renderDayBody(body);
+    // The day's muscles ride along with the day payload, so the diagram and
+    // the log below it can never describe different days.
+    bodyState.day = (body && body.muscles) || {};
+    if (bodyState.mode === "day") paintBodyMap();
   } catch (err) {
     renderDayBody(null);
   }
+}
+
+function initBodyMap(data) {
+  var visibility = data.publicVisibility || {};
+  var shown = visibility.workouts === true && !!data.muscleTotals;
+  if (els.userBodyMap) els.userBodyMap.hidden = !shown;
+  if (!shown) return;
+  bodyState.all = data.muscleTotals || {};
+  // Figure proportions follow the stated gender; male is the fallback rather
+  // than a claim, since the field is optional and often blank.
+  var g = String((data.profile || {}).emojiGender || (data.profile || {}).sex || "").toLowerCase();
+  bodyState.female = g.indexOf("f") === 0 || g === "woman" || g === "female";
+  paintBodyMap();
 }
 
 function initDayLog(data) {
@@ -643,13 +831,27 @@ function renderProfile(data) {
   var streak = stats.currentStreak ?? null;
   var activeDays = stats.activeDays ?? null;
 
-  setMeta(username, displayName);
+  setMeta(username, displayName, stats, profile.memberNumber);
 
-  var initial = (displayName.replace(/[^\p{L}\p{N}]/gu, " ").trim()[0] || "?").toUpperCase();
-  if (els.userAvatar) els.userAvatar.textContent = initial;
-  if (els.userDisplayName) els.userDisplayName.textContent = displayName;
-  if (els.userHandle) els.userHandle.textContent = username ? "@" + username : "";
-  if (els.userJoined) els.userJoined.textContent = joined ? "Joined " + joined : "";
+  // THE HEADING IS THE USERNAME. displayName resolves to the flair emoji
+  // first, so the page's <h1> was literally "👨" with the actual name demoted
+  // to the line beneath it.
+  var flair = /^[\p{L}\p{N}]/u.test(displayName) ? "" : displayName;
+  if (els.userAvatar) els.userAvatar.textContent = flair
+    || (username.replace(/[^\p{L}\p{N}]/gu, " ").trim()[0] || "?").toUpperCase();
+  if (els.userDisplayName) els.userDisplayName.textContent = username ? "@" + username : displayName;
+
+  // MEMBER NUMBER as a standing credential: joining early is a thing you keep,
+  // and it only means anything next to the date it came from.
+  var memberNo = profile.memberNumber;
+  if (els.userHandle) {
+    els.userHandle.textContent = memberNo ? "Member #" + memberNo : "";
+  }
+  if (els.userJoined) {
+    els.userJoined.textContent = joined
+      ? (memberNo ? "Joined " + joined : "Joined " + joined)
+      : "";
+  }
 
   if (els.userStatWorkouts) els.userStatWorkouts.textContent = formatNumber(totalWorkouts);
   if (els.userStatStreak) els.userStatStreak.textContent = formatNumber(streak);
@@ -714,6 +916,7 @@ function renderProfile(data) {
     els.userRecentWorkouts.hidden = true;
   }
 
+  initBodyMap(data);
   initDayLog(data);
   showProfile();
 }
@@ -744,6 +947,7 @@ async function fetchPublicProfile(username) {
 async function init() {
   cacheElements();
   wireDayLog();        // listeners bind once; the data arrives later
+  wireBodyMap();
 
   var username = extractUsernameFromPath();
 

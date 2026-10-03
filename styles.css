@@ -3536,3 +3536,35 @@ footer { position: relative; }
   .daylog-week button { padding: 0.45em 0.1em; }
   .daylog-week button .dw-num { font-size: 0.85rem; }
 }
+
+
+/* ── PUBLIC PROFILE: BODY MAP ───────────────────────────────────────────── */
+.user-bodymap { margin-top: 18px; }
+.bm-modes { display: flex; gap: 0.4em; }
+.bm-modes button {
+  background: transparent; color: inherit; border: 1px solid rgba(255,255,255,0.28);
+  border-radius: 6px; padding: 0.35em 0.7em; font: inherit; font-size: 0.76rem; cursor: pointer;
+}
+.bm-modes button[aria-pressed="true"] { background: #f2efe9; color: #111; border-color: #f2efe9; }
+.bm-wrap { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
+.bm-wrap figure { margin: 0; flex: 1 1 0; max-width: 190px; text-align: center; }
+.bm-wrap figcaption {
+  font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase;
+  opacity: 0.6; margin-bottom: 4px;
+}
+.bm-svg { width: 100%; height: auto; display: block; }
+/* The blank body: a faint outline so an untrained region reads as "not worked"
+   rather than as missing from the drawing. */
+.bm-silhouette { fill: rgba(255,255,255,0.055); stroke: rgba(255,255,255,0.22); stroke-width: 0.8; }
+/* Cold -> hot. Worked regions are tinted by load; opacity carries intensity so
+   one fill colour serves every level. */
+.bm-m { fill: #ff4d2e; transition: opacity 0.18s ease; }
+.bm-m[data-on="0"] { fill: transparent; }
+.bm-legend { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-top: 10px; }
+.bm-chip {
+  font-family: "IBM Plex Mono", monospace; font-size: 0.68rem;
+  background: rgba(255,77,46,0.14); border: 1px solid rgba(255,77,46,0.4);
+  border-radius: 4px; padding: 0.15em 0.45em;
+}
+#bmNote { margin-top: 8px; }
+@media (max-width: 420px) { .bm-wrap { gap: 4px; } }

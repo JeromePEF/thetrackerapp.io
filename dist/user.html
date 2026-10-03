@@ -34,7 +34,7 @@
       href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
-    <script type="module" crossorigin src="/assets/user-C38Uz6uZ.js"></script>
+    <script type="module" crossorigin src="/assets/user-D-1YD1xG.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-BNRNPu-U.js">
     <link rel="stylesheet" crossorigin href="/assets/user-DnuJJZDi.css">
   </head>
@@ -137,6 +137,22 @@
             </div>
             <div id="userStreaksRows" class="user-lb-rows"></div>
           </article>
+        </section>
+
+        <!-- BODY MAP. Front and back, because half the groups are invisible
+             from the front and a pulling day would otherwise look like a rest
+             day. Two modes off one drawing: what was trained on the selected
+             day, and how the work is distributed across all of it. -->
+        <section class="user-bodymap" id="userBodyMap" hidden>
+          <div class="user-section-head">
+            <h3>Body map</h3>
+            <div class="bm-modes">
+              <button type="button" id="bmModeDay" aria-pressed="true">This day</button>
+              <button type="button" id="bmModeAll" aria-pressed="false">All time</button>
+            </div>
+          </div>
+          <div id="bmCanvas"></div>
+          <p class="hint" id="bmNote"></p>
         </section>
 
         <!-- DAILY LOG. A streak number is a claim; 112 logged sets is evidence.
