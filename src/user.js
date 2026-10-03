@@ -20,6 +20,8 @@ function cacheElements() {
     "userLeaderboard", "strengthCard", "calisthenicsCard", "streaksCard",
     "userStrengthRows", "userCalisthenicsRows", "userStreaksRows",
     "userRecentWorkouts", "userRecentWorkoutList",
+    "userDayLog", "dayWeek", "dayBody", "dayPick",
+    "dayPrevWeek", "dayNextWeek", "dayWeekLabel",
   ];
   ids.forEach(function (id) {
     els[id] = document.getElementById(id);
@@ -434,6 +436,201 @@ function renderRecentWorkouts(target, workouts) {
 
 /* ======== Render ======== */
 
+/* ======== Daily log ======== */
+/* A streak is a claim; the day's actual sets are the evidence. The strip runs
+   Sunday to Saturday because that is how a training week is read, and it can
+   be walked backwards through the whole history rather than only showing the
+   current week. */
+
+var dayState = { username: "", weekStart: null, activity: {}, selected: "", earliest: "" };
+
+function isoDay(d) {
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0")
+    + "-" + String(d.getDate()).padStart(2, "0");
+}
+function parseDay(key) {
+  var p = String(key || "").split("-");
+  // Constructed in LOCAL time on purpose: new Date("2026-10-02") parses as UTC
+  // and renders as the 1st for anyone west of Greenwich, which would put every
+  // day in the strip under the wrong weekday.
+  return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+}
+function sundayOf(d) {
+  var x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  x.setDate(x.getDate() - x.getDay());
+  return x;
+}
+
+function renderDayWeek() {
+  var host = els.dayWeek;
+  if (!host || !dayState.weekStart) return;
+  var names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  var todayKey = isoDay(new Date());
+  host.innerHTML = "";
+  for (var i = 0; i < 7; i += 1) {
+    var d = new Date(dayState.weekStart.getFullYear(), dayState.weekStart.getMonth(),
+      dayState.weekStart.getDate() + i);
+    var key = isoDay(d);
+    var has = (dayState.activity[key] || 0) > 0;
+    var b = document.createElement("button");
+    b.type = "button";
+    b.setAttribute("role", "tab");
+    b.dataset.day = key;
+    b.dataset.has = has ? "1" : "0";
+    b.setAttribute("aria-selected", String(key === dayState.selected));
+    // A future day is not "empty", it has not happened — so it is disabled
+    // rather than shown as a day with nothing logged.
+    if (key > todayKey) b.disabled = true;
+    b.innerHTML = '<span class="dw-dow">' + names[i] + "</span>"
+      + '<span class="dw-num">' + d.getDate() + "</span>"
+      + '<span class="dw-dot"></span>';
+    host.appendChild(b);
+  }
+  var end = new Date(dayState.weekStart.getFullYear(), dayState.weekStart.getMonth(),
+    dayState.weekStart.getDate() + 6);
+  if (els.dayWeekLabel) {
+    els.dayWeekLabel.textContent = dayState.weekStart.toLocaleDateString(undefined,
+      { month: "short", day: "numeric" }) + " – " + end.toLocaleDateString(undefined,
+      { month: "short", day: "numeric", year: "numeric" });
+  }
+  if (els.dayNextWeek) {
+    els.dayNextWeek.disabled = isoDay(dayState.weekStart) >= isoDay(sundayOf(new Date()));
+  }
+  if (els.dayPrevWeek) {
+    els.dayPrevWeek.disabled = !!dayState.earliest
+      && isoDay(end) <= dayState.earliest;
+  }
+}
+
+/* Three row shapes, and a label that reads naturally for each:
+     weighted      sets + reps + weight   ->  "1×25 @ 135lb"
+     calisthenics  a bare count           ->  "25 reps"
+     hold          seconds only           ->  "60s"
+   Mixing them produced "NonexNone" for pullups and dead hangs, which are most
+   of a real log. */
+function setsLabel(set) {
+  if (set.seconds) return set.seconds + "s";
+  if (set.sets && set.reps) {
+    return set.sets + "×" + set.reps + (set.weight ? " @ " + set.weight + (set.unit || "") : "");
+  }
+  var n = set.reps || set.count;
+  if (n) return n + " reps" + (set.weight ? " @ " + set.weight + (set.unit || "") : "");
+  if (set.weight) return set.weight + (set.unit || "");
+  return "—";
+}
+
+function renderDayBody(payload) {
+  var host = els.dayBody;
+  if (!host) return;
+  if (!payload) { host.innerHTML = '<p class="daylog-empty">Could not load that day.</p>'; return; }
+  if (payload.consent === false) {
+    host.innerHTML = '<p class="daylog-empty">This profile has not shared its daily log.</p>';
+    return;
+  }
+  var html = "";
+  var w = payload.workouts || [];
+  if (w.length) {
+    html += '<p class="daylog-sub">Workouts</p>';
+    w.forEach(function (ex) {
+      html += '<div class="daylog-ex"><h4>' + escapeHtml(ex.exercise) + "</h4><div class=\"daylog-sets\">"
+        + ex.sets.map(function (st) { return "<span>" + escapeHtml(setsLabel(st)) + "</span>"; }).join("")
+        + "</div></div>";
+    });
+  }
+  var n = payload.nutrition;
+  if (n && n.items && n.items.length) {
+    html += '<p class="daylog-sub">Food</p><table class="daylog-food"><tbody>';
+    n.items.forEach(function (it) {
+      html += "<tr><td>" + escapeHtml(it.name) + "</td><td>"
+        + Math.round(it.calories) + " kcal</td></tr>";
+    });
+    html += "</tbody></table>";
+    var t = n.totals || {};
+    html += '<p class="daylog-totals">' + Math.round(t.calories || 0) + " kcal · "
+      + Math.round(t.protein || 0) + "g protein · " + Math.round(t.carbs || 0) + "g carbs · "
+      + Math.round(t.fats || 0) + "g fat</p>";
+  }
+  if (payload.water && payload.water.ounces) {
+    html += '<p class="daylog-totals">' + Math.round(payload.water.ounces) + " oz water</p>";
+  }
+  host.innerHTML = html || '<p class="daylog-empty">Nothing logged on this day.</p>';
+}
+
+async function loadDay(key) {
+  dayState.selected = key;
+  renderDayWeek();
+  if (els.dayPick) els.dayPick.value = key;
+  if (els.dayBody) els.dayBody.innerHTML = '<p class="daylog-empty">Loading…</p>';
+  try {
+    var res = await fetch(API_BASE + "/api/u/" + encodeURIComponent(dayState.username)
+      + "/day/" + encodeURIComponent(key), { headers: { Accept: "application/json" } });
+    var body = await res.json().catch(function () { return null; });
+    // 403 carries consent:false and is a real answer, not a failure — the
+    // difference between "not shared" and "nothing logged" has to survive.
+    renderDayBody(body);
+  } catch (err) {
+    renderDayBody(null);
+  }
+}
+
+function initDayLog(data) {
+  var visibility = data.publicVisibility || {};
+  var shared = visibility.workouts === true || visibility.nutrition === true
+    || visibility.water === true;
+  if (els.userDayLog) els.userDayLog.hidden = !shared;
+  if (!shared) return;
+
+  dayState.username = data.username || "";
+  dayState.activity = {};
+  var days = (data.heatmap || {}).days || [];
+  var earliest = "";
+  days.forEach(function (d) {
+    var n = (d.workouts || 0) + (d.nutrition || 0) + (d.water || 0);
+    if (n > 0) {
+      dayState.activity[d.date] = n;
+      if (!earliest || d.date < earliest) earliest = d.date;
+    }
+  });
+  dayState.earliest = earliest;
+
+  // Open on the most recent day that actually has something in it, so the
+  // section never greets a reader with an empty Saturday.
+  var keys = Object.keys(dayState.activity).sort();
+  var start = keys.length ? keys[keys.length - 1] : isoDay(new Date());
+  dayState.weekStart = sundayOf(parseDay(start));
+  if (els.dayPick) {
+    els.dayPick.max = isoDay(new Date());
+    if (earliest) els.dayPick.min = earliest;
+  }
+  loadDay(start);
+}
+
+function wireDayLog() {
+  if (els.dayWeek) {
+    els.dayWeek.addEventListener("click", function (e) {
+      var b = e.target.closest("button[data-day]");
+      if (!b || b.disabled) return;
+      loadDay(b.dataset.day);
+    });
+  }
+  function shiftWeek(delta) {
+    if (!dayState.weekStart) return;
+    dayState.weekStart = new Date(dayState.weekStart.getFullYear(),
+      dayState.weekStart.getMonth(), dayState.weekStart.getDate() + delta * 7);
+    renderDayWeek();
+  }
+  if (els.dayPrevWeek) els.dayPrevWeek.addEventListener("click", function () { shiftWeek(-1); });
+  if (els.dayNextWeek) els.dayNextWeek.addEventListener("click", function () { shiftWeek(1); });
+  if (els.dayPick) {
+    els.dayPick.addEventListener("change", function (e) {
+      var v = String(e.target.value || "");
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return;
+      dayState.weekStart = sundayOf(parseDay(v));
+      loadDay(v);
+    });
+  }
+}
+
 function renderProfile(data) {
   var profile = data.profile || {};
   var stats = data.stats || {};
@@ -457,11 +654,14 @@ function renderProfile(data) {
   if (els.userStatWorkouts) els.userStatWorkouts.textContent = formatNumber(totalWorkouts);
   if (els.userStatStreak) els.userStatStreak.textContent = formatNumber(streak);
   if (els.userStatDays) els.userStatDays.textContent = formatNumber(activeDays);
-  if (els.userStatsBar) els.userStatsBar.hidden = (visibility && visibility.statsBar) !== true;
+  // `visibility` is declared BELOW with var, so reading it here saw the
+  // hoisted `undefined` and the stats bar was hidden unconditionally — no
+  // consent setting could ever reveal it. Declared before first use now.
+  var visibility = data.publicVisibility || {};
+  if (els.userStatsBar) els.userStatsBar.hidden = visibility.statsBar !== true;
 
   var heatmap = data.heatmap || {};
   var days = heatmap.days || [];
-  var visibility = data.publicVisibility || {};
 
   if (visibility.merged === true) {
     renderHeatmapChart(els.userMergedHeatmap, days, "merged");
@@ -514,6 +714,7 @@ function renderProfile(data) {
     els.userRecentWorkouts.hidden = true;
   }
 
+  initDayLog(data);
   showProfile();
 }
 
@@ -542,6 +743,7 @@ async function fetchPublicProfile(username) {
 
 async function init() {
   cacheElements();
+  wireDayLog();        // listeners bind once; the data arrives later
 
   var username = extractUsernameFromPath();
 

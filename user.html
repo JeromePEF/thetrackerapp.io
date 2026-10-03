@@ -137,6 +137,25 @@
           </article>
         </section>
 
+        <!-- DAILY LOG. A streak number is a claim; 112 logged sets is evidence.
+             Shown only when the profile has consented to share its log — the
+             API enforces the same gate, so this is not the only guard. -->
+        <section class="user-daylog" id="userDayLog" hidden>
+          <div class="user-section-head">
+            <h3>Daily log</h3>
+            <div class="daylog-jump">
+              <button type="button" id="dayPrevWeek" aria-label="Previous week">‹</button>
+              <span id="dayWeekLabel">—</span>
+              <button type="button" id="dayNextWeek" aria-label="Next week">›</button>
+              <input type="date" id="dayPick" aria-label="Jump to a date" />
+            </div>
+          </div>
+          <!-- Sunday to Saturday, the way a training week is read. -->
+          <div class="daylog-week" id="dayWeek" role="tablist"></div>
+          <hr class="daylog-rule" />
+          <div class="daylog-body" id="dayBody"></div>
+        </section>
+
         <section class="user-recent-workouts" id="userRecentWorkouts">
           <div class="user-section-head">
             <h3>Recent Workouts</h3>

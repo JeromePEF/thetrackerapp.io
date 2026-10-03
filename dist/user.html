@@ -34,7 +34,7 @@
       href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
-    <script type="module" crossorigin src="/assets/user-BPnKWoYd.js"></script>
+    <script type="module" crossorigin src="/assets/user-C38Uz6uZ.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-BNRNPu-U.js">
     <link rel="stylesheet" crossorigin href="/assets/user-DnuJJZDi.css">
   </head>
@@ -137,6 +137,25 @@
             </div>
             <div id="userStreaksRows" class="user-lb-rows"></div>
           </article>
+        </section>
+
+        <!-- DAILY LOG. A streak number is a claim; 112 logged sets is evidence.
+             Shown only when the profile has consented to share its log — the
+             API enforces the same gate, so this is not the only guard. -->
+        <section class="user-daylog" id="userDayLog" hidden>
+          <div class="user-section-head">
+            <h3>Daily log</h3>
+            <div class="daylog-jump">
+              <button type="button" id="dayPrevWeek" aria-label="Previous week">‹</button>
+              <span id="dayWeekLabel">—</span>
+              <button type="button" id="dayNextWeek" aria-label="Next week">›</button>
+              <input type="date" id="dayPick" aria-label="Jump to a date" />
+            </div>
+          </div>
+          <!-- Sunday to Saturday, the way a training week is read. -->
+          <div class="daylog-week" id="dayWeek" role="tablist"></div>
+          <hr class="daylog-rule" />
+          <div class="daylog-body" id="dayBody"></div>
         </section>
 
         <section class="user-recent-workouts" id="userRecentWorkouts">
