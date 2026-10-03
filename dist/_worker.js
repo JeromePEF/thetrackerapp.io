@@ -486,7 +486,84 @@ export default {
       return addSecurityHeaders(Response.redirect(`${url.origin}/tools/exercise-nutrition`, 301));
     }
 
-    if (path.startsWith("/@")) return addSecurityHeaders(await env.ASSETS.fetch(new URL("/user.html", request.url)));
+    // ── PROFILE LINK PREVIEWS, BUILT AT THE EDGE ────────────────────────
+    // user.html sets its og: tags from JavaScript, and NO CRAWLER RUNS
+    // JAVASCRIPT — so every shared profile scraped as the literal placeholder
+    // "User Profile | The Tracker App" with an empty og:url and the one
+    // generic site image. A 56-day streak and 3,340 logged workouts previewed
+    // exactly like an empty account, on the platform where the preview card IS
+    // the advert.
+    //
+    // So the tags are rewritten here, server-side, before anything leaves the
+    // edge. The page's own setMeta() still runs for real browsers (tab title,
+    // canonical); this is what the scrapers see.
+    if (path.startsWith("/@")) {
+        const uname = decodeURIComponent(path.slice(2)).trim();
+        const page = await env.ASSETS.fetch(new URL("/user.html", request.url));
+        if (!uname) return addSecurityHeaders(page);
+
+        let stats = null;
+        try {
+            // Short timeout and a plain fall-through: a slow API must degrade
+            // to the generic card, never hold up the page itself.
+            const ctl = new AbortController();
+            const t = setTimeout(() => ctl.abort(), 2500);
+            const r = await fetch(`https://api.thetrackerapp.io/api/u/${encodeURIComponent(uname)}`,
+                { headers: { Accept: "application/json" }, signal: ctl.signal });
+            clearTimeout(t);
+            if (r.ok) {
+                const j = await r.json();
+                if (j && j.ok) stats = j;
+            }
+        } catch (_) { /* generic preview */ }
+
+        if (!stats) return addSecurityHeaders(page);
+
+        const esc = (v) => String(v == null ? "" : v)
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        const s = stats.stats || {};
+        const p2 = stats.profile || {};
+        const name = p2.username || uname;
+        const num = (n) => Number(n || 0).toLocaleString("en-US");
+        const bits = [];
+        if (s.currentStreak) bits.push(`${s.currentStreak}-day streak`);
+        if (s.totalWorkouts) bits.push(`${num(s.totalWorkouts)} workouts`);
+        if (s.activeDays) bits.push(`${num(s.activeDays)} active days`);
+
+        const title = `@${name}${bits.length ? " — " + bits.slice(0, 2).join(" · ") : ""} | The Tracker App`;
+        const desc = bits.length
+            ? `@${name}${p2.memberNumber ? ` (member #${p2.memberNumber})` : ""}: `
+              + `${bits.join(" · ")}. Every set and every meal, logged by text.`
+            : `@${name} on The Tracker App.`;
+        const img = `https://api.thetrackerapp.io/api/u/${encodeURIComponent(name)}/card.png`;
+        const canon = `${url.origin}/@${encodeURIComponent(name)}`;
+
+        const SET = {
+            "og:title": title, "og:description": desc, "og:url": canon,
+            "og:image": img, "og:image:alt": `@${name} — ${bits.join(", ")}`,
+            "twitter:title": title, "twitter:description": desc, "twitter:image": img,
+            "twitter:card": "summary_large_image",
+        };
+
+        class Meta {
+            element(el) {
+                const key = el.getAttribute("property") || el.getAttribute("name");
+                if (key && Object.prototype.hasOwnProperty.call(SET, key)) {
+                    el.setAttribute("content", SET[key]);
+                }
+            }
+        }
+        class Title { element(el) { el.setInnerContent(title); } }
+        class Canonical { element(el) { el.setAttribute("href", canon); } }
+
+        return addSecurityHeaders(
+            new HTMLRewriter()
+                .on("meta", new Meta())
+                .on("title", new Title())
+                .on('link[rel="canonical"]', new Canonical())
+                .transform(page)
+        );
+    }
 
     // Feature-gated routes — block when flag is false in /api/control
     const GATED_ROUTES = {
