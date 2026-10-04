@@ -486,6 +486,25 @@ export default {
       return addSecurityHeaders(Response.redirect(`${url.origin}/tools/exercise-nutrition`, 301));
     }
 
+    // Share card, proxied onto the MAIN origin. og:image previously pointed at
+    // api.thetrackerapp.io; when that host wedged, scrapers silently dropped
+    // the image and fell back to whatever they had cached. Serving it from the
+    // same origin as the page removes a second host from the critical path for
+    // a link preview, and the changed URL also forces platforms holding a
+    // stale image to fetch a new one.
+    if (path.startsWith("/card/") && path.endsWith(".png")) {
+        const who = decodeURIComponent(path.slice(6, -4));
+        try {
+            const r = await fetch(`https://api.thetrackerapp.io/api/u/${encodeURIComponent(who)}/card.png`);
+            if (!r.ok) return addSecurityHeaders(new Response("Card unavailable", { status: 502 }));
+            const h = new Headers(r.headers);
+            h.set("Cache-Control", "public, max-age=3600, s-maxage=3600");
+            return addSecurityHeaders(new Response(r.body, { status: 200, headers: h }));
+        } catch (_) {
+            return addSecurityHeaders(new Response("Card unavailable", { status: 502 }));
+        }
+    }
+
     // ── PROFILE LINK PREVIEWS, BUILT AT THE EDGE ────────────────────────
     // user.html sets its og: tags from JavaScript, and NO CRAWLER RUNS
     // JAVASCRIPT — so every shared profile scraped as the literal placeholder
@@ -535,7 +554,7 @@ export default {
             ? `@${name}${p2.memberNumber ? ` (member #${p2.memberNumber})` : ""}: `
               + `${bits.join(" · ")}. Every set and every meal, logged by text.`
             : `@${name} on The Tracker App.`;
-        const img = `https://api.thetrackerapp.io/api/u/${encodeURIComponent(name)}/card.png`;
+        const img = `${url.origin}/card/${encodeURIComponent(name)}.png`;
         const canon = `${url.origin}/@${encodeURIComponent(name)}`;
 
         const SET = {

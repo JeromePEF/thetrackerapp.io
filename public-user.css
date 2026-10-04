@@ -673,3 +673,190 @@ body.user-page {
     height: 10px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MOVED FROM styles.css 2026-10-04.
+   user.html links public-user.css, NOT styles.css — so every rule written
+   for the daily log, the body map and the profile layout was landing in a
+   stylesheet this page never loads. The markup rendered completely
+   unstyled, which is exactly the "body map isn't showing, page is zoomed
+   out" report: an SVG with no width rule and a layout with no container.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── PUBLIC PROFILE: DAILY LOG ──────────────────────────────────────────
+   A clickable Sunday-to-Saturday strip over a horizontal rule, then the
+   chosen day's actual sets and actual food. */
+.user-daylog { margin-top: 18px; }
+.daylog-jump { display: flex; align-items: center; gap: 0.4em; flex-wrap: wrap; }
+.daylog-jump button {
+  background: transparent; color: inherit; border: 1px solid rgba(255,255,255,0.28);
+  border-radius: 6px; width: 30px; height: 30px; cursor: pointer; font-size: 1rem; line-height: 1;
+}
+.daylog-jump button:disabled { opacity: 0.35; cursor: default; }
+#dayWeekLabel { font-size: 0.82rem; opacity: 0.85; min-width: 11.5em; text-align: center; }
+.daylog-jump input[type="date"] {
+  background: rgba(255,255,255,0.06); color: inherit; border: 1px solid rgba(255,255,255,0.28);
+  border-radius: 6px; padding: 0.3em 0.5em; font: inherit; font-size: 0.8rem;
+  /* iOS clips a date input whose content box is shorter than its line box —
+     the same arithmetic that cut the service select in half. */
+  min-height: 34px; line-height: 1.25;
+}
+.daylog-week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 12px 0 0; }
+.daylog-week button {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 0.5em 0.2em; border-radius: 8px; cursor: pointer; font: inherit;
+  background: rgba(255,255,255,0.05); color: inherit;
+  border: 1px solid rgba(255,255,255,0.14);
+}
+.daylog-week button .dw-dow { font-size: 0.62rem; letter-spacing: 0.08em; opacity: 0.7; text-transform: uppercase; }
+.daylog-week button .dw-num { font-size: 0.95rem; font-weight: 700; }
+.daylog-week button .dw-dot { width: 5px; height: 5px; border-radius: 50%; background: transparent; }
+.daylog-week button[data-has="1"] .dw-dot { background: #38ffd3; }
+.daylog-week button[aria-selected="true"] { background: #f2efe9; color: #111; border-color: #f2efe9; }
+.daylog-week button[aria-selected="true"] .dw-dow { opacity: 0.75; }
+.daylog-week button[disabled] { opacity: 0.3; cursor: default; }
+.daylog-rule { border: 0; border-top: 1px solid rgba(255,255,255,0.16); margin: 14px 0; }
+.daylog-body { font-size: 0.86rem; }
+.daylog-ex { margin: 0 0 10px; }
+.daylog-ex h4 { margin: 0 0 3px; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.9; }
+.daylog-sets { display: flex; flex-wrap: wrap; gap: 5px; }
+.daylog-sets span {
+  font-family: "IBM Plex Mono", monospace; font-size: 0.72rem;
+  background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 4px; padding: 0.15em 0.4em;
+}
+.daylog-food { width: 100%; border-collapse: collapse; }
+.daylog-food td { padding: 0.3em 0; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 0.8rem; }
+.daylog-food td:last-child { text-align: right; font-family: "IBM Plex Mono", monospace; white-space: nowrap; }
+.daylog-totals { margin-top: 8px; font-family: "IBM Plex Mono", monospace; font-size: 0.78rem; opacity: 0.9; }
+.daylog-sub { font-size: 0.74rem; opacity: 0.7; margin: 14px 0 6px; letter-spacing: 0.1em; text-transform: uppercase; }
+.daylog-empty { opacity: 0.65; font-size: 0.82rem; }
+@media (max-width: 480px) {
+  .daylog-week { gap: 4px; }
+  .daylog-week button { padding: 0.45em 0.1em; }
+  .daylog-week button .dw-num { font-size: 0.85rem; }
+}
+
+
+/* ── PUBLIC PROFILE: BODY MAP ───────────────────────────────────────────── */
+.user-bodymap { margin-top: 18px; }
+.bm-modes { display: flex; gap: 0.4em; }
+.bm-modes button {
+  background: transparent; color: inherit; border: 1px solid rgba(255,255,255,0.28);
+  border-radius: 6px; padding: 0.35em 0.7em; font: inherit; font-size: 0.76rem; cursor: pointer;
+}
+.bm-modes button[aria-pressed="true"] { background: #f2efe9; color: #111; border-color: #f2efe9; }
+.bm-wrap { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
+.bm-wrap figure { margin: 0; flex: 1 1 0; max-width: 190px; text-align: center; }
+.bm-wrap figcaption {
+  font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase;
+  opacity: 0.6; margin-bottom: 4px;
+}
+.bm-svg { width: 100%; height: auto; display: block; }
+/* The blank body: a faint outline so an untrained region reads as "not worked"
+   rather than as missing from the drawing. */
+.bm-silhouette { fill: rgba(255,255,255,0.055); stroke: rgba(255,255,255,0.22); stroke-width: 0.8; }
+/* Cold -> hot. Worked regions are tinted by load; opacity carries intensity so
+   one fill colour serves every level. */
+.bm-m { fill: #ff4d2e; transition: opacity 0.18s ease; }
+.bm-m[data-on="0"] { fill: transparent; }
+.bm-legend { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-top: 10px; }
+.bm-chip {
+  font-family: "IBM Plex Mono", monospace; font-size: 0.68rem;
+  background: rgba(255,77,46,0.14); border: 1px solid rgba(255,77,46,0.4);
+  border-radius: 4px; padding: 0.15em 0.45em;
+}
+#bmNote { margin-top: 8px; }
+@media (max-width: 420px) { .bm-wrap { gap: 4px; } }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   PUBLIC PROFILE — LAYOUT AND MOBILE
+   The page had no rules for .user-layout at all, and the 365-day heatmap
+   lays out ~53 columns of fixed-px cells (roughly 690px). On a phone that
+   overflowed the viewport, and because nothing constrained it the whole
+   page widened — which is the "zoomed out, body map not showing" report.
+   Each wide thing now scrolls inside its own box instead of stretching the
+   document.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.user-page { overflow-x: hidden; }          /* nothing may widen the document */
+
+.user-shell { width: 100%; }
+
+.user-layout {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 16px 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Every profile block reads as a card, so sections stop running together. */
+.user-layout > section {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 14px;
+  padding: 18px;
+  min-width: 0;                              /* lets flex children shrink */
+}
+.user-layout > section.user-profile-header {
+  background: linear-gradient(135deg, rgba(255,95,69,0.14), rgba(255,95,69,0.02));
+  border-color: rgba(255, 95, 69, 0.28);
+}
+
+.user-section-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 0.8em; flex-wrap: wrap; margin-bottom: 4px;
+}
+.user-section-head h3 {
+  margin: 0; font-size: 0.82rem; letter-spacing: 0.14em;
+  text-transform: uppercase; opacity: 0.72; font-weight: 700;
+}
+
+/* Profile header: name, member number, join date. */
+.user-profile-header { display: flex; align-items: center; gap: 16px; }
+.user-avatar {
+  flex: 0 0 auto; width: 62px; height: 62px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 1.9rem;
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18);
+}
+.user-info { min-width: 0; }
+.user-display-name {
+  margin: 0; font-size: clamp(1.35rem, 6vw, 2rem); font-weight: 800;
+  letter-spacing: -0.02em; overflow-wrap: anywhere;
+}
+.user-handle, .user-joined { margin: 2px 0 0; font-size: 0.78rem; opacity: 0.72; }
+.user-handle { color: #ff8a73; font-weight: 700; letter-spacing: 0.06em; }
+
+/* Stats bar: three numbers that stay on one row even on a small phone. */
+.user-stats-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center; }
+.user-stats-bar > * { min-width: 0; }
+
+/* THE WIDE THINGS SCROLL THEMSELVES. */
+.user-heatmaps, .heatmap-card, #userMergedHeatmap, #userWorkoutHeatmap,
+#userNutritionHeatmap, #userWaterHeatmap {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.user-heatmaps > * { min-width: 0; }
+
+/* Body map: give it real size on a phone — it was two 190px figures sharing
+   a row, which on a 390px screen is a thumbnail of a thumbnail. */
+.bm-wrap { gap: 12px; }
+.bm-wrap figure { max-width: none; }
+.bm-svg { max-height: 46vh; margin: 0 auto; }
+
+@media (max-width: 560px) {
+  .user-layout { padding: 0 12px 48px; gap: 14px; }
+  .user-layout > section { padding: 14px; border-radius: 12px; }
+  .user-profile-header { gap: 12px; }
+  .user-avatar { width: 52px; height: 52px; font-size: 1.6rem; }
+  .user-stats-bar { gap: 6px; }
+  .bm-svg { max-height: 40vh; }
+  .daylog-jump { width: 100%; justify-content: space-between; }
+  .daylog-jump input[type="date"] { flex: 1 1 auto; min-width: 0; }
+  .user-section-head { gap: 0.5em; }
+}
