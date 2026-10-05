@@ -494,12 +494,25 @@ export default {
     // stale image to fetch a new one.
     if (path.startsWith("/card/") && path.endsWith(".png")) {
         const who = decodeURIComponent(path.slice(6, -4));
+        const cache = caches.default;
+        const ck = new Request(`https://og.cache/card/${encodeURIComponent(who)}.png`, { method: "GET" });
+        // Serve the cached PNG first. The API is down for ~3 minutes on every
+        // deploy, and a scraper that gets a 502 here shows no image at all and
+        // will not come back for days — so a day-old card beats a broken one.
+        try {
+            const hit = await cache.match(ck);
+            if (hit) return addSecurityHeaders(hit);
+        } catch (_) {}
         try {
             const r = await fetch(`https://api.thetrackerapp.io/api/u/${encodeURIComponent(who)}/card.png`);
             if (!r.ok) return addSecurityHeaders(new Response("Card unavailable", { status: 502 }));
-            const h = new Headers(r.headers);
-            h.set("Cache-Control", "public, max-age=3600, s-maxage=3600");
-            return addSecurityHeaders(new Response(r.body, { status: 200, headers: h }));
+            const buf = await r.arrayBuffer();
+            const out = new Response(buf, {
+                status: 200,
+                headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=86400, s-maxage=86400" }
+            });
+            ctx.waitUntil(cache.put(ck, out.clone()));
+            return addSecurityHeaders(out);
         } catch (_) {
             return addSecurityHeaders(new Response("Card unavailable", { status: 502 }));
         }
@@ -521,20 +534,62 @@ export default {
         const page = await env.ASSETS.fetch(new URL("/user.html", request.url));
         if (!uname) return addSecurityHeaders(page);
 
+        // A PREVIEW MUST NOT DEPEND ON A LIVE API CALL.
+        //
+        // This originally fetched the API on every scrape and fell through to
+        // the generic card on any failure. The API is unavailable for ~3
+        // minutes on every deploy and has wedged outright more than once — and
+        // a scraper only visits ONCE, then caches what it got for days. So a
+        // single unlucky scrape during a reload permanently pinned a generic
+        // preview on a link, which is exactly what was being reported as "the
+        // OG is still generic".
+        //
+        // Three tiers: the edge cache (minutes), then the API, then KV holding
+        // the last known good payload for a week. Stale numbers on a share
+        // card are harmless — a streak that reads one short is immeasurably
+        // better than a card that says nothing.
+        const statsKey = `ogstats:${uname.toLowerCase()}`;
         let stats = null;
+        const cache = caches.default;
+        const cacheKey = new Request(`https://og.cache/${encodeURIComponent(uname)}`, { method: "GET" });
         try {
-            // Short timeout and a plain fall-through: a slow API must degrade
-            // to the generic card, never hold up the page itself.
-            const ctl = new AbortController();
-            const t = setTimeout(() => ctl.abort(), 2500);
-            const r = await fetch(`https://api.thetrackerapp.io/api/u/${encodeURIComponent(uname)}`,
-                { headers: { Accept: "application/json" }, signal: ctl.signal });
-            clearTimeout(t);
-            if (r.ok) {
-                const j = await r.json();
-                if (j && j.ok) stats = j;
-            }
-        } catch (_) { /* generic preview */ }
+            const hit = await cache.match(cacheKey);
+            if (hit) stats = await hit.json();
+        } catch (_) {}
+
+        if (!stats) {
+            try {
+                const ctl = new AbortController();
+                const t = setTimeout(() => ctl.abort(), 2500);
+                const r = await fetch(`https://api.thetrackerapp.io/api/u/${encodeURIComponent(uname)}`,
+                    { headers: { Accept: "application/json" }, signal: ctl.signal });
+                clearTimeout(t);
+                if (r.ok) {
+                    const j = await r.json();
+                    if (j && j.ok) {
+                        stats = j;
+                        const body = JSON.stringify({
+                            ok: true, username: j.username, profile: j.profile, stats: j.stats
+                        });
+                        ctx.waitUntil(cache.put(cacheKey, new Response(body, {
+                            headers: { "Content-Type": "application/json", "Cache-Control": "max-age=600" }
+                        })));
+                        if (env.CONTROL_VERSION) {
+                            ctx.waitUntil(env.CONTROL_VERSION.put(statsKey, body, { expirationTtl: 604800 }));
+                        }
+                    }
+                }
+            } catch (_) {}
+        }
+
+        if (!stats && env.CONTROL_VERSION) {
+            // Last known good, up to a week old. Better a slightly stale
+            // streak than no card at all.
+            try {
+                const kv = await env.CONTROL_VERSION.get(statsKey);
+                if (kv) stats = JSON.parse(kv);
+            } catch (_) {}
+        }
 
         if (!stats) return addSecurityHeaders(page);
 
