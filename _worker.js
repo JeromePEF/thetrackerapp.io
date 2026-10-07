@@ -350,7 +350,11 @@ const SECURITY_HEADERS = {
   "Permissions-Policy": "camera=(), microphone=(), geolocation=(), interest-cohort=()",
   "Content-Security-Policy": [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://pagead2.googlesyndication.com",
+    // static.cloudflareinsights.com is the beacon Cloudflare injects into this
+    // zone's own pages — the CSP was blocking a script the platform adds
+    // itself, so every page load logged a violation and the zone's own
+    // analytics never reported.
+    "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://static.cloudflareinsights.com https://pagead2.googlesyndication.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src 'self' data: https: blob:",
     "font-src 'self' https://fonts.gstatic.com",
@@ -499,20 +503,29 @@ export default {
         // Serve the cached PNG first. The API is down for ~3 minutes on every
         // deploy, and a scraper that gets a 502 here shows no image at all and
         // will not come back for days — so a day-old card beats a broken one.
+        // NOT addSecurityHeaders. Those are PAGE headers, and applying them to
+        // an image sends X-Frame-Options: DENY and frame-ancestors 'none' with
+        // the PNG — so a preview renderer, which embeds the card in a frame,
+        // is told outright not to display it. That is why the title updated
+        // but the image never appeared.
+        const imgHeaders = (extra = {}) => ({
+            "Content-Type": "image/png",
+            "Cache-Control": "public, max-age=86400, s-maxage=86400",
+            "Access-Control-Allow-Origin": "*",
+            "X-Content-Type-Options": "nosniff",
+            ...extra,
+        });
         try {
             const hit = await cache.match(ck);
-            if (hit) return addSecurityHeaders(hit);
+            if (hit) return new Response(hit.body, { status: 200, headers: imgHeaders() });
         } catch (_) {}
         try {
             const r = await fetch(`https://api.thetrackerapp.io/api/u/${encodeURIComponent(who)}/card.png`);
-            if (!r.ok) return addSecurityHeaders(new Response("Card unavailable", { status: 502 }));
+            if (!r.ok) return new Response("Card unavailable", { status: 502 });
             const buf = await r.arrayBuffer();
-            const out = new Response(buf, {
-                status: 200,
-                headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=86400, s-maxage=86400" }
-            });
+            const out = new Response(buf, { status: 200, headers: imgHeaders() });
             ctx.waitUntil(cache.put(ck, out.clone()));
-            return addSecurityHeaders(out);
+            return out;
         } catch (_) {
             return addSecurityHeaders(new Response("Card unavailable", { status: 502 }));
         }
