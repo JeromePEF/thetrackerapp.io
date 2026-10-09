@@ -9,7 +9,7 @@ function cacheElements() {
   const ids = [
     "userLoading", "userError", "userErrorTitle", "userErrorMessage",
     "userProfileHeader", "userStatsBar", "userHeatmaps",
-    "userAvatar", "userDisplayName", "userHandle", "userJoined",
+    "userAvatar", "userDisplayName", "userHandle", "userJoined", "userMotto",
     "userStatWorkouts", "userStatStreak", "userStatDays",
     "userWorkoutHeatmap", "userNutritionHeatmap", "userWaterHeatmap",
     "workoutHeatmapCard", "nutritionHeatmapCard", "waterHeatmapCard",
@@ -700,6 +700,117 @@ function setsLabel(set) {
   return "—";
 }
 
+// ── MIRROR A WORKOUT ────────────────────────────────────────────────────────
+// Every set on a public profile is something another person might want to go
+// and do. These build the exact /log command that reproduces it, so mirroring
+// someone's session is a copy and a paste rather than retyping numbers off a
+// screen.
+//
+// The grammar is the one the bot actually accepts (verified against the
+// parser): `sets,reps,weight` with an optional unit suffix, a bare number for
+// a rep count, and `30s` / `2m` for a hold.
+function trimNum(value) {
+  var n = Number(value) || 0;
+  return String(Number(n.toFixed(2)));
+}
+
+function secondsToLogInput(seconds) {
+  var sec = Math.round(Number(seconds) || 0);
+  if (sec <= 0) return "";
+  return sec % 60 === 0 ? (sec / 60) + "m" : sec + "s";
+}
+
+// ONE set — "so the single would be 1,10,135". The unit rides along because a
+// bare 27.5 copied out of a kg log would be re-read as pounds.
+function logCommandForSet(exercise, st) {
+  var ex = String(exercise || "").trim();
+  if (!ex || !st) return "";
+  if (Number(st.seconds) > 0) return "/log " + ex + " " + secondsToLogInput(st.seconds);
+  var reps = Number(st.reps) || 0;
+  var weight = Number(st.weight) || 0;
+  var unit = st.unit || "";
+  if (reps && weight) return "/log " + ex + " 1," + reps + "," + trimNum(weight) + unit;
+  if (reps) return "/log " + ex + " 1," + reps;
+  if (Number(st.count) > 0) return "/log " + ex + " " + trimNum(st.count);
+  return "";
+}
+
+// THE WHOLE DAY for one movement — "or the full copy 5,10,135".
+//
+// Collapses to a single command only when the day was uniform weighted work,
+// which is the case that example describes. Otherwise it returns one command
+// PER SET: /log takes a single set shape, and given two groups on one line it
+// silently keeps the first and drops the rest, so emitting "1,10,135 1,8,145"
+// would quietly lose half the work.
+function logCommandsForExercise(exercise, sets) {
+  var rows = (sets || []).filter(Boolean);
+  if (!rows.length) return [];
+  var first = rows[0];
+  var uniformWeighted = rows.every(function (st) {
+    return Number(st.weight) > 0 && Number(st.reps) > 0
+      && Number(st.reps) === Number(first.reps)
+      && Number(st.weight) === Number(first.weight)
+      && (st.unit || "") === (first.unit || "");
+  });
+  if (uniformWeighted) {
+    var totalSets = rows.reduce(function (n, st) { return n + (Number(st.sets) || 1); }, 0);
+    return ["/log " + String(exercise).trim() + " " + totalSets + "," + Number(first.reps)
+      + "," + trimNum(first.weight) + (first.unit || "")];
+  }
+  return rows.map(function (st) { return logCommandForSet(exercise, st); })
+    .filter(Boolean);
+}
+
+function fallbackCopy(text) {
+  try {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.top = "-1000px";
+    document.body.appendChild(ta);
+    ta.select();
+    var ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch (err) {
+    return false;
+  }
+}
+
+function copyText(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text)
+      .then(function () { return true; })
+      .catch(function () { return fallbackCopy(text); });
+  }
+  return Promise.resolve(fallbackCopy(text));
+}
+
+// DELEGATED, and wired once. The command text rides in data-cmd rather than an
+// inline onclick: the site sends a Content-Security-Policy, and an inline
+// handler would simply not fire.
+function wireDayCopy() {
+  if (!els.dayBody || els.dayBody.getAttribute("data-copy-wired") === "1") return;
+  els.dayBody.setAttribute("data-copy-wired", "1");
+  els.dayBody.addEventListener("click", function (event) {
+    var btn = event.target && event.target.closest
+      ? event.target.closest(".daylog-copybtn") : null;
+    if (!btn) return;
+    var text = btn.getAttribute("data-cmd") || "";
+    if (!text) return;
+    var original = btn.getAttribute("data-label") || btn.textContent;
+    copyText(text).then(function (ok) {
+      btn.textContent = ok ? "Copied" : "Copy failed";
+      btn.classList.add("is-copied");
+      window.setTimeout(function () {
+        btn.textContent = original;
+        btn.classList.remove("is-copied");
+      }, 1600);
+    });
+  });
+}
+
 function renderDayBody(payload) {
   var host = els.dayBody;
   if (!host) return;
@@ -713,7 +824,29 @@ function renderDayBody(payload) {
   if (w.length) {
     html += '<p class="daylog-sub">Workouts</p>';
     w.forEach(function (ex) {
-      html += '<div class="daylog-ex"><h4>' + escapeHtml(ex.exercise) + "</h4><div class=\"daylog-sets\">"
+      var single = logCommandForSet(ex.exercise, (ex.sets || [])[0]);
+      var all = logCommandsForExercise(ex.exercise, ex.sets);
+      var allText = all.join("\n");
+      // "Copy all" is only a distinct offer when it differs from one set.
+      var showAll = allText && allText !== single;
+      var allLabel = all.length > 1 ? "Copy all (" + all.length + ")" : "Copy all";
+      html += '<div class="daylog-ex"><div class="daylog-exhead">'
+        + "<h4>" + escapeHtml(ex.exercise) + "</h4>"
+        + '<span class="daylog-copy">'
+        + (single
+          ? '<button type="button" class="daylog-copybtn" data-label="Copy set"'
+            + ' title="' + escapeHtml(single) + '"'
+            + ' data-cmd="' + escapeHtml(single) + '">Copy set</button>'
+          : "")
+        + (showAll
+          ? '<button type="button" class="daylog-copybtn" data-label="' + escapeHtml(allLabel) + '"'
+            + ' title="' + escapeHtml(all.length > 1
+              ? all.length + " commands - send them one at a time"
+              : allText) + '"'
+            + ' data-cmd="' + escapeHtml(allText) + '">' + escapeHtml(allLabel) + "</button>"
+          : "")
+        + "</span></div>"
+        + '<div class="daylog-sets">'
         + ex.sets.map(function (st) { return "<span>" + escapeHtml(setsLabel(st)) + "</span>"; }).join("")
         + "</div></div>";
     });
@@ -735,6 +868,7 @@ function renderDayBody(payload) {
     html += '<p class="daylog-totals">' + Math.round(payload.water.ounces) + " oz water</p>";
   }
   host.innerHTML = html || '<p class="daylog-empty">Nothing logged on this day.</p>';
+  wireDayCopy();
 }
 
 async function loadDay(key) {
@@ -861,6 +995,15 @@ function renderProfile(data) {
     els.userJoined.textContent = joined
       ? (memberNo ? "Joined " + joined : "Joined " + joined)
       : "";
+  }
+
+  // MOTTO — the user's own words, set over text with /motto. textContent, not
+  // innerHTML: this is the one string on the page that a user authored, so it
+  // is never parsed as markup no matter what the API returned.
+  if (els.userMotto) {
+    var motto = typeof profile.motto === "string" ? profile.motto.trim() : "";
+    els.userMotto.textContent = motto;
+    els.userMotto.hidden = !motto;
   }
 
   if (els.userStatWorkouts) els.userStatWorkouts.textContent = formatNumber(totalWorkouts);

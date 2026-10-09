@@ -719,6 +719,43 @@ body.user-page {
 .daylog-body { font-size: 0.86rem; }
 .daylog-ex { margin: 0 0 10px; }
 .daylog-ex h4 { margin: 0 0 3px; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.9; }
+
+/* Movement name on the left, copy actions on the right. The actions wrap
+   under the name rather than squeezing it on a narrow phone. */
+.daylog-exhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.daylog-copy { display: inline-flex; gap: 6px; flex-shrink: 0; }
+.daylog-copybtn {
+  -webkit-appearance: none;
+  appearance: none;
+  border: 1px solid rgba(255, 138, 115, 0.45);
+  background: rgba(255, 138, 115, 0.1);
+  color: #ff8a73;
+  border-radius: 999px;
+  /* 28px tall with the padding below — a tap target, not a desktop-only link. */
+  padding: 5px 11px;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.daylog-copybtn:hover { background: rgba(255, 138, 115, 0.2); }
+.daylog-copybtn:active { transform: translateY(1px); }
+.daylog-copybtn:focus-visible { outline: 2px solid #ff8a73; outline-offset: 2px; }
+.daylog-copybtn.is-copied {
+  background: rgba(110, 231, 183, 0.18);
+  border-color: rgba(110, 231, 183, 0.5);
+  color: #6ee7b7;
+}
 .daylog-sets { display: flex; flex-wrap: wrap; gap: 5px; }
 .daylog-sets span {
   font-family: "IBM Plex Mono", monospace; font-size: 0.72rem;
@@ -829,6 +866,22 @@ body.user-page {
 }
 .user-handle, .user-joined { margin: 2px 0 0; font-size: 0.78rem; opacity: 0.72; }
 .user-handle { color: #ff8a73; font-weight: 700; letter-spacing: 0.06em; }
+
+/* MOTTO — the user's own line. Set in italic against the accent rail so it
+   reads as a quote rather than as another metadata row like the join date.
+   overflow-wrap because a 120-character motto can be one unbroken word. */
+.user-motto {
+  margin: 8px 0 0;
+  padding-left: 10px;
+  border-left: 3px solid #ff8a73;
+  font-size: 0.9rem;
+  font-style: italic;
+  line-height: 1.35;
+  color: var(--ink);
+  opacity: 0.9;
+  overflow-wrap: anywhere;
+}
+.user-motto[hidden] { display: none; }
 
 /* Stats bar: three numbers that stay on one row even on a small phone. */
 .user-stats-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center; }
