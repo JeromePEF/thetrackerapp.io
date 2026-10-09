@@ -860,3 +860,21 @@ body.user-page {
   .daylog-jump input[type="date"] { flex: 1 1 auto; min-width: 0; }
   .user-section-head { gap: 0.5em; }
 }
+
+
+/* The 52-week charts are ~690px of fixed-width columns, so they scroll inside
+   their card rather than widening the page. A faint edge fade is the only hint
+   a reader gets that there is more to the left — without it a scrolled chart
+   looks like a cropped one. */
+.user-heatmaps, .heatmap-card,
+#userMergedHeatmap, #userWorkoutHeatmap, #userNutritionHeatmap, #userWaterHeatmap {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+#userMergedHeatmap::-webkit-scrollbar, #userWorkoutHeatmap::-webkit-scrollbar,
+#userNutritionHeatmap::-webkit-scrollbar, #userWaterHeatmap::-webkit-scrollbar { height: 6px; }
+#userMergedHeatmap::-webkit-scrollbar-thumb, #userWorkoutHeatmap::-webkit-scrollbar-thumb,
+#userNutritionHeatmap::-webkit-scrollbar-thumb, #userWaterHeatmap::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.22); border-radius: 3px;
+}

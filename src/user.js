@@ -375,6 +375,16 @@ function renderHeatmapChart(target, days, category) {
   table.appendChild(bodyRow);
   table.appendChild(tooltip);
   target.appendChild(table);
+
+  // SHOW THE END, NOT THE BEGINNING.
+  // The chart spans 52 weeks at a fixed 13px per column — about 690px — so on
+  // any phone it scrolls. Scroll position starts at the LEFT, which is a year
+  // ago: for an account that began logging in August, the entire visible area
+  // is empty cells and the heatmap reads as broken. Recent activity is the
+  // point of it, so it opens on today.
+  requestAnimationFrame(function () {
+    try { target.scrollLeft = target.scrollWidth; } catch (e) {}
+  });
 }
 
 /* ======== Leaderboard ======== */
