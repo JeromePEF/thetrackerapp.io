@@ -552,6 +552,163 @@ body.user-page {
   white-space: nowrap;
 }
 
+/* Recent workouts: the date column now carries a time too, so it needs room
+   and wraps to two lines instead of squeezing the exercise name. */
+.user-recent-date { min-width: 5.5rem; }
+.user-recent-time {
+  display: block;
+  font-size: 0.68rem;
+  opacity: 0.75;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* How many times this movement has been done, and a live day streak. */
+.user-recent-count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.user-recent-fire { color: #ff8a73; }
+
+/* A movement this person does basically every day gets a visible rail, so the
+   staples stand out from the one-offs at a glance. */
+.user-recent-item.is-daily {
+  border-left: 3px solid #ff8a73;
+  background: rgba(255, 138, 115, 0.06);
+}
+
+/* ---- Daily log + timeline rail ---- */
+
+/* DESKTOP: the log and the rail sit side by side, the rail on the right at a
+   fixed-ish width so the sets keep the room they need.
+   PHONE: one column, log first — the sets are what you came for; the rail is
+   context. The rail itself is identical in both, which is the point: the
+   timeline is not a desktop-only luxury. */
+.daylog-split {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+  align-items: start;
+}
+@media (min-width: 760px) {
+  .daylog-split { grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); }
+}
+.daylog-timeline[hidden] { display: none; }
+.daylog-timeline {
+  min-width: 0;
+  /* The vertical line IS the rail: drawn once as a border on the container's
+     inner gutter so it is continuous rather than stitched per row. */
+  position: relative;
+}
+
+.tl-session {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 12px 0 6px;
+  padding-left: 2px;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.tl-session-time { font-weight: 800; color: #ff8a73; }
+.tl-session-meta { opacity: 0.7; }
+
+.tl-row {
+  display: grid;
+  grid-template-columns: 3.6rem 14px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 8px;
+  padding: 3px 0;
+}
+.tl-time {
+  font-size: 0.7rem;
+  opacity: 0.7;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* The dot sits on a continuous line drawn through its own cell. */
+.tl-dot {
+  position: relative;
+  align-self: stretch;
+  display: block;
+  min-height: 1.25rem;
+}
+.tl-dot::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  background: var(--line);
+}
+.tl-dot::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0.42rem;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ff8a73;
+  box-shadow: 0 0 0 3px rgba(255, 138, 115, 0.18);
+}
+.tl-body { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.tl-exercise {
+  font-size: 0.78rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.tl-detail { font-size: 0.72rem; color: var(--accent-soft); }
+.tl-note { margin: 10px 0 0; font-size: 0.68rem; opacity: 0.6; line-height: 1.4; }
+
+@media (max-width: 420px) {
+  .tl-row { grid-template-columns: 3.1rem 14px minmax(0, 1fr); gap: 6px; }
+  .tl-time { font-size: 0.66rem; }
+}
+
+/* ---- Social links ---- */
+
+.user-socials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.user-socials[hidden] { display: none; }
+.user-social {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  text-decoration: none;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--ink);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.user-social:hover { border-color: #ff8a73; background: rgba(255, 138, 115, 0.1); }
+.user-social:focus-visible { outline: 2px solid #ff8a73; outline-offset: 2px; }
+.user-social-label { font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; opacity: 0.75; }
+.user-social-handle { color: #ff8a73; overflow-wrap: anywhere; }
+
+/* On a narrow phone the row stacks: date+time on its own line, then the
+   movement, then its numbers — rather than four columns fighting for 320px. */
+@media (max-width: 420px) {
+  .user-recent-item { flex-wrap: wrap; gap: 4px 10px; }
+  .user-recent-date { min-width: 100%; }
+  .user-recent-time { display: inline; margin-left: 6px; }
+}
+
 /* ---- Error State ---- */
 
 .user-error {

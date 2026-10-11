@@ -63,6 +63,9 @@
             <!-- The user's own line, set over text with /motto. Hidden until
                  one exists so the header does not reserve empty space. -->
             <p class="user-motto" id="userMotto" hidden></p>
+            <!-- Social links, set from settings. Built server-side from stored
+                 handles so a link cannot point anywhere but the platform. -->
+            <div class="user-socials" id="userSocials" hidden></div>
           </div>
         </section>
 
@@ -173,7 +176,11 @@
           <!-- Sunday to Saturday, the way a training week is read. -->
           <div class="daylog-week" id="dayWeek" role="tablist"></div>
           <hr class="daylog-rule" />
-          <div class="daylog-body" id="dayBody"></div>
+          <div class="daylog-split">
+            <div class="daylog-body" id="dayBody"></div>
+            <!-- When the day's work actually happened, down the side. -->
+            <aside class="daylog-timeline" id="dayTimeline" hidden></aside>
+          </div>
         </section>
 
         <section class="user-recent-workouts" id="userRecentWorkouts">

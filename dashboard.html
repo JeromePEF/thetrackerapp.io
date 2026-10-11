@@ -412,6 +412,68 @@
                 <span id="publicProfileSaved" class="account-save-check" hidden>✓ Updated</span>
               </div>
               <p id="publicProfileStatus" class="stats-status" role="status" aria-live="polite"></p>
+              <!-- MOTTO + SOCIAL LINKS, shown on the public profile.
+                   Handles, not URLs: the backend builds each link from the
+                   handle, so a profile link cannot point anywhere else. -->
+              <div class="profile-details">
+                <h4 class="settings-subsection-title">Motto</h4>
+                <label class="social-field">
+                  <span>One line, shown under your name</span>
+                  <input type="text" id="profileMottoInput" maxlength="120"
+                         placeholder="Stay hard." autocomplete="off" />
+                </label>
+                <p class="social-hint"><span id="profileMottoCount">0/120</span></p>
+
+                <h4 class="settings-subsection-title">Social links</h4>
+                <p class="social-hint">Just your handle — paste a full profile URL and we'll trim it. Leave a field empty to remove that link.</p>
+                <div class="social-grid">
+                  <label class="social-field">
+                    <span>Instagram</span>
+                    <input type="text" id="social-instagram" autocomplete="off" spellcheck="false"
+                           placeholder="@yourhandle" maxlength="40" />
+                  </label>
+                  <label class="social-field">
+                    <span>TikTok</span>
+                    <input type="text" id="social-tiktok" autocomplete="off" spellcheck="false"
+                           placeholder="@yourhandle" maxlength="40" />
+                  </label>
+                  <label class="social-field">
+                    <span>YouTube</span>
+                    <input type="text" id="social-youtube" autocomplete="off" spellcheck="false"
+                           placeholder="@yourchannel" maxlength="40" />
+                  </label>
+                  <label class="social-field">
+                    <span>X</span>
+                    <input type="text" id="social-x" autocomplete="off" spellcheck="false"
+                           placeholder="@yourhandle" maxlength="40" />
+                  </label>
+                  <label class="social-field">
+                    <span>Snapchat</span>
+                    <input type="text" id="social-snapchat" autocomplete="off" spellcheck="false"
+                           placeholder="yourhandle" maxlength="40" />
+                  </label>
+                  <label class="social-field">
+                    <span>Strava</span>
+                    <input type="text" id="social-strava" autocomplete="off" spellcheck="false"
+                           placeholder="athlete id" maxlength="40" />
+                  </label>
+                  <label class="social-field">
+                    <span>GitHub</span>
+                    <input type="text" id="social-github" autocomplete="off" spellcheck="false"
+                           placeholder="yourhandle" maxlength="40" />
+                  </label>
+                  <label class="social-field">
+                    <span>Website</span>
+                    <input type="text" id="social-website" autocomplete="off" spellcheck="false"
+                           placeholder="yoursite.com" maxlength="200" />
+                  </label>
+                </div>
+                <div class="panel-actions" style="margin-top: 0.75rem;">
+                  <button id="saveProfileDetailsButton" type="button" class="btn-primary">Save Profile Details</button>
+                </div>
+                <p id="profileDetailsStatus" class="stats-status" role="status" aria-live="polite"></p>
+              </div>
+
               <div class="public-profile-preview" id="publicProfilePreview" hidden>
                 <h4>What will be visible at <a id="publicProfilePreviewUrl" href="/@" target="_blank" rel="noopener noreferrer">/@<span id="publicProfilePreviewUsername">you</span></a></h4>
                 <ul id="publicProfilePreviewList"></ul>

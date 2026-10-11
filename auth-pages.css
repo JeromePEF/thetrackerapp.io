@@ -1983,6 +1983,48 @@ body.dashboard-page .settings-section-title {
   color: var(--ink);
 }
 
+/* ---- Public profile details: motto + social handles ---- */
+
+body.dashboard-page .settings-subsection-title {
+  margin: 1.1rem 0 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+body.dashboard-page .social-hint {
+  margin: 0 0 0.6rem;
+  font-size: 0.74rem;
+  opacity: 0.7;
+  line-height: 1.45;
+}
+/* Two columns on anything wider than a phone, one below — eight handle fields
+   in a single column pushes the save button off a laptop screen. */
+body.dashboard-page .social-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.55rem 1rem;
+}
+@media (min-width: 620px) {
+  .social-grid { grid-template-columns: 1fr 1fr; }
+}
+body.dashboard-page .social-field { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
+body.dashboard-page .social-field > span {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  opacity: 0.8;
+}
+body.dashboard-page .social-field input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.85rem;
+}
+
 body.dashboard-page .settings-section .account-edit-grid {
   margin-top: 0;
 }

@@ -242,6 +242,10 @@ const els = {
   toggleStatsBarVisibility: document.getElementById("toggleStatsBarVisibility"),
   togglePublicLeaderboardConsent: document.getElementById("togglePublicLeaderboardConsent"),
   savePublicProfileButton: document.getElementById("savePublicProfileButton"),
+  profileMottoInput: document.getElementById("profileMottoInput"),
+  profileMottoCount: document.getElementById("profileMottoCount"),
+  saveProfileDetailsButton: document.getElementById("saveProfileDetailsButton"),
+  profileDetailsStatus: document.getElementById("profileDetailsStatus"),
   publicProfileSaved: document.getElementById("publicProfileSaved"),
   publicProfileStatus: document.getElementById("publicProfileStatus"),
   publicProfileToggles: document.getElementById("publicProfileToggles"),
@@ -928,6 +932,9 @@ function normalizeBackendSnapshot(body) {
     billingNextBillingDate: deriveNextBillingDate(root) || deriveCurrentPeriodEnd(root),
     billingPortalUrl: deriveBillingPortalUrl(root),
     publicProfileVisibility: root.publicProfileVisibility || root.publicVisibility || null,
+    // Public-profile details the user edits here: a motto and social handles.
+    motto: String(profile.motto || root.motto || "").trim(),
+    socials: (profile.socials && typeof profile.socials === "object") ? profile.socials : {},
   };
 }
 
@@ -1720,6 +1727,7 @@ function renderAccountInfo() {
 
   syncEditableAccountInputs(user);
   hydratePublicProfileVisibility();
+  hydrateProfileDetails();
 
   if (els.accountEmailValue) {
     els.accountEmailValue.textContent = user?.email || "-";
@@ -2132,6 +2140,90 @@ function wireAccountEditing() {
     els.verifyAccountEmailButton.addEventListener("click", () => {
       void requestAccountEmailVerification();
     });
+  }
+}
+
+/* MOTTO + SOCIAL LINKS.
+   Handles are sent, never URLs — the backend builds the link from the handle
+   (services/socialLinks.js), so a profile link can only ever point at the
+   platform it claims to be. Sending a blank field clears that one. */
+const SOCIAL_FIELDS = [
+  ["instagram", "Instagram"],
+  ["tiktok", "TikTok"],
+  ["youtube", "YouTube"],
+  ["x", "X"],
+  ["snapchat", "Snapchat"],
+  ["strava", "Strava"],
+  ["github", "GitHub"],
+  ["website", "Website"],
+];
+
+function socialInput(platform) {
+  return document.getElementById("social-" + platform);
+}
+
+async function saveProfileDetails() {
+  const socials = {};
+  SOCIAL_FIELDS.forEach(([key]) => {
+    const input = socialInput(key);
+    // Always include the key, so emptying a field REMOVES that link rather
+    // than silently leaving the old one in place.
+    if (input) socials[key] = String(input.value || "").trim();
+  });
+  const payload = {
+    motto: String(els.profileMottoInput?.value || "").trim(),
+    socials,
+  };
+  try {
+    const body = await postAuthedJson([`${API_BASE}/api/profile/update`], payload);
+    const saved = body?.profile || {};
+    // Re-hydrate from what the backend actually stored: it strips @ signs,
+    // reduces a pasted profile URL to a handle and drops anything invalid, so
+    // the form should show the cleaned value rather than the raw typing.
+    if (saved.motto !== undefined && els.profileMottoInput) {
+      els.profileMottoInput.value = saved.motto || "";
+      updateMottoCount();
+    }
+    if (saved.socials && typeof saved.socials === "object") {
+      SOCIAL_FIELDS.forEach(([key]) => {
+        const input = socialInput(key);
+        if (input) input.value = saved.socials[key] || "";
+      });
+    }
+    if (els.profileDetailsStatus) setStatus(els.profileDetailsStatus, "Profile details updated.", "is-success");
+  } catch (err) {
+    if (els.profileDetailsStatus) setStatus(els.profileDetailsStatus, err?.message || "Save failed.", "is-error");
+    console.warn("saveProfileDetails failed:", err);
+  }
+}
+
+function updateMottoCount() {
+  if (!els.profileMottoCount || !els.profileMottoInput) return;
+  const len = String(els.profileMottoInput.value || "").length;
+  els.profileMottoCount.textContent = len + "/120";
+}
+
+function hydrateProfileDetails() {
+  const snap = state.backendSnapshot || {};
+  if (els.profileMottoInput && document.activeElement !== els.profileMottoInput) {
+    els.profileMottoInput.value = snap.motto || "";
+    updateMottoCount();
+  }
+  const socials = snap.socials || {};
+  SOCIAL_FIELDS.forEach(([key]) => {
+    const input = socialInput(key);
+    if (input && document.activeElement !== input) input.value = socials[key] || "";
+  });
+}
+
+function wireProfileDetails() {
+  if (els.saveProfileDetailsButton) {
+    els.saveProfileDetailsButton.addEventListener("click", () => {
+      void saveProfileDetails();
+    });
+  }
+  if (els.profileMottoInput) {
+    els.profileMottoInput.addEventListener("input", updateMottoCount);
   }
 }
 
@@ -6353,6 +6445,7 @@ function wireInitialActions() {
   wireGoals();
   wireAccountEditing();
   wirePublicProfileVisibility();
+  wireProfileDetails();
   wireTrackingPreferences();
   wireBilling();
   wireIntegrations();

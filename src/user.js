@@ -10,6 +10,7 @@ function cacheElements() {
     "userLoading", "userError", "userErrorTitle", "userErrorMessage",
     "userProfileHeader", "userStatsBar", "userHeatmaps",
     "userAvatar", "userDisplayName", "userHandle", "userJoined", "userMotto",
+    "userSocials",
     "userStatWorkouts", "userStatStreak", "userStatDays",
     "userWorkoutHeatmap", "userNutritionHeatmap", "userWaterHeatmap",
     "workoutHeatmapCard", "nutritionHeatmapCard", "waterHeatmapCard",
@@ -20,7 +21,7 @@ function cacheElements() {
     "userLeaderboard", "strengthCard", "calisthenicsCard", "streaksCard",
     "userStrengthRows", "userCalisthenicsRows", "userStreaksRows",
     "userRecentWorkouts", "userRecentWorkoutList",
-    "userDayLog", "dayWeek", "dayBody", "dayPick",
+    "userDayLog", "dayWeek", "dayBody", "dayPick", "dayTimeline",
     "dayPrevWeek", "dayNextWeek", "dayWeekLabel",
     "userBodyMap", "bmCanvas", "bmNote", "bmModeDay", "bmModeAll",
   ];
@@ -433,6 +434,55 @@ function renderStreaksRow(target, entry) {
 
 /* ======== Recent Workouts ======== */
 
+/* Clock time in the PROFILE OWNER's zone, to the second.
+   Stored timestamps are UTC, so rendering them raw showed a 6am session for
+   someone who trained at 2am — and milliseconds are noise nobody reads. */
+function formatWorkoutTime(iso, timeZone) {
+  var d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      hour: "numeric", minute: "2-digit", second: "2-digit",
+      hour12: true, timeZone: timeZone || undefined,
+      timeZoneName: "short"
+    }).format(d);
+  } catch (err) {
+    // An unknown zone must not blank the whole row.
+    return d.toISOString().slice(11, 19) + " UTC";
+  }
+}
+
+/* What one logged row actually was, in the unit its movement is measured in -
+   the same rule the bot's own reports follow. `type` and `seconds` used to be
+   dropped before this reached the page, so every hold rendered as "0 reps". */
+function recentDetail(w) {
+  var type = String(w.type || "").toLowerCase();
+  if (type === "time" || Number(w.seconds) > 0) {
+    var sec = Math.round(Number(w.seconds) || 0);
+    if (sec >= 60) {
+      var m = Math.floor(sec / 60), rs = sec % 60;
+      return rs ? m + "m " + rs + "s" : m + "m";
+    }
+    return sec + "s";
+  }
+  var sets = Number(w.sets) || 0;
+  var reps = Number(w.reps) || 0;
+  var weight = Number(w.weight) || 0;
+  if (reps && weight) {
+    return (sets || 1) + "\u00d7" + reps + " @ " + weight + (w.unit || "");
+  }
+  if (reps) return (sets || 1) + "\u00d7" + reps;
+  if (Number(w.count) > 0) return w.count + " reps";
+  if (weight) return weight + (w.unit || "");
+  return escapeHtml(w.detail || w.notes || "");
+}
+
+/* Shared profile facts the row renderers need but are not handed directly:
+   the owner's timezone (stored timestamps are UTC) and their per-exercise
+   habit stats. Declared with var above its readers so neither sees a hoisted
+   undefined — the mistake that once hid the stats bar unconditionally. */
+var profileState = { timezone: "", habits: null };
+
 function renderRecentWorkouts(target, workouts) {
   if (!target) return;
 
@@ -443,18 +493,53 @@ function renderRecentWorkouts(target, workouts) {
   }
 
   target.innerHTML = safe.slice(0, 10).map(function (w) {
-    var date = formatShortDate(w.date || w.loggedAt || w.createdAt);
-    var exercise = escapeHtml(w.exercise || w.name || w.label || "Workout");
-    var details = [w.sets, w.reps, w.weight].filter(function (v) { return v !== undefined && v !== null; });
-    var detailStr = details.length
-      ? details.join("\u00d7") + (w.unit ? " " + escapeHtml(w.unit) : "")
-      : escapeHtml(w.detail || w.notes || "");
+    var iso = w.date || w.loggedAt || w.createdAt;
+    var date = formatShortDate(iso);
+    var time = formatWorkoutTime(iso, profileState.timezone);
+    var name = w.exercise || w.name || w.label || "Workout";
+    var exercise = escapeHtml(name);
+    var detailStr = recentDetail(w);
+    /* HOW OFTEN this movement has been done, and whether it is on a live run.
+       A list of exercise names cannot say which of them are the staples. */
+    var habit = (profileState.habits || {})[name] || null;
+    var meta = "";
+    if (habit && habit.times) {
+      meta = '<span class="user-recent-count"'
+        + ' title="' + escapeHtml(name + " done " + habit.times + " time"
+            + (habit.times === 1 ? "" : "s")
+            + (habit.streak > 1 ? ", " + habit.streak + " days in a row" : "")) + '">'
+        + "\u00d7" + habit.times
+        + (habit.onStreak ? ' <span class="user-recent-fire">\ud83d\udd25' + habit.streak + "</span>" : "")
+        + "</span>";
+    }
 
-    return '<div class="user-recent-item">' +
-      '<span class="user-recent-date">' + escapeHtml(date) + '</span>' +
+    return '<div class="user-recent-item' + (habit && habit.daily ? " is-daily" : "") + '">' +
+      '<span class="user-recent-date">' + escapeHtml(date) +
+        (time ? ' <span class="user-recent-time">' + escapeHtml(time) + "</span>" : "") +
+      '</span>' +
       '<span class="user-recent-exercise">' + exercise + '</span>' +
       (detailStr ? '<span class="user-recent-detail">' + detailStr + '</span>' : "") +
+      meta +
       '</div>';
+  }).join("");
+}
+
+/* SOCIAL LINKS. Handles are stored server-side and the URL is built there, so
+   nothing here can be pointed at an arbitrary destination. rel on every link
+   regardless, and the website link is nofollow because that one IS arbitrary. */
+function renderSocials(target, links) {
+  if (!target) return;
+  var safe = Array.isArray(links) ? links : [];
+  if (!safe.length) { target.hidden = true; target.innerHTML = ""; return; }
+  target.hidden = false;
+  target.innerHTML = safe.map(function (l) {
+    var rel = l.external ? "noopener noreferrer nofollow" : "noopener noreferrer";
+    return '<a class="user-social" href="' + escapeHtml(l.url) + '"'
+      + ' target="_blank" rel="' + rel + '"'
+      + ' title="' + escapeHtml(l.label + " " + l.handle) + '">'
+      + '<span class="user-social-label">' + escapeHtml(l.label) + "</span>"
+      + '<span class="user-social-handle">' + escapeHtml(l.handle) + "</span>"
+      + "</a>";
   }).join("");
 }
 
@@ -811,6 +896,98 @@ function wireDayCopy() {
   });
 }
 
+/* ── TIMELINE RAIL ──────────────────────────────────────────────────────────
+   When the day's work happened, down the side of the log. A list of movements
+   says WHAT was trained; this says the session started at 8:33am and ran an
+   hour, and that the two sets logged at 1pm were a separate trip.
+
+   Sessions are clustered SERVER-SIDE by services/workoutSessionClock.js and
+   arrive on the payload, so this and the bot's own "Session: 48m" line can
+   never disagree about where one workout ended and the next began.
+
+   The rail renders identically on phone and desktop - the gutter narrows and
+   the entries wrap, but the line and the dots are always there. */
+function renderDayTimeline(payload) {
+  var host = els.dayTimeline;
+  if (!host) return;
+  var workouts = (payload && payload.workouts) || [];
+  if (!workouts.length) { host.hidden = true; host.innerHTML = ""; return; }
+
+  /* One entry per logged set, placed by its own timestamp, so four sets
+     spread over twenty minutes appear as four marks rather than one. */
+  var marks = [];
+  workouts.forEach(function (ex) {
+    (ex.sets || []).forEach(function (st) {
+      if (!st || !st.at) return;
+      var ms = new Date(st.at).getTime();
+      if (isNaN(ms)) return;
+      marks.push({ ms: ms, exercise: ex.exercise, detail: recentDetail(st) });
+    });
+  });
+  if (!marks.length) { host.hidden = true; host.innerHTML = ""; return; }
+  marks.sort(function (a, b) { return a.ms - b.ms; });
+
+  var tz = (payload && payload.timezone) || profileState.timezone || "";
+  var sessions = (payload && payload.sessions) || [];
+  var gap = (payload && payload.sessionGapMinutes) || 25;
+
+  /* Which session a mark belongs to, so a break in training shows as a break
+     in the rail instead of one unbroken hour-long run. */
+  function sessionIndexFor(ms) {
+    for (var i = 0; i < sessions.length; i++) {
+      var a = new Date(sessions[i].startedAt).getTime();
+      var b = new Date(sessions[i].endedAt).getTime();
+      if (ms >= a && ms <= b) return i;
+    }
+    return -1;
+  }
+
+  var html = '<p class="daylog-sub">Timeline</p>';
+  var lastSession = null;
+  marks.forEach(function (m) {
+    var idx = sessionIndexFor(m.ms);
+    if (idx !== lastSession) {
+      lastSession = idx;
+      var sess = sessions[idx];
+      if (sess) {
+        html += '<div class="tl-session">'
+          + '<span class="tl-session-time">' + escapeHtml(sess.startLabel) + "</span>"
+          + '<span class="tl-session-meta">'
+          + escapeHtml(sess.elapsedLabel) + " \u00b7 " + sess.sets
+          + " set" + (sess.sets === 1 ? "" : "s") + "</span>"
+          + "</div>";
+      }
+    }
+    html += '<div class="tl-row">'
+      + '<span class="tl-time">' + escapeHtml(formatClockOnly(m.ms, tz)) + "</span>"
+      + '<span class="tl-dot" aria-hidden="true"></span>'
+      + '<span class="tl-body">'
+      + '<span class="tl-exercise">' + escapeHtml(m.exercise) + "</span>"
+      + (m.detail ? '<span class="tl-detail">' + escapeHtml(m.detail) + "</span>" : "")
+      + "</span>"
+      + "</div>";
+  });
+  if (sessions.length > 1) {
+    html += '<p class="tl-note">Separate sessions: a gap over '
+      + gap + " minutes starts a new one.</p>";
+  }
+  host.innerHTML = html;
+  host.hidden = false;
+}
+
+/* Clock time without the zone suffix - the rail repeats it on every row, so
+   the zone is stated once in the heading instead. */
+function formatClockOnly(ms, timeZone) {
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      hour: "numeric", minute: "2-digit", hour12: true,
+      timeZone: timeZone || undefined
+    }).format(new Date(ms));
+  } catch (err) {
+    return new Date(ms).toISOString().slice(11, 16);
+  }
+}
+
 function renderDayBody(payload) {
   var host = els.dayBody;
   if (!host) return;
@@ -883,12 +1060,14 @@ async function loadDay(key) {
     // 403 carries consent:false and is a real answer, not a failure — the
     // difference between "not shared" and "nothing logged" has to survive.
     renderDayBody(body);
+    renderDayTimeline(body);
     // The day's muscles ride along with the day payload, so the diagram and
     // the log below it can never describe different days.
     bodyState.day = (body && body.muscles) || {};
     if (bodyState.mode === "day") paintBodyMap();
   } catch (err) {
     renderDayBody(null);
+    renderDayTimeline(null);
   }
 }
 
@@ -967,6 +1146,11 @@ function renderProfile(data) {
   var profile = data.profile || {};
   var stats = data.stats || {};
 
+  // Set BEFORE any row renderer runs, since they read it rather than
+  // receiving it as an argument.
+  profileState.timezone = profile.timezone || "";
+  profileState.habits = data.habits || null;
+
   var username = data.username || profile.username || "";
   var displayName = profile.displayName || username || "User";
   var joined = formatDate(profile.joinedAt || data.joinedAt);
@@ -1005,6 +1189,8 @@ function renderProfile(data) {
     els.userMotto.textContent = motto;
     els.userMotto.hidden = !motto;
   }
+
+  renderSocials(els.userSocials, profile.socials);
 
   if (els.userStatWorkouts) els.userStatWorkouts.textContent = formatNumber(totalWorkouts);
   if (els.userStatStreak) els.userStatStreak.textContent = formatNumber(streak);
