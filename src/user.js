@@ -226,23 +226,121 @@ function cellLevelFromThresholds(value, t) {
   return "5";
 }
 
-function cellTooltipText(category, entry) {
-  var d = parseDateYMD(entry.date);
-  var dateStr = d ? d.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }) : entry.date;
+function plural(n, one, many) {
+  return n + " " + (n === 1 ? one : (many || one + "s"));
+}
 
+// The date and the numbers as SEPARATE strings.
+//
+// They used to be one "date: a, b, c" line in a nowrap tooltip, which is how
+// the merged chart ended up reading "...11 workouts," and then nothing: the
+// line is ~50 characters and the tooltip was clipped by the chart's own scroll
+// box. Two short lines fit a 400px phone without wrapping at all.
+function cellTooltipParts(category, entry) {
+  var d = parseDateYMD(entry.date);
+  var dateStr = d
+    ? d.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
+    : entry.date;
+
+  var gal = Number(entry.water ?? entry.gallons ?? 0);
+  var stats;
   if (category === "water") {
-    var gal = Number(entry.water ?? entry.gallons ?? 0);
-    return dateStr + ": " + gal.toFixed(2) + " gal";
+    stats = [gal.toFixed(2) + " gal"];
+  } else if (category === "merged") {
+    stats = [
+      plural(Number(entry.workouts ?? 0), "workout"),
+      Number(entry.nutrition ?? 0) + " nutrition",
+      gal.toFixed(2) + " gal"
+    ];
+  } else {
+    var val = Number(entry[category] ?? 0);
+    stats = [category === "workouts" ? plural(val, "workout") : plural(val, "nutrition entry", "nutrition entries")];
   }
-  if (category === "merged") {
-    var wv = Number(entry.workouts ?? 0);
-    var nv = Number(entry.nutrition ?? 0);
-    var hv = Number(entry.water ?? entry.gallons ?? 0);
-    return dateStr + ": " + wv + " workout" + (wv === 1 ? "" : "s") + ", " + nv + " nutrition, " + hv.toFixed(2) + " gal";
-  }
-  var val = Number(entry[category] ?? 0);
-  var label = category === "workouts" ? "workout" : "nutrition entry";
-  return dateStr + ": " + val + " " + label + (val === 1 ? "" : "s");
+  return { date: dateStr, stats: stats };
+}
+
+function cellTooltipText(category, entry) {
+  var parts = cellTooltipParts(category, entry);
+  return parts.date + ": " + parts.stats.join(", ");
+}
+
+// ONE tooltip for the whole page, parented to <body>.
+//
+// It cannot live inside the chart: `.heatmap-chart` is `overflow-x: auto`, and
+// an auto overflow on one axis makes the other axis `auto` too, so the box
+// clips its own absolutely-positioned children. Any cell in the last few
+// columns (i.e. this month) or the Sunday row had its tooltip sliced off.
+// Fixed positioning against the viewport, measured and then clamped, is the
+// only placement that cannot be cut off by an ancestor.
+var sharedTooltip = null;
+
+function getSharedTooltip() {
+  if (sharedTooltip && sharedTooltip.isConnected) return sharedTooltip;
+  sharedTooltip = document.createElement("div");
+  sharedTooltip.className = "heatmap-tooltip";
+  sharedTooltip.setAttribute("role", "presentation");
+  document.body.appendChild(sharedTooltip);
+  // Page scroll and resize move the cell too, not just the chart's own scroll.
+  window.addEventListener("scroll", hideSharedTooltip, { passive: true });
+  window.addEventListener("resize", hideSharedTooltip);
+  return sharedTooltip;
+}
+
+function hideSharedTooltip() {
+  if (sharedTooltip) sharedTooltip.style.display = "none";
+}
+
+// Centre on the cell, then pull back inside the viewport.
+//
+// Pure so it can be tested: the reported bug was entirely a placement bug, and
+// "does the tooltip for the last column stay on screen" is arithmetic, not
+// something that needs a browser.
+function clampTooltipPosition(cellRect, tipW, tipH, vw, vh) {
+  var margin = 8;
+  var offset = 6;
+
+  var left = cellRect.left + (cellRect.width / 2) - (tipW / 2);
+  // min() first so a tooltip wider than the viewport still starts at the
+  // left margin instead of being pushed off the left edge by max().
+  left = Math.max(margin, Math.min(left, vw - tipW - margin));
+
+  // Above the cell by default; below it when the top row would overflow.
+  var top = cellRect.top - tipH - offset;
+  if (top < margin) top = Math.min(cellRect.bottom + offset, Math.max(margin, vh - tipH - margin));
+
+  return { left: Math.round(left), top: Math.round(top) };
+}
+
+function showCellTooltip(cell, category, entry) {
+  var tip = getSharedTooltip();
+  var parts = cellTooltipParts(category, entry);
+
+  // textContent on two child nodes, never innerHTML: a username or exercise
+  // name never reaches this string, but the no-markup rule holds everywhere.
+  tip.textContent = "";
+  var dateLine = document.createElement("span");
+  dateLine.className = "heatmap-tooltip-date";
+  dateLine.textContent = parts.date;
+  var statLine = document.createElement("span");
+  statLine.className = "heatmap-tooltip-stats";
+  statLine.textContent = parts.stats.join(" \u00b7 ");
+  tip.appendChild(dateLine);
+  tip.appendChild(statLine);
+
+  // Measure before placing — the clamp needs the real rendered size.
+  tip.style.display = "block";
+  tip.style.left = "0px";
+  tip.style.top = "0px";
+
+  var pos = clampTooltipPosition(
+    cell.getBoundingClientRect(),
+    tip.offsetWidth,
+    tip.offsetHeight,
+    window.innerWidth || document.documentElement.clientWidth,
+    window.innerHeight || document.documentElement.clientHeight
+  );
+  tip.style.left = pos.left + "px";
+  tip.style.top = pos.top + "px";
 }
 
 function cellValueForCategory(entry, category) {
@@ -341,9 +439,6 @@ function renderHeatmapChart(target, days, category) {
   cellGrid.style.gridTemplateRows = "repeat(7, " + cellSize + "px)";
   cellGrid.style.gap = gap + "px";
 
-  var tooltip = document.createElement("div");
-  tooltip.className = "heatmap-tooltip";
-
   weeks.forEach(function (week) {
     week.forEach(function (entry) {
       var cell = document.createElement("div");
@@ -354,18 +449,17 @@ function renderHeatmapChart(target, days, category) {
 
       cell.dataset.level = level;
       cell.dataset.category = category;
-      cell.title = cellTooltipText(category, entry);
+      // aria-label, not title: the native title tooltip fired a second,
+      // duplicate bubble a beat after ours on every hover.
+      cell.setAttribute("aria-label", cellTooltipText(category, entry));
 
       cell.addEventListener("mouseenter", function () {
-        tooltip.textContent = cellTooltipText(category, entry);
-        tooltip.style.display = "block";
-        var rect = cell.getBoundingClientRect();
-        var tableRect = table.getBoundingClientRect();
-        tooltip.style.left = (rect.left - tableRect.left + rect.width / 2) + "px";
-        tooltip.style.top = (rect.top - tableRect.top - 8) + "px";
+        showCellTooltip(cell, category, entry);
       });
-      cell.addEventListener("mouseleave", function () {
-        tooltip.style.display = "none";
+      cell.addEventListener("mouseleave", hideSharedTooltip);
+      // Tap-to-read on a phone, where there is no hover at all.
+      cell.addEventListener("click", function () {
+        showCellTooltip(cell, category, entry);
       });
 
       cellGrid.appendChild(cell);
@@ -374,8 +468,12 @@ function renderHeatmapChart(target, days, category) {
 
   bodyRow.appendChild(cellGrid);
   table.appendChild(bodyRow);
-  table.appendChild(tooltip);
   target.appendChild(table);
+
+  // A viewport-fixed tooltip does not travel with the cell, so any movement of
+  // the cell out from under it must dismiss it.
+  target.addEventListener("scroll", hideSharedTooltip, { passive: true });
+  target.addEventListener("mouseleave", hideSharedTooltip);
 
   // SHOW THE END, NOT THE BEGINNING.
   // The chart spans 52 weeks at a fixed 13px per column — about 690px — so on

@@ -317,20 +317,43 @@ body.user-page {
 
 /* -- Heatmap Tooltip -- */
 
+/* Parented to <body> and positioned in viewport coordinates by user.js.
+   It must NOT be absolute inside .heatmap-chart: that box is overflow-x:auto,
+   which clips on both axes, and it was slicing the end off every tooltip in
+   the last columns of the chart (i.e. the current month). */
 .heatmap-tooltip {
   display: none;
-  position: absolute;
-  transform: translate(-50%, -100%);
-  background: rgba(20, 20, 25, 0.95);
+  position: fixed;
+  left: 0;
+  top: 0;
+  background: rgba(20, 20, 25, 0.96);
   color: var(--ink);
   border: 1px solid var(--line-strong);
   border-radius: 8px;
-  padding: 0.35rem 0.65rem;
+  padding: 0.4rem 0.6rem;
   font-size: 0.72rem;
-  white-space: nowrap;
+  line-height: 1.35;
+  /* Wrap rather than overflow if a label ever does get long. */
+  max-width: min(18rem, calc(100vw - 1.5rem));
+  white-space: normal;
+  overflow-wrap: anywhere;
   pointer-events: none;
-  z-index: 10;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+}
+
+.heatmap-tooltip-date,
+.heatmap-tooltip-stats {
+  display: block;
+}
+
+.heatmap-tooltip-date {
+  font-weight: 600;
+}
+
+.heatmap-tooltip-stats {
+  opacity: 0.82;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---- Heatmap Colors ---- */
