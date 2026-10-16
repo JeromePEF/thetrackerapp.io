@@ -500,3 +500,10 @@ footer.lb-page-footer,
 }
 .lb-metric-group.active .lb-metric-name,
 .lb-metric-group.active button { color: var(--accent) !important; }
+
+/* An unlisted or private member still holds their rank, but the API sends no
+   username for them, so the cell is a <span> rather than an <a>. It must not
+   invite a click it cannot honour: no pointer cursor, no hover underline. */
+.athlete-cell-private { cursor: default; }
+.athlete-cell-private .athlete-handle { font-style: italic; opacity: 0.75; }
+.athlete-cell-private:hover .athlete-name { color: inherit; text-decoration: none; }

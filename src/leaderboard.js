@@ -205,17 +205,31 @@ function renderRow(entry) {
     ? `<span class="trend-delta ${/^[-]/.test(entry.trend) ? "down" : /^[+]/.test(entry.trend) ? "up" : ""}">${escapeHtml(entry.trend)}</span>`
     : "";
 
-  return `
-    <tr>
-      <td class="col-rank rank-${rank}"><span class="rank-medal">${rank}</span></td>
-      <td class="col-name">
-        <a class="athlete-cell" href="/@${encodeURIComponent(username)}">
+  // A member whose profile is unlisted or private still earns their rank, but
+  // the API sends no username for them. Linking to "/@" would be a dead link
+  // and printing a bare "@" would look like a rendering fault, so the cell
+  // becomes plain text instead.
+  const nameCell = username
+    ? `<a class="athlete-cell" href="/@${encodeURIComponent(username)}">
           <span class="athlete-avatar">${escapeHtml(initial)}</span>
           <span>
             <span class="athlete-name">${escapeHtml(displayName)}</span>
             <span class="athlete-handle">@${escapeHtml(username)}</span>
           </span>
-        </a>
+        </a>`
+    : `<span class="athlete-cell athlete-cell-private">
+          <span class="athlete-avatar">${escapeHtml(initial)}</span>
+          <span>
+            <span class="athlete-name">${escapeHtml(displayName)}</span>
+            <span class="athlete-handle">profile not shared</span>
+          </span>
+        </span>`;
+
+  return `
+    <tr>
+      <td class="col-rank rank-${rank}"><span class="rank-medal">${rank}</span></td>
+      <td class="col-name">
+        ${nameCell}
       </td>
       <td class="col-flair">${flairPill}${badges}</td>
       <td class="col-coach">${pt}</td>

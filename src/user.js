@@ -1127,13 +1127,25 @@ function renderDayBody(payload) {
     });
   }
   var n = payload.nutrition;
-  if (n && n.items && n.items.length) {
-    html += '<p class="daylog-sub">Food</p><table class="daylog-food"><tbody>';
-    n.items.forEach(function (it) {
-      html += "<tr><td>" + escapeHtml(it.name) + "</td><td>"
-        + Math.round(it.calories) + " kcal</td></tr>";
-    });
-    html += "</tbody></table>";
+  // itemCount, not items.length: at the "macros" privacy level the server
+  // sends the totals and the number of items but no names at all, so keying
+  // the whole block on items.length hid the macros too — which is the one
+  // thing that level is meant to keep showing.
+  var nutritionCount = n ? (n.itemCount != null ? n.itemCount : (n.items || []).length) : 0;
+  if (n && nutritionCount > 0) {
+    html += '<p class="daylog-sub">Food</p>';
+    if (n.items && n.items.length) {
+      html += '<table class="daylog-food"><tbody>';
+      n.items.forEach(function (it) {
+        html += "<tr><td>" + escapeHtml(it.name) + "</td><td>"
+          + Math.round(it.calories) + " kcal</td></tr>";
+      });
+      html += "</tbody></table>";
+    } else {
+      html += '<p class="daylog-empty">'
+        + nutritionCount + (nutritionCount === 1 ? " item" : " items")
+        + " logged — names not shared</p>";
+    }
     var t = n.totals || {};
     html += '<p class="daylog-totals">' + Math.round(t.calories || 0) + " kcal · "
       + Math.round(t.protein || 0) + "g protein · " + Math.round(t.carbs || 0) + "g carbs · "
@@ -1152,8 +1164,8 @@ async function loadDay(key) {
   if (els.dayPick) els.dayPick.value = key;
   if (els.dayBody) els.dayBody.innerHTML = '<p class="daylog-empty">Loading…</p>';
   try {
-    var res = await fetch(API_BASE + "/api/u/" + encodeURIComponent(dayState.username)
-      + "/day/" + encodeURIComponent(key), { headers: { Accept: "application/json" } });
+    var res = await fetch(withShareKey(API_BASE + "/api/u/" + encodeURIComponent(dayState.username)
+      + "/day/" + encodeURIComponent(key)), { headers: { Accept: "application/json" } });
     var body = await res.json().catch(function () { return null; });
     // 403 carries consent:false and is a real answer, not a failure — the
     // difference between "not shared" and "nothing logged" has to survive.
@@ -1355,19 +1367,68 @@ function renderProfile(data) {
 
   initBodyMap(data);
   initDayLog(data);
+  applyIndexPolicy(data.visibility);
   showProfile();
 }
 
 /* ======== Fetch ======== */
 
+/**
+ * The share key out of this page's own URL, if it carries one.
+ *
+ * A link-shared profile is reached as /@name?k=<32 hex>, and the key has to
+ * ride along on every API call the page makes afterwards — the profile fetch
+ * AND each day fetch — or the page would load and then refuse its own day log.
+ */
+function shareKeyFromLocation() {
+  try {
+    var k = new URLSearchParams(window.location.search).get("k")
+      || new URLSearchParams(window.location.search).get("key") || "";
+    return /^[0-9a-f]{32}$/i.test(k) ? k.toLowerCase() : "";
+  } catch (_) {
+    return "";
+  }
+}
+
+var SHARE_KEY = shareKeyFromLocation();
+
+function withShareKey(url) {
+  if (!SHARE_KEY) return url;
+  return url + (url.indexOf("?") === -1 ? "?" : "&") + "k=" + encodeURIComponent(SHARE_KEY);
+}
+
+/**
+ * Tell crawlers to leave an unlisted or link-shared profile alone.
+ *
+ * robots.txt opens the whole site, so without this an unlisted profile would
+ * be indexed and become findable by search — which is the one thing the
+ * setting is supposed to prevent. Done client-side because the page is a
+ * static shell served by Pages; Googlebot renders JS and honours a noindex it
+ * finds after render, and the canonical defence is that the page is not linked
+ * from anywhere crawlable.
+ */
+function applyIndexPolicy(visibility) {
+  var indexable = !!(visibility && visibility.indexable);
+  var tag = document.querySelector('meta[name="robots"]');
+  if (!tag) {
+    tag = document.createElement("meta");
+    tag.setAttribute("name", "robots");
+    document.head.appendChild(tag);
+  }
+  tag.setAttribute("content", indexable ? "index, follow" : "noindex, nofollow");
+}
+
 async function fetchPublicProfile(username) {
-  var url = API_BASE + "/api/u/" + encodeURIComponent(username);
+  var url = withShareKey(API_BASE + "/api/u/" + encodeURIComponent(username));
   var res = await fetch(url, {
     headers: { Accept: "application/json" },
   });
 
   if (!res.ok) {
     if (res.status === 404) throw new Error("NOT_FOUND");
+    // 403 is the profile saying "private", which is a different fact from
+    // "no such user" and must not be reported as one.
+    if (res.status === 403) throw new Error("PRIVATE");
     throw new Error("Server error (" + res.status + ")");
   }
 
@@ -1405,6 +1466,11 @@ async function init() {
   } catch (err) {
     if (err.message === "NOT_FOUND") {
       showError("User Not Found", "@" + escapeHtml(username) + " doesn't exist or hasn't set up a public profile yet.");
+    } else if (err.message === "PRIVATE") {
+      applyIndexPolicy(null);
+      showError("This Profile Is Private",
+        "@" + escapeHtml(username) + " has chosen not to share their profile publicly. "
+        + "If they sent you a share link, open that link instead — it carries the access it needs.");
     } else {
       showError("Something went wrong", "Couldn't load this profile. Please try again later.");
       console.warn("User page fetch error:", err);

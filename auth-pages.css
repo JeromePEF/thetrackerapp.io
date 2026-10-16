@@ -2900,3 +2900,63 @@ body.dashboard-page .integration-card .panel-actions {
   min-width: 0;
   max-width: 100%;
 }
+
+/* ── Profile visibility: public / unlisted / private ──────────────────
+   Radios rather than the checkbox toggles above, because the three modes
+   are mutually exclusive — a profile cannot be unlisted AND private. The
+   row wraps (unlike .toggle-row, which is nowrap) since each option
+   carries a sentence explaining what it actually does. */
+body.dashboard-page .visibility-mode {
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  background: rgba(56, 255, 211, 0.04);
+  border: 1px solid rgba(56, 255, 211, 0.14);
+  border-radius: 10px;
+}
+
+body.dashboard-page .visibility-mode .settings-subsection-title {
+  margin: 0 0 0.6rem;
+}
+
+body.dashboard-page .radio-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  padding: 0.35rem 0;
+  color: var(--ink-muted);
+}
+
+body.dashboard-page .radio-row input[type="radio"] {
+  /* 2px down optically centres the control against the first text line. */
+  margin: 0.2rem 0 0;
+  flex: 0 0 auto;
+  accent-color: #38ffd3;
+}
+
+body.dashboard-page .radio-row strong {
+  color: var(--ink);
+}
+
+body.dashboard-page .share-link-row {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(56, 255, 211, 0.12);
+}
+
+body.dashboard-page .share-link-row input[type="text"] {
+  /* A 32-hex key makes this long; the tabular font keeps it legible and
+     the full width keeps it selectable in one gesture on a phone. */
+  width: 100%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.78rem;
+}
+
+body.dashboard-page .share-link-row .social-hint {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}

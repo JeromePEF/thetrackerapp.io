@@ -242,6 +242,15 @@ const els = {
   toggleStatsBarVisibility: document.getElementById("toggleStatsBarVisibility"),
   togglePublicLeaderboardConsent: document.getElementById("togglePublicLeaderboardConsent"),
   savePublicProfileButton: document.getElementById("savePublicProfileButton"),
+  visibilityModePublic: document.getElementById("visibilityModePublic"),
+  visibilityModeUnlisted: document.getElementById("visibilityModeUnlisted"),
+  visibilityModePrivate: document.getElementById("visibilityModePrivate"),
+  shareLinkRow: document.getElementById("shareLinkRow"),
+  profileShareUrl: document.getElementById("profileShareUrl"),
+  rotateShareKeyButton: document.getElementById("rotateShareKeyButton"),
+  nutritionDetailGeneric: document.getElementById("nutritionDetailGeneric"),
+  nutritionDetailMacros: document.getElementById("nutritionDetailMacros"),
+  nutritionDetailFull: document.getElementById("nutritionDetailFull"),
   profileMottoInput: document.getElementById("profileMottoInput"),
   profileMottoCount: document.getElementById("profileMottoCount"),
   saveProfileDetailsButton: document.getElementById("saveProfileDetailsButton"),
@@ -2227,12 +2236,49 @@ function wireProfileDetails() {
   }
 }
 
+/** The selected profile mode, or "public" when nothing is checked yet. */
+function readVisibilityMode() {
+  if (els.visibilityModePrivate?.checked) return "private";
+  if (els.visibilityModeUnlisted?.checked) return "unlisted";
+  return "public";
+}
+
+function readNutritionDetail() {
+  if (els.nutritionDetailFull?.checked) return "full";
+  if (els.nutritionDetailMacros?.checked) return "macros";
+  return "generic";
+}
+
+/**
+ * The share link is only meaningful for unlisted and private, so it is shown
+ * with them. A public profile needs no key to be read.
+ */
+function syncShareLinkRow() {
+  if (!els.shareLinkRow) return;
+  els.shareLinkRow.hidden = readVisibilityMode() === "public";
+}
+
 function wirePublicProfileVisibility() {
   if (els.savePublicProfileButton) {
     els.savePublicProfileButton.addEventListener("click", () => {
       void savePublicProfileVisibility();
     });
   }
+  if (els.rotateShareKeyButton) {
+    els.rotateShareKeyButton.addEventListener("click", () => {
+      void savePublicProfileVisibility({ rotateShareKey: true });
+    });
+  }
+  [els.visibilityModePublic, els.visibilityModeUnlisted, els.visibilityModePrivate,
+   els.nutritionDetailGeneric, els.nutritionDetailMacros, els.nutritionDetailFull]
+    .forEach((radio) => {
+      if (!radio) return;
+      radio.addEventListener("change", () => {
+        syncShareLinkRow();
+        if (els.publicProfileSaved) els.publicProfileSaved.hidden = true;
+        updatePublicProfilePreview(readAuthUser());
+      });
+    });
   const toggles = [els.toggleWorkoutVisibility, els.toggleNutritionVisibility, els.toggleWaterVisibility, els.toggleLeaderboardVisibility, els.toggleRecentWorkoutsVisibility, els.toggleMergedVisibility, els.toggleStatsBarVisibility, els.togglePublicLeaderboardConsent];
   toggles.forEach((toggle) => {
     if (toggle) {
@@ -2304,6 +2350,27 @@ function hydratePublicProfileVisibility() {
     els.togglePublicLeaderboardConsent.checked = visibility.publicLeaderboard === true;
   }
 
+  // Mode and food detail come back on the same visibility object. An older
+  // snapshot carries neither, so both fall back to their safe default rather
+  // than leaving every radio unchecked.
+  const mode = visibility.mode || "public";
+  if (els.visibilityModePublic) els.visibilityModePublic.checked = mode === "public";
+  if (els.visibilityModeUnlisted) els.visibilityModeUnlisted.checked = mode === "unlisted";
+  if (els.visibilityModePrivate) els.visibilityModePrivate.checked = mode === "private";
+
+  const detail = visibility.nutritionDetail || "generic";
+  if (els.nutritionDetailGeneric) els.nutritionDetailGeneric.checked = detail === "generic";
+  if (els.nutritionDetailMacros) els.nutritionDetailMacros.checked = detail === "macros";
+  if (els.nutritionDetailFull) els.nutritionDetailFull.checked = detail === "full";
+
+  // Populated from the portal snapshot so the link is there on load, not only
+  // after a save. Never overwritten with "" by a snapshot that lacks the field.
+  if (els.profileShareUrl) {
+    const snapUrl = state.backendSnapshot?.shareUrl;
+    if (typeof snapUrl === "string" && snapUrl) els.profileShareUrl.value = snapUrl;
+  }
+
+  syncShareLinkRow();
   updatePublicProfilePreview(user);
 }
 
@@ -2324,6 +2391,18 @@ function updatePublicProfilePreview(user) {
   if (previewUsername) previewUsername.textContent = username;
 
   const items = [];
+  const mode = readVisibilityMode();
+  if (mode === "private") {
+    items.push("Only people holding your share link can open this page at all");
+  } else if (mode === "unlisted") {
+    items.push("Anyone with the link can open it — hidden from search and the site leaderboard");
+  }
+  const detail = readNutritionDetail();
+  if (els.toggleNutritionVisibility?.checked) {
+    if (detail === "macros") items.push("Food: macros only, no item names");
+    else if (detail === "full") items.push("Food: exact names as logged, restaurant names included");
+    else items.push("Food: dish names with restaurants stripped out");
+  }
   if (els.toggleMergedVisibility?.checked) items.push("Combined workout + nutrition + hydration heatmap");
   if (els.toggleWorkoutVisibility?.checked) items.push("52-week workout heatmap & activity calendar");
   if (els.toggleNutritionVisibility?.checked) items.push("52-week nutrition / meal logging heatmap");
@@ -2341,7 +2420,7 @@ function updatePublicProfilePreview(user) {
   preview.hidden = false;
 }
 
-async function savePublicProfileVisibility() {
+async function savePublicProfileVisibility(options = {}) {
   if (els.publicProfileStatus) {
     els.publicProfileStatus.textContent = "Saving...";
     els.publicProfileStatus.classList.remove("is-error", "is-success");
@@ -2359,7 +2438,12 @@ async function savePublicProfileVisibility() {
     leaderboard: els.toggleLeaderboardVisibility?.checked ?? false,
     recentWorkouts: els.toggleRecentWorkoutsVisibility?.checked ?? false,
     publicLeaderboard: els.togglePublicLeaderboardConsent?.checked ?? false,
+    mode: readVisibilityMode(),
+    nutritionDetail: readNutritionDetail(),
   };
+  // Rotation is a separate, explicit act — it invalidates links already sent,
+  // so it must never ride along on an ordinary save.
+  if (options.rotateShareKey === true) visibility.rotateShareKey = true;
 
   try {
     // Save to backend via the same authed path as other settings
@@ -2372,6 +2456,11 @@ async function savePublicProfileVisibility() {
     const savedVisibility = body?.visibility || body?.publicVisibility || visibility;
     if (state.backendSnapshot) {
       state.backendSnapshot.publicProfileVisibility = savedVisibility;
+    }
+    // The share URL is only ever returned by this authed save — it carries the
+    // secret, so the public profile endpoint must never include it.
+    if (els.profileShareUrl && body?.shareUrl !== undefined) {
+      els.profileShareUrl.value = body.shareUrl || "";
     }
 
     // Re-hydrate the checkboxes from the canonical backend state

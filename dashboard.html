@@ -377,6 +377,57 @@
                 Control what appears on your public profile page at
                 <a id="publicProfileUrl" href="/@" target="_blank" rel="noopener noreferrer">/@<span id="publicProfileUsername">you</span></a>.
               </p>
+              <!-- WHO MAY SEE IT, before what they see. The toggles below
+                   decide which sections appear; this decides whether anyone
+                   can open the page at all. -->
+              <div class="visibility-mode" id="visibilityMode">
+                <h4 class="settings-subsection-title">Who can see your profile</h4>
+                <label class="radio-row">
+                  <input type="radio" name="profileVisibilityMode" id="visibilityModePublic" value="public" />
+                  <span><strong>Public</strong> — anyone can find it, and search engines may list it.</span>
+                </label>
+                <label class="radio-row">
+                  <input type="radio" name="profileVisibilityMode" id="visibilityModeUnlisted" value="unlisted" />
+                  <span><strong>Unlisted</strong> — anyone with the link can open it, but it is kept out of
+                    search engines and off the site leaderboard.</span>
+                </label>
+                <label class="radio-row">
+                  <input type="radio" name="profileVisibilityMode" id="visibilityModePrivate" value="private" />
+                  <span><strong>Private</strong> — only your share link works. Your own URL is refused.</span>
+                </label>
+                <div class="share-link-row" id="shareLinkRow" hidden>
+                  <label class="social-field">
+                    <span>Your share link — anyone holding it can view</span>
+                    <input type="text" id="profileShareUrl" readonly autocomplete="off" />
+                  </label>
+                  <p class="social-hint">
+                    <button type="button" class="btn-secondary" id="rotateShareKeyButton">Reset link</button>
+                    Resetting immediately breaks every link you have already sent.
+                  </p>
+                </div>
+              </div>
+
+              <!-- FOOD NAMES CAN CARRY A LOCATION. A week of restaurant names
+                   narrows down where someone lives, so the default strips the
+                   venue and keeps the dish. -->
+              <div class="visibility-mode" id="nutritionDetailMode">
+                <h4 class="settings-subsection-title">Food detail on your public page</h4>
+                <label class="radio-row">
+                  <input type="radio" name="publicNutritionDetail" id="nutritionDetailGeneric" value="generic" />
+                  <span><strong>Hide places</strong> (recommended) — "Fried Chicken Wings 4 piece"
+                    instead of naming the restaurant.</span>
+                </label>
+                <label class="radio-row">
+                  <input type="radio" name="publicNutritionDetail" id="nutritionDetailMacros" value="macros" />
+                  <span><strong>Macros only</strong> — no food names at all, just calories and macros.</span>
+                </label>
+                <label class="radio-row">
+                  <input type="radio" name="publicNutritionDetail" id="nutritionDetailFull" value="full" />
+                  <span><strong>Show everything</strong> — exactly as you logged it, restaurant names included.</span>
+                </label>
+              </div>
+
+              <h4 class="settings-subsection-title">What appears on the page</h4>
               <div class="public-profile-toggles" id="publicProfileToggles">
                 <label class="toggle-row">
                   <input type="checkbox" id="toggleMergedVisibility" />
