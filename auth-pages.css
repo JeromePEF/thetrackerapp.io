@@ -2960,3 +2960,16 @@ body.dashboard-page .share-link-row .social-hint {
   flex-wrap: wrap;
   gap: 0.5rem;
 }
+
+/* The session-times toggle carries a full explanatory sentence, so unlike the
+   single-word rows in the grid it must wrap and align to the first line. */
+body.dashboard-page .toggle-row-wrap {
+  align-items: flex-start;
+  white-space: normal;
+  line-height: 1.45;
+}
+
+body.dashboard-page .toggle-row-wrap input[type="checkbox"] {
+  margin: 0.2rem 0 0;
+  flex: 0 0 auto;
+}

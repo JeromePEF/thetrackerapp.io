@@ -536,6 +536,10 @@ function renderStreaksRow(target, entry) {
    Stored timestamps are UTC, so rendering them raw showed a 6am session for
    someone who trained at 2am — and milliseconds are noise nobody reads. */
 function formatWorkoutTime(iso, timeZone) {
+  // A profile that has not opted into clock times sends the DATE only. Parsing
+  // "2026-10-16" gives midnight UTC, which would print as "7:00 PM EDT" the
+  // evening BEFORE — a wrong time where the intent was no time at all.
+  if (/^\d{4}-\d{2}-\d{2}$/.test(String(iso || "").trim())) return "";
   var d = new Date(iso);
   if (isNaN(d.getTime())) return "";
   try {
@@ -1010,6 +1014,26 @@ function renderDayTimeline(payload) {
   if (!host) return;
   var workouts = (payload && payload.workouts) || [];
   if (!workouts.length) { host.hidden = true; host.innerHTML = ""; return; }
+
+  /* Clock times are opt-in. Without them there is no axis to place anything
+     on, so the rail is replaced by the part that is not a location trail:
+     how many sessions, how long each ran, how many sets. That is what the
+     rail was worth reading for anyway. */
+  if (payload.sessionTimesShown === false) {
+    var sess = (payload.sessions || []).filter(function (x) { return x && x.sets; });
+    if (!sess.length) { host.hidden = true; host.innerHTML = ""; return; }
+    host.hidden = false;
+    host.innerHTML = '<p class="daylog-sub">Sessions</p>'
+      + sess.map(function (x, i) {
+          return '<div class="tl-session tl-session-notime">'
+            + '<span class="tl-session-time">' + (sess.length > 1 ? "#" + (i + 1) : "Session") + "</span>"
+            + '<span class="tl-session-meta">' + escapeHtml(x.elapsedLabel || "")
+            + " \u00b7 " + x.sets + " set" + (x.sets === 1 ? "" : "s") + "</span>"
+            + "</div>";
+        }).join("")
+      + '<p class="tl-note">Times of day are not shared on this profile.</p>';
+    return;
+  }
 
   /* One entry per logged set, placed by its own timestamp, so four sets
      spread over twenty minutes appear as four marks rather than one. */

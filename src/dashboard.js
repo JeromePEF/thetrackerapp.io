@@ -241,6 +241,7 @@ const els = {
   toggleMergedVisibility: document.getElementById("toggleMergedVisibility"),
   toggleStatsBarVisibility: document.getElementById("toggleStatsBarVisibility"),
   togglePublicLeaderboardConsent: document.getElementById("togglePublicLeaderboardConsent"),
+  toggleSessionTimesVisibility: document.getElementById("toggleSessionTimesVisibility"),
   savePublicProfileButton: document.getElementById("savePublicProfileButton"),
   visibilityModePublic: document.getElementById("visibilityModePublic"),
   visibilityModeUnlisted: document.getElementById("visibilityModeUnlisted"),
@@ -2279,7 +2280,7 @@ function wirePublicProfileVisibility() {
         updatePublicProfilePreview(readAuthUser());
       });
     });
-  const toggles = [els.toggleWorkoutVisibility, els.toggleNutritionVisibility, els.toggleWaterVisibility, els.toggleLeaderboardVisibility, els.toggleRecentWorkoutsVisibility, els.toggleMergedVisibility, els.toggleStatsBarVisibility, els.togglePublicLeaderboardConsent];
+  const toggles = [els.toggleWorkoutVisibility, els.toggleNutritionVisibility, els.toggleWaterVisibility, els.toggleLeaderboardVisibility, els.toggleRecentWorkoutsVisibility, els.toggleMergedVisibility, els.toggleStatsBarVisibility, els.togglePublicLeaderboardConsent, els.toggleSessionTimesVisibility];
   toggles.forEach((toggle) => {
     if (toggle) {
       toggle.addEventListener("change", () => {
@@ -2349,6 +2350,9 @@ function hydratePublicProfileVisibility() {
   if (els.togglePublicLeaderboardConsent) {
     els.togglePublicLeaderboardConsent.checked = visibility.publicLeaderboard === true;
   }
+  if (els.toggleSessionTimesVisibility) {
+    els.toggleSessionTimesVisibility.checked = visibility.sessionTimes === true;
+  }
 
   // Mode and food detail come back on the same visibility object. An older
   // snapshot carries neither, so both fall back to their safe default rather
@@ -2403,6 +2407,9 @@ function updatePublicProfilePreview(user) {
     else if (detail === "full") items.push("Food: exact names as logged, restaurant names included");
     else items.push("Food: dish names with restaurants stripped out");
   }
+  if (els.toggleSessionTimesVisibility?.checked) {
+    items.push("The clock time of every set and session — when you trained each day");
+  }
   if (els.toggleMergedVisibility?.checked) items.push("Combined workout + nutrition + hydration heatmap");
   if (els.toggleWorkoutVisibility?.checked) items.push("52-week workout heatmap & activity calendar");
   if (els.toggleNutritionVisibility?.checked) items.push("52-week nutrition / meal logging heatmap");
@@ -2440,6 +2447,7 @@ async function savePublicProfileVisibility(options = {}) {
     publicLeaderboard: els.togglePublicLeaderboardConsent?.checked ?? false,
     mode: readVisibilityMode(),
     nutritionDetail: readNutritionDetail(),
+    sessionTimes: els.toggleSessionTimesVisibility?.checked ?? false,
   };
   // Rotation is a separate, explicit act — it invalidates links already sent,
   // so it must never ride along on an ordinary save.

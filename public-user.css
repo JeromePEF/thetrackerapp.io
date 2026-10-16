@@ -1111,3 +1111,10 @@ body.user-page {
 #userNutritionHeatmap::-webkit-scrollbar-thumb, #userWaterHeatmap::-webkit-scrollbar-thumb {
   background: rgba(255,255,255,0.22); border-radius: 3px;
 }
+
+/* A session row with no clock to show. The time slot becomes a plain counter,
+   so the row keeps the rail's two-column shape instead of collapsing. */
+.tl-session-notime .tl-session-time {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
