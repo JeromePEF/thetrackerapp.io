@@ -2,13 +2,19 @@ import"./modulepreload-polyfill-BNRNPu-U.js";var e=`https://api.thetrackerapp.io
     <tr>
       <td class="col-rank rank-${t}"><span class="rank-medal">${t}</span></td>
       <td class="col-name">
-        <a class="athlete-cell" href="/@${encodeURIComponent(n)}">
+        ${n?`<a class="athlete-cell" href="/@${encodeURIComponent(n)}">
           <span class="athlete-avatar">${h(i)}</span>
           <span>
             <span class="athlete-name">${h(r)}</span>
             <span class="athlete-handle">@${h(n)}</span>
           </span>
-        </a>
+        </a>`:`<span class="athlete-cell athlete-cell-private">
+          <span class="athlete-avatar">${h(i)}</span>
+          <span>
+            <span class="athlete-name">${h(r)}</span>
+            <span class="athlete-handle">profile not shared</span>
+          </span>
+        </span>`}
       </td>
       <td class="col-flair">${s}${c}</td>
       <td class="col-coach">${l}</td>

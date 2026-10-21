@@ -1675,8 +1675,15 @@ async function handleSignup(event) {
   setStatus(els.signupStatus, "Submitting signup...", "");
 
   try {
-    await submitSignup(attachRefToPayload(validation.payload));
+    const payload = attachRefToPayload(validation.payload);
+    // GA4 client id travels with the signup so the backend can attribute
+    // trial_start / purchase (Measurement Protocol) to this web session.
+    const gaClientId = readGaClientId();
+    if (gaClientId) payload.gaClientId = gaClientId;
+    await submitSignup(payload);
     setStatus(els.signupStatus, "Signup sent. Check your messages to continue onboarding.", "success");
+    // Key event "sign_up" (GA4 Admin → Key events). Fires only on a successful submit.
+    try { window.gtag?.("event", "sign_up", { method: String(payload?.provider || "iMessage").toLowerCase(), referral: payload?.referralCode || payload?.ref || "" }); } catch (_) {}
   } catch (error) {
     const rawMessage = String(error?.message || "").trim();
     const isNetworkError = /load failed|failed to fetch|networkerror|network request failed/i.test(rawMessage);
@@ -1685,6 +1692,14 @@ async function handleSignup(event) {
       : rawMessage || "Signup request failed.";
     setStatus(els.signupStatus, friendlyMessage, "error");
   }
+}
+
+// GA4 writes client_id into the _ga cookie as "GA1.1.<a>.<b>"; the id is "<a>.<b>".
+function readGaClientId() {
+  try {
+    const m = document.cookie.match(/(?:^|;\s*)_ga=GA\d\.\d\.(\d+\.\d+)/);
+    return m ? m[1] : "";
+  } catch (_) { return ""; }
 }
 
 function wireEvents() {

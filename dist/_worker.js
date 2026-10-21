@@ -462,6 +462,33 @@ function addSecurityHeaders(response) {
   }));
 }
 
+const JOIN_GA_ID = "G-RNSBGSR08Y";
+function JOIN_HTML(code) {
+  const ok = code.length >= 3;
+  const body = encodeURIComponent(`JOIN ${code}`);
+  const sms = `sms:bot@thetrackerapp.io&body=${body}`;
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${ok ? "Your free year" : "Code not found"} · The Tracker App</title>
+<meta name="robots" content="noindex">
+<script async src="https://www.googletagmanager.com/gtag/js?id=${JOIN_GA_ID}"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${JOIN_GA_ID}',{send_page_view:true});${ok ? `gtag('event','affiliate_scan',{referral:'${esc(code)}'});` : ""}</script>
+<style>body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0b0f14;color:#f3f4f6;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:24px}
+.card{max-width:440px;width:100%;background:#111827;border:1px solid #1f2937;border-radius:20px;padding:32px;text-align:center}
+h1{font-size:26px;margin:0 0 8px}p{color:#9ca3af;line-height:1.5;margin:8px 0}
+.btn{display:block;margin:20px 0 10px;padding:16px;border-radius:14px;background:#22c55e;color:#06220f;font-weight:700;text-decoration:none;font-size:18px}
+.code{font-family:ui-monospace,Menlo,monospace;background:#0b0f14;border:1px solid #374151;border-radius:10px;padding:10px 14px;display:inline-block;margin:6px 0;font-size:18px;color:#fff}
+small{color:#6b7280}a.alt{color:#93c5fd}</style></head><body><div class="card">
+${ok ? `<h1>Your free year of The Tracker App</h1>
+<p>Fitness tracking that lives in iMessage. No app to download.</p>
+<a class="btn" id="go" href="${sms}">Open Messages &amp; start</a>
+<p>That sends <span class="code">JOIN ${esc(code)}</span> to <b>bot@thetrackerapp.io</b>. The bot replies with your 1-year free trial.</p>
+<p><small>Not on an iPhone? Text the same thing from any phone, or <a class="alt" href="/?ref=${esc(code)}#signup">sign up on the web</a>.</small></p>
+<script>(function(){var ua=navigator.userAgent||"";if(/iPhone|iPad|iPod|Macintosh/.test(ua)){setTimeout(function(){location.href=${JSON.stringify(sms)};},400);}})();</script>`
+: `<h1>Code not found</h1><p>That link is missing its code. Ask the person who shared it, or text <b>hi</b> to bot@thetrackerapp.io.</p>`}
+<p><small><a class="alt" href="https://thetrackerapp.io">thetrackerapp.io</a></small></p></div></body></html>`;
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -484,6 +511,19 @@ export default {
     if (path === "/api/control-update") return addSecurityHeaders(await handleVersionUpdate(request, env));
 
     if (path === "/" || path === "/index.html") return addSecurityHeaders(await handleHomepage(request, env));
+
+    // Affiliate QR landing: /join/<CODE> (or /join?code=). On iPhone/Mac it
+    // opens Messages to bot@thetrackerapp.io with "JOIN <CODE>" pre-filled;
+    // the bot answers with a one-year free trial attributed to the affiliate.
+    // Everyone else sees the text instructions and the web form with ?ref=.
+    if (path === "/join" || path.startsWith("/join/")) {
+      const raw = path.startsWith("/join/") ? decodeURIComponent(path.slice(6)) : (url.searchParams.get("code") || "");
+      const code = String(raw || "").trim().toUpperCase().replace(/[^A-Z0-9_-]/g, "").slice(0, 32);
+      return addSecurityHeaders(new Response(JOIN_HTML(code), {
+        status: code.length >= 3 ? 200 : 404,
+        headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" },
+      }));
+    }
 
     // /tools/workout-commands merged into the exercise picker (2026-07-11)
     if (path === "/tools/workout-commands" || path === "/tools/workout-commands.html") {

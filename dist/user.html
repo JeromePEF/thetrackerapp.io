@@ -35,9 +35,9 @@
       href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
-    <script type="module" crossorigin src="/assets/user-D5rRG_LU.js"></script>
+    <script type="module" crossorigin src="/assets/user-iO7yTOfJ.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-BNRNPu-U.js">
-    <link rel="stylesheet" crossorigin href="/assets/user-D8j7xG0y.css">
+    <link rel="stylesheet" crossorigin href="/assets/user-DBTc7QkC.css">
   </head>
   <body class="user-page">
     <div class="user-shell">
@@ -62,6 +62,12 @@
             <h1 class="user-display-name" id="userDisplayName">@username</h1>
             <p class="user-handle" id="userHandle"></p>
             <p class="user-joined" id="userJoined"></p>
+            <!-- The user's own line, set over text with /motto. Hidden until
+                 one exists so the header does not reserve empty space. -->
+            <p class="user-motto" id="userMotto" hidden></p>
+            <!-- Social links, set from settings. Built server-side from stored
+                 handles so a link cannot point anywhere but the platform. -->
+            <div class="user-socials" id="userSocials" hidden></div>
           </div>
         </section>
 
@@ -172,7 +178,11 @@
           <!-- Sunday to Saturday, the way a training week is read. -->
           <div class="daylog-week" id="dayWeek" role="tablist"></div>
           <hr class="daylog-rule" />
-          <div class="daylog-body" id="dayBody"></div>
+          <div class="daylog-split">
+            <div class="daylog-body" id="dayBody"></div>
+            <!-- When the day's work actually happened, down the side. -->
+            <aside class="daylog-timeline" id="dayTimeline" hidden></aside>
+          </div>
         </section>
 
         <section class="user-recent-workouts" id="userRecentWorkouts">

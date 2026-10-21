@@ -43,7 +43,7 @@
         window.location.replace("https://thetrackerapp.io/login?next=" + next);
       })();
     </script>
-    <script type="module" crossorigin src="/assets/dashboard-CZmWQPUG.js"></script>
+    <script type="module" crossorigin src="/assets/dashboard-CzGAYP6q.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-BNRNPu-U.js">
     <link rel="modulepreload" crossorigin href="/assets/preload-helper-okr-PqaP.js">
     <link rel="modulepreload" crossorigin href="/assets/affiliate-shape-CIsHqG-V.js">
@@ -54,7 +54,7 @@
     <link rel="modulepreload" crossorigin href="/assets/google-analytics-Tq3nzR9N.js">
     <link rel="stylesheet" crossorigin href="/assets/affiliate-shape-C1JFWeLX.css">
     <link rel="stylesheet" crossorigin href="/assets/dashboard-BRWht2XY.css">
-    <link rel="stylesheet" crossorigin href="/assets/auth-pages-CrxYeMXO.css">
+    <link rel="stylesheet" crossorigin href="/assets/auth-pages-CWDuDd4M.css">
   </head>
   <body class="dashboard-page">
     <div class="dashboard-shell">
@@ -386,6 +386,73 @@
                 Control what appears on your public profile page at
                 <a id="publicProfileUrl" href="/@" target="_blank" rel="noopener noreferrer">/@<span id="publicProfileUsername">you</span></a>.
               </p>
+              <!-- WHO MAY SEE IT, before what they see. The toggles below
+                   decide which sections appear; this decides whether anyone
+                   can open the page at all. -->
+              <div class="visibility-mode" id="visibilityMode">
+                <h4 class="settings-subsection-title">Who can see your profile</h4>
+                <label class="radio-row">
+                  <input type="radio" name="profileVisibilityMode" id="visibilityModePublic" value="public" />
+                  <span><strong>Public</strong> — anyone can find it, and search engines may list it.</span>
+                </label>
+                <label class="radio-row">
+                  <input type="radio" name="profileVisibilityMode" id="visibilityModeUnlisted" value="unlisted" />
+                  <span><strong>Unlisted</strong> — anyone with the link can open it, but it is kept out of
+                    search engines and off the site leaderboard.</span>
+                </label>
+                <label class="radio-row">
+                  <input type="radio" name="profileVisibilityMode" id="visibilityModePrivate" value="private" />
+                  <span><strong>Private</strong> — only your share link works. Your own URL is refused.</span>
+                </label>
+                <div class="share-link-row" id="shareLinkRow" hidden>
+                  <label class="social-field">
+                    <span>Your share link — anyone holding it can view</span>
+                    <input type="text" id="profileShareUrl" readonly autocomplete="off" />
+                  </label>
+                  <p class="social-hint">
+                    <button type="button" class="btn-secondary" id="rotateShareKeyButton">Reset link</button>
+                    Resetting immediately breaks every link you have already sent.
+                  </p>
+                </div>
+              </div>
+
+              <!-- FOOD NAMES CAN CARRY A LOCATION. A week of restaurant names
+                   narrows down where someone lives, so the default strips the
+                   venue and keeps the dish. -->
+              <div class="visibility-mode" id="nutritionDetailMode">
+                <h4 class="settings-subsection-title">Food detail on your public page</h4>
+                <label class="radio-row">
+                  <input type="radio" name="publicNutritionDetail" id="nutritionDetailGeneric" value="generic" />
+                  <span><strong>Hide places</strong> (recommended) — "Fried Chicken Wings 4 piece"
+                    instead of naming the restaurant.</span>
+                </label>
+                <label class="radio-row">
+                  <input type="radio" name="publicNutritionDetail" id="nutritionDetailMacros" value="macros" />
+                  <span><strong>Macros only</strong> — no food names at all, just calories and macros.</span>
+                </label>
+                <label class="radio-row">
+                  <input type="radio" name="publicNutritionDetail" id="nutritionDetailFull" value="full" />
+                  <span><strong>Show everything</strong> — exactly as you logged it, restaurant names included.</span>
+                </label>
+              </div>
+
+              <!-- SEPARATE FROM THE GRID BELOW on purpose. The section
+                   toggles are "show this chart or not"; this one decides
+                   whether the page publishes a daily record of the hours
+                   you are out of the house. It needs the sentence. -->
+              <div class="visibility-mode" id="sessionTimesMode">
+                <h4 class="settings-subsection-title">Times of day</h4>
+                <label class="toggle-row toggle-row-wrap">
+                  <input type="checkbox" id="toggleSessionTimesVisibility" />
+                  <span>Show the clock time of each set and session
+                    (e.g. "6:42 AM"). Off by default: published daily, this is a
+                    record of when you are away from home. Session
+                    <strong>lengths and set counts are always shown</strong>
+                    either way.</span>
+                </label>
+              </div>
+
+              <h4 class="settings-subsection-title">What appears on the page</h4>
               <div class="public-profile-toggles" id="publicProfileToggles">
                 <label class="toggle-row">
                   <input type="checkbox" id="toggleMergedVisibility" />
@@ -421,6 +488,68 @@
                 <span id="publicProfileSaved" class="account-save-check" hidden>✓ Updated</span>
               </div>
               <p id="publicProfileStatus" class="stats-status" role="status" aria-live="polite"></p>
+              <!-- MOTTO + SOCIAL LINKS, shown on the public profile.
+                   Handles, not URLs: the backend builds each link from the
+                   handle, so a profile link cannot point anywhere else. -->
+              <div class="profile-details">
+                <h4 class="settings-subsection-title">Motto</h4>
+                <label class="social-field">
+                  <span>One line, shown under your name</span>
+                  <input type="text" id="profileMottoInput" maxlength="120"
+                         placeholder="Stay hard." autocomplete="off" />
+                </label>
+                <p class="social-hint"><span id="profileMottoCount">0/120</span></p>
+
+                <h4 class="settings-subsection-title">Social links</h4>
+                <p class="social-hint">Just your handle — paste a full profile URL and we'll trim it. Leave a field empty to remove that link.</p>
+                <div class="social-grid">
+                  <label class="social-field">
+                    <span>Instagram</span>
+                    <input type="text" id="social-instagram" autocomplete="off" spellcheck="false"
+                           placeholder="@yourhandle" maxlength="40" />
+                  </label>
+                  <label class="social-field">
+                    <span>TikTok</span>
+                    <input type="text" id="social-tiktok" autocomplete="off" spellcheck="false"
+                           placeholder="@yourhandle" maxlength="40" />
+                  </label>
+                  <label class="social-field">
+                    <span>YouTube</span>
+                    <input type="text" id="social-youtube" autocomplete="off" spellcheck="false"
+                           placeholder="@yourchannel" maxlength="40" />
+                  </label>
+                  <label class="social-field">
+                    <span>X</span>
+                    <input type="text" id="social-x" autocomplete="off" spellcheck="false"
+                           placeholder="@yourhandle" maxlength="40" />
+                  </label>
+                  <label class="social-field">
+                    <span>Snapchat</span>
+                    <input type="text" id="social-snapchat" autocomplete="off" spellcheck="false"
+                           placeholder="yourhandle" maxlength="40" />
+                  </label>
+                  <label class="social-field">
+                    <span>Strava</span>
+                    <input type="text" id="social-strava" autocomplete="off" spellcheck="false"
+                           placeholder="athlete id" maxlength="40" />
+                  </label>
+                  <label class="social-field">
+                    <span>GitHub</span>
+                    <input type="text" id="social-github" autocomplete="off" spellcheck="false"
+                           placeholder="yourhandle" maxlength="40" />
+                  </label>
+                  <label class="social-field">
+                    <span>Website</span>
+                    <input type="text" id="social-website" autocomplete="off" spellcheck="false"
+                           placeholder="yoursite.com" maxlength="200" />
+                  </label>
+                </div>
+                <div class="panel-actions" style="margin-top: 0.75rem;">
+                  <button id="saveProfileDetailsButton" type="button" class="btn-primary">Save Profile Details</button>
+                </div>
+                <p id="profileDetailsStatus" class="stats-status" role="status" aria-live="polite"></p>
+              </div>
+
               <div class="public-profile-preview" id="publicProfilePreview" hidden>
                 <h4>What will be visible at <a id="publicProfilePreviewUrl" href="/@" target="_blank" rel="noopener noreferrer">/@<span id="publicProfilePreviewUsername">you</span></a></h4>
                 <ul id="publicProfilePreviewList"></ul>
