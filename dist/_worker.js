@@ -463,6 +463,8 @@ function addSecurityHeaders(response) {
 }
 
 const JOIN_GA_ID = "G-RNSBGSR08Y";
+const TOUR_VIDEO_URL = "https://youtu.be/E9Uko6qfkLE";
+
 function JOIN_HTML(code) {
   const ok = code.length >= 3;
   const body = encodeURIComponent(`JOIN ${code}`);
@@ -511,6 +513,12 @@ export default {
     if (path === "/api/control-update") return addSecurityHeaders(await handleVersionUpdate(request, env));
 
     if (path === "/" || path === "/index.html") return addSecurityHeaders(await handleHomepage(request, env));
+
+    // /tour: stable link to the current full-tour video (home page pill, flyers,
+    // bot replies). Update TOUR_VIDEO_URL when the video is re-published.
+    if (path === "/tour" || path === "/tour/") {
+      return addSecurityHeaders(Response.redirect(TOUR_VIDEO_URL, 302));
+    }
 
     // Affiliate QR landing: /join/<CODE> (or /join?code=). On iPhone/Mac it
     // opens Messages to bot@thetrackerapp.io with "JOIN <CODE>" pre-filled;
